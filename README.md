@@ -1,19 +1,17 @@
-# THUAI8
+# THUAI9
 清华大学第八届人工智能挑战赛电子系赛道（原电子系第 26 届队式程序设计大赛 teamstyle26）
 
-Gitee 镜像地址：[THUAI8: Gitee Mirror](https://gitee.com/eesast/THUAI8)
+Gitee 镜像地址：[THUAI9: Gitee Mirror](https://gitee.com/eesast/THUAI9)
 
-GitLink 镜像地址：[THUAI8: GitLink Mirror](https://www.gitlink.org.cn/EESAST/THUAI8)
+GitLink 镜像地址：[THUAI9: GitLink Mirror](https://www.gitlink.org.cn/EESAST/THUAI9)
 
 ## 赛题背景
 
-![thuai8](resource/interface.png)
 
-佛说：东土大唐“贪淫乐祸，多灾多杀”，是“口舌凶场，是非恶海”。须有一个诚心的取经人到我西天来取得真经，方得救赎。在观世音菩萨的挑选下，陈玄奘成为了天命所归的取经人，带领他的三个徒弟：孙悟空、猪八戒、沙悟净，以及作为脚力的白龙马，西行取经。然而，取经路途遍布艰险。传说吃一口唐僧肉便可得到长生，蛰伏于取经路上的各路妖怪蠢蠢欲动······
 
 ## 比赛规则
 
-https://docs.eesast.com/docs/contests/THUAI8
+https://docs.eesast.com/docs/contests/THUAI9
 
 ## 软件架构
 
@@ -48,17 +46,17 @@ https://docs.eesast.com/docs/contests/THUAI8
 
 ### 关于社区开发者
 
-- 社区开发者开发工作请遵循 [THUAI8社区开发者贡献指南](./CONTRIBUTING.md)
+- 社区开发者开发工作请遵循 [THUAI9社区开发者贡献指南](./CONTRIBUTING.md)
 - 社区开发者贡献的代码请遵循 [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md)  
 
 ### 开发流程
 
-THUAI8 开发组成员与其他贡献者应当遵循以下流程：
+THUAI9 开发组成员与其他贡献者应当遵循以下流程：
 
-1. 将 `eesast/THUAI8` fork 到自己的仓库中
+1. 将 `eesast/THUAI9` fork 到自己的仓库中
 2. 基于 `dev` 分支建立一个新的功能分支
 3. 在新的分支上进行修改与开发
-4. 向 `eesast/THUAI8` 的 `dev` 分支提出 pull request
+4. 向 `eesast/THUAI9` 的 `dev` 分支提出 pull request
 5. 等待其他开发组成员 review 与 merge
 
 ### 使用 Git 与 Github 时的注意事项
@@ -189,8 +187,8 @@ THUAI8 开发组成员与其他贡献者应当遵循以下流程：
 
 ## 开发组成员
 
-- 逻辑组：郑墨杭、肖博文
-- 通信组：王一涵、陈骏毅
-- 界面组：王浩任、庞炜耀、桂昕
-- 运维组：许胜宏、姚政熙
-- 端茶倒水：韩志峰
+- 逻辑组：刘承昊、贾兴道
+- 通信组：杨再鹏、王俊杰
+- 界面组：朱羿帆、陈厚永、杜志翔
+- 运维组：李科、李果
+- 端茶倒水：郑墨杭

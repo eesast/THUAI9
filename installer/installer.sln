@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.11.35222.181
+VisualStudioVersion = 17.14.36105.17 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "installer", "installer.csproj", "{F0F3EE3A-E592-47EA-929A-3B52F6047028}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "installer", "installer\installer.csproj", "{C9DB131F-A52C-44B3-BCFB-32405610BC4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,17 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F0F3EE3A-E592-47EA-929A-3B52F6047028}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{C9DB131F-A52C-44B3-BCFB-32405610BC4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9DB131F-A52C-44B3-BCFB-32405610BC4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9DB131F-A52C-44B3-BCFB-32405610BC4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9DB131F-A52C-44B3-BCFB-32405610BC4C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {D73C21A1-5179-4364-8CCB-76A58DAB6406}
+		SolutionGuid = {F7EC56F3-1779-401A-BBF1-5A8B4E046378}
 	EndGlobalSection
 EndGlobal
