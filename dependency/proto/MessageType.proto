@@ -1,0 +1,99 @@
+// MessageType
+syntax = "proto3";
+package protobuf;
+
+enum GameState // 
+{
+    NULL_GAME_STATE = 0;
+    GAME_START = 1;
+    GAME_RUNNING = 2;
+    GAME_END = 3;
+}
+
+enum PlaceType // 
+{
+    NULL_PLACE_TYPE = 0;
+    HOME = 1;              // 出生点工厂（地图四个角落）
+    SPACE = 2;             // 空地
+    BARRIER = 3;           // 障碍
+    BUSH = 4;              // 草丛
+    COMPUTING_CENTER = 5;  // 算力中心
+    MATERIAL_RESOURCE = 6; // 材料资源
+    CHEAP_MARKET = 7;      // 廉价市场
+    EXPENSIVE_MARKET = 8;  // 高额市场 
+}
+
+enum ShapeType // 
+{
+    NULL_SHAPE_TYPE = 0;
+    CIRCLE = 1;
+    SQUARE = 2;
+}
+
+enum PlayerType
+{
+    NULL_PLAYER_TYPE = 0;
+    CHARACTER = 1;
+    TEAM = 2;
+}
+
+enum CharacterType // 
+{
+    NULL_CHARACTER_TYPE = 0;
+    // 机器类型
+    DriverlessCar = 1;  // 无人驾驶汽车
+    Drone = 2;          // 无人机
+    Robot = 3;          // 机器人
+}
+
+enum CharacterState // 角色状态
+{
+    NULL_CHARACTER_STATE = 0;
+
+    IDLE = 1;
+    HARVESTING = 2;
+    ATTACKING = 3;
+    CONSTRUCTING = 4;
+    MOVING = 5;
+
+    HEALING = 6;
+    DECEASED = 7;
+}
+
+enum HomeState // 工厂状态
+{
+    NULL_HOME_STATE = 0;
+
+    IDLE = 1;       // 闲置状态
+    PRODUCING_PRODUCT = 2;  // 生产产品中
+    REPAIRING = 3;  // 修理中
+    PRODUCING_CHARACTER = 4;  // 生产机器中
+}
+
+// 不需要ComputingCenterState, 建议使用一个变量来表示归属于哪个队伍
+
+enum MaterialResourceState // 
+{
+    NULL_ECONOMY_RESOURCE_STSTE = 0;
+    HARVESTABLE = 1;
+    BEING_HARVESTED = 2;
+    HARVESTED = 3;
+}
+
+enum NewsType // 用于角色间通信？或许咱们需要
+{
+    NULL_NEWS_TYPE = 0;
+    TEXT = 1;
+    BINARY = 2;
+}
+
+cnum ProductType
+{
+    NULL_PRODUCT_TYPE = 0;
+
+    SEMICONDUCTOR = 1;
+    MEDICINE = 2;
+    HANDIWORK = 3;
+    COSTUME = 4;
+    FOOD = 5;
+}
