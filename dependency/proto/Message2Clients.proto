@@ -17,31 +17,31 @@ message MessageOfCharacter
     CharacterState character_active_state = 5;
 
     // 位置
-    int32 x = 17;
-    int32 y = 18;
+    int32 x = 6;
+    int32 y = 7;
 
-    double facing_direction = 19;
-    int32 speed = 20;
-    int32 view_range = 21;
+    double facing_direction = 8;
+    int32 speed = 9;
+    int32 view_range = 10;
 
-    int32 common_attack = 22;
-    int64 common_attack_cd = 23;
-    int32 common_attack_range = 24;
+    int32 common_attack = 11;
+    int64 common_attack_cd = 12;
+    int32 common_attack_range = 13;
 
-    int32 hp = 28; 
+    int32 hp = 14; 
 }
 
 
 message MessageOfMaterialResource
 {
-    MaterialResourceState material_resource_state = 2;
+    MaterialResourceState material_resource_state = 1;
 
-    int32 x = 3;
-    int32 y = 4;
+    int32 x = 2;
+    int32 y = 3;
 
-    int32 process = 5; // 采集进度 等价于血量
+    int32 process = 4; // 采集进度 等价于血量
 
-    int32 id = 6;
+    int32 id = 5;
 
 }
 
@@ -70,10 +70,10 @@ message MessageOfObj
     oneof message_of_obj
     {
         MessageOfCharacter character_message = 1;
-        MessageOfMaterialResource material_resource_message= 6;
-        MessageOfMap map_message = 8;
-        MessageOfNews news_message = 9;
-        MessageOfTeam team_message = 10;
+        MessageOfMaterialResource material_resource_message= 2;
+        MessageOfMap map_message = 3;
+        MessageOfNews news_message = 4;
+        MessageOfTeam team_message = 5;
     }
 }
 
@@ -83,23 +83,23 @@ message MessageOfAll
 
     int32 team1_score=2;
     int32 team2_score=3;
-    int32 team3_score=3;
-    int32 team4_score=3;
+    int32 team3_score=4;
+    int32 team4_score=5;
 
-    int32 team1_material = 4;
-    int32 team2_material = 4;
-    int32 team3_material = 4;
-    int32 team4_material = 4;
+    int32 team1_material = 6;
+    int32 team2_material = 7;
+    int32 team3_material = 8;
+    int32 team4_material = 9;
 
-    int32 team1_computing_power = 5;
-    int32 team2_computing_power = 5;
-    int32 team3_computing_power = 5;
-    int32 team4_computing_power = 5;
+    int32 team1_computing_power = 10;
+    int32 team2_computing_power = 11;
+    int32 team3_computing_power = 12;
+    int32 team4_computing_power = 13;
 
-    int32 team1_factory_hp = 6;
-    int32 team2_factory_hp = 6;
-    int32 team3_factory_hp = 6;
-    int32 team4_factory_hp = 6;
+    int32 team1_factory_hp = 14;
+    int32 team2_factory_hp = 15;
+    int32 team3_factory_hp = 16;
+    int32 team4_factory_hp = 17;
 
 }
 

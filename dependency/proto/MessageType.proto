@@ -87,7 +87,7 @@ enum NewsType // 用于角色间通信？或许咱们需要
     BINARY = 2;
 }
 
-cnum ProductType
+enum ProductType
 {
     NULL_PRODUCT_TYPE = 0;
 
