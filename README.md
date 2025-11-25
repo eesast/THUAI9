@@ -1,5 +1,5 @@
 # THUAI9
-清华大学第八届人工智能挑战赛电子系赛道（原电子系第 26 届队式程序设计大赛 teamstyle26）
+清华大学电子系第九届人工智能挑战赛（原电子系第 27 届队式程序设计大赛 teamstyle27）
 
 Gitee 镜像地址：[THUAI9: Gitee Mirror](https://gitee.com/eesast/THUAI9)
 
