@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "SRQvTnwojTM=",
+  "dgSpecHash": "w3HTaGMSIL4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\lenovo\\OneDrive\\桌面\\thuai9\\THUAI9\\logic\\logic\\logic.csproj",
+  "projectFilePath": "C:\\Users\\lenovo\\OneDrive\\桌面\\THUthu\\THUAI9\\logic\\logic\\logic.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\lenovo\\.nuget\\packages\\microsoft.extensions.configuration\\10.0.0\\microsoft.extensions.configuration.10.0.0.nupkg.sha512",
     "C:\\Users\\lenovo\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\10.0.0\\microsoft.extensions.configuration.abstractions.10.0.0.nupkg.sha512",

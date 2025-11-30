@@ -73,7 +73,7 @@ namespace Preparation.Utility
     public enum ComputeSenterState //算力中心状态
     {
         NULL_COMPUTE_CENTER_STATE = 0,
-        OCCUPYABLE= 1,
+        OCCUPYABLE = 1,
         OCCUPIED = 2,
         ROBBED = 3,
     }
@@ -81,11 +81,11 @@ namespace Preparation.Utility
     public enum GoodsType //产品类型
     {
         NULL_GOODS_TYPE = 0,
-        SEMICONDUCTOR=1,
-        MEDICINE=2,
-        TOYS=3,
-        CLOTHES=4,
-        FOOD =5,
+        SEMICONDUCTOR = 1,
+        MEDICINE = 2,
+        TOYS = 3,
+        CLOTHES = 4,
+        FOOD = 5,
     }
 
     public enum MarketType

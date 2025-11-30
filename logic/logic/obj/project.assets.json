@@ -927,11 +927,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\lenovo\\OneDrive\\桌面\\thuai9\\THUAI9\\logic\\logic\\logic.csproj",
+      "projectUniqueName": "C:\\Users\\lenovo\\OneDrive\\桌面\\THUthu\\THUAI9\\logic\\logic\\logic.csproj",
       "projectName": "logic",
-      "projectPath": "C:\\Users\\lenovo\\OneDrive\\桌面\\thuai9\\THUAI9\\logic\\logic\\logic.csproj",
+      "projectPath": "C:\\Users\\lenovo\\OneDrive\\桌面\\THUthu\\THUAI9\\logic\\logic\\logic.csproj",
       "packagesPath": "C:\\Users\\lenovo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\lenovo\\OneDrive\\桌面\\thuai9\\THUAI9\\logic\\logic\\obj\\",
+      "outputPath": "C:\\Users\\lenovo\\OneDrive\\桌面\\THUthu\\THUAI9\\logic\\logic\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

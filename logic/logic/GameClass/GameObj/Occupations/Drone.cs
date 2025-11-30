@@ -12,6 +12,6 @@ namespace GameClass.GameObj.Occupations
         public int BaseAttackSize { get; } = GameData.DroneATKsize;
         public int MaxLoad { get; } = GameData.DroneMaxLoad;
         public int AttackPower { get; } = GameData.DroneATKpower;
-       
+
     }
 }

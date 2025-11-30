@@ -56,7 +56,7 @@ public class Character : Movable, ICharacter
             return true;
         return false;
     }
-    private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE,  GameObj? gameobj = null)
+    private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE, GameObj? gameobj = null)
     {
         //只能被SetCharacterState引用
         InteractObj = gameobj;

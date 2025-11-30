@@ -11,7 +11,7 @@ public class Bush(XY initPos)
     public void Hide(Character character)
     {
         if (character.Position == initPos)
-            character.visible = false;//使角色invisible
+            character.Visible = false;//使角色invisible
     }
 
 }

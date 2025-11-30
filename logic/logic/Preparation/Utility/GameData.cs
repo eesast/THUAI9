@@ -21,10 +21,10 @@ namespace Preparation.Utility
         public const int MapCols = 50;                  // 列数
 
         public const int CharacterRadius = 200;         // 角色半径
-        public const int AdjustLength=3;                // 碰撞调整距离
+        public const int AdjustLength = 3;                // 碰撞调整距离
 
-        public const int MaxRobust = 10;             
-        public const int MaxEfficiency = 2;           
+        public const int MaxRobust = 10;
+        public const int MaxEfficiency = 2;
 
         public const int ResourceHP = 500;              // 资源血量
 
@@ -47,7 +47,7 @@ namespace Preparation.Utility
         public const int RobotMaxLoad = 5;
 
 
-        public static XY PosNotInGame= new(-1, -1); // 不在游戏中的坐标
+        public static XY PosNotInGame = new(-1, -1); // 不在游戏中的坐标
         public static XY GetCellCenterPos(int x, int y)  // 求格子的中心坐标
             => new(x * NumOfPosGridPerCell + NumOfPosGridPerCell / 2,
                    y * NumOfPosGridPerCell + NumOfPosGridPerCell / 2);

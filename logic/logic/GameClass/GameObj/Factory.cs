@@ -50,7 +50,7 @@ public class Factory : Immovable, IFactory
             while (true)
             {
                 int current = target.Get();
-                int newV = current + delta; 
+                int newV = current + delta;
                 if (newV < 0) newV = 0;
                 if (target.CompareExROri(newV, current) == current) break; // CAS成功
             }
