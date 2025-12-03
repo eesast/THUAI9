@@ -42,4 +42,4 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Build Playback
-      - run: dotnet build "./playback/playback.sln" -c Release
+        run: dotnet build "./playback/playback.sln" -c Release
