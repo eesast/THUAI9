@@ -78,30 +78,19 @@ message MessageOfObj
 }
 
 message MessageOfAll
-{
-    int32 game_time = 1;
+    {
+        int32 game_time = 1;
 
-    int32 team1_score=2;
-    int32 team2_score=3;
-    int32 team3_score=4;
-    int32 team4_score=5;
+        message TeamInfo {
+            int32 score = 1;
+            int32 material = 2;
+            int32 computing_power = 3;
+            int32 factory_hp = 4;
+        }
 
-    int32 team1_material = 6;
-    int32 team2_material = 7;
-    int32 team3_material = 8;
-    int32 team4_material = 9;
+        repeated TeamInfo teams = 2; // teams[0] 对应 team1，teams[1] 对应 team2 ...
+    }
 
-    int32 team1_computing_power = 10;
-    int32 team2_computing_power = 11;
-    int32 team3_computing_power = 12;
-    int32 team4_computing_power = 13;
-
-    int32 team1_factory_hp = 14;
-    int32 team2_factory_hp = 15;
-    int32 team3_factory_hp = 16;
-    int32 team4_factory_hp = 17;
-
-}
 
 message MessageToClient
 {
