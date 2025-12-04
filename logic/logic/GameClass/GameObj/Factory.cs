@@ -7,6 +7,7 @@ using Preparation.Utility.Value.SafeValue.LockedValue;
 using GameClass.GameObj.Areas;
 
 namespace GameClass.GameObj;
+
 public class Factory : Immovable, IFactory
 {
     public AtomicLong TeamID { get; } = new(long.MaxValue);

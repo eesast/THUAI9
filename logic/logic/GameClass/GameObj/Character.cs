@@ -9,6 +9,7 @@ using System.Timers;
 using Microsoft.Extensions.Logging;
 
 namespace GameClass.GameObj;
+
 public class Character : Movable, ICharacter
 {
     public AtomicLong TeamID { get; } = new(long.MaxValue);
