@@ -21,7 +21,7 @@
     {
         public double EfficencyIncrease { get; }
     }
-    public interface CapacityTech : Tech 
+    public interface CapacityTech : Tech
     {
         public double CapacityIncrease { get; }
     }

@@ -8,6 +8,5 @@ namespace logic.Gaming
 {
     internal class AttackManager
     {
-         
     }
 }
