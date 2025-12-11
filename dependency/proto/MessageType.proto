@@ -2,6 +2,13 @@
 syntax = "proto3";
 package protobuf;
 
+enum GameMode {
+    NULL_GAME_MODE = 0;
+    GAME_MODE_PVE = 1;
+    GAME_MODE_PVP = 2;
+}
+
+
 enum GameState // 
 {
     NULL_GAME_STATE = 0;
@@ -79,6 +86,15 @@ enum MaterialResourceState //
     BEING_HARVESTED = 2;
     HARVESTED = 3;
 }
+/*
+enum HarvestAction // 采集动作类型
+{
+    NULL_HARVEST_ACTION = 0;
+    START_HARVEST = 1;
+    STOP_HARVEST = 2;
+    QUERY_HARVEST = 3; // 查询采集状态
+}
+*/
 
 enum NewsType // 用于角色间通信？或许咱们需要
 {
@@ -107,12 +123,12 @@ enum AIEventType {
 
 enum AIActionType {
     UNKNOWN = 0;        // 未知或未定义动作
-    PRODUCE = 1;        // 生产产品
-    HARVEST = 2;        // 采集资源
-    MOVE = 3;           // 移动到目标位置
-    ATTACK = 4;         // 攻击目标
-    REPAIR = 5;         // 修复工厂或单位
-    SELL = 6;           // 在市场出售产品
-    OCCUPY = 7;         // 占领算力中心或据点
+    PRODUCE = 1;        
+    HARVEST = 2;        
+    MOVE = 3;          
+    ATTACK = 4;        
+    REPAIR = 5;         
+    SELL = 6;           
+    OCCUPY = 7;         
     CUSTOM = 100;       // 自定义动作：使用 payload_json 等字段描述任意扩展动作
 }

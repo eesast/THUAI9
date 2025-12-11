@@ -29,6 +29,10 @@ message MessageOfCharacter
     int32 common_attack_range = 13;
 
     int32 hp = 14; 
+
+    int32 carry_capacity = 15; // 负重上限，产品数量为单位
+    int32 current_load = 16; // 当前负重
+    int32 harvest_rate_per_sec = 17; // 每秒采集量
 }
 
 
@@ -39,10 +43,10 @@ message MessageOfMaterialResource
     int32 x = 2;
     int32 y = 3;
 
-    int32 process = 4; // 采集进度 等价于血量
+    int32 remaining_amount = 4; // 采集进度 等价于血量
 
     int32 id = 5;
-
+    int32 max_amount = 6;
 }
 
 message MessageOfMap
@@ -65,6 +69,45 @@ message MessageOfTeam
 //    int64 guid=5;
 }
 
+message MessageOfFactory
+{
+    int64 factory_id = 1;
+    int64 team_id = 2;
+    int32 x = 3;
+    int32 y = 4;
+    int32 hp = 5;
+    message ProductStack
+    {
+        int32 product_type = 1;
+        int32 quantity = 2;
+    }
+    repeated ProductStack product_inventory = 6; //
+    int32 producing_line_count = 7; // 生产线数量
+}
+
+message MessageOfMarket
+{
+    int64 market_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+    bool high_value = 4; // 是否为高额市场
+    message PriceEntry
+    {
+        ProductType product_type = 1;
+        int32 price = 2;
+    }
+    repeated PriceEntry price_list = 5;
+}
+
+message MessageOfComputeCenter
+{
+    int64 center_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+    int64 owner_team_id = 4; // 0表示无人占领
+    int32 occupy_progress = 5; // 占领进度
+}
+
 message MessageOfObj
 {
     oneof message_of_obj
@@ -74,11 +117,14 @@ message MessageOfObj
         MessageOfMap map_message = 3;
         MessageOfNews news_message = 4;
         MessageOfTeam team_message = 5;
-        MessageOfAIEvent ai_event_message = 6;      //服务器推送的AI事件/建议
+        MessageOfFactory factory_message = 6;
+        MessageOfMarket market_message = 7;
+        MessageOfComputeCenter compute_center_message = 8;
+        MessageOfAIEvent ai_event_message = 9;      //服务器推送的AI事件/建议
     }
 }
 
-// ========== 智慧大脑事件 ==========
+// 智慧大脑事件 
 message MessageOfAIEvent
 {
     int64 team_id = 1;
@@ -86,7 +132,8 @@ message MessageOfAIEvent
     AIEventType event_type = 3;       // 事件类型
     string description = 4;      // 人类可读说明
     string plan_json = 5;        // 结构化计划（JSON），客户端可以解析执行
-    int64 timestamp = 6;
+    int64 timestamp_ms = 6;     // 事件触发时间（ms），便于回放
+    int64 event_id = 7;         // 事件id, 便于追踪
 }
 
 message MessageOfAll
@@ -108,7 +155,9 @@ message MessageToClient
 {
     repeated MessageOfObj obj_message = 1;
     GameState game_state = 2;
-    MessageOfAll all_message = 3;
+    protobuf.GameMode game_mode = 3;
+    MessageOfAll all_message = 4;
+    // MessageGameConfig config = 5; // 可用于下发对局参数
 }
 
 message MoveRes // 如果打算设计撞墙保留平行速度分量，且需要返回值则可用这个（大概没啥用）
