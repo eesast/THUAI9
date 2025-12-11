@@ -117,3 +117,33 @@ message SellMeg
     int32 food_num = 7;
     int32 marketindex = 8;
 }
+
+
+// ========== 智慧大脑相关 ==========
+message AskAIRequest
+{
+    int64 team_id = 1;
+    int64 character_id = 2;      
+    string model = 3;          // 可选，模型标识
+    string prompt = 4;         // 自然语言提示
+    int32 timeout_ms = 5;      // 可选：超时时间
+    bool prefer_structured = 6; // 是否优先返回结构化计划
+}
+
+message AIAction
+{
+    AIActionType type = 1;
+    int64 character_id = 2;       // 执行者 可选
+    string target = 3;        // 目标说明（如 "market:5" 或坐标 "x,y"）
+    string payload_json = 4;  // 额外参数（JSON）
+    int64 eta_ms = 5;         // 建议在多少毫秒后执行
+}
+
+message AskAIResponse
+{
+    bool act_success = 1;
+    string answer_text = 2;   // 自然语言回答
+    string plan_json = 3;     // 结构化计划（JSON），便于引擎解析执行
+    repeated AIAction actions = 4; // 可直接执行的动作列表（结构化）
+    string error_msg = 5; //
+}

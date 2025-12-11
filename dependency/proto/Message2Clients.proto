@@ -74,7 +74,19 @@ message MessageOfObj
         MessageOfMap map_message = 3;
         MessageOfNews news_message = 4;
         MessageOfTeam team_message = 5;
+        MessageOfAIEvent ai_event_message = 6;      //服务器推送的AI事件/建议
     }
+}
+
+// ========== 智慧大脑事件 ==========
+message MessageOfAIEvent
+{
+    int64 team_id = 1;
+    int64 from_character_id = 2;    // 触发来源（可选）
+    AIEventType event_type = 3;       // 事件类型
+    string description = 4;      // 人类可读说明
+    string plan_json = 5;        // 结构化计划（JSON），客户端可以解析执行
+    int64 timestamp = 6;
 }
 
 message MessageOfAll

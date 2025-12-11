@@ -25,7 +25,11 @@ service AvailableService
     rpc Sell(SellMeg) returns (BoolRes);                            // 出售产品
 
     // 游戏过程中核心角色（工厂）可以另外执行操作的服务
-    rpc CreatCharacter(CreatCharacterMsg) returns (BoolRes); // 创建角色
+    rpc CreatCharacter(CreatCharacterMsg) returns (BoolRes);        // 创建角色
     rpc CreatCharacterRID(CreatCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
-    rpc EndAllAction(IDMsg) returns (BoolRes); // 结束所有动作
+    rpc EndAllAction(IDMsg) returns (BoolRes);                      // 结束所有动作
+
+    // 智慧大脑相关 RPC
+    rpc AskAI(AskAIRequest) returns (AskAIResponse);                // 客户端请求AI建议
+    rpc AskAIStream(AskAIRequest) returns (stream AskAIResponse);      // 客户端请求AI建议（流式响应）
 }
