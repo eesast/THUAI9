@@ -46,6 +46,8 @@ namespace Preparation.Utility
         public const int RobotATKpower = 1;
         public const int RobotMaxLoad = 5;
 
+        public const int ComputeCenterRadius = 2;
+
 
         public static XY PosNotInGame = new(-1, -1); // 不在游戏中的坐标
         public static XY GetCellCenterPos(int x, int y)  // 求格子的中心坐标

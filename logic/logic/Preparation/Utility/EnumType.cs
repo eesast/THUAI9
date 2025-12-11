@@ -24,6 +24,8 @@ namespace Preparation.Utility
         FACTORY = 7,
         GOODS = 8,
         BRAIN = 9,
+        OUTOFBOUNDBLOCK = 10,
+        SPACE = 11
     }
 
     public enum ComputeCenterType

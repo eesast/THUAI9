@@ -24,9 +24,25 @@ public class Resource(XY initPos)
                 return State;
         }
     }
-    public ResourceType EResourceType = ResourceType.LARGE_RESOURCE;
+    private ResourceType resourceType = ResourceType.LARGE_RESOURCE;
+    public ResourceType EResourceType
+    {
+        get
+        {
+            lock (actionLock)
+                return resourceType;
+        }
+        set
+        {
+            lock (actionLock)
+                resourceType = value;
+        }
+    }
     public void SetERState(ResourceState state)
     {
-        State = state;
+        lock (actionLock)
+        {
+            State = state;
+        }
     }
 }

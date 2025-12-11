@@ -1,4 +1,4 @@
-﻿namespace Preperation.Interface
+﻿namespace Preparation.Interface
 {
     public interface Tech
     {
@@ -17,9 +17,9 @@
     {
         public double SpeedIncrease { get; }
     }
-    public interface EfficencyTech : Tech
+    public interface EfficiencyTech : Tech
     {
-        public double EfficencyIncrease { get; }
+        public double EfficiencyIncrease { get; }
     }
     public interface CapacityTech : Tech
     {

@@ -25,7 +25,17 @@ public class Character : Movable, ICharacter
     public Load GoodsLoad { get; }
     public CharacterType CharacterType { get; }
     private bool _visible = true;
-    public bool Visible { get => _visible; set => _visible = value; }
+    public bool Visible
+    {
+        get
+        {
+            lock (actionLock) return _visible;
+        }
+        set
+        {
+            lock (actionLock) _visible = value;
+        }
+    }
     private CharacterState characterState = CharacterState.NULL_CHARACTER_STATE;
     public CharacterState CharacterState
     {

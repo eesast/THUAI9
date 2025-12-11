@@ -7,5 +7,12 @@ public class Goods : IGoods
 {
     public int Cost { get; }
     public int Price { get; }
-    public GoodsType goodsType { get; }
+    public GoodsType GoodsType { get; }
+
+    public Goods(int cost, int price, GoodsType goodsType)
+    {
+        Cost = cost;
+        Price = price;
+        GoodsType = goodsType;
+    }
 }

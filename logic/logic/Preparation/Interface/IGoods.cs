@@ -7,7 +7,7 @@ namespace Preparation.Interface
     {
         public int Cost { get; }
         public int Price { get; }
-        public GoodsType goodsType { get; }
+        public GoodsType GoodsType { get; }
     }
 }
 

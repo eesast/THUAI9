@@ -10,8 +10,11 @@ public class Bush(XY initPos)
     public override ShapeType Shape => ShapeType.NULL_SHAPE_TYPE;
     public void Hide(Character character)
     {
-        if (character.Position == initPos)
-            character.Visible = false;//使角色invisible
+        // 若角色进入草丛范围则隐身（基于半径判断）
+        if (XY.DistanceCeil3(character.Position, Position) <= Radius)
+        {
+            character.Visible = false;
+        }
     }
 
 }
