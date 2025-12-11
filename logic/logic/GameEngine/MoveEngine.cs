@@ -35,7 +35,7 @@ namespace GameEngine
             ContinueCheck = 0,  // 碰撞后继续检查其他碰撞,暂时没用
             MoveMax = 1,        // 行走最远距离
             Destroyed = 2,       // 物体已经毁坏
-            Demage=3
+            Demage = 3
         }
 
         private readonly IMyTimer gameTimer = gameMap.Timer;
