@@ -10,6 +10,7 @@ using Preparation.Utility;
 using Preparation.Interface;
 using GameEngine;
 using GameClass.GameObj.Areas;
+using Preparation.Utility.Value;
 
 namespace Game
 {

@@ -66,7 +66,7 @@ namespace Game
             public bool TryGetCharacter(long playerId, out Character character)
                 => characters.TryGetValue(playerId, out character!);
 
-            public IReadOnlyCollection<Character> GetTeamCharacters(long teamId)
+            public IEnumerable<Character> GetTeamCharacters(long teamId)
             {
                 if (teamCharacters.TryGetValue(teamId, out var dict))
                     return dict.Values;
