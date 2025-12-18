@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace logic.Gaming
+namespace Game
 {
-    internal class Uplevel
+    public partial class Game
     {
 
     }
