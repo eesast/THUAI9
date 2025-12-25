@@ -79,7 +79,7 @@ namespace Game
             // Add revenue to team (convert to score)
             // According to rules: Score = Sales × 10
             long revenue = price * amount;
-            AddTeamScore(teamId, revenue / 10); // Price already considers multiplier, so divide by 10
+            AddTeamScore(teamId, revenue * 10); // Multiply by 10 as per scoring rules
 
             // Track sold amount for depreciation
             var key = (0L, type); // marketId=0

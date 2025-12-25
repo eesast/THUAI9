@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using GameClass.GameObj;
 using Preparation.Utility;
 
@@ -58,10 +59,10 @@ namespace Game
             private void StartProcessing()
             {
                 isProcessing = true;
-                new Thread(ProcessQueue) { IsBackground = true }.Start();
+                Task.Run(ProcessQueue);
             }
 
-            private void ProcessQueue()
+            private async Task ProcessQueue()
             {
                 while (true)
                 {
@@ -78,12 +79,12 @@ namespace Game
 
                     if (task != null)
                     {
-                        ProcessTask(task);
+                        await ProcessTask(task);
                     }
                 }
             }
 
-            private void ProcessTask(ProductionTask task)
+            private async Task ProcessTask(ProductionTask task)
             {
                 var cts = new CancellationTokenSource();
                 currentTaskCts = cts;
@@ -113,10 +114,10 @@ namespace Game
                     {
                         if (!game.Map.Timer.IsGaming)
                         {
-                            Thread.Sleep(step);
+                            await Task.Delay(step, cts.Token);
                             continue;
                         }
-                        Thread.Sleep(step);
+                        await Task.Delay(step, cts.Token);
                         elapsed += step;
                     }
 
@@ -125,6 +126,10 @@ namespace Game
                         // Production complete, add goods to factory
                         factory.AddGoods(task.Type, task.Quantity);
                     }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Task was cancelled, nothing to do
                 }
                 finally
                 {

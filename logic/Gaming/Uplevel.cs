@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using GameClass.GameObj;
 using Preparation.Utility;
 
@@ -9,6 +10,7 @@ namespace Game
     public partial class Game
     {
         private readonly ConcurrentDictionary<(long teamId, TechType tech), int> teamTechLevels = new();
+        private static readonly TechType[] AllTechTypes = Enum.GetValues(typeof(TechType)).Cast<TechType>().ToArray();
 
         internal bool UplevelTechInternal(long playerId, TechType tech)
         {
@@ -72,10 +74,10 @@ namespace Game
                         long currentMaxHP = ch.HP.GetMaxV();
                         long newMaxHP = (long)(currentMaxHP * 1.5);
                         ch.HP.SetMaxV(newMaxHP);
-                        // Also heal to match percentage
+                        // Proportionally increase current HP
                         long currentHP = ch.HP.GetValue();
                         long newCurrentHP = Math.Min((long)(currentHP * 1.5), newMaxHP);
-                        ch.HP.SetVToMaxV();
+                        ch.HP.SetPositiveVRNow(newCurrentHP);
                         break;
 
                     case TechType.INCREASE_ATTACK_POWER:
@@ -125,7 +127,7 @@ namespace Game
         public IReadOnlyDictionary<TechType, int> GetTeamTechs(long teamId)
         {
             var result = new Dictionary<TechType, int>();
-            foreach (TechType tech in Enum.GetValues(typeof(TechType)))
+            foreach (TechType tech in AllTechTypes)
             {
                 if (tech == TechType.NULL_TECH_TYPE) continue;
                 int level = GetTeamTechLevel(teamId, tech);
