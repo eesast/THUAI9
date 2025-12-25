@@ -91,19 +91,30 @@ namespace Game
 
                 try
                 {
-                    // Check resource availability
+                    // Check resource availability and deduct atomically
                     var factory = game.GetTeamFactory(teamId);
                     if (factory == null) return;
 
                     int totalResourceNeeded = task.ResourceCost * task.Quantity;
-                    if (factory.Source.Get() < totalResourceNeeded)
+                    
+                    // Atomic check and deduction using CAS loop
+                    bool resourcesDeducted = false;
+                    while (!resourcesDeducted)
                     {
-                        // Not enough resources, wait or skip
-                        return;
+                        int currentResources = factory.Source.Get();
+                        if (currentResources < totalResourceNeeded)
+                        {
+                            // Not enough resources
+                            return;
+                        }
+                        int newResources = currentResources - totalResourceNeeded;
+                        if (factory.Source.CompareExROri(newResources, currentResources) == currentResources)
+                        {
+                            // CAS succeeded, resources deducted
+                            resourcesDeducted = true;
+                        }
+                        // If CAS failed, loop and retry
                     }
-
-                    // Deduct resources
-                    factory.Source.SubPositive(totalResourceNeeded);
 
                     // Simulate production time
                     int elapsed = 0;

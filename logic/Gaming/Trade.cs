@@ -69,21 +69,24 @@ namespace Game
             // For simplicity, assume market is accessible if character is near a market location
             // In a full implementation, we'd check character position vs market positions
 
-            // Calculate selling price
+            // Track sold amount for depreciation (before calculating price to apply to future sales)
+            var key = (0L, type); // marketId=0
+            int soldCountBeforeSale = marketSoldCounts.GetOrAdd(key, 0);
+
+            // Calculate selling price using sold count BEFORE this sale
             int baseValue = GetGoodsBaseValue(type);
-            int price = CalculateMarketPrice(0, type, amount, baseValue); // marketId=0 for default market
+            int price = CalculateMarketPrice(soldCountBeforeSale, type, baseValue);
 
             // Remove goods from character
             if (!ch.GoodsLoad.Add(type, -amount)) return false;
+
+            // Update sold count after successful sale
+            marketSoldCounts.AddOrUpdate(key, amount, (k, old) => old + amount);
 
             // Add revenue to team (convert to score)
             // According to rules: Score = Sales × 10
             long revenue = price * amount;
             AddTeamScore(teamId, revenue * 10); // Multiply by 10 as per scoring rules
-
-            // Track sold amount for depreciation
-            var key = (0L, type); // marketId=0
-            marketSoldCounts.AddOrUpdate(key, amount, (k, old) => old + amount);
 
             return true;
         }
@@ -108,15 +111,11 @@ namespace Game
             }
         }
 
-        private int CalculateMarketPrice(long marketId, GoodsType type, int amount, int baseValue)
+        private int CalculateMarketPrice(int soldCount, GoodsType type, int baseValue)
         {
             // Market multipliers: cheap market ×2, premium market ×10
             // For simplicity, use ×2 (cheap market)
             int multiplier = 2;
-
-            // Check depreciation based on sold count
-            var key = (marketId, type);
-            int soldCount = marketSoldCounts.GetOrAdd(key, 0);
 
             // Simple depreciation: every 100 units sold reduces price by 10%
             int depreciationLevel = soldCount / 100;
