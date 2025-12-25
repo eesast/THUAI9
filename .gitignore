@@ -4,3 +4,11 @@
 .idea/
 logs/
 .DS_Store
+
+# Build artifacts
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+*.deps.json
