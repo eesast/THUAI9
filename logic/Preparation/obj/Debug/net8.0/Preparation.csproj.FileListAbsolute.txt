@@ -1,0 +1,13 @@
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/bin/Debug/net8.0/Preparation.deps.json
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/bin/Debug/net8.0/Preparation.dll
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/bin/Debug/net8.0/Preparation.pdb
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.csproj.AssemblyReference.cache
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.AssemblyInfoInputs.cache
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.AssemblyInfo.cs
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.csproj.CoreCompileInputs.cache
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.sourcelink.json
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.dll
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/refint/Preparation.dll
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/Preparation.pdb
+/home/runner/work/THUAI9/THUAI9/logic/Preparation/obj/Debug/net8.0/ref/Preparation.dll

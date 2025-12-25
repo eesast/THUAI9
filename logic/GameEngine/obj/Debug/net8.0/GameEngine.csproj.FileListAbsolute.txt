@@ -1,0 +1,16 @@
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/bin/Debug/net8.0/GameEngine.deps.json
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/bin/Debug/net8.0/GameEngine.dll
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/bin/Debug/net8.0/GameEngine.pdb
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/bin/Debug/net8.0/Preparation.dll
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/bin/Debug/net8.0/Preparation.pdb
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.csproj.AssemblyReference.cache
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.AssemblyInfoInputs.cache
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.AssemblyInfo.cs
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.csproj.CoreCompileInputs.cache
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.sourcelink.json
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.csproj.Up2Date
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.dll
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/refint/GameEngine.dll
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/GameEngine.pdb
+/home/runner/work/THUAI9/THUAI9/logic/GameEngine/obj/Debug/net8.0/ref/GameEngine.dll
