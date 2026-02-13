@@ -4,3 +4,7 @@
 .idea/
 logs/
 .DS_Store
+ 
+ # .NET build outputs
+ [Bb]in/
+ [Oo]bj/
