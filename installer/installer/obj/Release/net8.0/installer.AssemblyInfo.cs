@@ -11,12 +11,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("GameEngine")]
-[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("installer")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b6f0616fd87710f92e073bb0e02492901be08fe3")]
-[assembly: System.Reflection.AssemblyProductAttribute("GameEngine")]
-[assembly: System.Reflection.AssemblyTitleAttribute("GameEngine")]
+[assembly: System.Reflection.AssemblyProductAttribute("installer")]
+[assembly: System.Reflection.AssemblyTitleAttribute("installer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。

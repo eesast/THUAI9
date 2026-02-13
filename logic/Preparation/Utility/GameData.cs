@@ -48,6 +48,8 @@ namespace Preparation.Utility
 
         public const int ComputeCenterRadius = 2;
 
+        // 占领算力中心所需时间（毫秒）
+        public const int ComputeCenterOccupyTimeMs = 10_000;
 
         public static XY PosNotInGame = new(-1, -1); // 不在游戏中的坐标
         public static XY GetCellCenterPos(int x, int y)  // 求格子的中心坐标

@@ -1,12 +1,13 @@
-﻿using GameClass.GameObj.Occupations;
+﻿using GameClass.GameObj.Areas;
+using GameClass.GameObj.Occupations;
+using Microsoft.Extensions.Logging;
 using Preparation.Interface;
 using Preparation.Utility;
 using Preparation.Utility.Value;
 using Preparation.Utility.Value.SafeValue.Atomic;
 using Preparation.Utility.Value.SafeValue.LockedValue;
-using GameClass.GameObj.Areas;
+using System.Threading.Tasks.Dataflow;
 using System.Timers;
-using Microsoft.Extensions.Logging;
 
 namespace GameClass.GameObj;
 
@@ -20,7 +21,7 @@ public class Character : Movable, ICharacter
     public InVariableRange<long> AttackPower { get; }
     public InVariableRange<long> AttackSize { get; }
     public InVariableRange<long> Robust { get; }
-    public InVariableRange<long> Efficiency { get; } //移速加成（注意是加成值，实际移速为基础移速+移速加成）
+    public InVariableRange<long> Efficiency { get; }
     public InVariableRange<long> Carry { get; }
     public Load GoodsLoad { get; }
     public CharacterType CharacterType { get; }
@@ -69,7 +70,6 @@ public class Character : Movable, ICharacter
     }
     private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE, GameObj? gameobj = null)
     {
-        //只能被SetCharacterState引用
         InteractObj = gameobj;
         characterState = value;
         return ++stateNum;
@@ -84,43 +84,43 @@ public class Character : Movable, ICharacter
             else return ChangeCharacterState(value, gameobj);
         }
     }
-    //public bool ResetCharacterState(long state, CharacterState value = CharacterState.NULL_CHARACTER_STATE)
-    //{
-    //    lock (actionLock)
-    //    {
-    //        if (state != stateNum)
-    //        {
-    //            LogicLogging.logger.LogDebug(
-    //                LoggingFunctional.CharacterLogInfo(this)
-    //                + $" ResetCharacterState failed, input state {state}, StateNum {stateNum}");
-    //            return false;
-    //        }
-    //        characterState = value;
-    //        ++stateNum;
-    //        LogicLogging.logger.LogDebug(
-    //            LoggingFunctional.CharacterLogInfo(this)
-    //            + $" ResetCharacterState succeeded {stateNum}");
-    //        return true;
-    //    }
-    //}
+    public bool ResetCharacterState(long state, CharacterState value = CharacterState.NULL_CHARACTER_STATE)
+    {
+        lock (actionLock)
+        {
+            if (state != stateNum)
+            {
+                LogicLogging.logger.LogDebug(
+                     LoggingFunctional.CharacterLogInfo(this) +
+                     $" ResetCharacterState failed, input state {state}, StateNum {stateNum}");
+                return false;
+            }
+            characterState = value;
+            ++stateNum;
+            LogicLogging.logger.LogDebug(
+                 LoggingFunctional.CharacterLogInfo(this) +
+                 $" ResetCharacterState succeeded {stateNum}");
+            return true;
+        }
+    }
 
-    //public bool StartThread(long stateNum)
-    //{
-    //    lock (actionLock)
-    //    {
-    //        if (StateNum == stateNum)
-    //        {
-    //            LogicLogging.logger.LogDebug(
-    //                LoggingFunctional.CharacterLogInfo(this)
-    //                + " StartThread succeeded");
-    //            return true;
-    //        }
-    //    }
-    //    LogicLogging.logger.LogDebug(
-    //        LoggingFunctional.CharacterLogInfo(this)
-    //        + " StartThread failed");
-    //    return false;
-    //}
+    public bool StartThread(long stateNum)
+    {
+        lock (actionLock)
+        {
+            if (StateNum == stateNum)
+            {
+                LogicLogging.logger.LogDebug(
+                     LoggingFunctional.CharacterLogInfo(this) +
+                     " StartThread succeeded");
+                return true;
+            }
+        }
+        LogicLogging.logger.LogDebug(
+             LoggingFunctional.CharacterLogInfo(this) +
+             " StartThread failed");
+        return false;
+    }
 
     public bool TryToRemoveFromGame(CharacterState state)
     {
@@ -171,6 +171,13 @@ public class Character : Movable, ICharacter
         return pos.x >= Position.x - range && pos.x <= Position.x + range && pos.y >= Position.y - range && pos.y <= Position.y + range;
     }
 
+    public bool Commandable()
+    {
+        lock (ActionLock)
+        {
+            return (characterState != CharacterState.KNOCKED_BACK);
+        }
+    }
     internal bool SetLoad(GoodsType type, int newValue)
     {
         if (newValue < 0) newValue = 0;
@@ -243,7 +250,6 @@ public sealed class Load
         };
         return dict;
     }
-
     internal void SetInternal(GoodsType type, int value)
     {
         counts[(int)type].SetROri(value < 0 ? 0 : value);

@@ -1,18 +1,22 @@
-﻿using System;
+﻿using GameClass.GameObj;
+using GameClass.GameObj.Areas;
+using GameClass.GameObj.Map;
+using GameClass.MapGenerator;
+using GameEngine;
+using Preparation.Interface;
+using Preparation.Utility;
+using Preparation.Utility.Value;
+using System;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using System;
-using System.Collections.Generic;
-using Preparation.Utility;
-using Preparation.Interface;
-using GameEngine;
-using GameClass.GameObj.Areas;
-using Preparation.Utility.Value;
-
-namespace Game
+namespace Gaming
 {
     /// <summary>
     /// 面向选手的公开 API。请在其它 partial 文件中实现具体逻辑。
@@ -20,16 +24,26 @@ namespace Game
     /// </summary>
     public partial class Game
     {
-        private readonly IMap gameMap;
-        public IMap Map => gameMap;
-
-        public Game(IMap map)
+        private readonly Map gameMap;
+        public Map GameMap => gameMap;
+        public Game(MapStruct mapResource, int numOfTeam)
         {
-            gameMap = map;
+            gameMap = new(mapResource);
+            characterManager = new(this, gameMap);
+            actionManager = new(this, gameMap, characterManager);
+            teams = new ConcurrentDictionary<long, TeamState>();
             InitTeams();
-            characterManager = new CharacterManager(this);
-            actionManager = new ActionManager(this);
-            attackManager = new AttackManager(this);
+            //gameMap.GameObjDict[GameObjType.HOME].Cast<GameObj>()?.ForEach(
+            //    delegate (GameObj gameObj)
+            //    {
+            //        if (gameObj.Type == GameObjType.HOME)
+            //        {
+            //            teamList.Add(new Base((Home)gameObj));
+            //            teamList.Last().BirthPointList.Add(gameObj.Position);
+            //            teamList.Last().AddMoney(GameData.InitialMoney);
+            //        }
+            //    }
+            //);
         }
         /// <summary>
         /// 请求让指定玩家的单位移动一段时间，朝某个方向（弧度）。
@@ -38,8 +52,8 @@ namespace Game
         /// <param name="direction">移动方向，单位弧度，0 为 +X 方向</param>
         /// <param name="timeMs">移动持续时间，毫秒</param>
         /// <returns>是否成功受理（不代表一定完成）</returns>
-        public bool Move(long playerId, double direction, int timeMs)
-            => characterManager != null && characterManager.Move(playerId, timeMs, direction);
+        //public bool Move(long playerId, double direction, int timeMs)
+        //    => characterManager != null && characterManager.Move(playerId, timeMs, direction);
 
         /// <summary>
         /// 发起一次攻击（可按方向或目标判定，按实际规则实现）。
@@ -50,9 +64,6 @@ namespace Game
         public bool Attack(long playerId, double direction)
             => throw new NotImplementedException();
 
-        // 额外提供一个按目标攻击的 API（便于测试与管理器分工）。
-        public bool AttackTarget(long attackerPlayerId, long targetPlayerId)
-            => attackManager != null && attackManager.Attack(attackerPlayerId, targetPlayerId);
 
         /// <summary>
         /// 采集指定资源点，持续一定时间。
