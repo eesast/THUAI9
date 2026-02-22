@@ -22,8 +22,11 @@ public class Character : Movable, ICharacter
     public InVariableRange<long> AttackSize { get; }
     public InVariableRange<long> Robust { get; }
     public InVariableRange<long> Efficiency { get; }
+    public InVariableRange<long> ViewRange { get; }
     public InVariableRange<long> Carry { get; }
     public Load GoodsLoad { get; }
+    public long LastAttackTime = 0;
+    public double ATKFrequency = 1.0;
     public CharacterType CharacterType { get; }
     private bool _visible = true;
     public bool Visible
@@ -134,21 +137,16 @@ public class Character : Movable, ICharacter
         }
         return true;
     }
-    public void Init()
-    {
-        HP.SetMaxV(Occupation.MaxHp);
-        HP.SetVToMaxV();
-        MoveSpeed.SetROri(orgMoveSpeed = Occupation.MoveSpeed);
-    }
 
     private void InitStatsFromOccupation()
     {
         Efficiency.SetMaxV(GameData.MaxEfficiency);
         Robust.SetMaxV(GameData.MaxRobust);
-        AttackSize.SetMaxV(Occupation.BaseAttackSize);
-        AttackPower.SetMaxV(Occupation.AttackPower);
-        AttackPower.SetVToMaxV();
-        AttackSize.SetVToMaxV();
+        ViewRange.SetMaxV(GameData.MaxViewRange);
+        AttackSize.SetMaxV(GameData.MaxATKSize);
+        HP.SetMaxV(GameData.MaxHP);
+        AttackPower.SetMaxV(GameData.MaxATKPower);
+        Carry.SetMaxV(GameData.MaxLoad);
     }
     public Character(int radius, CharacterType type) :
         base(GameData.PosNotInGame, radius, GameObjType.CHARACTER)
@@ -156,15 +154,16 @@ public class Character : Movable, ICharacter
         CanMove.SetROri(false);
         IsRemoved.SetROri(true);
         Occupation = OccupationFactory.FindIOccupation(CharacterType = type);
-        Efficiency = new(0);
-        Robust = new(0);
+        Efficiency = new(Occupation.Efficiency);
+        ViewRange = new(Occupation.ViewRange);
+        Robust = new(Occupation.Robust);
         AttackSize = new(Occupation.BaseAttackSize);
         HP = new(Occupation.MaxHp);
         AttackPower = new(Occupation.AttackPower);
         Carry = new(Occupation.MaxLoad);
         GoodsLoad = new Load(this);
         InitStatsFromOccupation();
-        Init();
+        MoveSpeed.SetROri(orgMoveSpeed = Occupation.MoveSpeed);
     }
     public bool InSquare(XY pos, int range)
     {

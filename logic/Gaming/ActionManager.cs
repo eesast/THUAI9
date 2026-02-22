@@ -213,6 +213,121 @@ namespace Gaming
                 return false;
             }
 
+            public bool Attack(Character character, Character gameobj)
+            {
+                if (!gameMap.CanSee(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Can't see target obj!");
+                    return false;
+                }
+                if (!gameMap.InAttackSize(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Obj is not in attacksize!");
+                    return false;
+                }
+                if (gameobj.Visible == false)
+                {
+                    LogicLogging.logger.LogDebug(
+                        "Can't see target because it's invisible!"
+                    );
+                    return false;
+                }
+                long nowtime = Environment.TickCount64;
+                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                {
+                    LogicLogging.logger.LogDebug("Common_attack is still in cd!");
+                    return false;
+                }
+                long stateNum = character.SetCharacterState(CharacterState.ATTACKING);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogDebug("Character is not commandable!");
+                    return false;
+                }
+                characterManager.BeAttacked(gameobj, character);
+                character.LastAttackTime = nowtime;
+                character.ResetCharacterState(stateNum);
+                if (character.Visible == false)
+                {
+                    character.Visible = true;
+                    character.SetCharacterState(character.CharacterState);
+                }
+                return true;
+            }
+
+            public bool Attack(Character character, Factory gameobj)
+            {
+                if (!gameMap.CanSee(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Can't see target obj!");
+                    return false;
+                }
+                if (!gameMap.InAttackSize(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Obj is not in attacksize!");
+                    return false;
+                }
+                long nowtime = Environment.TickCount64;
+                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                {
+                    LogicLogging.logger.LogDebug("Common_attack is still in cd!");
+                    return false;
+                }
+                long stateNum = character.SetCharacterState(CharacterState.ATTACKING);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogDebug("Character is not commandable!");
+                    return false;
+                }
+
+                long damage = (long)(character.AttackPower - gameobj.Robust);
+                if (damage <= 0) damage = 1;
+                long actualSub = gameobj.HP.SubRChange(damage);
+                game.AddTeamScore((long)character.TeamID.Get(), actualSub * 20);
+                gameobj.Interupt();
+                new Thread(() =>
+                {
+                    Thread.Sleep(GameData.FactoryDisableTimeMs);
+                    gameobj.CanProduce.SetROri(true);
+                    gameobj.CanRecruit.SetROri(true);
+                })
+                { IsBackground = true }.Start();
+                if (gameobj.HP == 0)
+                {
+                    game.AddTeamScore(character.TeamID.Get(), GameData.FactoryScore);
+                }
+                character.LastAttackTime = nowtime;
+                character.ResetCharacterState(stateNum);
+                if (character.Visible == false)
+                {
+                    character.Visible = true;
+                    character.SetCharacterState(character.CharacterState);
+                }
+                return true;
+            }
+
+            public bool Load(Character character, GoodsType type, int amount)
+            {
+                if (amount <= 0) return false;
+                Factory? factory = (Factory?)gameMap.OneForInteract(character.Position, GameObjType.FACTORY);
+                if (factory == null) return false;
+                if (!GameData.ApproachToInteract(character.Position, factory.Position)) return false;
+
+                var atomic = factory.GetGoodsAtomic(type);
+                while (true)
+                {
+                    int current = atomic.Get();
+                    if (current < amount) return false;
+                    if (atomic.CompareExROri(current - amount, current) == current) break;
+                }
+
+                if (!character.GoodsLoad.Add(type, amount))
+                {
+                    factory.AddGoods(type, amount);
+                    return false;
+                }
+                return true;
+            }
 
         }
     }

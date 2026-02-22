@@ -116,6 +116,10 @@ namespace Preparation.Utility
         INCREASE_ROBUST = 4,
         INCREASE_MOVE_SPEED = 5,
         INCREASE_CARRY_CAPACITY = 6,
-        INCREASE_HARVEST_EFFICIENCY = 7,
+        INCREASE_EFFICIENCY = 7,
+        INCREASE_PRODUCTION = 8,
+        INCREASE_STORAGE = 9,
+        INCREASE_PRICE = 10,
+        DECREASE_COST = 11,
     }
 }

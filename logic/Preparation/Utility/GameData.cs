@@ -25,41 +25,88 @@ namespace Preparation.Utility
 
         public const int MaxRobust = 10;
         public const int MaxEfficiency = 2;
+        public const int MaxHP = 10;
+        public const int MaxCost = 2;
+        public const int MaxATKSize = 10;
+        public const int MaxATKPower = 2;
+        public const int MaxLoad = 5;
+        public const int MaxViewRange = 10 * NumOfPosGridPerCell;
+        public const int MaxStorage = 10;
 
         public const int ResourceHP = 500;              // 资源血量
+
+        public const int FactoryScore = 20000;
+        public const int FactoryDisableTimeMs = 10_00;
+
+        public const int FactoryHP = 3;
+        public const int FactoryStorage = 5;
+        public const int FactoryRobust = 5;
+        public const int FactoryEfficiency = 1;
 
         public const int DroneHP = 3;
         public const int DroneCost = 50;
         public const int DroneATKsize = 1000;
         public const int DroneATKpower = 1;
-        public const int DroneMaxLoad = 5;
+        public const int DroneLoad = 5;
+        public const int DroneRobust = 5;
+        public const int DroneViewRange = 7 * NumOfPosGridPerCell;
+        public const int DroneEfficiency = 1;
+        public const int DroneMoveSpeed = BaseCharacterSpeed;
 
         public const int AutonomouCarHP = 3;
         public const int AutonomouCarCost = 50;
         public const int AutonomouCarATKsize = 1000;
         public const int AutonomouCarATKpower = 1;
-        public const int AutonomouCarMaxLoad = 5;
+        public const int AutonomouCarLoad = 5;
+        public const int AutonomouCarRobust = 1;
+        public const int AutonomouCarViewRange = NumOfPosGridPerCell * 5;
+        public const int AutonomouCarEfficiency = 2;
+        public const int AutonomouCarMoveSpeed = BaseCharacterSpeed;
 
         public const int RobotHP = 3;
         public const int RobotCost = 50;
         public const int RobotATKsize = 1000;
         public const int RobotATKpower = 1;
-        public const int RobotMaxLoad = 5;
+        public const int RobotLoad = 5;
+        public const int RobotRobust = 10;
+        public const int RobotViewRange = NumOfPosGridPerCell * 5;
+        public const int RobotEfficiency = 1;
+        public const int RobotMoveSpeed = BaseCharacterSpeed;
 
         public const int ComputeCenterRadius = 2;
-
-        // 占领算力中心所需时间（毫秒）
         public const int ComputeCenterOccupyTimeMs = 10_000;
 
-        public static XY PosNotInGame = new(-1, -1); // 不在游戏中的坐标
-        public static XY GetCellCenterPos(int x, int y)  // 求格子的中心坐标
+        public const int BasePriceSemiconductor = 80;
+        public const int BasePriceMedicine = 50;
+        public const int BasePriceToys = 8;
+        public const int BasePriceClothes = 32;
+        public const int BasePriceFood = 6;
+
+        public const double SmallMarketMultiplier = 1.1;
+        public const double MediumMarketMultiplier = 1.3;
+        public const double LargeMarketMultiplier = 1.5;
+
+        public const int CostSemiconductor = 10;
+        public const int CostMedicine = 5;
+        public const int CostToys = 1;
+        public const int CostClothes = 8;
+        public const int CostFood = 3;
+
+        public const int ProduceTimeSemiconductor = 5;
+        public const int ProduceTimeMedicine = 4;
+        public const int ProduceTimeToys = 2;
+        public const int ProduceTimeClothes = 6;
+        public const int ProduceTimeFood = 1;
+
+        public static XY PosNotInGame = new(-1, -1);
+        public static XY GetCellCenterPos(int x, int y)
             => new(x * NumOfPosGridPerCell + NumOfPosGridPerCell / 2,
                    y * NumOfPosGridPerCell + NumOfPosGridPerCell / 2);
-        public static int PosGridToCellX(XY pos)  // 求坐标所在的格子的x坐标
+        public static int PosGridToCellX(XY pos)
             => pos.x / NumOfPosGridPerCell;
-        public static int PosGridToCellY(XY pos)  // 求坐标所在的格子的y坐标
+        public static int PosGridToCellY(XY pos)
             => pos.y / NumOfPosGridPerCell;
-        public static CellXY PosGridToCellXY(XY pos)  // 求坐标所在的格子的xy坐标
+        public static CellXY PosGridToCellXY(XY pos)
             => new(PosGridToCellX(pos), PosGridToCellY(pos));
 
         public static bool IsInTheSameCell(XY pos1, XY pos2) => PosGridToCellXY(pos1) == PosGridToCellXY(pos2);
@@ -83,7 +130,7 @@ namespace Preparation.Utility
         {
             return (pos1 - pos2).Length() <= range;
         }
-        public static bool IsOnTheSameLine(XY pos1, XY pos2, double angle)//以pos1为基准，检测pos2是否在以pos1为端点、与x轴正方向呈angle角的射线上（逆时针为正方向）
+        public static bool IsOnTheSameLine(XY pos1, XY pos2, double angle)
         {
             double sinx = (pos2 - pos1).y / (pos2 - pos1).Length();
             double cosx = (pos2 - pos1).x / (pos2 - pos1).Length();

@@ -5,6 +5,8 @@ using Preparation.Utility;
 using Preparation.Utility.Value;
 using Preparation.Utility.Value.SafeValue.Atomic;
 using Preparation.Utility.Value.SafeValue.LockedValue;
+using System.Diagnostics;
+using System.Threading.Tasks.Dataflow;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace GameClass.GameObj;
@@ -18,8 +20,11 @@ public class Factory : Immovable, IFactory
     public InVariableRange<long> Storage { get; }
     public InVariableRange<long> Efficiency { get; }
 
-    public AtomicLong Source { get; } = new(0);          // 资源数量
-    public AtomicLong ComputingPower { get; } = new(0);  // 算力值
+    public AtomicLong Source { get; } = new(0);
+    public AtomicLong ComputingPower { get; } = new(0);
+
+    public AtomicBool CanProduce { get; } = new(true);
+    public AtomicBool CanRecruit { get; } = new(true);
 
     private readonly AtomicInt[] goodsCounts = new AtomicInt[6]
     {
@@ -54,7 +59,7 @@ public class Factory : Immovable, IFactory
                 int current = target.Get();
                 int newV = current + delta;
                 if (newV < 0) newV = 0;
-                if (target.CompareExROri(newV, current) == current) break; // CAS成功
+                if (target.CompareExROri(newV, current) == current) break;
             }
         }
         return goodsCounts[(int)type].Get();
@@ -62,14 +67,19 @@ public class Factory : Immovable, IFactory
 
     public AtomicInt GetGoodsAtomic(GoodsType type) => goodsCounts[(int)type];
 
-    public Factory(XY initPos, long hpMax, long robustMax, long storageMax, long efficiencyMax = 0,
+    public Factory(XY initPos, long hpMax, long robustMax, long storageMax, long efficiency, long efficiencyMax = 0,
                 int source = 0, int computingPower = 0, int score = 0,
                 IEnumerable<(GoodsType type, int quantity)>? goodsMap = null)
         : base(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.FACTORY)
     {
         HP = new(hpMax);
+        HP.SetMaxV(GameData.MaxHP);
         Robust = new(robustMax);
+        Robust.SetMaxV(GameData.MaxRobust);
         Storage = new(storageMax);
+        Storage.SetMaxV(GameData.MaxStorage);
+        Efficiency = new(efficiency);
+        Efficiency.SetMaxV(GameData.MaxEfficiency);
         Source.SetROri(source);
         Efficiency = new(efficiencyMax);
         ComputingPower.SetROri(computingPower);
@@ -79,7 +89,7 @@ public class Factory : Immovable, IFactory
     }
 
     public Factory(XY initPos)
-        : this(initPos, hpMax: 100, robustMax: GameData.MaxRobust, storageMax: 1000) { }
+        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency) { }
 
     public Factory() : this(GameData.PosNotInGame) { }
     public override bool IsRigid(bool args = false) => true;
@@ -99,5 +109,11 @@ public class Factory : Immovable, IFactory
     public long SubComputingPower(long sub)
     {
         return ComputingPower.SubRNow(sub);
+    }
+
+    public void Interupt()
+    {
+        CanProduce.SetROri(false);
+        CanRecruit.SetROri(false);
     }
 }

@@ -235,7 +235,7 @@ namespace GameEngine
                                 }
                             } while (flag);
                         }
-                        obj.IsMoving.SetROri(false);  // 结束移动
+                        obj.IsMoving.SetROri(false);
                         EndMove(obj);
                     }
                 }

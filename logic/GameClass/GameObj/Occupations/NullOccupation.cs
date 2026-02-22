@@ -12,5 +12,8 @@ public class NullOccupation : IOccupation
     public int MaxLoad { get; } = 0;
     public int BaseAttackSize { get; } = 0;
     public int AttackPower { get; } = 0;
+    public int ViewRange { get; } = 0;
+    public int Efficiency { get; } = 0;
+    public int Robust { get; } = 0;
     public NullOccupation() { }
 }

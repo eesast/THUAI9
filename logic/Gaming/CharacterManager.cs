@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using GameClass.GameObj.Occupations;
 using GameClass.GameObj.Map;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -20,9 +21,7 @@ namespace Gaming
         {
             private readonly Game game = game;
             private readonly Map map = gameMap;
-            // 索引1：按玩家ID检索
-            private readonly ConcurrentDictionary<long, Character> characters = new(); // key: PlayerID
-            // 索引2：按队伍ID分组
+            private readonly ConcurrentDictionary<long, Character> characters = new();
             private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> teamCharacters = new(); // key: TeamID -> (PlayerID -> Character)
 
             public Character CreateCharacter(long teamId, long playerId, CharacterType type)
@@ -35,6 +34,20 @@ namespace Gaming
                 var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
                 teamDict[playerId] = ch;
                 return ch;
+            }
+
+            public bool RecruitCharacter(long teamId, long playerId, CharacterType type, XY birthPos)
+            {
+                var factory = game.GetTeamFactory(teamId);
+                if (factory == null) return false;
+                if (!factory.CanRecruit.Get()) return false;
+                var occ = OccupationFactory.FindIOccupation(type);
+                int cost = occ.Cost;
+                if (factory.ComputingPower.Get() < cost) return false;
+                factory.ComputingPower.SubRNow(cost);
+                var ch = CreateCharacter(teamId, playerId, type);
+                ActivateCharacter(playerId, birthPos);
+                return true;
             }
 
             public bool ActivateCharacter(long playerId, XY pos)

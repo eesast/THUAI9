@@ -16,24 +16,25 @@ namespace Gaming
         private sealed class TeamState
         {
             public long TeamId { get; }
-            public AtomicLong Score { get; } = new(0); // 分数
+            public AtomicLong Score { get; } = new(0);
             public Factory Factory { get; }
-
-            // 新增：科技字典，键为固定五项，值为 AtomicLong，取值 0/1/2
             public ConcurrentDictionary<string, AtomicLong> Tech { get; } = new();
 
             public TeamState(long teamId, Factory factory)
             {
                 TeamId = teamId; Factory = factory;
-                // 初始化科技项为 0
                 Tech.TryAdd("Cost", new AtomicLong(0));
                 Tech.TryAdd("Efficiency", new AtomicLong(0));
                 Tech.TryAdd("Market", new AtomicLong(0));
                 Tech.TryAdd("Robust", new AtomicLong(0));
                 Tech.TryAdd("Warrior", new AtomicLong(0));
+                Tech.TryAdd("Production", new AtomicLong(0));
+                Tech.TryAdd("Storage", new AtomicLong(0));
+                Tech.TryAdd("MoveSpeed", new AtomicLong(0));
+                Tech.TryAdd("Carry", new AtomicLong(0));
+                Tech.TryAdd("Price", new AtomicLong(0));
             }
 
-            // 尝试设置科技值，仅允许 0、1、2（线程安全)
             public bool TrySetTech(string key, int value)
             {
                 if (value < 0 || value > 2) return false;
@@ -42,7 +43,6 @@ namespace Gaming
                 return true;
             }
 
-            // 获取科技值（不存在则返回 0）
             public int GetTech(string key)
             {
                 return Tech.TryGetValue(key, out var atomic) ? (int)atomic.Get() : 0;
@@ -54,7 +54,6 @@ namespace Gaming
             public long TeamId { get; }
             public long Score { get; }
 
-            // 新增：五项科技快照
             public int CostTech { get; }
             public int EfficiencyTech { get; }
             public int MarketTech { get; }
@@ -70,7 +69,6 @@ namespace Gaming
 
         private void InitTeams()
         {
-            // 预置四支队伍（1..4），并在地图四角实例化工厂
             var corners = new (int cx, int cy)[]
             {
                 (0, 0),
@@ -86,7 +84,6 @@ namespace Gaming
                 var fac = new Factory(pos);
                 fac.TeamID.SetROri(teamId);
                 var ts = new TeamState(teamId, fac);
-                // 明确初始化科技为 0（TeamState 构造已做，但显式设置以保证一致性）
                 ts.TrySetTech("Cost", 0);
                 ts.TrySetTech("Efficiency", 0);
                 ts.TrySetTech("Market", 0);
