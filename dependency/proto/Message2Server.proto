@@ -126,30 +126,31 @@ message SellMeg
 
 
 // 智慧大脑相关
-message AskAIRequest
+message StrategicAIRequest 
 {
     int64 team_id = 1;
-    int64 character_id = 2;      
-    string model = 3;          // 模型标识
-    string prompt = 4;         // 自然语言提示
-    int32 timeout_ms = 5;      // 超时时间
-    bool prefer_structured = 6; // 是否优先返回结构化计划
+    int64 current_game_time = 2;
 }
 
-message AIAction
-{
-    AIActionType type = 1;
-    int64 character_id = 2;       // 执行者 
-    string target = 3;        // 目标说明
-    string payload_json = 4;  // 额外参数（JSON）
-    int64 eta_ms = 5;         // 建议在多少毫秒后执行
-}
-
-message AskAIResponse
+message StrategicAIResponse 
 {
     bool act_success = 1;
-    string answer_text = 2;   // 自然语言回答
-    string plan_json = 3;     // 结构化计划（JSON），便于引擎解析执行
-    repeated AIAction actions = 4; // 可直接执行的动作列表（结构化）
-    string error_msg = 5; //
+    repeated ProductionSuggestion production_plan = 2;
+    repeated TaskSuggestion task_plan = 3;
+    string explanation = 4;
+}
+
+message ProductionSuggestion 
+{
+    ProductType product_type = 1;
+    int32 quantity = 2;
+}
+
+message TaskSuggestion 
+{
+    AIActionType action_type = 1;
+    int64 character_id = 2;
+    int32 target_x = 3;
+    int32 target_y = 4;
+    int64 target_id = 5;
 }

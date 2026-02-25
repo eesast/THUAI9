@@ -64,9 +64,9 @@ message MessageOfTeam
 {
     int64 team_id = 1;
     int64 player_id = 2;
-    int64 score = 3;
-    int64 energy = 4;
-//    int64 guid=5;
+    int32 score = 3;
+    int32 material = 4;
+    int32 computing_power = 5;
 }
 
 message MessageOfFactory
@@ -108,33 +108,57 @@ message MessageOfComputeCenter
     int32 occupy_progress = 5; // 占领进度
 }
 
+// 智慧大脑事件 
+message GlobalAIEvent {
+    int64 event_id = 1;
+    int64 trigger_time_ms = 2;
+    AIEventCategory category = 3;
+    string title = 4;
+    string description = 5;
+}
+
+// 世界修正
+message AIWorldEffect {
+    int64 event_id = 1;
+    int64 duration_ms = 2;
+
+    repeated ProductPriceModifier price_modifiers = 3;
+    repeated CharacterAttributeModifier character_modifiers = 4;
+    repeated TaskTimeModifier task_modifiers = 5;
+}
+
+message ProductPriceModifier {
+    ProductType product_type = 1;
+    double multiplier = 2;
+}
+
+message CharacterAttributeModifier {
+    CharacterType character_type = 1;
+    double speed_multiplier = 2;
+    double damage_multiplier = 3;
+    double hp_multiplier = 4;
+}
+
+message TaskTimeModifier {
+    TaskType task_type = 1;
+    double time_multiplier = 2;
+}
+
 message MessageOfObj
 {
     oneof message_of_obj
     {
-        MessageOfCharacter character_message = 1;
-        MessageOfMaterialResource material_resource_message= 2;
-        MessageOfMap map_message = 3;
-        MessageOfNews news_message = 4;
-        MessageOfTeam team_message = 5;
-        MessageOfFactory factory_message = 6;
-        MessageOfMarket market_message = 7;
-        MessageOfComputeCenter compute_center_message = 8;
-        MessageOfAIEvent ai_event_message = 9;      //服务器推送的AI事件/建议
+        MessageOfFactory factory_message = 1;
+        MessageOfCharacter character_message = 2;
+        MessageOfMaterialResource material_resource_message= 3;
+        MessageOfMarket market_message = 4;
+        MessageOfComputeCenter compute_center_message = 5;
+        MessageOfMap map_message = 6;
+        MessageOfNews news_message = 7;
+        MessageOfTeam team_message = 8;
     }
 }
 
-// 智慧大脑事件 
-message MessageOfAIEvent
-{
-    int64 team_id = 1;
-    int64 from_character_id = 2;    // 触发来源（可选）
-    AIEventType event_type = 3;       // 事件类型
-    string description = 4;      // 人类可读说明
-    string plan_json = 5;        // 结构化计划（JSON），客户端可以解析执行
-    int64 timestamp_ms = 6;     // 事件触发时间（ms），便于回放
-    int64 event_id = 7;         // 事件id, 便于追踪
-}
 
 message MessageOfAll
     {
@@ -157,8 +181,12 @@ message MessageToClient
     GameState game_state = 2;
     protobuf.GameMode game_mode = 3;
     MessageOfAll all_message = 4;
-    // MessageGameConfig config = 5; // 可用于下发对局参数
+
+    GlobalAIEvent ai_event = 5;
+    AIWorldEffect ai_effect = 6;
+
 }
+
 
 message MoveRes // 如果打算设计撞墙保留平行速度分量，且需要返回值则可用这个（大概没啥用）
 {
@@ -199,6 +227,7 @@ message MessageOfNews
     int64 to_id = 4;
     int64 team_id = 5;
 }
+
 // message MsgRes // 用于获取队友发来的消息
 // {
 //     bool have_message = 1; // 是否有待接收的消息

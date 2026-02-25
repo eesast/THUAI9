@@ -114,21 +114,31 @@ enum ProductType
     FOOD = 5;
 }
 
-enum AIEventType {
-    NULL_AI_EVENT = 0;      // 默认值，未指定事件类型
-    AI_SUGGESTION = 1;      // 推荐性建议
-    AI_EXPLANATION = 2;     // 解释性信息
-    AI_ALERT = 3;           // 警告，需要注意的紧急事件
+enum AIEventCategory
+{
+    NULL_AI_EVENT_CATEGORY = 0;
+
+    ECONOMIC_EVENT = 1;     // 价格变化类
+    WEATHER_EVENT = 2;      // 天气影响
+    TECHNOLOGY_EVENT = 3;   // 科技波动
+    COMBAT_EVENT = 4;       // 战斗修正
+}
+
+enum TaskType {
+    NULL_TASK_TYPE = 0;
+    PRODUCE_PRODUCT = 1;
+    HARVEST_RESOURCE = 2;
+    OCCUPY_CENTER = 3;
+    REPAIR_UNIT = 4;
 }
 
 enum AIActionType {
-    UNKNOWN = 0;        // 未知或未定义动作
-    PRODUCE = 1;        
-    HARVEST = 2;        
-    MOVE = 3;          
-    ATTACK = 4;        
-    REPAIR = 5;         
-    SELL = 6;           
-    OCCUPY = 7;         
-    CUSTOM = 100;       // 自定义动作：使用 payload_json 等字段描述任意扩展动作
+    UNKNOWN = 0;
+    PRODUCE = 1;
+    HARVEST = 2;
+    MOVE = 3;
+    ATTACK = 4;
+    REPAIR = 5;
+    SELL = 6;
+    OCCUPY = 7;
 }
