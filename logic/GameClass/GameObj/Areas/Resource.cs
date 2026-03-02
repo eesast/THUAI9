@@ -16,7 +16,7 @@ public class Resource(XY initPos)
     public object ActionLock => actionLock;
 
     private ResourceState State = ResourceState.HARVESTABLE;
-    public ResourceState ERstate
+    public ResourceState Resourcestate
     {
         get
         {
@@ -25,7 +25,7 @@ public class Resource(XY initPos)
         }
     }
     private ResourceType resourceType = ResourceType.LARGE_RESOURCE;
-    public ResourceType EResourceType
+    public ResourceType ResourceType
     {
         get
         {
@@ -38,11 +38,15 @@ public class Resource(XY initPos)
                 resourceType = value;
         }
     }
-    public void SetERState(ResourceState state)
+    public void SetResourceState(ResourceState state)
     {
         lock (actionLock)
         {
             State = state;
         }
+    }
+    public long Harvest(int producespeed)
+    {
+        return -HP.SubRChange(producespeed);
     }
 }

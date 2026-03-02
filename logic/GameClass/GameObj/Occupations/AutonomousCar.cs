@@ -7,11 +7,14 @@ namespace GameClass.GameObj.Occupations
     public class AutonomousCar : IOccupation
     {
         public int MoveSpeed { get; } = GameData.BaseCharacterSpeed;
-        public int MaxHp { get; } = GameData.DroneHP;
-        public int Cost { get; } = GameData.DroneCost;
-        public int BaseAttackSize { get; } = GameData.DroneATKsize;
-        public int MaxLoad { get; } = GameData.DroneMaxLoad;
-        public int AttackPower { get; } = GameData.DroneATKpower;
+        public int MaxHp { get; } = GameData.AutonomouCarHP;
+        public int Cost { get; } = GameData.AutonomouCarCost;
+        public int BaseAttackSize { get; } = GameData.AutonomouCarATKsize;
+        public int MaxLoad { get; } = GameData.AutonomouCarLoad;
+        public int AttackPower { get; } = GameData.AutonomouCarATKpower;
+        public int ViewRange { get; } = GameData.AutonomouCarViewRange;
+        public int Efficiency { get; } = GameData.AutonomouCarEfficiency;
+        public int Robust { get; } = GameData.AutonomouCarRobust;
 
     }
 }

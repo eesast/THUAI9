@@ -14,8 +14,8 @@ public class ComputeCenter(XY initPos)
     protected readonly object actionLock = new();
     public object ActionLock => actionLock;
 
-    private ComputeSenterState state = ComputeSenterState.OCCUPYABLE;
-    public ComputeSenterState EState
+    private ComputeCenterState state = ComputeCenterState.OCCUPYABLE;
+    public ComputeCenterState EState
     {
         get
         {
@@ -44,7 +44,7 @@ public class ComputeCenter(XY initPos)
         centerType = type;
     }
 
-    public void SetState(ComputeSenterState newState)
+    public void SetState(ComputeCenterState newState)
     {
         lock (actionLock)
         {
@@ -52,9 +52,9 @@ public class ComputeCenter(XY initPos)
         }
     }
 
-    // 是否被占领与占领者ID标志
     private bool isOccupied = false;
-    private long occupiedByPlayerId = -1;
+    // changed: track occupying team id instead of player id
+    private long occupiedByTeamId = -1;
 
     public bool IsOccupied
     {
@@ -65,22 +65,23 @@ public class ComputeCenter(XY initPos)
         }
     }
 
-    public long OccupiedByPlayerId
+    public long OccupiedByTeamId
     {
         get
         {
             lock (actionLock)
-                return occupiedByPlayerId;
+                return occupiedByTeamId;
         }
     }
 
-    public void SetOccupied(long playerId)
+    // Set occupied by team id
+    public void SetOccupied(long teamId)
     {
         lock (actionLock)
         {
             isOccupied = true;
-            occupiedByPlayerId = playerId;
-            state = ComputeSenterState.OCCUPIED;
+            occupiedByTeamId = teamId;
+            state = ComputeCenterState.OCCUPIED;
         }
     }
 
@@ -89,8 +90,8 @@ public class ComputeCenter(XY initPos)
         lock (actionLock)
         {
             isOccupied = false;
-            occupiedByPlayerId = -1;
-            state = ComputeSenterState.OCCUPYABLE;
+            occupiedByTeamId = -1;
+            state = ComputeCenterState.OCCUPYABLE;
         }
     }
 }

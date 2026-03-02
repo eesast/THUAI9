@@ -3,7 +3,7 @@ using Preparation.Utility.Value;
 
 namespace GameClass.GameObj.Areas;
 
-public class Barriers(XY initPos)//为了避免不明确引用，命名从Barrier改为Barriers
+public class Barriers(XY initPos)
     : Immovable(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.BARRIER)
 {
     public override bool IsRigid(bool args = false) => true;
