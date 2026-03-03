@@ -31,6 +31,8 @@ namespace Gaming
             gameMap = new(mapResource);
             characterManager = new(this, gameMap);
             actionManager = new(this, gameMap, characterManager);
+            tradeManager = new(this, gameMap);
+            uplevelManager = new(this);
             teams = new ConcurrentDictionary<long, TeamState>();
             InitTeams();
             //gameMap.GameObjDict[GameObjType.HOME].Cast<GameObj>()?.ForEach(
@@ -84,7 +86,11 @@ namespace Gaming
         /// <param name="buy">true 表示购买，false 表示出售</param>
         /// <returns>是否成功受理</returns>
         public bool Trade(long playerId, Preparation.Utility.GoodsType type, int amount, bool buy)
-            => throw new NotImplementedException();
+        {
+            if (buy || amount <= 0) return false;
+            if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            return tradeManager.Sell(character, type, amount);
+        }
 
         /// <summary>
         /// 占领指定算力中心，一般需要持续占领一段时间。
@@ -103,7 +109,7 @@ namespace Gaming
         /// <param name="tech">科技类型</param>
         /// <returns>是否成功受理</returns>
         public bool UplevelTech(long playerId, Preparation.Utility.TechType tech)
-            => throw new NotImplementedException();
+            => uplevelManager.UplevelTech(playerId, tech);
 
         /// <summary>
         /// 获取当前帧/时刻对该玩家可见的世界快照。
