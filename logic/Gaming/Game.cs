@@ -87,9 +87,8 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Trade(long playerId, Preparation.Utility.GoodsType type, int amount, bool buy)
         {
-            if (buy || amount <= 0) return false;
             if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
-            return tradeManager.Sell(character, type, amount);
+            return buy ? tradeManager.Buy(character, type, amount) : tradeManager.Sell(character, type, amount);
         }
 
         /// <summary>
