@@ -33,6 +33,10 @@ namespace Gaming
             actionManager = new(this, gameMap, characterManager);
             teams = new ConcurrentDictionary<long, TeamState>();
             InitTeams();
+
+            tradeManager = new TradeManager(this, gameMap);
+            uplevelManager = new UplevelManager(this);
+
             //gameMap.GameObjDict[GameObjType.HOME].Cast<GameObj>()?.ForEach(
             //    delegate (GameObj gameObj)
             //    {
