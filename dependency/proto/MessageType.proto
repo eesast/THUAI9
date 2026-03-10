@@ -2,14 +2,15 @@
 syntax = "proto3";
 package protobuf;
 
-enum GameMode {
+enum GameMode 
+{
     NULL_GAME_MODE = 0;
     GAME_MODE_PVE = 1;
     GAME_MODE_PVP = 2;
 }
 
 
-enum GameState // 
+enum GameState 
 {
     NULL_GAME_STATE = 0;
     GAME_START = 1;
@@ -17,7 +18,7 @@ enum GameState //
     GAME_END = 3;
 }
 
-enum PlaceType // 
+enum PlaceType 
 {
     NULL_PLACE_TYPE = 0;
     HOME = 1;              // 出生点工厂（地图四个角落）
@@ -30,7 +31,7 @@ enum PlaceType //
     EXPENSIVE_MARKET = 8;  // 高额市场 
 }
 
-enum ShapeType // 
+enum ShapeType 
 {
     NULL_SHAPE_TYPE = 0;
     CIRCLE = 1;
@@ -44,7 +45,7 @@ enum PlayerType
     TEAM = 2;
 }
 
-enum CharacterType // 
+enum CharacterType 
 {
     NULL_CHARACTER_TYPE = 0;
     // 机器类型
@@ -86,6 +87,15 @@ enum MaterialResourceState //
     BEING_HARVESTED = 2;
     HARVESTED = 3;
 }
+
+enum ResourceType
+{
+    NULL_RESOURCE_TYPE = 0,
+    SMALL_RESOURCE = 1,
+    MEDIUM_RESOURCE = 2,
+    LARGE_RESOURCE = 3,
+}
+
 /*
 enum HarvestAction // 采集动作类型
 {

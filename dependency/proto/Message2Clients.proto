@@ -69,6 +69,7 @@ message MessageOfTeam
     int32 computing_power = 5;
 }
 
+/*
 message MessageOfFactory
 {
     int64 factory_id = 1;
@@ -84,18 +85,54 @@ message MessageOfFactory
     repeated ProductStack product_inventory = 6; //
     int32 producing_line_count = 7; // 生产线数量
 }
+*/
+
+message MessageOfFactory
+{
+    int64 factory_id = 1;
+    int64 team_id = 2;
+
+    int32 x = 3;
+    int32 y = 4;
+
+    int32 hp = 5;
+    int32 robust = 6;
+
+    int32 storage = 7;
+    int32 efficiency = 8;
+
+    int64 source = 9;
+    int64 computing_power = 10;
+
+    bool can_produce = 11;
+    bool can_recruit = 12;
+
+    message ProductStack
+    {
+        ProductType product_type = 1;
+        int32 quantity = 2;
+    }
+
+    repeated ProductStack product_inventory = 13;
+
+}
 
 message MessageOfMarket
 {
     int64 market_id = 1;
+
     int32 x = 2;
     int32 y = 3;
-    bool high_value = 4; // 是否为高额市场
+
+    MarketType market_type = 4;
+
     message PriceEntry
     {
         ProductType product_type = 1;
         int32 price = 2;
+        int32 traded_quantity = 3;
     }
+    
     repeated PriceEntry price_list = 5;
 }
 
@@ -106,6 +143,21 @@ message MessageOfComputeCenter
     int32 y = 3;
     int64 owner_team_id = 4; // 0表示无人占领
     int32 occupy_progress = 5; // 占领进度
+}
+
+message MessageOfBarrier
+{
+    int64 barrier_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+}
+
+message MessageOfBush
+{
+    int64 bush_id = 1;
+    int32 x = 2;
+    int32 y = 3;
+    int32 radius = 4;
 }
 
 // 智慧大脑事件 
@@ -156,6 +208,8 @@ message MessageOfObj
         MessageOfMap map_message = 6;
         MessageOfNews news_message = 7;
         MessageOfTeam team_message = 8;
+        MessageOfBarrier barrier_message = 9;
+        MessageOfBush bush_message = 10;
     }
 }
 

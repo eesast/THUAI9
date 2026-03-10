@@ -419,6 +419,7 @@ namespace Server
             return false;
         }
 
+        /*
         private MessageOfAll GetMessageOfAll(int time)
         {
             MessageOfAll msg = new()
@@ -435,6 +436,8 @@ namespace Server
             // msg.BlueHomeHp = (int)game.TeamList[1].Home.HP;
             return msg;
         }
+        */
+        
         private MessageOfAll GetMessageOfAll(int time)
         {
             MessageOfAll msg = new()
