@@ -11,10 +11,10 @@ message MessageOfCharacter
     int64 team_id = 2;
     int64 player_id = 3;
 
-    CharacterType character_type = 4;
+    protobuf.CharacterType character_type = 4;
 
     // 主动状态
-    CharacterState character_active_state = 5;
+    protobuf.CharacterState character_active_state = 5;
 
     // 位置
     int32 x = 6;
@@ -36,17 +36,18 @@ message MessageOfCharacter
 }
 
 
-message MessageOfMaterialResource
+message MessageOfResource
 {
-    MaterialResourceState material_resource_state = 1;
+    protobuf.ResourceType resource_type = 1;
+    protobuf.ResourceState resource_state = 2;
 
-    int32 x = 2;
-    int32 y = 3;
+    int32 x = 3;
+    int32 y = 4;
 
-    int32 remaining_amount = 4; // 采集进度 等价于血量
+    int32 remaining_amount = 5; // 采集进度 等价于血量
 
-    int32 id = 5;
-    int32 max_amount = 6;
+    int32 id = 6;
+    int32 max_amount = 7;
 }
 
 message MessageOfMap
@@ -66,26 +67,8 @@ message MessageOfTeam
     int64 player_id = 2;
     int32 score = 3;
     int32 material = 4;
-    int32 computing_power = 5;
+    int32 compute_power = 5;
 }
-
-/*
-message MessageOfFactory
-{
-    int64 factory_id = 1;
-    int64 team_id = 2;
-    int32 x = 3;
-    int32 y = 4;
-    int32 hp = 5;
-    message ProductStack
-    {
-        int32 product_type = 1;
-        int32 quantity = 2;
-    }
-    repeated ProductStack product_inventory = 6; //
-    int32 producing_line_count = 7; // 生产线数量
-}
-*/
 
 message MessageOfFactory
 {
@@ -107,13 +90,13 @@ message MessageOfFactory
     bool can_produce = 11;
     bool can_recruit = 12;
 
-    message ProductStack
+    message GoodsStack
     {
-        ProductType product_type = 1;
+        protobuf.GoodsType product_type = 1;
         int32 quantity = 2;
     }
 
-    repeated ProductStack product_inventory = 13;
+    repeated GoodsStack product_inventory = 13;
 
 }
 
@@ -124,15 +107,15 @@ message MessageOfMarket
     int32 x = 2;
     int32 y = 3;
 
-    MarketType market_type = 4;
+    protobuf.MarketType market_type = 4;
 
     message PriceEntry
     {
-        ProductType product_type = 1;
+        protobuf.GoodsType goods_type = 1;
         int32 price = 2;
         int32 traded_quantity = 3;
     }
-    
+
     repeated PriceEntry price_list = 5;
 }
 
@@ -164,7 +147,7 @@ message MessageOfBush
 message GlobalAIEvent {
     int64 event_id = 1;
     int64 trigger_time_ms = 2;
-    AIEventCategory category = 3;
+    protobuf.AIEventCategory category = 3;
     string title = 4;
     string description = 5;
 }
@@ -180,19 +163,19 @@ message AIWorldEffect {
 }
 
 message ProductPriceModifier {
-    ProductType product_type = 1;
+    protobuf.GoodsType goods_type = 1;
     double multiplier = 2;
 }
 
 message CharacterAttributeModifier {
-    CharacterType character_type = 1;
+    protobuf.CharacterType character_type = 1;
     double speed_multiplier = 2;
     double damage_multiplier = 3;
     double hp_multiplier = 4;
 }
 
 message TaskTimeModifier {
-    TaskType task_type = 1;
+    protobuf.TaskType task_type = 1;
     double time_multiplier = 2;
 }
 
@@ -202,7 +185,7 @@ message MessageOfObj
     {
         MessageOfFactory factory_message = 1;
         MessageOfCharacter character_message = 2;
-        MessageOfMaterialResource material_resource_message= 3;
+        MessageOfResource resource_message= 3;
         MessageOfMarket market_message = 4;
         MessageOfComputeCenter compute_center_message = 5;
         MessageOfMap map_message = 6;
@@ -232,7 +215,7 @@ message MessageOfAll
 message MessageToClient
 {
     repeated MessageOfObj obj_message = 1;
-    GameState game_state = 2;
+    protobuf.GameState game_state = 2;
     protobuf.GameMode game_mode = 3;
     MessageOfAll all_message = 4;
 

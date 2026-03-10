@@ -22,7 +22,7 @@ message RegisterFactoryMsg
     int32 side_flag = 5; // 客户端希望的阵营标识
 }
 
-message CreatCharacterMsg
+message CreateCharacterMsg
 {
     CharacterType character_type = 1;
     int64 team_id = 2;
@@ -89,13 +89,13 @@ message RecoverMsg
 
 message RepairFactory
 {
-    int32 character_id = 1;
-    int32 team_id = 2;
+    int64 character_id = 1;
+    int64 team_id = 2;
 }
 
-message ProduceProductMeg
+message ProduceGoodsMeg
 {
-    ProductType product_type = 1;
+    GoodsType product_type = 1;
     int64 team_id = 2;
     int32 max_produce_num = 3;
 }
@@ -142,7 +142,7 @@ message StrategicAIResponse
 
 message ProductionSuggestion 
 {
-    ProductType product_type = 1;
+    GoodsType product_type = 1;
     int32 quantity = 2;
 }
 

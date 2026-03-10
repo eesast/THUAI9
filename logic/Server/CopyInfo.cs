@@ -110,10 +110,11 @@ namespace Server
         {
             return new MessageOfObj
             {
-                MaterialResourceMessage = new MessageOfMaterialResource
+                ResourceMessage = new MessageOfResource
                 {
-                    ResourceType = Transformation.ResourceTypeToProto(resource.EResourceType),
-                    MaterialResourceState = Transformation.MaterialResourceStateToProto(resource.ERstate),
+                    ResourceType = Transformation.ResourceTypeToProto(resource.ResourceType),
+
+                    ResourceState = Transformation.ResourceStateToProto(resource.Resourcestate),
 
                     X = resource.Position.x,
                     Y = resource.Position.y,
@@ -200,9 +201,9 @@ namespace Server
                 int quantity = factory.GetGoods(type);
 
                 factoryMsg.ProductInventory.Add(
-                new MessageOfFactory.Types.ProductStack
+                new MessageOfFactory.Types.GoodsStack
                 {
-                    ProductType = (ProductType)i,
+                    ProductType = (GoodsType)i,
                     Quantity = quantity
                 }
                 );
@@ -232,7 +233,7 @@ namespace Server
                 marketMsg.PriceList.Add(
                     new MessageOfMarket.Types.PriceEntry
                     {
-                        ProductType = (ProductType)i,
+                        ProductType = (GoodsType)i,
                         Price = market.GetPrice(type),
                         TradedQuantity = market.GetTradedQuantity(type)
                     }
