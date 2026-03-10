@@ -22,10 +22,7 @@ namespace Server
     }
     partial class GameServer : ServerBase
     {
-        private readonly ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)> semaDict0 = new(); //for spectator and team0 player
-        private readonly ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)> semaDict1 = new();
-        private readonly ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)> semaDict2 = new();
-        private readonly ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)> semaDict3 = new();
+        private readonly ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[] semaDicts;
         // private object semaDictLock = new();
         protected readonly ArgumentOptions options;
         private readonly HttpSender httpSender;
@@ -109,7 +106,7 @@ namespace Server
             result.Add("Team 2", score[1]);
             result.Add("Team 3", score[2]);
             result.Add("Team 4", score[3]);
-            JsonSerializer serializer = new();  //?
+            JsonSerializer serializer = new();  
             using StreamWriter sw = new(path);
             using JsonTextWriter writer = new(sw);
             serializer.Serialize(writer, result);
@@ -130,10 +127,10 @@ namespace Server
             }
             string state = crashed ? "Crashed" : "Finished";
             string[][] player_role = new string[4][];
-            player_role[0] = new string[options.CharacterCount];
-            player_role[1] = new string[options.CharacterCount];
-            player_role[2] = new string[options.CharacterCount];
-            player_role[3] = new string[options.CharacterCount];
+            for(int i = 0; i < 4; i++)
+            {
+                player_role[i] = new string[options.CharacterCount];
+            }
             foreach (var team in game.TeamList)
             {
                 int count = 0;
@@ -324,40 +321,22 @@ namespace Server
             }
             lock (spectatorJoinLock)
             {
-                foreach (var kvp in semaDict0)
+                foreach (var dict in semaDicts)
                 {
-                    kvp.Value.Item1.Release();
-                }
-                foreach (var kvp in semaDict1)
-                {
-                    kvp.Value.Item1.Release();
-                }
-                foreach (var kvp in semaDict2)
-                {
-                    kvp.Value.Item1.Release();
-                }
-                foreach (var kvp in semaDict3)
-                {
-                    kvp.Value.Item1.Release();
+                    foreach (var kvp in dict)
+                    {
+                        kvp.Value.Item1.Release();
+                    }
                 }
 
                 // 若此时观战者加入，则死锁，所以需要 spectatorJoinLock
 
-                foreach (var kvp in semaDict0)
+                foreach (var dict in semaDicts)
                 {
-                    kvp.Value.Item2.Wait();
-                }
-                foreach (var kvp in semaDict1)
-                {
-                    kvp.Value.Item2.Wait();
-                }
-                foreach (var kvp in semaDict2)
-                {
-                    kvp.Value.Item2.Wait();
-                }
-                foreach (var kvp in semaDict3)
-                {
-                    kvp.Value.Item2.Wait();
+                    foreach (var kvp in dict)
+                    {
+                        kvp.Value.Item2.Wait();     // 可能存在无限等待的问题
+                    }
                 }
             }
         }
@@ -381,25 +360,25 @@ namespace Server
         */
         public override int[] GetMaterial()
         {
-            int[] material = new int[4]; // 0代表Team 1，1代表Team 2...
+            int[] material = new int[TeamCount]; 
             foreach (Base team in game.TeamList)
             {
                 material[(int)team.TeamID] = (int)game.GetTeamMaterial(team.TeamID);    //GetTeamMaterial还未定义
             }
             return material;
         }
-        public override int[] GetComputingPower()
+        public override int[] GetComputePower()
         {
-            int[] computingpower = new int[4]; // 0代表Team 1，1代表Team 2...
+            int[] computepower = new int[TeamCount]; 
             foreach (Base team in game.TeamList)
             {
-                computingpower[(int)team.TeamID] = (int)game.GetTeamComputingPower(team.TeamID); //GetTeamComputingPower还未定义
+                computepower[(int)team.TeamID] = (int)game.GetTeamComputePower(team.TeamID); //GetTeamComputePower还未定义
             }
-            return computingpower;
+            return computepower;
         }
         public override int[] GetScore()
         {
-            int[] score = new int[4]; // 0代表Team 1，1代表Team 2...
+            int[] score = new int[TeamCount]; 
             foreach (Base team in game.TeamList)
             {
                 score[(int)team.TeamID] = (int)game.GetTeamScore(team.TeamID);
@@ -446,15 +425,15 @@ namespace Server
             };
             int[] scores = GetScore();
             int[] materials = GetMaterial();
-            int[] computing = GetComputingPower();
+            int[] computepower = GetComputePower();
 
-            for (int i = 0; i < option.TeamCount; i++)  // 确保 teams 字段有 TeamCount 个元素，teams[i] 对应 team i+1
+            for (int i = 0; i < options.TeamCount; i++)  // 确保 teams 字段有 TeamCount 个元素，teams[i] 对应 team i+1
             {
                 var teamInfo = new MessageOfAll.Types.TeamInfo
                 {
                     score = (i < scores.Length) ? scores[i] : 0,
                     material = (i < materials.Length) ? materials[i] : 0,
-                    computing_power = (i < computing.Length) ? computing[i] : 0,
+                    compute_power = (i < computepower.Length) ? computepower[i] : 0,
                     factory_hp = 0
                 };
 
@@ -485,6 +464,13 @@ namespace Server
         public GameServer(ArgumentOptions options)
         {
             this.options = options;
+
+            semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount];
+            for (int i = 0; i < options.TeamCount; i++)
+            {
+                semaDicts[i] = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>();
+            }
+
             LogLevel logLevel = options.LogLevel switch
             {
                 1 => LogLevel.Error,
