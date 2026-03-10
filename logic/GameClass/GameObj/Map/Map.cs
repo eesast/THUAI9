@@ -160,6 +160,61 @@ namespace GameClass.GameObj.Map
         {
             GameObjDict[gameObj.Type].Add(gameObj);
         }
+
+        public bool CanSee(Character character, GameObj gameObj)
+        {
+            XY pos1 = character.Position;
+            XY pos2 = gameObj.Position;
+            XY del = pos1 - pos2;
+            if (Math.Abs(del.x) >= 10000 || Math.Abs(del.y) >= 10000)
+                return false;
+            if (del * del > character.ViewRange * character.ViewRange)
+                return false;
+            if (del.x > del.y)
+            {
+                var beginx = GameData.NumOfPosGridPerCell;
+                var endx = Math.Abs(del.x);
+                if (GetPlaceType(pos1) == PlaceType.BUSH && GetPlaceType(pos2) == PlaceType.BUSH)
+                {
+                    for (int x = beginx; x < endx; x += GameData.NumOfPosGridPerCell)
+                    {
+                        if (GetPlaceType(pos1 + del * (x / del.x)) != PlaceType.BUSH)
+                            return false;
+                    }
+                }
+                else
+                {
+                    for (int x = beginx; x < endx; x += GameData.NumOfPosGridPerCell)
+                    {
+                        if (GetPlaceType(pos1 + del * (x / del.x)) == PlaceType.BARRIER)
+                            return false;
+                    }
+                }
+            }
+            else
+            {
+                var beginy = GameData.NumOfPosGridPerCell;
+                var endy = Math.Abs(del.y);
+                if (GetPlaceType(pos1) == PlaceType.BUSH && GetPlaceType(pos2) == PlaceType.BUSH)
+                {
+                    for (int y = beginy; y < endy; y += GameData.NumOfPosGridPerCell)
+                    {
+                        if (GetPlaceType(pos1 + del * (y / del.y)) != PlaceType.BUSH)
+                            return false;
+                    }
+                }
+                else
+                {
+                    for (int y = beginy; y < endy; y += GameData.NumOfPosGridPerCell)
+                    {
+                        if (GetPlaceType(pos1 + del * (y / del.y)) == PlaceType.BARRIER)
+                            return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         public Map(MapStruct mapResource, ComputeCenterType Atype = ComputeCenterType.NULL)
         {
             gameObjDict = [];

@@ -10,5 +10,7 @@ public interface IOccupation
     public int MaxLoad { get; }
     public int BaseAttackSize { get; }
     public int AttackPower { get; }
-
+    public int ViewRange { get; }
+    public int Robust { get; }
+    public int Efficiency { get; }
 }

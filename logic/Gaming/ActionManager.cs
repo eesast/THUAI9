@@ -1,139 +1,334 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Threading;
-using GameClass.GameObj;
+﻿using GameClass.GameObj;
+using GameClass.GameObj.Map;
 using GameClass.GameObj.Areas;
+using GameEngine;
 using Preparation.Utility;
+using System;
+using System.Threading;
+using Timothy.FrameRateTask;
+using Preparation.Utility.Value;
+using Microsoft.Extensions.Logging;
 
-namespace Game
+namespace Gaming
 {
     public partial class Game
     {
         private readonly ActionManager actionManager;
-
-        private sealed class ActionManager
+        private class ActionManager(Game game, Map gameMap, CharacterManager characterManager)
         {
-            private readonly Game game;
-            private readonly ConcurrentDictionary<long, CancellationTokenSource> occupying = new(); // key: ComputeCenter.ID
-            private readonly ConcurrentDictionary<(long playerId, long resourceId), CancellationTokenSource> harvesting = new();
-
-            public ActionManager(Game game)
-            {
-                this.game = game;
-            }
-
-            public bool Harvest(long playerId, Resource resource, long durationMs)
-            {
-                if (resource == null) return false;
-                if (!game.characterManager.TryGetCharacter(playerId, out var ch)) return false;
-                // 仅当在资源点周围 3x3 格内可采
-                if (!GameData.ApproachToInteract(ch.Position, resource.Position)) return false;
-
-                // 仅汽车可采集（每秒10单位），其他单位暂不支持
-                int ratePerSec = ch.CharacterType == CharacterType.AUTONOMOUS_CAR ? 10 : 0;
-                if (ratePerSec <= 0) return false;
-
-                var key = (playerId, resource.ID);
-                if (harvesting.ContainsKey(key)) return false; // 已有进行中的采集
-
-                var cts = new CancellationTokenSource();
-                if (!harvesting.TryAdd(key, cts)) { cts.Dispose(); return false; }
-
-                new Thread(() =>
-                {
-                    try
+            private readonly Game game = game;
+            private readonly Map gameMap = gameMap;
+            private readonly CharacterManager characterManager = characterManager;
+            private readonly Random random = new();
+            public readonly MoveEngine moveEngine = new(
+                    gameMap: gameMap,
+                    OnCollision: (obj, collisionObj, moveVec) =>
                     {
-                        int elapsed = 0;
-                        int step = 200; // 200ms tick
-                        while (!cts.IsCancellationRequested && elapsed < durationMs)
+                        Character ship = (Character)obj;
+                        return MoveEngine.AfterCollision.MoveMax;
+                    },
+                    EndMove: obj =>
+                    {
+                        obj.ThreadNum.Release();
+                    }
+                );
+            public bool MoveCharacter(Character characterToMove, int moveTimeInMilliseconds, double moveDirection)
+            {
+                if (moveTimeInMilliseconds < 5)
+                {
+                    LogicLogging.logger.LogWarning("Move time is too short");
+                    return false;
+                }
+                long stateNum = characterToMove.SetCharacterState(CharacterState.MOVING);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogWarning("Character is not commandable");
+                    return false;
+                }
+                new Thread
+                (
+                    () =>
+                    {
+                        characterToMove.ThreadNum.WaitOne();
+                        if (!characterToMove.StartThread(stateNum))
                         {
-                            if (!game.Map.Timer.IsGaming) { Thread.Sleep(step); continue; }
-                            // 位置保持在 3x3 范围内，否则中断
-                            if (!GameData.ApproachToInteract(ch.Position, resource.Position)) break;
-
-                            // 扣减资源：ratePerSec * step/1000
-                            long delta = (long)Math.Max(1, ratePerSec * step / 1000.0);
-                            resource.HP.SubPositiveV(delta);
-
-                            // 资源耗尽：转为障碍（保留方块、Rigid=true，状态设为 HARVESTED），即形成阻挡
-                            if (resource.HP.GetValue() == 0)
+                            characterToMove.ThreadNum.Release();
+                            return;
+                        }
+                        moveEngine.MoveObj(characterToMove, moveTimeInMilliseconds, moveDirection, characterToMove.StateNum, characterToMove.Efficiency);
+                        Thread.Sleep(moveTimeInMilliseconds);
+                        characterToMove.ResetCharacterState(stateNum);
+                    }
+                )
+                { IsBackground = true }.Start();
+                return true;
+            }
+            public bool KnockBackCharacter(Character characterToMove, double moveDirection)
+            {
+                CharacterState tempState = characterToMove.CharacterState;
+                long stateNum = characterToMove.SetCharacterState(CharacterState.KNOCKED_BACK);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogWarning("Character can not be knocked back");
+                    return false;
+                }
+                new Thread
+                (
+                    () =>
+                    {
+                        characterToMove.ThreadNum.WaitOne();
+                        if (!characterToMove.StartThread(stateNum))
+                        {
+                            characterToMove.ThreadNum.Release();
+                            return;
+                        }
+                        moveEngine.MoveObj(characterToMove, GameData.KnockedBackTime, moveDirection, characterToMove.StateNum, GameData.KnockedBackSpeed);
+                        Thread.Sleep(GameData.KnockedBackTime);
+                        characterToMove.ResetCharacterState(stateNum);
+                    }
+                )
+                { IsBackground = true }.Start();
+                return true;
+            }
+            public static bool Stop(Character character)
+            {
+                lock (character.ActionLock)
+                {
+                    if (character.Commandable())
+                    {
+                        character.SetCharacterState(CharacterState.NULL_CHARACTER_STATE);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            public bool Harvest(Character character)
+            {
+                Resource? resource = (Resource?)gameMap.OneForInteract(character.Position, GameObjType.RESOURCE);
+                if (resource == null)
+                {
+                    return false;
+                }
+                if (resource.HP == 0)
+                {
+                    return false;
+                }
+                long stateNum = character.SetCharacterState(CharacterState.HARVESTING);
+                if (stateNum == -1)
+                {
+                    return false;
+                }
+                new Thread
+                (
+                    () =>
+                    {
+                        character.ThreadNum.WaitOne();
+                        if (!character.StartThread(stateNum))
+                        {
+                            character.ThreadNum.Release();
+                            return;
+                        }
+                        Thread.Sleep(GameData.CheckInterval);
+                        new FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => stateNum == character.StateNum && gameMap.Timer.IsGaming,
+                            loopToDo: () =>
                             {
-                                resource.SetERState(ResourceState.HARVESTED);
-                                break;
-                            }
+                                long addresource = resource.Harvest(GameData.ProduceSpeedPerSecond / GameData.FrameDuration);
 
-                            Thread.Sleep(step);
-                            elapsed += step;
-                        }
+                                if (addresource <= 0)
+                                {
+                                    character.ResetCharacterState(stateNum);
+                                    return false;
+                                }
+                                var teamFactory = game.GetTeamFactory((long)character.TeamID.Get());
+                                if (teamFactory != null)
+                                {
+                                    teamFactory.AddSource(addresource);
+                                }
+                                if (resource.HP == 0)
+                                {
+                                    character.ResetCharacterState(stateNum);
+                                    resource.SetResourceState(ResourceState.HARVESTED);
+                                    return false;
+                                }
+                                return true;
+                            },
+                             timeInterval: GameData.CheckInterval,
+                             finallyReturn: () => 0
+                         ).Start();
+                        character.ThreadNum.Release();
+
                     }
-                    finally
-                    {
-                        harvesting.TryRemove(key, out var oldCts);
-                        oldCts?.Dispose();
-                    }
-                })
+                )
                 { IsBackground = true }.Start();
+                return false;
+            }
+            public bool Occupy(Character character)
+            {
+                ComputeCenter? center = (ComputeCenter?)gameMap.OneForInteract(character.Position, GameObjType.COMPUTE_CENTER);
+                if (center == null) return false;
+                if (character.CharacterType != CharacterType.DRONE && character.CharacterType != CharacterType.ROBOT) return false;
+                long stateNum = character.SetCharacterState(CharacterState.OCUPPYING);
+                if (stateNum == -1) return false;
+                new Thread
+                (
+                    () =>
+                    {
+                        character.ThreadNum.WaitOne();
+                        if (!character.StartThread(stateNum))
+                        {
+                            character.ThreadNum.Release();
+                            return;
+                        }
+                        Thread.Sleep(GameData.CheckInterval);
+                        int occupyTimeMs = GameData.ComputeCenterOccupyTimeMs;
+                        int elapsed = 0;
+                        new FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => stateNum == character.StateNum && gameMap.Timer.IsGaming,
+                            loopToDo: () =>
+                            {
+                                if (!GameData.ApproachToInteract(character.Position, center.Position))
+                                {
+                                    character.ResetCharacterState(stateNum);
+                                    return false;
+                                }
+                                elapsed += GameData.CheckInterval;
+                                if (elapsed >= occupyTimeMs)
+                                {
+                                    center.SetOccupied(character.TeamID.Get());
+                                    character.ResetCharacterState(stateNum);
+                                    return false;
+                                }
+                                return true;
+                            },
+                            timeInterval: GameData.CheckInterval,
+                            finallyReturn: () => 0
+                        ).Start();
+                        character.ThreadNum.Release();
+                    }
+                )
+                { IsBackground = true }.Start();
+                return false;
+            }
 
+            public bool Attack(Character character, Character gameobj)
+            {
+                if (!gameMap.CanSee(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Can't see target obj!");
+                    return false;
+                }
+                if (!gameMap.InAttackSize(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Obj is not in attacksize!");
+                    return false;
+                }
+                if (gameobj.Visible == false)
+                {
+                    LogicLogging.logger.LogDebug(
+                        "Can't see target because it's invisible!"
+                    );
+                    return false;
+                }
+                long nowtime = Environment.TickCount64;
+                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                {
+                    LogicLogging.logger.LogDebug("Common_attack is still in cd!");
+                    return false;
+                }
+                long stateNum = character.SetCharacterState(CharacterState.ATTACKING);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogDebug("Character is not commandable!");
+                    return false;
+                }
+                characterManager.BeAttacked(gameobj, character);
+                character.LastAttackTime = nowtime;
+                character.ResetCharacterState(stateNum);
+                if (character.Visible == false)
+                {
+                    character.Visible = true;
+                    character.SetCharacterState(character.CharacterState);
+                }
                 return true;
             }
 
-            public bool Occupy(long playerId, ComputeCenter center)
+            public bool Attack(Character character, Factory gameobj)
             {
-                if (center == null) return false;
-                if (!game.characterManager.TryGetCharacter(playerId, out var ch)) return false;
-                // 仅无人机/机器人可占领
-                if (ch.CharacterType != CharacterType.DRONE && ch.CharacterType != CharacterType.ROBOT) return false;
+                if (!gameMap.CanSee(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Can't see target obj!");
+                    return false;
+                }
+                if (!gameMap.InAttackSize(character, gameobj))
+                {
+                    LogicLogging.logger.LogDebug("Obj is not in attacksize!");
+                    return false;
+                }
+                long nowtime = Environment.TickCount64;
+                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                {
+                    LogicLogging.logger.LogDebug("Common_attack is still in cd!");
+                    return false;
+                }
+                long stateNum = character.SetCharacterState(CharacterState.ATTACKING);
+                if (stateNum == -1)
+                {
+                    LogicLogging.logger.LogDebug("Character is not commandable!");
+                    return false;
+                }
 
-                // 已在占领
-                if (occupying.ContainsKey(center.ID)) return false;
-                // 需在中心范围内（使用 1 格邻近判定）
-                if (!GameData.ApproachToInteract(ch.Position, center.Position)) return false;
-
-                var cts = new CancellationTokenSource();
-                if (!occupying.TryAdd(center.ID, cts)) { cts.Dispose(); return false; }
-
+                long damage = (long)(character.AttackPower - gameobj.Robust);
+                if (damage <= 0) damage = 1;
+                long actualSub = gameobj.HP.SubRChange(damage);
+                game.AddTeamScore((long)character.TeamID.Get(), actualSub * 20);
+                gameobj.Interupt();
                 new Thread(() =>
                 {
-                    try
-                    {
-                        int occupyTimeMs = 10_000;
-                        int elapsed = 0;
-                        int tick = 200; // 200ms 检查
-                        while (!cts.IsCancellationRequested && elapsed < occupyTimeMs)
-                        {
-                            if (!game.Map.Timer.IsGaming) { Thread.Sleep(tick); continue; }
-                            // 离开范围则打断
-                            if (!GameData.ApproachToInteract(ch.Position, center.Position)) return;
-                            Thread.Sleep(tick);
-                            elapsed += tick;
-                        }
-                        if (elapsed >= occupyTimeMs && !cts.IsCancellationRequested)
-                        {
-                            center.SetOccupied(ch.PlayerID.Get());
-                        }
-                    }
-                    finally
-                    {
-                        occupying.TryRemove(center.ID, out var oldCts);
-                        oldCts?.Dispose();
-                    }
+                    Thread.Sleep(GameData.FactoryDisableTimeMs);
+                    gameobj.CanProduce.SetROri(true);
+                    gameobj.CanRecruit.SetROri(true);
                 })
                 { IsBackground = true }.Start();
-
+                if (gameobj.HP == 0)
+                {
+                    game.AddTeamScore(character.TeamID.Get(), GameData.FactoryScore);
+                }
+                character.LastAttackTime = nowtime;
+                character.ResetCharacterState(stateNum);
+                if (character.Visible == false)
+                {
+                    character.Visible = true;
+                    character.SetCharacterState(character.CharacterState);
+                }
                 return true;
             }
 
-            public bool AddGoods(long playerId, GoodsType type, int delta)
+            public bool Load(Character character, GoodsType type, int amount)
             {
-                if (!game.characterManager.TryGetCharacter(playerId, out var ch)) return false;
-                return ch.GoodsLoad.Add(type, delta);
+                if (amount <= 0) return false;
+                Factory? factory = (Factory?)gameMap.OneForInteract(character.Position, GameObjType.FACTORY);
+                if (factory == null) return false;
+                if (!GameData.ApproachToInteract(character.Position, factory.Position)) return false;
+
+                var atomic = factory.GetGoodsAtomic(type);
+                while (true)
+                {
+                    int current = atomic.Get();
+                    if (current < amount) return false;
+                    if (atomic.CompareExROri(current - amount, current) == current) break;
+                }
+
+                if (!character.GoodsLoad.Add(type, amount))
+                {
+                    factory.AddGoods(type, amount);
+                    return false;
+                }
+                return true;
             }
 
-            public bool SetGoods(long playerId, GoodsType type, int value)
-            {
-                if (!game.characterManager.TryGetCharacter(playerId, out var ch)) return false;
-                return ch.GoodsLoad.Set(type, value);
-            }
         }
     }
 }

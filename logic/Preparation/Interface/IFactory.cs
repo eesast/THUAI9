@@ -8,6 +8,7 @@ namespace Preparation.Interface
         public InVariableRange<long> HP { get; }
         public InVariableRange<long> Robust { get; }
         public InVariableRange<long> Storage { get; }
+        public InVariableRange<long> Efficiency { get; }
 
     }
 }
