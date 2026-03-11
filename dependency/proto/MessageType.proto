@@ -54,26 +54,26 @@ enum CharacterType
 
 enum CharacterState // 角色状态
 {
-    NULL_CHARACTER_STATE = 0;
+    CHARACTER_STATE_NONE = 0;
 
-    IDLE = 1;
-    HARVESTING = 2;
-    ATTACKING = 3;
-    OCUPPYING = 4;
-    TRADING = 5;
-    MOVING = 6;
-    KNOCKED_BACK = 7,
-    DECEASED = 8,
+    CHARACTER_STATE_IDLE = 1;
+    CHARACTER_STATE_HARVESTING = 2;
+    CHARACTER_STATE_ATTACKING = 3;
+    CHARACTER_STATE_OCUPPYING = 4;
+    CHARACTER_STATE_TRADING = 5;
+    CHARACTER_STATE_MOVING = 6;
+    CHARACTER_STATE_KNOCKED_BACK = 7;
+    CHARACTER_STATE_DECEASED = 8;
 }
 
 enum HomeState // 工厂状态
 {
     NULL_HOME_STATE = 0;
 
-    IDLE = 1;                   // 闲置状态
-    PRODUCING_PRODUCT = 2;      // 生产产品中
-    REPAIRING = 3;              // 修理中
-    PRODUCING_CHARACTER = 4;    // 生产机器中
+    HOME_STATE_IDLE = 1;                   // 闲置状态
+    HOME_STATE_PRODUCING_PRODUCT = 2;      // 生产产品中
+    HOME_STATE_REPAIRING = 3;              // 修理中
+    HOME_STATE_PRODUCING_CHARACTER = 4;    // 生产机器中
 }
 
 enum ComputeCenterState //算力中心状态
