@@ -78,10 +78,10 @@ enum HomeState // 工厂状态
 
 enum ComputeCenterState //算力中心状态
 {
-    NULL_COMPUTE_CENTER_STATE = 0,
-    OCCUPYABLE = 1,
-    OCCUPIED = 2,
-    ROBBED = 3,
+    NULL_COMPUTE_CENTER_STATE = 0;
+    OCCUPYABLE = 1;
+    OCCUPIED = 2;
+    ROBBED = 3;
 }
 
 enum ResourceState 
@@ -94,10 +94,10 @@ enum ResourceState
 
 enum ResourceType
 {
-    NULL_RESOURCE_TYPE = 0,
-    SMALL_RESOURCE = 1,
-    MEDIUM_RESOURCE = 2,
-    LARGE_RESOURCE = 3,
+    NULL_RESOURCE_TYPE = 0;
+    SMALL_RESOURCE = 1;
+    MEDIUM_RESOURCE = 2;
+    LARGE_RESOURCE = 3;
 }
 
 enum NewsType 
@@ -120,26 +120,26 @@ enum GoodsType
 
 enum MarketType
 {
-    NULL_MARKET_TYPE = 0,
-    SMALL_MARKET = 1,
-    MEDIUM_MARKET = 2,
-    LARGE_MARKET = 3,
+    NULL_MARKET_TYPE = 0;
+    SMALL_MARKET = 1;
+    MEDIUM_MARKET = 2;
+    LARGE_MARKET = 3;
 }
 
 enum TechType
 {
-    NULL_TECH_TYPE = 0,
-    INCREASE_HP = 1,
-    INCREASE_ATTACK_POWER = 2,
-    INCREASE_ATTACK_SIZE = 3,
-    INCREASE_ROBUST = 4,
-    INCREASE_MOVE_SPEED = 5,
-    INCREASE_CARRY_CAPACITY = 6,
-    INCREASE_EFFICIENCY = 7,
-    INCREASE_PRODUCTION = 8,
-    INCREASE_STORAGE = 9,
-    INCREASE_PRICE = 10,
-    DECREASE_COST = 11,
+    NULL_TECH_TYPE = 0;
+    INCREASE_HP = 1;
+    INCREASE_ATTACK_POWER = 2;
+    INCREASE_ATTACK_SIZE = 3;
+    INCREASE_ROBUST = 4;
+    INCREASE_MOVE_SPEED = 5;
+    INCREASE_CARRY_CAPACITY = 6;
+    INCREASE_EFFICIENCY = 7;
+    INCREASE_PRODUCTION = 8;
+    INCREASE_STORAGE = 9;
+    INCREASE_PRICE = 10;
+    DECREASE_COST = 11;
 }
 
 
