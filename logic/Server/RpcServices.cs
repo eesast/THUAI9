@@ -59,7 +59,7 @@ namespace Server
                 // 观战模式
                 lock (spectatorJoinLock)  // 具体原因见另一个上锁的地方
                 {
-                    if (semaDict0.TryAdd(request.CharacterId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
+                    if (semaDicts[0].TryAdd(request.CharacterId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
                     {
                         GameServerLogging.logger.LogInfo("A new spectator comes to watch this game");
                         IsSpectatorJoin = true;
@@ -72,7 +72,7 @@ namespace Server
                 }
                 do
                 {
-                    semaDict0[request.CharacterId].Item1.Wait();
+                    semaDicts[0][request.CharacterId].Item1.Wait();
                     try
                     {
                         if (currentGameInfo != null)
@@ -91,7 +91,7 @@ namespace Server
                     }
                     catch (InvalidOperationException)
                     {
-                        if (semaDict0.TryRemove(request.CharacterId, out var semas))
+                        if (semaDicts[0].TryRemove(request.CharacterId, out var semas))
                         {
                             try
                             {
@@ -113,7 +113,7 @@ namespace Server
                     {
                         try
                         {
-                            semaDict0[request.CharacterId].Item2.Release();
+                            semaDicts[0][request.CharacterId].Item2.Release();
                         }
                         catch
                         {
@@ -129,7 +129,7 @@ namespace Server
                 return;
             if (!ValidPlayerID(request.CharacterId))  //玩家id是否正确
                 return;
-            if (request.TeamId >= TeamCount)  //队伍只能是0，1
+            if (request.TeamId >= TeamCount)  
                 return;
             if (communicationToGameID[request.TeamId][request.CharacterId] != GameObj.invalidID)  //是否已经添加了该玩家
                 return;
@@ -150,23 +150,12 @@ namespace Server
                 GameServerLogging.logger.LogInfo($"Player {request.CharacterId} from Team {request.TeamId} joins");
                 lock (spectatorJoinLock)  // 为了保证绝对安全，还是加上这个锁吧
                 {
-                    if (request.TeamId == 0)
+                    if (semaDicts[request.TeamId].TryAdd(request.CharacterId, temp))
                     {
-                        if (semaDict0.TryAdd(request.CharacterId, temp))
-                        {
-                            start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
-                            GameServerLogging.logger.LogDebug($"PlayerCountNow: {playerCountNow}");
-                            GameServerLogging.logger.LogDebug($"PlayerTotalNum: {playerNum * TeamCount}");
-                        }
-                    }
-                    else if (request.TeamId == 1)
-                    {
-                        if (semaDict1.TryAdd(request.CharacterId, temp))
-                        {
-                            start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
-                            GameServerLogging.logger.LogDebug($"PlayerCountNow: {playerCountNow}");
-                            GameServerLogging.logger.LogDebug($"PlayerNum: {playerNum * TeamCount}");
-                        }
+                        start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
+
+                        GameServerLogging.logger.LogDebug($"PlayerCountNow: {playerCountNow}");
+                        GameServerLogging.logger.LogDebug($"PlayerTotalNum: {playerNum * TeamCount}");
                     }
                 }
                 if (start)
@@ -178,10 +167,8 @@ namespace Server
             bool firstTime = true;
             do
             {
-                if (request.TeamId == 0)
-                    semaDict0[request.CharacterId].Item1.Wait();
-                else if (request.TeamId == 1)
-                    semaDict1[request.CharacterId].Item1.Wait();
+                semaDicts[request.TeamId][request.CharacterId].Item1.Wait();
+
                 Character? character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.CharacterId);
                 // if(character!=null)
                 // {
@@ -217,7 +204,7 @@ namespace Server
                         }
                     }
                 }
-                (request.TeamId == 0 ? semaDict0 : semaDict1)[request.CharacterId].Item2.Release();
+                semaDicts[request.TeamId][request.CharacterId].Item2.Release();
             } while (game.GameMap.Timer.IsGaming);
         }
 

@@ -17,19 +17,18 @@ service AvailableService
     rpc Recover(RecoverMsg) returns (BoolRes);                      // 回复
     rpc Harvesting(MaterialResourceMsg) returns (BoolRes);          // 开采原料资源
     rpc Attack(AttackMsg) returns (BoolRes);                        // 普通攻击
-    rpc AttackConstruction(AttackFactoryMsg) returns (BoolRes);        // 攻击工厂（基地）
-    rpc Repair(RepairFactory) returns (BoolRes);                       // 修理工厂
+    rpc AttackConstruction(AttackFactoryMsg) returns (BoolRes);     // 攻击工厂（基地）
+    rpc Repair(RepairFactory) returns (BoolRes);                    // 修理工厂
     rpc Send(SendMsg) returns (BoolRes);                            // 传递信息
-    rpc Produce(ProduceProductMeg) returns (BoolRes);               // 生产产品
+    rpc Produce(ProduceGoodsMeg) returns (BoolRes);               // 生产产品
     rpc Load(LoadMeg) returns (BoolRes);                            // 装载产品
     rpc Sell(SellMeg) returns (BoolRes);                            // 出售产品
 
     // 游戏过程中核心角色（工厂）可以另外执行操作的服务
-    rpc CreatCharacter(CreatCharacterMsg) returns (BoolRes);        // 创建角色
-    rpc CreatCharacterRID(CreatCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
+    rpc CreatCharacter(CreateCharacterMsg) returns (BoolRes);        // 创建角色
+    rpc CreatCharacterRID(CreateCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
     rpc EndAllAction(IDMsg) returns (BoolRes);                      // 结束所有动作
 
-    // 智慧大脑相关 RPC
-    rpc AskAI(AskAIRequest) returns (AskAIResponse);                // 客户端请求AI建议
-    rpc AskAIStream(AskAIRequest) returns (stream AskAIResponse);      // 客户端请求AI建议（流式响应）
+    // 智慧大脑
+    rpc AskAI(StrategicAIRequest) returns (StrategicAIResponse);      // 客户端请求AI建议
 }

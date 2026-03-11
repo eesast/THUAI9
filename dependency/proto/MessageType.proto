@@ -2,14 +2,15 @@
 syntax = "proto3";
 package protobuf;
 
-enum GameMode {
+enum GameMode 
+{
     NULL_GAME_MODE = 0;
     GAME_MODE_PVE = 1;
     GAME_MODE_PVP = 2;
 }
 
 
-enum GameState // 
+enum GameState 
 {
     NULL_GAME_STATE = 0;
     GAME_START = 1;
@@ -17,20 +18,19 @@ enum GameState //
     GAME_END = 3;
 }
 
-enum PlaceType // 
+enum PlaceType 
 {
     NULL_PLACE_TYPE = 0;
-    HOME = 1;              // 出生点工厂（地图四个角落）
-    SPACE = 2;             // 空地
-    BARRIER = 3;           // 障碍
-    BUSH = 4;              // 草丛
-    COMPUTING_CENTER = 5;  // 算力中心
-    MATERIAL_RESOURCE = 6; // 材料资源
-    CHEAP_MARKET = 7;      // 廉价市场
-    EXPENSIVE_MARKET = 8;  // 高额市场 
+    FACTORY = 1;            // 出生点工厂（地图四个角落）
+    SPACE = 2;              // 空地
+    BARRIER = 3;            // 障碍
+    BUSH = 4;               // 草丛
+    RESOURCE = 5;           // 资源
+    COMPUTE_CENTER = 6;     // 算力中心
+    MARKET = 7;             // 市场
 }
 
-enum ShapeType // 
+enum ShapeType 
 {
     NULL_SHAPE_TYPE = 0;
     CIRCLE = 1;
@@ -44,13 +44,12 @@ enum PlayerType
     TEAM = 2;
 }
 
-enum CharacterType // 
+enum CharacterType 
 {
     NULL_CHARACTER_TYPE = 0;
-    // 机器类型
-    DriverlessCar = 1;  // 无人驾驶汽车
-    Drone = 2;          // 无人机
-    Robot = 3;          // 机器人
+    DRONE = 1;          // 无人机
+    ROBOT = 2;          // 机器人
+    AUTONOMOUS_CAR = 3;  // 无人驾驶汽车
 }
 
 enum CharacterState // 角色状态
@@ -60,75 +59,115 @@ enum CharacterState // 角色状态
     IDLE = 1;
     HARVESTING = 2;
     ATTACKING = 3;
-    CONSTRUCTING = 4;
-    MOVING = 5;
-
-    HEALING = 6;
-    DECEASED = 7;
+    OCUPPYING = 4;
+    TRADING = 5;
+    MOVING = 6;
+    KNOCKED_BACK = 7,
+    DECEASED = 8,
 }
 
 enum HomeState // 工厂状态
 {
     NULL_HOME_STATE = 0;
 
-    IDLE = 1;       // 闲置状态
-    PRODUCING_PRODUCT = 2;  // 生产产品中
-    REPAIRING = 3;  // 修理中
-    PRODUCING_CHARACTER = 4;  // 生产机器中
+    IDLE = 1;                   // 闲置状态
+    PRODUCING_PRODUCT = 2;      // 生产产品中
+    REPAIRING = 3;              // 修理中
+    PRODUCING_CHARACTER = 4;    // 生产机器中
 }
 
-// 不需要ComputingCenterState, 建议使用一个变量来表示归属于哪个队伍
+enum ComputeCenterState //算力中心状态
+{
+    NULL_COMPUTE_CENTER_STATE = 0,
+    OCCUPYABLE = 1,
+    OCCUPIED = 2,
+    ROBBED = 3,
+}
 
-enum MaterialResourceState // 
+enum ResourceState 
 {
     NULL_ECONOMY_RESOURCE_STSTE = 0;
     HARVESTABLE = 1;
     BEING_HARVESTED = 2;
     HARVESTED = 3;
 }
-/*
-enum HarvestAction // 采集动作类型
-{
-    NULL_HARVEST_ACTION = 0;
-    START_HARVEST = 1;
-    STOP_HARVEST = 2;
-    QUERY_HARVEST = 3; // 查询采集状态
-}
-*/
 
-enum NewsType // 用于角色间通信？或许咱们需要
+enum ResourceType
+{
+    NULL_RESOURCE_TYPE = 0,
+    SMALL_RESOURCE = 1,
+    MEDIUM_RESOURCE = 2,
+    LARGE_RESOURCE = 3,
+}
+
+enum NewsType 
 {
     NULL_NEWS_TYPE = 0;
     TEXT = 1;
     BINARY = 2;
 }
 
-enum ProductType
+enum GoodsType
 {
-    NULL_PRODUCT_TYPE = 0;
+    NULL_GOODS_TYPE = 0;
 
     SEMICONDUCTOR = 1;
     MEDICINE = 2;
-    HANDIWORK = 3;
-    COSTUME = 4;
+    TOYS = 3;
+    CLOTHES = 4;
     FOOD = 5;
 }
 
-enum AIEventType {
-    NULL_AI_EVENT = 0;      // 默认值，未指定事件类型
-    AI_SUGGESTION = 1;      // 推荐性建议
-    AI_EXPLANATION = 2;     // 解释性信息
-    AI_ALERT = 3;           // 警告，需要注意的紧急事件
+enum MarketType
+{
+    NULL_MARKET_TYPE = 0,
+    SMALL_MARKET = 1,
+    MEDIUM_MARKET = 2,
+    LARGE_MARKET = 3,
+}
+
+enum TechType
+{
+    NULL_TECH_TYPE = 0,
+    INCREASE_HP = 1,
+    INCREASE_ATTACK_POWER = 2,
+    INCREASE_ATTACK_SIZE = 3,
+    INCREASE_ROBUST = 4,
+    INCREASE_MOVE_SPEED = 5,
+    INCREASE_CARRY_CAPACITY = 6,
+    INCREASE_EFFICIENCY = 7,
+    INCREASE_PRODUCTION = 8,
+    INCREASE_STORAGE = 9,
+    INCREASE_PRICE = 10,
+    DECREASE_COST = 11,
+}
+
+
+enum AIEventCategory
+{
+    NULL_AI_EVENT_CATEGORY = 0;
+
+    ECONOMIC_EVENT = 1;     // 价格变化类
+    WEATHER_EVENT = 2;      // 天气影响
+    TECHNOLOGY_EVENT = 3;   // 科技波动
+    COMBAT_EVENT = 4;       // 战斗修正
+}
+
+enum TaskType {
+    NULL_TASK_TYPE = 0;
+    PRODUCE_PRODUCT = 1;
+    HARVEST_RESOURCE = 2;
+    OCCUPY_CENTER = 3;
+    REPAIR_UNIT = 4;
 }
 
 enum AIActionType {
-    UNKNOWN = 0;        // 未知或未定义动作
-    PRODUCE = 1;        
-    HARVEST = 2;        
-    MOVE = 3;          
-    ATTACK = 4;        
-    REPAIR = 5;         
-    SELL = 6;           
-    OCCUPY = 7;         
-    CUSTOM = 100;       // 自定义动作：使用 payload_json 等字段描述任意扩展动作
+    UNKNOWN = 0;
+    PRODUCE = 1;
+    HARVEST = 2;
+    MOVE = 3;
+    ATTACK = 4;
+    REPAIR = 5;
+    SELL = 6;
+    OCCUPY = 7;
 }
