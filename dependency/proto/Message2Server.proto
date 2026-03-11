@@ -12,6 +12,13 @@ message IDMsg
     protobuf.GameMode mode = 3; // 客户端发起连接/请求时声明希望的游戏模式
 }
 
+message CharacterMsg
+{
+    int64 character_id = 1;
+    int64 team_id = 2;
+    CharacterType character_type = 3;
+    int32 side_flag = 4;
+}
 
 message RegisterFactoryMsg
 {

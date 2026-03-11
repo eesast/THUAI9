@@ -6,6 +6,7 @@ import "Message2Server.proto";
 
 service AvailableService
 {
+    // 连接和初始化服务
     rpc TryConnection(IDMsg) returns (BoolRes);
 
     // 游戏开局调用一次的服务
