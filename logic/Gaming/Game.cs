@@ -71,11 +71,19 @@ namespace Gaming
 
             Character? targetCharacter = gameMap.FindCharacterInID(targetId);
             if (targetCharacter != null)
+            {
+                if (targetCharacter.IsRemoved) return false;
+                if (targetCharacter.ID == attacker.ID) return false;
+                if (targetCharacter.TeamID.Get() == attacker.TeamID.Get()) return false;
                 return actionManager.Attack(attacker, targetCharacter);
+            }
 
             Factory? targetFactory = FindFactoryById(targetId);
             if (targetFactory != null)
+            {
+                if (targetFactory.TeamID.Get() == attacker.TeamID.Get()) return false;
                 return actionManager.Attack(attacker, targetFactory);
+            }
 
             return false;
         }
@@ -97,6 +105,7 @@ namespace Gaming
         public bool Harvest(long playerId, long resourceId, int timeMs)
         {
             if (timeMs <= 0) return false;
+            if (resourceId <= 0) return false;
             if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
             if (character.IsRemoved) return false;
 
@@ -117,7 +126,10 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Trade(long playerId, Preparation.Utility.GoodsType type, int amount, bool buy)
         {
+            if (amount <= 0) return false;
+            if (type < GoodsType.FOOD || type > GoodsType.SEMICONDUCTOR) return false;
             if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
             return buy ? tradeManager.Buy(character, type, amount) : tradeManager.Sell(character, type, amount);
         }
 
@@ -131,6 +143,7 @@ namespace Gaming
         public bool Occupy(long playerId, long computeCenterId, int timeMs)
         {
             if (timeMs <= 0) return false;
+            if (computeCenterId <= 0) return false;
             if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
             if (character.IsRemoved) return false;
 
@@ -148,7 +161,11 @@ namespace Gaming
         /// <param name="tech">科技类型</param>
         /// <returns>是否成功受理</returns>
         public bool UplevelTech(long playerId, Preparation.Utility.TechType tech)
-            => uplevelManager.UplevelTech(playerId, tech);
+        {
+            if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
+            return uplevelManager.UplevelTech(character, tech);
+        }
 
         /// <summary>
         /// 获取当前帧/时刻对该玩家可见的世界快照。
