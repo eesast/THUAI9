@@ -26,6 +26,9 @@ namespace Server
                     isSpectatorJoin = value;
             }
         }
+        
+        #region 连接和初始化服务
+
         public override Task<BoolRes> TryConnection(IDMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
@@ -45,167 +48,15 @@ namespace Server
             return Task.FromResult(onConnection);
         }
 
+        #endregion
+
         #region 游戏开局调用一次的服务
 
         protected readonly object addPlayerLock = new();
-        public override async Task AddCharacter(CharacterMsg request, IServerStreamWriter<MessageToClient> responseStream, ServerCallContext context)
+        public override async Task RegisterFactory(RegisterFactoryMsg request, IServerStreamWriter<MessageToClient> responseStream, ServerCallContext context)
         {
-#if !DEBUG
-            GameServerLogging.logger.LogInfo($"AddPlayer: Player {request.CharacterId} from Team {request.TeamId}");
-#endif
-            if (request.CharacterId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
-            {
-                GameServerLogging.logger.LogDebug($"TRY Add Spectator: Player {request.CharacterId}");
-                // 观战模式
-                lock (spectatorJoinLock)  // 具体原因见另一个上锁的地方
-                {
-                    if (semaDicts[0].TryAdd(request.CharacterId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
-                    {
-                        GameServerLogging.logger.LogInfo("A new spectator comes to watch this game");
-                        IsSpectatorJoin = true;
-                    }
-                    else
-                    {
-                        GameServerLogging.logger.LogInfo($"Duplicated Spectator ID {request.CharacterId}");
-                        return;
-                    }
-                }
-                do
-                {
-                    semaDicts[0][request.CharacterId].Item1.Wait();
-                    try
-                    {
-                        if (currentGameInfo != null)
-                        {
-                            var info = currentGameInfo.Clone();
-                            for (int i = info.ObjMessage.Count - 1; i >= 0; i--)
-                            {
-                                if (info.ObjMessage[i].NewsMessage != null)
-                                {
-                                    info.ObjMessage.RemoveAt(i);
-                                }
-                            }
-                            await responseStream.WriteAsync(info);
-                            // GameServerLogging.logger.LogInfo("Send!", false);
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        if (semaDicts[0].TryRemove(request.CharacterId, out var semas))
-                        {
-                            try
-                            {
-                                semas.Item1.Release();
-                                semas.Item2.Release();
-                            }
-                            catch
-                            {
-                            }
-                            GameServerLogging.logger.LogInfo($"The spectator {request.CharacterId} exited");
-                            return;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        GameServerLogging.logger.LogInfo(ex.ToString());
-                    }
-                    finally
-                    {
-                        try
-                        {
-                            semaDicts[0][request.CharacterId].Item2.Release();
-                        }
-                        catch
-                        {
-                        }
-                    }
-                } while (game.GameMap.Timer.IsGaming);
-                GameServerLogging.logger.LogDebug("END Add Spectator");
-                return;
-            }
-            GameServerLogging.logger.LogDebug(
-                $"TRY Add Player: Player {request.CharacterId} from Team {request.TeamId}");
-            if (game.GameMap.Timer.IsGaming)
-                return;
-            if (!ValidPlayerID(request.CharacterId))  //玩家id是否正确
-                return;
-            if (request.TeamId >= TeamCount)  
-                return;
-            if (communicationToGameID[request.TeamId][request.CharacterId] != GameObj.invalidID)  //是否已经添加了该玩家
-                return;
-            GameServerLogging.logger.LogDebug("AddPlayer: Check Correct");
-            lock (addPlayerLock)
-            {
-                GameServerLogging.logger.LogDebug("ch id :" + request.CharacterId + "  te id:" + request.TeamId + " type :" + request.CharacterType + " side: " + request.SideFlag);
-                Game.PlayerInitInfo playerInitInfo = new(request.TeamId, request.CharacterId, Transformation.CharacterTypeFromProto(request.CharacterType), request.SideFlag);
-                long newPlayerID = game.AddCharacter(playerInitInfo);
-                if (newPlayerID == GameObj.invalidID)
-                {
-                    GameServerLogging.logger.LogError("FAIL AddPlayer");
-                    return;
-                }
-                communicationToGameID[request.TeamId][request.CharacterId] = newPlayerID;
-                var temp = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
-                bool start = false;
-                GameServerLogging.logger.LogInfo($"Player {request.CharacterId} from Team {request.TeamId} joins");
-                lock (spectatorJoinLock)  // 为了保证绝对安全，还是加上这个锁吧
-                {
-                    if (semaDicts[request.TeamId].TryAdd(request.CharacterId, temp))
-                    {
-                        start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
-
-                        GameServerLogging.logger.LogDebug($"PlayerCountNow: {playerCountNow}");
-                        GameServerLogging.logger.LogDebug($"PlayerTotalNum: {playerNum * TeamCount}");
-                    }
-                }
-                if (start)
-                {
-                    StartGame();
-                }
-            }
-            bool exitFlag = false;
-            bool firstTime = true;
-            do
-            {
-                semaDicts[request.TeamId][request.CharacterId].Item1.Wait();
-
-                Character? character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.CharacterId);
-                // if(character!=null)
-                // {
-                //     GameServerLogging.logger.LogInfo($"Character {request.PlayerId} exist! IsRemoved {character.IsRemoved}");
-                // }
-                // else{
-                //     GameServerLogging.logger.LogInfo($"Character {request.PlayerId} null");
-                // }
-                if (!firstTime && request.CharacterId > 0 && (character == null || character.IsRemoved == true))
-                {
-                    // GameServerLogging.logger.LogInfo($"Cannot find character {request.PlayerId} from Team {request.TeamId}!");
-                }
-                else
-                {
-                    if (firstTime)
-                        firstTime = false;
-                    try
-                    {
-                        if (currentGameInfo != null && !exitFlag)
-                        {
-                            await responseStream.WriteAsync(currentGameInfo);
-                            // GameServerLogging.logger.LogInfo(
-                            // $"Send to Player{request.CharacterId} from Team {request.TeamId}!",
-                            //    false);
-                        }
-                    }
-                    catch
-                    {
-                        if (!exitFlag)
-                        {
-                            GameServerLogging.logger.LogInfo($"The client {request.CharacterId} exited");
-                            exitFlag = true;
-                        }
-                    }
-                }
-                semaDicts[request.TeamId][request.CharacterId].Item2.Release();
-            } while (game.GameMap.Timer.IsGaming);
+            // 待实现
+            await Task.Delay(0);
         }
 
         public override Task<MessageOfMap> GetMap(NullRequest request, ServerCallContext context)
@@ -216,25 +67,7 @@ namespace Server
 
         #endregion
 
-        #region 游戏过程中玩家执行操作的服务
-
-        #region 普通角色操作
-
-        /*public override Task<BoolRes> Activate(ActivateMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug($"TRY Activate: Player {request.PlayerId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.PlayerId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.ActivateCharacter(request.TeamId, Transformation.CharacterTyprFromProto(request.CharacterType));
-            if (!game.GameMap.Timer.IsGaming) boolRes.ActSuccess = false;
-            GameServerLogging.logger.LogDebug($"END Activate: {boolRes.ActSuccess}");
-            return Task.FromResult(boolRes);
-        }*/
+        #region 游戏过程中普通角色执行操作的服务
 
         public override Task<MoveRes> Move(MoveMsg request, ServerCallContext context)
         {
@@ -278,98 +111,17 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Produce(IDMsg request, ServerCallContext context)
+        public override Task<BoolRes> Harvesting(MaterialResourceMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug(
-                $"TRY Produce: Player {request.CharacterId} from Team {request.TeamId}");
+            GameServerLogging.logger.LogDebug($"TRY Harvesting");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Produce(request.TeamId, request.CharacterId);
-            GameServerLogging.logger.LogDebug("END Produce");
-            return Task.FromResult(boolRes);
-        }
-
-
-        public override Task<BoolRes> Rebuild(ConstructMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY Rebuild: Player {request.CharacterId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Construct(
-                request.TeamId, request.CharacterId,
-                Transformation.ConstructionFromProto(request.ConstructionType));
-            GameServerLogging.logger.LogDebug("END Rebuild");
-            return Task.FromResult(boolRes);
-        }
-
-        public override Task<BoolRes> Construct(ConstructMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY Construct: Player {request.CharacterId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Construct(
-                request.TeamId, request.CharacterId,
-                Transformation.ConstructionFromProto(request.ConstructionType));
-            GameServerLogging.logger.LogDebug("END Construct");
-            return Task.FromResult(boolRes);
-        }
-
-        public override Task<BoolRes> ConstructTrap(ConstructTrapMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY ConstructTrap: Player {request.CharacterId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Construct(
-                request.TeamId, request.CharacterId,
-                Transformation.TrapTypeFromProto(request.TrapType));
-            GameServerLogging.logger.LogDebug("END ConstructTrap");
-            return Task.FromResult(boolRes);
-        }
-
-        public override Task<BoolRes> Equip(EquipMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY Construct: Player {request.CharacterId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Equip(
-                request.TeamId, request.CharacterId,
-                Transformation.EquipmentTypeFromProto(request.EquipmentType));
-            GameServerLogging.logger.LogDebug("END Equip");
+            // 待实现
+            GameServerLogging.logger.LogDebug("END Harvesting");
             return Task.FromResult(boolRes);
         }
 
         public override Task<BoolRes> Attack(AttackMsg request, ServerCallContext context)
         {
-
             GameServerLogging.logger.LogDebug(
                 $"TRY Attack: Player {request.CharacterId} from Team {request.TeamId} attacking Player {request.AttackedCharacterId}");
             BoolRes boolRes = new();
@@ -383,12 +135,6 @@ namespace Server
                 boolRes.ActSuccess = false;
                 return Task.FromResult(boolRes);
             }
-            // if (request.AttackRange <= 0)
-            // {
-            //     boolRes.ActSuccess = false;
-            //     return Task.FromResult(boolRes);
-            // }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
             boolRes.ActSuccess = game.Attack(
                 request.TeamId, request.CharacterId,
                 request.AttackedTeam, request.AttackedCharacterId);
@@ -396,33 +142,7 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Cast(CastMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY Cast: Player {request.CharacterId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            /*if (request.SkillId <= 0)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }*/
-            // if (request.AttackRange <= 0)
-            // {
-            //     boolRes.ActSuccess = false;
-            //     return Task.FromResult(boolRes);
-            // }
-            boolRes.ActSuccess = game.CastSkill(
-                request.TeamId, request.CharacterId, request.Angle);
-            GameServerLogging.logger.LogDebug("END Cast");
-            return Task.FromResult(boolRes);
-        }
-
-        public override Task<BoolRes> AttackConstruction(AttackConstructionMsg request, ServerCallContext context)
+        public override Task<BoolRes> AttackConstruction(AttackFactoryMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY AttackConstruction: Player {request.CharacterId} from Team {request.TeamId}");
@@ -432,29 +152,17 @@ namespace Server
                 boolRes.ActSuccess = false;
                 return Task.FromResult(boolRes);
             }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.AttackConstruction(
-                request.TeamId, request.CharacterId
-                );
+            boolRes.ActSuccess = game.AttackConstruction(request.TeamId, request.CharacterId);
             GameServerLogging.logger.LogDebug("END AttackConstruction");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> AttackAdditionResource(AttackAdditionResourceMsg request, ServerCallContext context)
+        public override Task<BoolRes> Repair(RepairFactory request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug(
-                $"TRY AttackAdditionResource: Player {request.CharacterId} from Team {request.TeamId}");
+            GameServerLogging.logger.LogDebug($"TRY Repair");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.AttackResource(
-                request.TeamId, request.CharacterId
-                );
-            GameServerLogging.logger.LogDebug("END AttackAdditionResource");
+            // 待实现
+            GameServerLogging.logger.LogDebug("END Repair");
             return Task.FromResult(boolRes);
         }
 
@@ -534,11 +242,38 @@ namespace Server
             }
         }
 
+        public override Task<BoolRes> Produce(ProduceGoodsMeg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY Produce: Team {request.TeamId}");
+            BoolRes boolRes = new();
+            // 待实现
+            GameServerLogging.logger.LogDebug("END Produce");
+            return Task.FromResult(boolRes);
+        }
+
+        public override Task<BoolRes> Load(LoadMeg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY Load");
+            BoolRes boolRes = new();
+            // 待实现
+            GameServerLogging.logger.LogDebug("END Load");
+            return Task.FromResult(boolRes);
+        }
+
+        public override Task<BoolRes> Sell(SellMeg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY Sell");
+            BoolRes boolRes = new();
+            // 待实现
+            GameServerLogging.logger.LogDebug("END Sell");
+            return Task.FromResult(boolRes);
+        }
+
         #endregion
 
         #region 核心角色操作
 
-        public override Task<BoolRes> CreatCharacter(CreatCharacterMsg request, ServerCallContext context)
+        public override Task<BoolRes> CreatCharacter(CreateCharacterMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
@@ -565,10 +300,6 @@ namespace Server
             {
                 return Task.FromResult(new BoolRes { ActSuccess = false });
             }
-            /*if (game.TeamList[(int)request.TeamId].Hero.HP <= 0)
-            {
-                return Task.FromResult(new BoolRes { ActSuccess = false });
-            }*/
             BoolRes boolRes = new()
             {
                 ActSuccess =
@@ -583,10 +314,10 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<CreatCharacterRes> CreatCharacterRID(CreatCharacterMsg request, ServerCallContext context)
+        public override Task<CreatCharacterRes> CreatCharacterRID(CreateCharacterMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
+                $"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
             var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
             {
                 Utility.CharacterType.TangSeng => GameData.TangSengcost,
@@ -610,10 +341,6 @@ namespace Server
             {
                 return Task.FromResult(new CreatCharacterRes { ActSuccess = false });
             }
-            /*if (game.TeamList[(int)request.TeamId].Hero.HP <= 0)
-            {
-                return Task.FromResult(new CreatCharacterRes { ActSuccess = false });
-            }*/
             var playerId = game.ActivateCharacter(
                 request.TeamId,
                 Transformation.CharacterTypeFromProto(request.CharacterType),
@@ -639,13 +366,23 @@ namespace Server
                 boolRes.ActSuccess = false;
                 return Task.FromResult(boolRes);
             }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
             boolRes.ActSuccess = game.Stop(request.TeamId, request.CharacterId);
             GameServerLogging.logger.LogDebug("END EndAllAction");
             return Task.FromResult(boolRes);
         }
 
         #endregion
+
+        #region AI 服务
+
+        public override Task<StrategicAIResponse> AskAI(StrategicAIRequest request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY AskAI: Team {request.TeamId}");
+            StrategicAIResponse response = new();
+            // 待实现
+            GameServerLogging.logger.LogDebug("END AskAI");
+            return Task.FromResult(response);
+        }
 
         #endregion
     }

@@ -7,6 +7,7 @@ using Timothy.FrameRateTask;
 
 namespace Server
 {
+    /*
     class PlaybackServer(ArgumentOptions options) : ServerBase
     {
         protected readonly ArgumentOptions options = options;
@@ -44,7 +45,7 @@ namespace Server
                 return finalScore;
             }
         }
-        public override int[] GetMoney() => [];
+        // public override int[] GetMoney() => [];
         public override int[] GetScore() => FinalScore;
 
         public override async Task AddCharacter(CharacterMsg request,
@@ -328,4 +329,5 @@ namespace Server
             }
         }
     }
+    */
 }

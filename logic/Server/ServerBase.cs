@@ -8,6 +8,6 @@ namespace Server
         //public abstract int[] GetMoney();
         public abstract int[] GetScore();
         public abstract int[] GetMaterial();
-        public abstract int[] GetComputingPower();
+        public abstract int[] GetComputePower();
     }
 }
