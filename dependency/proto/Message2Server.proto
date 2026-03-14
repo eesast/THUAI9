@@ -7,14 +7,14 @@ message NullRequest {}
 
 message IDMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     protobuf.GameMode mode = 3; // 客户端发起连接/请求时声明希望的游戏模式
 }
 
 message CharacterMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     CharacterType character_type = 3;
     int32 side_flag = 4;
@@ -31,7 +31,7 @@ message RegisterFactoryMsg
 
 message MoveMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     double angle = 2;
     int64 time_in_milliseconds = 3;
     int64 team_id = 4;
@@ -39,14 +39,14 @@ message MoveMsg
 
 message RecoverMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 recovered_hp = 2;
     int64 team_id = 3;
 }
 
 message ResourceMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     int64 resource_id = 3;
     int32 target_x = 4; // 目标坐标，或许可用
@@ -57,7 +57,7 @@ message ResourceMsg
 
 message AttackMsg // 普通攻击
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     int32 attack_range = 3; // 攻击范围
     int64 attacked_character_id = 4; // 攻击对象
@@ -67,7 +67,7 @@ message AttackMsg // 普通攻击
 /*
 message AttackFactoryMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     int32 attack_range = 3;
     int64 attacked_Factory_id = 4;
@@ -77,7 +77,7 @@ message AttackFactoryMsg
 
 message OccupyMsg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
     int32 target_x = 3;
     int32 target_y = 4;
@@ -86,8 +86,8 @@ message OccupyMsg
 
 message SendMsg
 {
-    int64 character_id = 1;
-    int64 to_character_id = 2;
+    int64 player_id = 1;
+    int64 to_player_id = 2;
     oneof message
     {
         string text_message = 3;
@@ -100,7 +100,7 @@ message SendMsg
 message LoadMeg
 {
     int64 team_id = 1;
-    int64 character_id = 2;
+    int64 player_id = 2;
     int32 semiconductor_num = 3;
     int32 medicine_num = 4;
     int32 handiwork_num = 5;
@@ -112,7 +112,7 @@ message LoadMeg
 message SellMeg
 {
     int64 team_id = 1;
-    int64 character_id = 2;
+    int64 player_id = 2;
     int32 semiconductor_num = 3;
     int32 medicine_num = 4;
     int32 handiwork_num = 5;
@@ -139,7 +139,7 @@ message ProduceGoodsMeg
 
 message RepairFactoryMeg
 {
-    int64 character_id = 1;
+    int64 player_id = 1;
     int64 team_id = 2;
 }
 
