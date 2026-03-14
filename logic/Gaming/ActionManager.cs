@@ -162,7 +162,7 @@ namespace Gaming
                     }
                 )
                 { IsBackground = true }.Start();
-                return false;
+                return true;
             }
             public bool Occupy(Character character)
             {
@@ -210,7 +210,7 @@ namespace Gaming
                     }
                 )
                 { IsBackground = true }.Start();
-                return false;
+                return true;
             }
 
             public bool Attack(Character character, Character gameobj)

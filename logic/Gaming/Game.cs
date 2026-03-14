@@ -58,13 +58,41 @@ namespace Gaming
         //    => characterManager != null && characterManager.Move(playerId, timeMs, direction);
 
         /// <summary>
-        /// 发起一次攻击（可按方向或目标判定，按实际规则实现）。
+        /// 发起一次攻击（按目标 ID 判定）。
         /// </summary>
         /// <param name="playerId">发起者 ID</param>
-        /// <param name="direction">攻击方向，弧度；如按目标实现，可忽略</param>
+        /// <param name="targetId">目标对象 ID（角色或工厂）</param>
         /// <returns>是否成功受理</returns>
-        public bool Attack(long playerId, double direction)
-            => throw new NotImplementedException();
+        public bool Attack(long playerId, long targetId)
+        {
+            if (!characterManager.TryGetCharacter(playerId, out var attacker)) return false;
+            if (attacker.IsRemoved) return false;
+            if (targetId <= 0) return false;
+
+            Character? targetCharacter = gameMap.FindCharacterInID(targetId);
+            if (targetCharacter != null)
+            {
+                if (targetCharacter.IsRemoved) return false;
+                if (targetCharacter.ID == attacker.ID) return false;
+                if (targetCharacter.TeamID.Get() == attacker.TeamID.Get()) return false;
+                return actionManager.Attack(attacker, targetCharacter);
+            }
+
+            Factory? targetFactory = FindFactoryById(targetId);
+            if (targetFactory != null)
+            {
+                if (targetFactory.TeamID.Get() == attacker.TeamID.Get()) return false;
+                return actionManager.Attack(attacker, targetFactory);
+            }
+
+            return false;
+        }
+
+        public bool Attack(long playerId, double targetId)
+        {
+            if (double.IsNaN(targetId) || double.IsInfinity(targetId)) return false;
+            return Attack(playerId, (long)Math.Round(targetId));
+        }
 
 
         /// <summary>
@@ -75,7 +103,18 @@ namespace Gaming
         /// <param name="timeMs">采集时间（毫秒）</param>
         /// <returns>是否成功受理</returns>
         public bool Harvest(long playerId, long resourceId, int timeMs)
-            => throw new NotImplementedException();
+        {
+            if (timeMs <= 0) return false;
+            if (resourceId <= 0) return false;
+            if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
+
+            Resource? target = FindResourceById(resourceId);
+            if (target == null) return false;
+            if (!GameData.ApproachToInteract(character.Position, target.Position)) return false;
+
+            return actionManager.Harvest(character);
+        }
 
         /// <summary>
         /// 进行交易（购买/出售）某种商品。
@@ -87,7 +126,10 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Trade(long playerId, Preparation.Utility.GoodsType type, int amount, bool buy)
         {
+            if (amount <= 0) return false;
+            if (type < GoodsType.FOOD || type > GoodsType.SEMICONDUCTOR) return false;
             if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
             return buy ? tradeManager.Buy(character, type, amount) : tradeManager.Sell(character, type, amount);
         }
 
@@ -99,7 +141,18 @@ namespace Gaming
         /// <param name="timeMs">占领时间（毫秒）</param>
         /// <returns>是否成功受理</returns>
         public bool Occupy(long playerId, long computeCenterId, int timeMs)
-            => throw new NotImplementedException();
+        {
+            if (timeMs <= 0) return false;
+            if (computeCenterId <= 0) return false;
+            if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
+
+            ComputeCenter? target = FindComputeCenterById(computeCenterId);
+            if (target == null) return false;
+            if (!GameData.ApproachToInteract(character.Position, target.Position)) return false;
+
+            return actionManager.Occupy(character);
+        }
 
         /// <summary>
         /// 使用/研发一项科技（根据实际赛题约束实现）。
@@ -108,7 +161,11 @@ namespace Gaming
         /// <param name="tech">科技类型</param>
         /// <returns>是否成功受理</returns>
         public bool UplevelTech(long playerId, Preparation.Utility.TechType tech)
-            => uplevelManager.UplevelTech(playerId, tech);
+        {
+            if (!characterManager.TryGetCharacter(playerId, out var character)) return false;
+            if (character.IsRemoved) return false;
+            return uplevelManager.UplevelTech(character, tech);
+        }
 
         /// <summary>
         /// 获取当前帧/时刻对该玩家可见的世界快照。
@@ -161,6 +218,24 @@ namespace Gaming
                     inBush = true;
             });
             return inBush;
+        }
+
+        private Resource? FindResourceById(long resourceId)
+        {
+            if (!gameMap.GameObjDict.TryGetValue(GameObjType.RESOURCE, out var resources)) return null;
+            return (Resource?)resources.Find(obj => obj is Resource r && r.ID == resourceId);
+        }
+
+        private ComputeCenter? FindComputeCenterById(long computeCenterId)
+        {
+            if (!gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centers)) return null;
+            return (ComputeCenter?)centers.Find(obj => obj is ComputeCenter c && c.ID == computeCenterId);
+        }
+
+        private Factory? FindFactoryById(long factoryId)
+        {
+            if (!gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var factories)) return null;
+            return (Factory?)factories.Find(obj => obj is Factory f && f.ID == factoryId);
         }
 
         /// <summary>
