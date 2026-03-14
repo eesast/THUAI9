@@ -204,7 +204,7 @@ message MessageOfAll
         message TeamInfo {
             int32 score = 1;
             int32 material = 2;
-            int32 computing_power = 3;
+            int32 compute_power = 3;
             int32 factory_hp = 4;
         }
 
