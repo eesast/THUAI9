@@ -29,16 +29,22 @@ message RegisterFactoryMsg
     int32 side_flag = 5; // 客户端希望的阵营标识
 }
 
-message CreateCharacterMsg
+message MoveMsg
 {
-    CharacterType character_type = 1;
-    int64 team_id = 2;
-    int32 birthpoint_index = 3;
-    protobuf.GameMode mode = 4;  // 创建角色时可以指明模式
+    int64 character_id = 1;
+    double angle = 2;
+    int64 time_in_milliseconds = 3;
+    int64 team_id = 4;
 }
 
+message RecoverMsg
+{
+    int64 character_id = 1;
+    int64 recovered_hp = 2;
+    int64 team_id = 3;
+}
 
-message MaterialResourceMsg
+message ResourceMsg
 {
     int64 character_id = 1;
     int64 team_id = 2;
@@ -49,12 +55,33 @@ message MaterialResourceMsg
     //HarvestAction action = 7; // 采集动作类型
 }
 
-message MoveMsg
+message AttackMsg // 普通攻击
 {
     int64 character_id = 1;
-    double angle = 2;
-    int64 time_in_milliseconds = 3;
-    int64 team_id = 4;
+    int64 team_id = 2;
+    int32 attack_range = 3; // 攻击范围
+    int64 attacked_character_id = 4; // 攻击对象
+    int64 attacked_team_id = 5;
+}
+
+/*
+message AttackFactoryMsg
+{
+    int64 character_id = 1;
+    int64 team_id = 2;
+    int32 attack_range = 3;
+    int64 attacked_Factory_id = 4;
+    int64 attacked_team_id = 5; 
+}
+*/
+
+message OccupyMsg
+{
+    int64 character_id = 1;
+    int64 team_id = 2;
+    int32 target_x = 3;
+    int32 target_y = 4;
+    int64 target_compute_center_id = 5;
 }
 
 message SendMsg
@@ -69,43 +96,6 @@ message SendMsg
     int64 team_id = 5;
 }
 
-message AttackMsg // 普通攻击
-{
-    int64 character_id = 1;
-    int64 team_id = 2;
-    int32 attack_range = 3; // 攻击范围
-    int64 attacked_character_id = 4; // 攻击对象
-    int64 attacked_team_id = 5;
-}
-
-message AttackFactoryMsg
-{
-    int64 character_id = 1;
-    int64 team_id = 2;
-    int32 attack_range = 3;
-    int64 attacked_Factory_id = 4;
-    int64 attacked_team_id = 5; 
-}
-
-message RecoverMsg
-{
-    int64 character_id = 1;
-    int64 recovered_hp = 2;
-    int64 team_id = 3;
-}
-
-message RepairFactory
-{
-    int64 character_id = 1;
-    int64 team_id = 2;
-}
-
-message ProduceGoodsMeg
-{
-    GoodsType product_type = 1;
-    int64 team_id = 2;
-    int32 max_produce_num = 3;
-}
 
 message LoadMeg
 {
@@ -130,6 +120,29 @@ message SellMeg
     int32 food_num = 7;
     int32 marketindex = 8;
 }
+
+
+message CreateCharacterMsg
+{
+    CharacterType character_type = 1;
+    int64 team_id = 2;
+    int32 birthpoint_index = 3;
+    protobuf.GameMode mode = 4;  // 创建角色时可以指明模式
+}
+
+message ProduceGoodsMeg
+{
+    GoodsType product_type = 1;
+    int64 team_id = 2;
+    int32 max_produce_num = 3;
+}
+
+message RepairFactoryMeg
+{
+    int64 character_id = 1;
+    int64 team_id = 2;
+}
+
 
 
 // 智慧大脑相关
