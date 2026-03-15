@@ -72,14 +72,9 @@ namespace Server
         public override Task<MoveRes> Move(MoveMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Move: Player {request.CharacterId} from Team {request.TeamId}, " +
-                $"TimeInMilliseconds: {request.TimeInMilliseconds}");
+                $"TRY Move: Player {request.PlayerId} from Team {request.TeamId}, " +
+                $"TimeInMilliseconds: {request.TimeInMilliseconds}" + $"Angle: {request.Angle}");
             MoveRes moveRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                moveRes.ActSuccess = false;
-                return Task.FromResult(moveRes);
-            }
             if (double.IsNaN(request.Angle))
             {
                 moveRes.ActSuccess = false;
@@ -98,91 +93,76 @@ namespace Server
         public override Task<BoolRes> Recover(RecoverMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Recover: Player {request.CharacterId} from Team {request.TeamId}");
+                $"TRY Recover: Player {request.PlayerId} from Team {request.TeamId}" + 
+                $"RecoveredHp: {request.RecoveredHp}");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            boolRes.ActSuccess = game.Recover(request.TeamId, request.CharacterId, request.RecoveredHp);
-            GameServerLogging.logger.LogDebug("END Recover");
+            
+            boolRes.ActSuccess = game.Recover(request.TeamId, request.PlayerId, request.RecoveredHp);
+            GameServerLogging.logger.LogDebug($"END Recover:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Harvesting(MaterialResourceMsg request, ServerCallContext context)
+        public override Task<BoolRes> Harvest(ResourceMsg request)
         {
-            GameServerLogging.logger.LogDebug($"TRY Harvesting");
+            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId} + 
+            $"HarvestedResource: {request.ResourceId}, Amount: {request.Amount}");
             BoolRes boolRes = new();
-            // 待实现
-            GameServerLogging.logger.LogDebug("END Harvesting");
+            boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
+            GameServerLogging.logger.LogDebug($"END Harvesting:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Attack(AttackMsg request, ServerCallContext context)
+        public override Task<BoolRes> Attack(AttackMsg request)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Attack: Player {request.CharacterId} from Team {request.TeamId} attacking Player {request.AttackedCharacterId}");
+                $"TRY Attack: Player {request.CharacterId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            if (request.AttackedCharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
             boolRes.ActSuccess = game.Attack(
-                request.TeamId, request.CharacterId,
-                request.AttackedTeam, request.AttackedCharacterId);
-            GameServerLogging.logger.LogDebug("END Attack");
+                request.TeamId, request.PlayerId,
+                request.AttackedTeamId, request.AttackedPlayerId);
+            GameServerLogging.logger.LogDebug($"END Attack: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> AttackConstruction(AttackFactoryMsg request, ServerCallContext context)
+        // public override Task<BoolRes> AttackConstruction(AttackFactoryMsg request, ServerCallContext context)
+        // {
+        //     GameServerLogging.logger.LogDebug(
+        //         $"TRY AttackConstruction: Player {request.CharacterId} from Team {request.TeamId}");
+        //     BoolRes boolRes = new();
+        //     if (request.CharacterId >= spectatorMinPlayerID)
+        //     {
+        //         boolRes.ActSuccess = false;
+        //         return Task.FromResult(boolRes);
+        //     }
+        //     boolRes.ActSuccess = game.AttackConstruction(request.TeamId, request.CharacterId);
+        //     GameServerLogging.logger.LogDebug("END AttackConstruction");
+        //     return Task.FromResult(boolRes);
+        // }
+
+        // public override Task<BoolRes> Repair(RepairFactory request, ServerCallContext context)
+        // {
+        //     GameServerLogging.logger.LogDebug($"TRY Repair");
+        //     BoolRes boolRes = new();
+        //     // 待实现
+        //     GameServerLogging.logger.LogDebug("END Repair");
+        //     return Task.FromResult(boolRes);
+        // }
+
+        public Occupy(OccupyMsg request)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY AttackConstruction: Player {request.CharacterId} from Team {request.TeamId}");
+                $"TRY Occupy: Player {request.PlayerId} from Team {request.TeamId} occupying Resource {request.TargetComputeCenterId}");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            boolRes.ActSuccess = game.AttackConstruction(request.TeamId, request.CharacterId);
-            GameServerLogging.logger.LogDebug("END AttackConstruction");
+            boolRes.ActSuccess = game.Occupy(request.TeamId, request.PlayerId, request.TargetComputeCenterId);
+            GameServerLogging.logger.LogDebug($"END Occupy: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
-
-        public override Task<BoolRes> Repair(RepairFactory request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug($"TRY Repair");
-            BoolRes boolRes = new();
-            // 待实现
-            GameServerLogging.logger.LogDebug("END Repair");
-            return Task.FromResult(boolRes);
-        }
-
-        public override Task<BoolRes> Send(SendMsg request, ServerCallContext context)
+        public override Task<BoolRes> Send(SendMsg request)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Send: From Player {request.CharacterId} To Player {request.ToCharacterId} from Team {request.TeamId}");
-            var boolRes = new BoolRes();
-            if (request.CharacterId >= spectatorMinPlayerID || PlayerDeceased((int)request.CharacterId))
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            if (!ValidPlayerID(request.CharacterId)
-                || !ValidPlayerID(request.ToCharacterId)
-                || request.CharacterId == request.ToCharacterId)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
+                $"TRY Send: From Player {request.PlayerId} To Player {request.ToPlayerId} from Team {request.TeamId}");
+            BoolRes boolRes = new BoolRes();
+            
             GameServerLogging.logger.LogDebug($"Send: As {request.MessageCase}");
             switch (request.MessageCase)
             {
@@ -197,8 +177,8 @@ namespace Server
                         MessageOfNews news = new()
                         {
                             TextMessage = request.TextMessage,
-                            FromId = request.CharacterId,
-                            ToId = request.ToCharacterId,
+                            FromId = request.PlayerId,
+                            ToId = request.ToPlayerId,
                             TeamId = request.TeamId
                         };
                         lock (newsLock)
@@ -242,29 +222,23 @@ namespace Server
             }
         }
 
-        public override Task<BoolRes> Produce(ProduceGoodsMeg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug($"TRY Produce: Team {request.TeamId}");
-            BoolRes boolRes = new();
-            // 待实现
-            GameServerLogging.logger.LogDebug("END Produce");
-            return Task.FromResult(boolRes);
-        }
 
-        public override Task<BoolRes> Load(LoadMeg request, ServerCallContext context)
+        public override Task<BoolRes> Load(LoadMeg request)
         {
-            GameServerLogging.logger.LogDebug($"TRY Load");
+            GameServerLogging.logger.LogDebug($"TRY Load: Player {request.PlayerId} from Team {request.TeamId}" +
+            $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
             BoolRes boolRes = new();
-            // 待实现
+            boolRes.ActSuccess = game.Load(request.TeamId, request.PlayerId, request.SemiconductorNum, request.MedicineNum, request.HandiworkNum, request.CostumeNum, request.FoodNum);
             GameServerLogging.logger.LogDebug("END Load");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Sell(SellMeg request, ServerCallContext context)
+        public override Task<BoolRes> Sell(SellMeg request)
         {
-            GameServerLogging.logger.LogDebug($"TRY Sell");
+            GameServerLogging.logger.LogDebug($"TRY Sell: Player {request.PlayerId} from Team {request.TeamId}" +
+            $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
             BoolRes boolRes = new();
-            // 待实现
+            boolRes.ActSuccess = game.Sell(request.TeamId, request.PlayerId, request.SemiconductorNum, request.MedicineNum, request.HandiworkNum, request.CostumeNum, request.FoodNum);
             GameServerLogging.logger.LogDebug("END Sell");
             return Task.FromResult(boolRes);
         }
@@ -286,12 +260,6 @@ namespace Server
                 Utility.CharacterType.BaiLongma => GameData.BaiLongmacost,
                 Utility.CharacterType.Monkid => GameData.Monkidcost,
 
-                Utility.CharacterType.JiuLing => GameData.JiuLingcost,
-                Utility.CharacterType.HongHaier => GameData.HongHaiercost,
-                Utility.CharacterType.NiuMowang => GameData.NiuMowangcost,
-                Utility.CharacterType.TieShan => GameData.TieShancost,
-                Utility.CharacterType.ZhiZhujing => GameData.ZhiZhujingcost,
-                Utility.CharacterType.Pawn => GameData.Pawncost,
 
                 _ => int.MaxValue
             };
