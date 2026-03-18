@@ -43,37 +43,56 @@ namespace Gaming
 
         public bool StartGame(int milliSeconds)
         {
+            if (milliSeconds <= 0)
+                return false;
             if (gameMap.Timer.IsGaming)
                 return false;
-            // 开始游戏
-            foreach (var team in TeamList)
+
+            lock (gameEndLock)
             {
-                actionManager.TeamTask(team);
-                if (team.sideFlag == 0)
+                gameEnded = false;
+            }
+
+            foreach (var kv in teams)
+            {
+                long teamId = kv.Key;
+                var factory = kv.Value.Factory;
+                if (factory == null) continue;
+
+                factory.TeamID.SetROri(teamId);
+                factory.CanProduce.SetROri(true);
+                factory.CanRecruit.SetROri(true);
+
+                bool existsOnMap = gameMap.GameObjDict[GameObjType.FACTORY]
+                    .Cast<Factory>()
+                    ?.Any(f => f.ID == factory.ID) ?? false;
+                if (!existsOnMap)
                 {
-                    ActivateCharacter(team.TeamID, CharacterType.TangSeng);
-                }
-                else
-                {
-                    ActivateCharacter(team.TeamID, CharacterType.JiuLing);
+                    gameMap.Add(factory);
                 }
             }
-            gameMap.Timer.Start(() => { }, () => EndGame(), milliSeconds);
+
+            if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
+                return false;
+
             new Thread
                 (
                     () =>
                     {
                         Thread.Sleep(GameData.CheckInterval);
-                        new FrameRateTaskExecutor<int>
+                        new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
                         (
                             loopCondition: () => gameMap.Timer.IsGaming,
                             loopToDo: () =>
                             {
-                                gameMap.GameObjDict[GameObjType.ADDITIONAL_RESOURCE].ForEach(delegate (IGameObj Aresource)
+                                foreach (var team in teams)
                                 {
-                                    ARManager.LevelUpAR((A_Resource)Aresource);
-                                    ARManager.autoAttack((A_Resource)Aresource);
-                                });
+                                    var fac = team.Value.Factory;
+                                    if (fac == null) continue;
+                                    fac.TickComputingPower(GameData.CheckInterval);
+                                }
+
+                                return !CheckAndHandleGameEnd();
                             },
                             timeInterval: GameData.CheckInterval,
                             finallyReturn: () => 0
