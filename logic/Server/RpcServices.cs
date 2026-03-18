@@ -253,13 +253,9 @@ namespace Server
                 $"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
             var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
             {
-                Utility.CharacterType.TangSeng => GameData.TangSengcost,
-                Utility.CharacterType.SunWukong => GameData.SunWukongcost,
-                Utility.CharacterType.ZhuBajie => GameData.ZhuBajiecost,
-                Utility.CharacterType.ShaWujing => GameData.ShaWujingcost,
-                Utility.CharacterType.BaiLongma => GameData.BaiLongmacost,
-                Utility.CharacterType.Monkid => GameData.Monkidcost,
-
+                Utility.CharacterType.Drone => GameData.Dronecost,
+                Utility.CharacterType.Robot => GameData.Robotcost,
+                Utility.CharacterType.AutonomousCar => GameData.AutonomousCarcost,
 
                 _ => int.MaxValue
             };
@@ -288,19 +284,9 @@ namespace Server
                 $"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
             var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
             {
-                Utility.CharacterType.TangSeng => GameData.TangSengcost,
-                Utility.CharacterType.SunWukong => GameData.SunWukongcost,
-                Utility.CharacterType.ZhuBajie => GameData.ZhuBajiecost,
-                Utility.CharacterType.ShaWujing => GameData.ShaWujingcost,
-                Utility.CharacterType.BaiLongma => GameData.BaiLongmacost,
-                Utility.CharacterType.Monkid => GameData.Monkidcost,
-
-                Utility.CharacterType.JiuLing => GameData.JiuLingcost,
-                Utility.CharacterType.HongHaier => GameData.HongHaiercost,
-                Utility.CharacterType.NiuMowang => GameData.NiuMowangcost,
-                Utility.CharacterType.TieShan => GameData.TieShancost,
-                Utility.CharacterType.ZhiZhujing => GameData.ZhiZhujingcost,
-                Utility.CharacterType.Pawn => GameData.Pawncost,
+                Utility.CharacterType.Drone => GameData.Dronecost,
+                Utility.CharacterType.Robot => GameData.Robotcost,
+                Utility.CharacterType.AutonomousCar => GameData.AutonomousCarcost,
 
                 _ => int.MaxValue
             };
@@ -348,6 +334,8 @@ namespace Server
             GameServerLogging.logger.LogDebug($"TRY AskAI: Team {request.TeamId}");
             StrategicAIResponse response = new();
             // 待实现
+            Boolean boolRes = new();
+            // boolRes.ActSuccess = game.AskAI(request.TeamId, request.GameState, request.AIAction);
             GameServerLogging.logger.LogDebug("END AskAI");
             return Task.FromResult(response);
         }
