@@ -44,9 +44,21 @@ namespace Server
                 return finalScore;
             }
         }
-        public override int[] GetMoney() => [];
+        // public override int[] GetMoney() => [];
         public override int[] GetScore() => FinalScore;
+        public override int[] GetMaterial()
+        {
+            int[] material = new int[TeamCount];
+            return material;
+        }
+        public override int[] GetComputePower()
+        {
+            int[] computepower = new int[TeamCount];
+            return computepower;
+        }
 
+        // AddCharacter method has been removed as it's no longer part of the base class
+        /*
         public override async Task AddCharacter(CharacterMsg request,
                                              IServerStreamWriter<MessageToClient> responseStream,
                                              ServerCallContext context)
@@ -109,6 +121,7 @@ namespace Server
                 return;
             }
         }
+        */
 
         public void ReportGame(MessageToClient? msg)
         {

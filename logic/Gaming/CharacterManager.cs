@@ -21,7 +21,6 @@ namespace Gaming
         {
             private readonly Game game = game;
             private readonly Map map = gameMap;
-            private readonly ConcurrentDictionary<long, Character> characters = new();
             private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> teamCharacters = new(); // key: TeamID -> (PlayerID -> Character)
 
             public Character CreateCharacter(long teamId, long playerId, CharacterType type)
@@ -30,9 +29,11 @@ namespace Gaming
                 ch.TeamID.SetROri(teamId);
                 ch.PlayerID.SetROri(playerId);
                 CheckTech(teamId, ch);
-                characters[playerId] = ch;
+                // store only in teamCharacters (use teamId + playerId as key)
                 var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
                 teamDict[playerId] = ch;
+                // ensure the character is also added to the map collection
+                map.Add(ch);
                 return ch;
             }
 
@@ -46,13 +47,14 @@ namespace Gaming
                 if (factory.ComputingPower.Get() < cost) return false;
                 factory.ComputingPower.SubRNow(cost);
                 var ch = CreateCharacter(teamId, playerId, type);
-                ActivateCharacter(playerId, birthPos);
+                ActivateCharacter(teamId, playerId, birthPos);
                 return true;
             }
 
-            public bool ActivateCharacter(long playerId, XY pos)
+            public bool ActivateCharacter(long teamId, long playerId, XY pos)
             {
-                if (!characters.TryGetValue(playerId, out var ch)) return false;
+                if (!teamCharacters.TryGetValue(teamId, out var dict)) return false;
+                if (!dict.TryGetValue(playerId, out var ch)) return false;
                 ch.IsRemoved.SetROri(false);
                 ch.CanMove.SetROri(true);
                 ch.ReSetPos(pos);
@@ -61,7 +63,25 @@ namespace Gaming
             }
 
             public bool TryGetCharacter(long playerId, out Character character)
-                => characters.TryGetValue(playerId, out character!);
+            {
+                // legacy lookup: search all teams for the first match (keeps some backward compatibility)
+                foreach (var teamDict in teamCharacters.Values)
+                {
+                    if (teamDict.TryGetValue(playerId, out character!)) return true;
+                }
+                character = null!;
+                return false;
+            }
+
+            public bool TryGetCharacter(long teamId, long playerId, out Character character)
+            {
+                character = null!;
+                if (teamCharacters.TryGetValue(teamId, out var dict))
+                {
+                    return dict.TryGetValue(playerId, out character!);
+                }
+                return false;
+            }
 
             public IEnumerable<Character> GetTeamCharacters(long teamId)
             {
@@ -70,17 +90,13 @@ namespace Gaming
                 return Array.Empty<Character>();
             }
 
-            public bool Destroy(long playerId, CharacterState state = CharacterState.NULL_CHARACTER_STATE)
+            public bool Destroy(long teamId, long playerId, CharacterState state = CharacterState.NULL_CHARACTER_STATE)
             {
-                if (!characters.TryGetValue(playerId, out var ch)) return false;
+                if (!teamCharacters.TryGetValue(teamId, out var dict)) return false;
+                if (!dict.TryGetValue(playerId, out var ch)) return false;
                 if (!ch.TryToRemoveFromGame(state)) return false;
                 ch.CanMove.SetROri(false);
-                characters.TryRemove(playerId, out _);
-                var teamId = ch.TeamID.Get();
-                if (teamCharacters.TryGetValue(teamId, out var dict))
-                {
-                    dict.TryRemove(playerId, out _);
-                }
+                dict.TryRemove(playerId, out _);
                 map.Remove(ch);
                 return true;
             }
@@ -112,7 +128,7 @@ namespace Gaming
                     }
                     game.AddTeamScore((long)obj.TeamID.Get(), score);
                     character.SetCharacterState(CharacterState.NULL_CHARACTER_STATE);
-                    Destroy((long)character.PlayerID.Get());
+                    Destroy((long)character.TeamID.Get(), (long)character.PlayerID.Get());
                 }
             }
 

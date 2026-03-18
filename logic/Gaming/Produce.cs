@@ -9,18 +9,21 @@ namespace Gaming
     {
         private sealed class Production
         {
+            private readonly Game game;
             private readonly Factory factory;
             private readonly GoodsType type;
             private readonly int amount;
-            private readonly int costPer;
-            private readonly int produceMsPerItem;
+            private readonly int costPerOriginal;
+            private readonly int produceMsPerItemOriginal;
 
-            public Production(Factory factory, GoodsType type, int amount)
+            public Production(Game game, Factory factory, GoodsType type, int amount)
             {
+                this.game = game;
                 this.factory = factory;
                 this.type = type;
                 this.amount = amount;
-                this.costPer = type switch
+
+                this.costPerOriginal = type switch
                 {
                     GoodsType.SEMICONDUCTOR => GameData.CostSemiconductor,
                     GoodsType.MEDICINE => GameData.CostMedicine,
@@ -38,11 +41,38 @@ namespace Gaming
                     GoodsType.FOOD => GameData.ProduceTimeFood,
                     _ => 2
                 };
-                this.produceMsPerItem = baseSeconds * 1000;
+                this.produceMsPerItemOriginal = baseSeconds * 1000;
+            }
+
+            private int GetAdjustedCostPer()
+            {
+                long teamId = factory.TeamID.Get();
+                if (!game.teams.TryGetValue(teamId, out var t)) return costPerOriginal;
+                int costTech = t.GetTech("Cost");
+                int adjusted = costPerOriginal - costTech * GameData.TechCostDecreasePerLevel;
+                return Math.Max(0, adjusted);
+            }
+
+            private int GetAdjustedProduceMsPerItem()
+            {
+                long teamId = factory.TeamID.Get();
+                if (!game.teams.TryGetValue(teamId, out var t)) return produceMsPerItemOriginal;
+
+                int prodLevel = t.GetTech("Production");
+
+                double multiplier = 1.0;
+                if (prodLevel > 0) multiplier /= (1.0 + prodLevel * GameData.TechProductionEfficiencyAddPerLevel);
+
+                multiplier = Math.Max(multiplier, 0.2);
+
+                return (int)Math.Max(1, Math.Round(produceMsPerItemOriginal * multiplier));
             }
 
             public bool Start()
             {
+                int costPer = GetAdjustedCostPer();
+                int produceMsPerItem = GetAdjustedProduceMsPerItem();
+
                 long totalCost = (long)costPer * amount;
                 while (true)
                 {
@@ -53,11 +83,14 @@ namespace Gaming
 
                 new Thread(() =>
                 {
+                    int produced = 0;
                     factory.CanProduce.SetROri(false);
                     try
                     {
                         for (int i = 0; i < amount; i++)
                         {
+                            if (factory.IsRemoved.Get()) break;
+
                             Thread.Sleep(produceMsPerItem);
 
                             long storageNowMax = factory.Storage.GetValue();
@@ -67,20 +100,24 @@ namespace Gaming
                             if (totalAfter < storageNowMax)
                             {
                                 factory.AddGoods(type, 1);
+                                produced++;
                             }
                             else
                             {
-                                int remaining = amount - i;
-                                if (remaining > 0)
-                                {
-                                    factory.AddSource((long)costPer * remaining);
-                                }
                                 break;
                             }
                         }
                     }
+                    catch (Exception)
+                    {
+                    }
                     finally
                     {
+                        int remaining = amount - produced;
+                        if (remaining > 0)
+                        {
+                            factory.AddSource((long)costPer * remaining);
+                        }
                         factory.CanProduce.SetROri(true);
                     }
                 })
@@ -103,7 +140,7 @@ namespace Gaming
             for (int i = 1; i <= 5; i++) currentTotal += factory.GetGoods((GoodsType)i);
             if (currentTotal >= storageMax) return false;
 
-            var production = new Production(factory, type, amount);
+            var production = new Production(this, factory, type, amount);
             return production.Start();
         }
     }

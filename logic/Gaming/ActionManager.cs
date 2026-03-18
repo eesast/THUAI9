@@ -55,7 +55,8 @@ namespace Gaming
                             characterToMove.ThreadNum.Release();
                             return;
                         }
-                        moveEngine.MoveObj(characterToMove, moveTimeInMilliseconds, moveDirection, characterToMove.StateNum, characterToMove.Efficiency);
+
+                        moveEngine.MoveObj(characterToMove, moveTimeInMilliseconds, moveDirection, characterToMove.StateNum, 0);
                         Thread.Sleep(moveTimeInMilliseconds);
                         characterToMove.ResetCharacterState(stateNum);
                     }
@@ -141,10 +142,15 @@ namespace Gaming
                                     character.ResetCharacterState(stateNum);
                                     return false;
                                 }
+
+                                int effLevel = (int)character.Efficiency.GetValue();
+                                double effMultiplier = 1.0 + effLevel * GameData.EfficiencyMultiplierPerLevel;
+                                long adjustedAdd = (long)Math.Round(addresource * effMultiplier);
+
                                 var teamFactory = game.GetTeamFactory((long)character.TeamID.Get());
                                 if (teamFactory != null)
                                 {
-                                    teamFactory.AddSource(addresource);
+                                    teamFactory.AddSource(adjustedAdd);
                                 }
                                 if (resource.HP == 0)
                                 {
@@ -182,7 +188,10 @@ namespace Gaming
                             return;
                         }
                         Thread.Sleep(GameData.CheckInterval);
-                        int occupyTimeMs = GameData.ComputeCenterOccupyTimeMs;
+                        int effLevel = (int)character.Efficiency.GetValue();
+                        double effMultiplier = 1.0 + effLevel * GameData.EfficiencyMultiplierPerLevel;
+                        int occupyTimeMs = Math.Max(1, (int)Math.Round(GameData.ComputeCenterOccupyTimeMs / effMultiplier));
+
                         int elapsed = 0;
                         new FrameRateTaskExecutor<int>
                         (
