@@ -102,9 +102,9 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Harvest(ResourceMsg request)
+        public override Task<BoolRes> Harvest(ResourceMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId} + 
+            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" + 
             $"HarvestedResource: {request.ResourceId}, Amount: {request.Amount}");
             BoolRes boolRes = new();
             boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
@@ -112,7 +112,7 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Attack(AttackMsg request)
+        public override Task<BoolRes> Attack(AttackMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY Attack: Player {request.CharacterId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
@@ -148,7 +148,7 @@ namespace Server
         //     return Task.FromResult(boolRes);
         // }
 
-        public Occupy(OccupyMsg request)
+        public override Task<BoolRes> Occupy(OccupyMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY Occupy: Player {request.PlayerId} from Team {request.TeamId} occupying Resource {request.TargetComputeCenterId}");
@@ -157,7 +157,7 @@ namespace Server
             GameServerLogging.logger.LogDebug($"END Occupy: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
-        public override Task<BoolRes> Send(SendMsg request)
+        public override Task<BoolRes> Send(SendMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY Send: From Player {request.PlayerId} To Player {request.ToPlayerId} from Team {request.TeamId}");
@@ -223,7 +223,7 @@ namespace Server
         }
 
 
-        public override Task<BoolRes> Load(LoadMeg request)
+        public override Task<BoolRes> Load(LoadMeg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY Load: Player {request.PlayerId} from Team {request.TeamId}" +
             $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
@@ -233,7 +233,7 @@ namespace Server
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Sell(SellMeg request)
+        public override Task<BoolRes> Sell(SellMeg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY Sell: Player {request.PlayerId} from Team {request.TeamId}" +
             $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
