@@ -120,7 +120,8 @@ namespace Gaming
                         }
                         factory.CanProduce.SetROri(true);
                     }
-                }) { IsBackground = true }.Start();
+                })
+                { IsBackground = true }.Start();
 
                 return true;
             }
