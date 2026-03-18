@@ -40,6 +40,49 @@ namespace Gaming
             uplevelManager = new UplevelManager(this);
 
         }
+
+        public bool StartGame(int milliSeconds)
+        {
+            if (gameMap.Timer.IsGaming)
+                return false;
+            // 开始游戏
+            foreach (var team in TeamList)
+            {
+                actionManager.TeamTask(team);
+                if (team.sideFlag == 0)
+                {
+                    ActivateCharacter(team.TeamID, CharacterType.TangSeng);
+                }
+                else
+                {
+                    ActivateCharacter(team.TeamID, CharacterType.JiuLing);
+                }
+            }
+            gameMap.Timer.Start(() => { }, () => EndGame(), milliSeconds);
+            new Thread
+                (
+                    () =>
+                    {
+                        Thread.Sleep(GameData.CheckInterval);
+                        new FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => gameMap.Timer.IsGaming,
+                            loopToDo: () =>
+                            {
+                                gameMap.GameObjDict[GameObjType.ADDITIONAL_RESOURCE].ForEach(delegate (IGameObj Aresource)
+                                {
+                                    ARManager.LevelUpAR((A_Resource)Aresource);
+                                    ARManager.autoAttack((A_Resource)Aresource);
+                                });
+                            },
+                            timeInterval: GameData.CheckInterval,
+                            finallyReturn: () => 0
+                        ).Start();
+                    }
+                ).Start();
+            return true;
+        }
+
         public bool RecruitCharacterAtFactory(long teamId, long playerId, Preparation.Utility.CharacterType type)
         {
             var fac = GetTeamFactory(teamId);
