@@ -64,7 +64,38 @@ public class Market(XY initPos)
     public int AddTradedQuantity(GoodsType type, int delta)
     {
         int idx = (int)type;
-        return traded[idx].AddPositiveRNow(delta);
+        int newVal = traded[idx].AddPositiveRNow(delta);
+
+        // update price based on traded quantity (decay mechanism)
+        double marketMul = marketType switch
+        {
+            MarketType.SMALL_MARKET => GameData.SmallMarketMultiplier,
+            MarketType.MEDIUM_MARKET => GameData.MediumMarketMultiplier,
+            MarketType.LARGE_MARKET => GameData.LargeMarketMultiplier,
+            _ => GameData.MediumMarketMultiplier
+        };
+
+        // base price for the good
+        int basePrice = type switch
+        {
+            GoodsType.SEMICONDUCTOR => GameData.BasePriceSemiconductor,
+            GoodsType.MEDICINE => GameData.BasePriceMedicine,
+            GoodsType.TOYS => GameData.BasePriceToys,
+            GoodsType.CLOTHES => GameData.BasePriceClothes,
+            GoodsType.FOOD => GameData.BasePriceFood,
+            _ => 1
+        };
+
+        // decay steps based on thresholds
+        int steps = newVal / GameData.MarketDecayThreshold;
+        double mulDecay = 1.0 - steps * GameData.MarketDecayStep;
+        if (mulDecay < GameData.MarketMinMultiplier) mulDecay = GameData.MarketMinMultiplier;
+
+        int newPrice = (int)Math.Round(basePrice * marketMul * mulDecay);
+        if (newPrice < 0) newPrice = 0;
+        prices[idx].SetROri(newPrice);
+
+        return newVal;
     }
 
     public System.Collections.Generic.IReadOnlyDictionary<GoodsType, int> SnapshotTraded()

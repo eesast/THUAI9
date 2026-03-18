@@ -111,6 +111,19 @@ public class Factory : Immovable, IFactory
         return ComputingPower.SubRNow(sub);
     }
 
+
+    public void TickComputingPower(int elapsedMs)
+    {
+        if (elapsedMs <= 0) return;
+        long add = (long)(GameData.FactoryComputePowerPerSecond * (elapsedMs / 1000.0));
+        if (add > 0) ComputingPower.AddRNow(add);
+    }
+
+    public void ProduceComputingPowerOneSecond()
+    {
+        ComputingPower.AddRNow(GameData.FactoryComputePowerPerSecond);
+    }
+
     public void Interupt()
     {
         CanProduce.SetROri(false);
