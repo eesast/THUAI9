@@ -106,23 +106,23 @@ namespace Preparation.Utility
         public const int ProduceTimeFood = 1;
 
         public const int TechMaxLevel = 2;
-        public const int TechCostRobust = 30;        
-        public const int TechCostWarrior = 60;      
-        public const int TechCostMoveSpeed = 40;    
-        public const int TechCostCarry = 50;         
-        public const int TechCostEfficiency = 40;    
-        public const int TechCostProduction = 60;    
-        public const int TechCostStorage = 50;       
-        public const int TechCostPrice = 80;         
-        public const int TechCostDecreaseCost = 50;  
+        public const int TechCostRobust = 30;
+        public const int TechCostWarrior = 60;
+        public const int TechCostMoveSpeed = 40;
+        public const int TechCostCarry = 50;
+        public const int TechCostEfficiency = 40;
+        public const int TechCostProduction = 60;
+        public const int TechCostStorage = 50;
+        public const int TechCostPrice = 80;
+        public const int TechCostDecreaseCost = 50;
 
-        public const double TechHpMultiplierPerLevel = 0.2; 
+        public const double TechHpMultiplierPerLevel = 0.2;
         public const int TechRobustAddPerLevel = 2;
         public const int TechEfficiencyAddPerLevel = 2;
         public const double TechWarriorAtkMultiplierPerLevel = 0.3;
-        public const int TechMoveSpeedAddPerLevel = 200;          
-        public const int TechCarryAddPerLevel = 10;               
-        public const int TechStorageAddPerLevel = 50;             
+        public const int TechMoveSpeedAddPerLevel = 200;
+        public const int TechCarryAddPerLevel = 10;
+        public const int TechStorageAddPerLevel = 50;
         public const int TechProductionEfficiencyAddPerLevel = 1;
         public const double TechPriceMultiplierPerLevel = 0.1;
         public const int TechCostDecreasePerLevel = 2;
