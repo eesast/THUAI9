@@ -15,17 +15,8 @@ namespace Gaming
                 this.game = game;
             }
 
-            public bool UplevelTech(long playerId, TechType tech)
+            public bool UplevelTech(long teamId, TechType tech)
             {
-                if (!game.characterManager.TryGetCharacter(playerId, out var character)) return false;
-                return UplevelTech(character, tech);
-            }
-
-            public bool UplevelTech(Character character, TechType tech)
-            {
-                if (character == null || character.IsRemoved) return false;
-
-                long teamId = character.TeamID.Get();
                 if (!game.teams.TryGetValue(teamId, out var teamState)) return false;
 
                 string key;
@@ -82,7 +73,7 @@ namespace Gaming
                     case "Efficiency":
                         foreach (var ch in game.characterManager.GetTeamCharacters(teamId))
                         {
-                            ch.Efficiency.AddPositiveV((newLevel - curLevel)*GameData.TechEfficiencyAddPerLevel);
+                            ch.Efficiency.AddPositiveV((newLevel - curLevel) * GameData.TechEfficiencyAddPerLevel);
                         }
                         break;
                     case "Robust":

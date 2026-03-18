@@ -76,6 +76,8 @@ namespace Preparation.Utility
         public const int ComputeCenterRadius = 2;
         public const int ComputeCenterOccupyTimeMs = 10_000;
 
+        public const int FactoryComputePowerPerSecond = 1;
+
         public const int BasePriceSemiconductor = 80;
         public const int BasePriceMedicine = 50;
         public const int BasePriceToys = 8;
