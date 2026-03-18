@@ -64,8 +64,7 @@ namespace Gaming
                 factory.CanRecruit.SetROri(true);
 
                 bool existsOnMap = gameMap.GameObjDict[GameObjType.FACTORY]
-                    .Cast<Factory>()
-                    ?.Any(f => f.ID == factory.ID) ?? false;
+                    .Find(obj => obj.ID == factory.ID) != null;
                 if (!existsOnMap)
                 {
                     gameMap.Add(factory);
