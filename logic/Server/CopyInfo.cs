@@ -15,26 +15,20 @@ namespace Server
             switch (gameObj.Type)
             {
                 case GameObjType.CHARACTER:
-                    return Character((Character)gameObj, time);
-                case GameObjType.ECONOMY_RESOURCE:
-                    return EconomyResource((E_Resource)gameObj);
-                case GameObjType.ADDITIONAL_RESOURCE:
-                    return AdditionResource((A_Resource)gameObj);
-                case GameObjType.CONSTRUCTION:
-                    Construction construction = (Construction)gameObj;
-                    if (construction.ConstructionType == Utility.ConstructionType.BARRACKS)
-                        return Barracks(construction);
-                    else if (construction.ConstructionType == Utility.ConstructionType.SPRING)
-                        return Spring(construction);
-                    else if (construction.ConstructionType == Utility.ConstructionType.FARM)
-                        return Farm(construction);
-                    return null;
-                case GameObjType.TRAP:
-                    if (gameObj is HOLE hole)
-                        return Traps(hole);
-                    else if (gameObj is Cage cage)
-                        return Traps(cage);
-                    return null;
+                    return CHARACTER((Character)gameObj, time);
+                case GameObjType.RESOURCE:
+                    return RESOURCE((Resource)gameObj);
+                case GameObjType.BARRIER:
+                    return BARRIER((Barriers)gameObj);
+                case GameObjType.BUSH:
+                    return BUSH((Bush)gameObj);
+                case GameObjType.COMPUTE_CENTER:
+                    return COMPUTE_CENTER((ComputeCenter)gameObj);
+                case GameObjType.FACTORY:
+                    return FACTORY((Factory)gameObj, time);
+                case GameObjType.MARKET:
+                    return MARKET((Market)gameObj);
+                // case GameObjType.BRAIN:
                 default: return null;
             }
         }
@@ -47,6 +41,7 @@ namespace Server
             };
             return objMsg;
         }
+        /*
         private static MessageOfObj? Base(Base player, long time)
         {
             MessageOfObj msg = new()
@@ -66,229 +61,189 @@ namespace Server
         {
             return Base(@base, time);
         }
-        private static MessageOfObj? Character(Character player, long time)
+        */
+        private static MessageOfObj? CHARACTER(Character player, long time)
         {
-            MessageOfObj msg = new()
+            var msg = new MessageOfObj
             {
-                CharacterMessage = new()
+                CharacterMessage = new MessageOfCharacter
                 {
                     Guid = player.ID,
 
-                    TeamId = player.TeamID,
-                    PlayerId = player.PlayerID,
+                    TeamId = player.TeamID.Get(),
+                    PlayerId = player.PlayerID.Get(),
 
                     CharacterType = Transformation.CharacterTypeToProto(player.CharacterType),
 
-                    CharacterActiveState = Transformation.CharacterStateToProto(player.CharacterState1),
-
-                    IsBlind = player.blind,
-                    BlindTime = player.BlindTime,
-                    IsStunned = player.stunned,
-                    StunnedTime = player.StunnedTime,
-                    IsInvisible = !player.visible,
-                    InvisibleTime = player.InvisibleTime,
-                    IsBurned = player.burned,
-                    BurnedTime = player.BurnedTime,
-                    HarmCut = player.HarmCut,
-                    HarmCutTime = player.HarmCutTime,
-
-                    CharacterPassiveState = Transformation.CharacterStateToProto(player.CharacterState2),
+                    CharacterActiveState = Transformation.CharacterStateToProto(player.CharacterState),
 
                     X = player.Position.x,
                     Y = player.Position.y,
 
                     FacingDirection = player.FacingDirection.Angle(),
-                    Speed = player.MoveSpeed,
-                    ViewRange = player.ViewRange,
 
-                    CommonAttack = (int)player.AttackPower,
-                    // 待修改，Character.cs中没有CommonAttackCD
-                    CommonAttackCd = (int)(1 / player.ATKFrequency),
-                    CommonAttackRange = (int)player.AttackSize,
+                    Speed = (int)player.MoveSpeed.GetValue(),
 
-                    SkillAttackCd = player.skillCD,
+                    // Character.cs 里没有 ViewRange
+                    ViewRange = 0,
 
-                    EconomyDepletion = player.EconomyDepletion,
-                    KillScore = (int)player.GetCost(),
+                    CommonAttack = (int)player.AttackPower.GetValue(),
 
-                    Hp = (int)player.HP,
+                    // 当前版本没有冷却时间
+                    CommonAttackCd = 0,
 
-                    // 待修改，Shield要分两类
-                    ShieldEquipment = (int)player.Shield, // 护盾装备
-                    ShoesEquipment = (int)player.Shoes, // 加成值
-                    ShoesTime = player.ShoesTime, // 包含所有速度加成的时间
-                    IsPurified = player.Purified,
-                    PurifiedTime = player.PurifiedTime,
-                    IsBerserk = player.IsBerserk,
-                    BerserkTime = player.BerserkTime,
+                    CommonAttackRange = (int)player.AttackSize.GetValue(),
 
-                    AttackBuffNum = (int)player.CrazyManNum,
-                    AttackBuffTime = player.CrazyManTime,
-                    SpeedBuffTime = player.QuickStepTime,
-                    VisionBuffTime = player.WideViewTime,
+                    Hp = (int)player.HP.GetValue(),
+
+                    CarryCapacity = (int)player.Carry.GetValue(),
+
+                    CurrentLoad = player.GoodsLoad.Total(),
+
+                    HarvestRatePerSec = (int)player.Efficiency.GetValue()
                 }
             };
             return msg;
         }
 
-        private static MessageOfObj EconomyResource(E_Resource economyresource)
+        private static MessageOfObj? RESOURCE(Resource resource)
         {
-            MessageOfObj msg = new()
+            return new MessageOfObj
             {
-                EconomyResourceMessage = new()
+                ResourceMessage = new MessageOfResource
                 {
-                    EconomyResourceState = Transformation.EconomyResourceStateToProto(economyresource.ERstate),
-                    EconomyResourceType = Transformation.EconomyResourceTypeToProto(economyresource.EResourceType),
+                    ResourceType = Transformation.ResourceTypeToProto(resource.ResourceType),
 
-                    X = economyresource.Position.x,
-                    Y = economyresource.Position.y,
+                    ResourceState = Transformation.ResourceStateToProto(resource.Resourcestate),
 
-                    Process = (10000 - (int)economyresource.HP) / 10000,
-                    Id = 0,
+                    X = resource.Position.x,
+                    Y = resource.Position.y,
+
+                    RemainingAmount = (int)resource.HP.GetValue(),
+
+                    Id = (int)resource.ID,
+
+                    MaxAmount = (int)GameData.ResourceHP
                 }
             };
-            return msg;
         }
 
-        private static MessageOfObj AdditionResource(A_Resource additionResource)
+        private static MessageOfObj? BARRIER(Barriers barrier)
         {
-            MessageOfObj msg = new()
+            return new MessageOfObj
             {
-                AdditionResourceMessage = new()
+                BarrierMessage = new MessageOfBarrier
                 {
-                    AdditionResourceType = Transformation.AResourceToProto(additionResource.AResourceType),
-                    AdditionResourceState = Transformation.AResourceStateToProto(additionResource.ARstate),
-
-                    X = additionResource.Position.x,
-                    Y = additionResource.Position.y,
-
-                    Hp = (int)additionResource.HP,
-                    Id = 0,
+                    BarrierId = barrier.ID,
+                    X = barrier.Position.x,
+                    Y = barrier.Position.y
                 }
             };
-            //   Debugger.Output(additionResource, additionResource.Place.ToString()+" "+additionResource.Position.ToString());
-            return msg;
         }
 
-        private static MessageOfObj Barracks(Construction construction)
+        private static MessageOfObj? BUSH(Bush bush)
         {
-            MessageOfObj msg = new()
+            return new MessageOfObj
             {
-                BarracksMessage = new()
+                BushMessage = new MessageOfBush
                 {
-                    X = construction.Position.x,
-                    Y = construction.Position.y,
-
-                    Hp = (int)construction.HP,
-
-                    TeamId = construction.TeamID,
-                    Id = 0,
+                    BushId = bush.ID,
+                    X = bush.Position.x,
+                    Y = bush.Position.y,
+                    Radius = bush.Radius
                 }
             };
-            return msg;
+        }
+        private static MessageOfObj? COMPUTE_CENTER(ComputeCenter center)
+        {
+            int occupyProgress = center.IsOccupied ? 100 : 0;   // 当前版本没有占领进度，只有占领与否两个状态
+
+            return new MessageOfObj
+            {
+                ComputeCenterMessage = new MessageOfComputeCenter
+                {
+                    CenterId = center.ID,
+                    X = center.Position.x,
+                    Y = center.Position.y,
+                    OwnerTeamId = center.IsOccupied ? center.OccupiedByTeamId : 0,
+                    OccupyProgress = occupyProgress
+                }
+            };
         }
 
-        private static MessageOfObj Spring(Construction construction)
+        private static MessageOfObj? FACTORY(Factory factory, long time)
         {
-            MessageOfObj msg = new()
+            var factoryMsg = new MessageOfFactory
             {
-                SpringMessage = new()
-                {
-                    X = construction.Position.x,
-                    Y = construction.Position.y,
+                FactoryId = factory.ID,
+                TeamId = factory.TeamID.Get(),
 
-                    Hp = (int)construction.HP,
+                X = factory.Position.x,
+                Y = factory.Position.y,
 
-                    TeamId = construction.TeamID,
-                    Id = 0,
-                }
+                Hp = (int)factory.HP.GetValue(),
+                Robust = (int)factory.Robust.GetValue(),
+
+                Storage = (int)factory.Storage.GetValue(),
+                Efficiency = (int)factory.Efficiency.GetValue(),
+
+                Source = factory.Source.Get(),
+                ComputingPower = factory.ComputingPower.Get(),
+
+                CanProduce = factory.CanProduce.Get(),
+                CanRecruit = factory.CanRecruit.Get()
             };
-            return msg;
+
+            // 填充库存
+            for (int i = 1; i <= 5; i++)
+            {
+                GoodsType type = (GoodsType)i;
+                int quantity = factory.GetGoods(type);
+
+                factoryMsg.ProductInventory.Add(
+                new MessageOfFactory.Types.GoodsStack
+                {
+                    ProductType = (GoodsType)i,
+                    Quantity = quantity
+                }
+                );
+            }
+
+            return new MessageOfObj
+            {
+                FactoryMessage = factoryMsg
+            };
         }
 
-        private static MessageOfObj Farm(Construction construction)
+        private static MessageOfObj? MARKET(Market market)
         {
-            MessageOfObj msg = new()
+            var marketMsg = new MessageOfMarket
             {
-                FarmMessage = new()
-                {
-                    X = construction.Position.x,
-                    Y = construction.Position.y,
+                MarketId = market.ID,
+                X = market.Position.x,
+                Y = market.Position.y,
 
-                    Hp = (int)construction.HP,
-
-                    TeamId = construction.TeamID,
-                    Id = 0,
-                }
+                MarketType = Transformation.MarketTypeToProto(market.EMarketType)
             };
-            return msg;
-        }
 
-        // private static MessageOfObj Traps(GameObj trap)
-        // {
-        //     MessageOfObj msg = new()
-        //     {
-        //         TrapMessage = new()
-        //         {
-        //             TrapType = trap switch
-        //             {
-        //                 HOLE _ => Protobuf.TrapType.Hole,
-        //                 Cage _ => Protobuf.TrapType.Cage,
-        //             },
-
-        //             X = trap.Position.x,
-        //             Y = trap.Position.y,
-
-        //             TeamId = trap switch
-        //             {
-        //                 HOLE t => t.TeamID.Get(),
-        //                 Cage c => c.TeamID.Get(),
-        //             },
-        //             Id = 0,
-
-        //             TrapValid = !trap.IsActivated.Get(), 
-        //         }
-        //     };
-        //     return msg;
-        // }
-        private static MessageOfObj Traps(HOLE trap)
-        {
-            MessageOfObj msg = new()
+            for (int i = 1; i <= 5; i++)
             {
-                TrapMessage = new()
-                {
-                    TrapType = Protobuf.TrapType.Hole,
+                GoodsType type = (GoodsType)i;
 
-                    X = trap.Position.x,
-                    Y = trap.Position.y,
+                marketMsg.PriceList.Add(
+                    new MessageOfMarket.Types.PriceEntry
+                    {
+                        ProductType = (GoodsType)i,
+                        Price = market.GetPrice(type),
+                        TradedQuantity = market.GetTradedQuantity(type)
+                    }
+                );
+            }
 
-                    TeamId = trap.TeamID.Get(),
-                    Id = 0,
-
-                    TrapValid = !trap.IsActivated.Get(),
-                }
-            };
-            return msg;
-        }
-
-        private static MessageOfObj Traps(Cage trap)
-        {
-            MessageOfObj msg = new()
+            return new MessageOfObj
             {
-                TrapMessage = new()
-                {
-                    TrapType = Protobuf.TrapType.Cage,
-
-                    X = trap.Position.x,
-                    Y = trap.Position.y,
-
-                    TeamId = trap.TeamID.Get(),
-                    Id = 0,
-
-                    TrapValid = !trap.IsActivated.Get(),
-                }
+                MarketMessage = marketMsg
             };
-            return msg;
         }
     }
 }
