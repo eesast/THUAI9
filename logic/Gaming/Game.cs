@@ -40,6 +40,67 @@ namespace Gaming
             uplevelManager = new UplevelManager(this);
 
         }
+
+        public bool StartGame(int milliSeconds)
+        {
+            if (milliSeconds <= 0)
+                return false;
+            if (gameMap.Timer.IsGaming)
+                return false;
+
+            lock (gameEndLock)
+            {
+                gameEnded = false;
+            }
+
+            foreach (var kv in teams)
+            {
+                long teamId = kv.Key;
+                var factory = kv.Value.Factory;
+                if (factory == null) continue;
+
+                factory.TeamID.SetROri(teamId);
+                factory.CanProduce.SetROri(true);
+                factory.CanRecruit.SetROri(true);
+
+                bool existsOnMap = gameMap.GameObjDict[GameObjType.FACTORY]
+                    .Find(obj => obj.ID == factory.ID) != null;
+                if (!existsOnMap)
+                {
+                    gameMap.Add(factory);
+                }
+            }
+
+            if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
+                return false;
+
+            new Thread
+                (
+                    () =>
+                    {
+                        Thread.Sleep(GameData.CheckInterval);
+                        new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => gameMap.Timer.IsGaming,
+                            loopToDo: () =>
+                            {
+                                foreach (var team in teams)
+                                {
+                                    var fac = team.Value.Factory;
+                                    if (fac == null) continue;
+                                    fac.TickComputingPower(GameData.CheckInterval);
+                                }
+
+                                return !CheckAndHandleGameEnd();
+                            },
+                            timeInterval: GameData.CheckInterval,
+                            finallyReturn: () => 0
+                        ).Start();
+                    }
+                ).Start();
+            return true;
+        }
+
         public bool RecruitCharacterAtFactory(long teamId, long playerId, Preparation.Utility.CharacterType type)
         {
             var fac = GetTeamFactory(teamId);
