@@ -82,7 +82,7 @@ namespace Server
 
                     FacingDirection = player.FacingDirection.Angle(),
 
-                    Speed = (int)player.MoveSpeed.GetValue(),
+                    Speed = (int)player.MoveSpeed.Get(),
 
                     // Character.cs 里没有 ViewRange
                     ViewRange = 0,
@@ -197,13 +197,13 @@ namespace Server
             // 填充库存
             for (int i = 1; i <= 5; i++)
             {
-                GoodsType type = (GoodsType)i;
+                Utility.GoodsType type = (Utility.GoodsType)i;
                 int quantity = factory.GetGoods(type);
 
                 factoryMsg.ProductInventory.Add(
                 new MessageOfFactory.Types.GoodsStack
                 {
-                    ProductType = (GoodsType)i,
+                    ProductType = (Protobuf.GoodsType)i,
                     Quantity = quantity
                 }
                 );
@@ -228,12 +228,12 @@ namespace Server
 
             for (int i = 1; i <= 5; i++)
             {
-                GoodsType type = (GoodsType)i;
+                Utility.GoodsType type = (Utility.GoodsType)i;
 
                 marketMsg.PriceList.Add(
                     new MessageOfMarket.Types.PriceEntry
                     {
-                        ProductType = (GoodsType)i,
+                        GoodsType = (Protobuf.GoodsType)i,
                         Price = market.GetPrice(type),
                         TradedQuantity = market.GetTradedQuantity(type)
                     }

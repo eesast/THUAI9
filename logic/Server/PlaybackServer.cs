@@ -206,8 +206,9 @@ namespace Server
                             if (msg.GameState == GameState.GameEnd)
                             {
                                 PlaybackServerLogging.logger.LogInfo("Game over normally!");
-                                finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
-                                finalScore[1] = msg.AllMessage.MonstersTeamScore;
+                                // finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
+                                // finalScore[1] = msg.AllMessage.MonstersTeamScore;
+                                // 请回来修改
                                 goto endParse;
                             }
                         }
@@ -278,8 +279,8 @@ namespace Server
                             {
                                 PlaybackServerLogging.logger.LogInfo("Game over normally!");
                                 IsGaming = false;
-                                finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
-                                finalScore[1] = msg.AllMessage.MonstersTeamScore;
+                                // finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
+                                // finalScore[1] = msg.AllMessage.MonstersTeamScore;
                                 ReportGame(msg);
                                 return false;
                             }

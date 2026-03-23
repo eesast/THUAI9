@@ -32,11 +32,11 @@ namespace Server
         public override Task<BoolRes> TryConnection(IDMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY TryConnection: Player {request.CharacterId} from Team {request.TeamId}");
+                $"TRY TryConnection: Player {request.PlayerId} from Team {request.TeamId}");
             var onConnection = new BoolRes();
             lock (gameLock)
             {
-                if (0 <= request.CharacterId && request.CharacterId < playerNum)
+                if (0 <= request.PlayerId && request.PlayerId < playerNum)
                 {
                     onConnection.ActSuccess = true;
                     GameServerLogging.logger.LogInfo($"TryConnection: {onConnection.ActSuccess}");
@@ -82,7 +82,7 @@ namespace Server
             }
             // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
             moveRes.ActSuccess = game.MoveCharacter(
-                request.TeamId, request.CharacterId,
+                request.TeamId, request.PlayerId,
                 (int)request.TimeInMilliseconds, request.Angle);
             if (!game.GameMap.Timer.IsGaming)
                 moveRes.ActSuccess = false;
@@ -115,7 +115,7 @@ namespace Server
         public override Task<BoolRes> Attack(AttackMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Attack: Player {request.CharacterId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
+                $"TRY Attack: Player {request.PlayerId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
             boolRes.ActSuccess = game.Attack(
                 request.TeamId, request.PlayerId,
@@ -253,9 +253,9 @@ namespace Server
                 $"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
             var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
             {
-                Utility.CharacterType.Drone => GameData.Dronecost,
-                Utility.CharacterType.Robot => GameData.Robotcost,
-                Utility.CharacterType.AutonomousCar => GameData.AutonomousCarcost,
+                Utility.CharacterType.DRONE => GameData.DroneCost,
+                Utility.CharacterType.ROBOT => GameData.RobotCost,
+                Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
 
                 _ => int.MaxValue
             };
@@ -284,9 +284,9 @@ namespace Server
                 $"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
             var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
             {
-                Utility.CharacterType.Drone => GameData.Dronecost,
-                Utility.CharacterType.Robot => GameData.Robotcost,
-                Utility.CharacterType.AutonomousCar => GameData.AutonomousCarcost,
+                Utility.CharacterType.DRONE => GameData.DroneCost,
+                Utility.CharacterType.ROBOT => GameData.RobotCost,
+                Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
 
                 _ => int.MaxValue
             };
@@ -313,14 +313,14 @@ namespace Server
         public override Task<BoolRes> EndAllAction(IDMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY EndAllAction: Player {request.CharacterId} from Team {request.TeamId}");
+                $"TRY EndAllAction: Player {request.PlayerId} from Team {request.TeamId}");
             BoolRes boolRes = new();
-            if (request.CharacterId >= spectatorMinPlayerID)
+            if (request.PlayerId >= spectatorMinPlayerID)
             {
                 boolRes.ActSuccess = false;
                 return Task.FromResult(boolRes);
             }
-            boolRes.ActSuccess = game.Stop(request.TeamId, request.CharacterId);
+            boolRes.ActSuccess = game.Stop(request.TeamId, request.PlayerId);
             GameServerLogging.logger.LogDebug("END EndAllAction");
             return Task.FromResult(boolRes);
         }
