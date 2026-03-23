@@ -81,7 +81,7 @@ namespace Server
                 return Task.FromResult(moveRes);
             }
             // var gameID = communicationToGameID[request.TeamId][request.PlayerId];
-            moveRes.ActSuccess = game.MoveCharacter(
+            moveRes.ActSuccess = game.Move(
                 request.TeamId, request.PlayerId,
                 (int)request.TimeInMilliseconds, request.Angle);
             if (!game.GameMap.Timer.IsGaming)
@@ -107,7 +107,8 @@ namespace Server
             GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" + 
             $"HarvestedResource: {request.ResourceId}, Amount: {request.Amount}");
             BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
+            // boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
+            boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId);
             GameServerLogging.logger.LogDebug($"END Harvesting:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
@@ -118,42 +119,17 @@ namespace Server
                 $"TRY Attack: Player {request.PlayerId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
             boolRes.ActSuccess = game.Attack(
-                request.TeamId, request.PlayerId,
-                request.AttackedTeamId, request.AttackedPlayerId);
+                request.TeamId, request.PlayerId);
             GameServerLogging.logger.LogDebug($"END Attack: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
-
-        // public override Task<BoolRes> AttackConstruction(AttackFactoryMsg request, ServerCallContext context)
-        // {
-        //     GameServerLogging.logger.LogDebug(
-        //         $"TRY AttackConstruction: Player {request.CharacterId} from Team {request.TeamId}");
-        //     BoolRes boolRes = new();
-        //     if (request.CharacterId >= spectatorMinPlayerID)
-        //     {
-        //         boolRes.ActSuccess = false;
-        //         return Task.FromResult(boolRes);
-        //     }
-        //     boolRes.ActSuccess = game.AttackConstruction(request.TeamId, request.CharacterId);
-        //     GameServerLogging.logger.LogDebug("END AttackConstruction");
-        //     return Task.FromResult(boolRes);
-        // }
-
-        // public override Task<BoolRes> Repair(RepairFactory request, ServerCallContext context)
-        // {
-        //     GameServerLogging.logger.LogDebug($"TRY Repair");
-        //     BoolRes boolRes = new();
-        //     // 待实现
-        //     GameServerLogging.logger.LogDebug("END Repair");
-        //     return Task.FromResult(boolRes);
-        // }
 
         public override Task<BoolRes> Occupy(OccupyMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY Occupy: Player {request.PlayerId} from Team {request.TeamId} occupying Resource {request.TargetComputeCenterId}");
             BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Occupy(request.TeamId, request.PlayerId, request.TargetComputeCenterId);
+            boolRes.ActSuccess = game.Occupy(request.TeamId, request.PlayerId);
             GameServerLogging.logger.LogDebug($"END Occupy: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
@@ -201,8 +177,8 @@ namespace Server
                         MessageOfNews news = new()
                         {
                             BinaryMessage = request.BinaryMessage,
-                            FromId = request.CharacterId,
-                            ToId = request.ToCharacterId,
+                            FromId = request.PlayerId,
+                            ToId = request.ToPlayerId,
                             TeamId = request.TeamId
                         };
                         lock (newsLock)
@@ -223,23 +199,35 @@ namespace Server
         }
 
 
-        public override Task<BoolRes> Load(LoadMeg request, ServerCallContext context)
+        public override Task<BoolRes> Load(LoadMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY Load: Player {request.PlayerId} from Team {request.TeamId}" +
-            $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
-            BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Load(request.TeamId, request.PlayerId, request.SemiconductorNum, request.MedicineNum, request.HandiworkNum, request.CostumeNum, request.FoodNum);
-            GameServerLogging.logger.LogDebug("END Load");
+            GameServerLogging.logger.LogDebug($"TRY Load: {request.PlayerId} from Team {request.TeamId} loading Product {request.ProductType} with Amount {request.ProductAmount}");
+            BoolRes boolRes = new() {
+                ActSuccess = 
+                    game.Load(
+                        request.TeamId, 
+                        request.PlayerId, 
+                        Transformation.GoodsTypeFromProto(request.ProductType), 
+                        request.ProductAmount)
+            };
+            GameServerLogging.logger.LogDebug($"END Load:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<BoolRes> Sell(SellMeg request, ServerCallContext context)
+        public override Task<BoolRes> Trade(TradeMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY Sell: Player {request.PlayerId} from Team {request.TeamId}" +
-            $" Semiconductor:{request.SemiconductorNum}, Medicine:{request.MedicineNum}, Handiwork:{request.HandiworkNum}, Costume:{request.CostumeNum}, Food:{request.FoodNum}");
-            BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Sell(request.TeamId, request.PlayerId, request.SemiconductorNum, request.MedicineNum, request.HandiworkNum, request.CostumeNum, request.FoodNum);
-            GameServerLogging.logger.LogDebug("END Sell");
+            GameServerLogging.logger.LogDebug($"TRY Trade: Player {request.PlayerId} {(request.IsBuy ? "buy from" : "sell to")} Team {request.TeamId}" +
+            $" Product:{request.ProductType}, Amount:{request.ProductAmount}");
+            BoolRes boolRes = new(){
+                ActSuccess = 
+                    game.Trade(
+                        request.TeamId, 
+                        request.PlayerId, 
+                        Transformation.GoodsTypeFromProto(request.ProductType), 
+                        request.ProductAmount, 
+                        request.IsBuy)
+            };
+            GameServerLogging.logger.LogDebug($"END Trade:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
@@ -249,78 +237,58 @@ namespace Server
 
         public override Task<BoolRes> CreatCharacter(CreateCharacterMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug(
-                $"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
-            var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
-            {
-                Utility.CharacterType.DRONE => GameData.DroneCost,
-                Utility.CharacterType.ROBOT => GameData.RobotCost,
-                Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
-
-                _ => int.MaxValue
-            };
-            var teamMoneyPool = game.TeamList[(int)request.TeamId].MoneyPool;
-            if (activateCost > teamMoneyPool.Money)
-            {
-                return Task.FromResult(new BoolRes { ActSuccess = false });
-            }
+            GameServerLogging.logger.LogDebug($"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
             BoolRes boolRes = new()
             {
                 ActSuccess =
-                    game.ActivateCharacter(
+                    game.RecruitCharacterAtFactory(
                         request.TeamId,
-                        Transformation.CharacterTypeFromProto(request.CharacterType),
-                        request.BirthpointIndex)
-                    != GameObj.invalidID
+                        request.PlayerId,
+                        Transformation.CharacterTypeFromProto(request.CharacterType))
             };
-            if (boolRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
-            GameServerLogging.logger.LogDebug("END CreatCharacter");
+            // if (boolRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
+            GameServerLogging.logger.LogDebug($"END CreatCharacter:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        public override Task<CreatCharacterRes> CreatCharacterRID(CreateCharacterMsg request, ServerCallContext context)
-        {
-            GameServerLogging.logger.LogDebug(
-                $"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
-            var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
-            {
-                Utility.CharacterType.DRONE => GameData.DroneCost,
-                Utility.CharacterType.ROBOT => GameData.RobotCost,
-                Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
+        // 暂时废弃CreatCharacterRID，因为playerId由玩家自行指定
+        // public override Task<CreatCharacterRes> CreatCharacterRID(CreateCharacterMsg request, ServerCallContext context)
+        // {
+        //     // GameServerLogging.logger.LogDebug($"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
+        //     // // var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
+        //     // // {
+        //     // //     Utility.CharacterType.DRONE => GameData.DroneCost,
+        //     // //     Utility.CharacterType.ROBOT => GameData.RobotCost,
+        //     // //     Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
 
-                _ => int.MaxValue
-            };
-            var teamMoneyPool = game.TeamList[(int)request.TeamId].MoneyPool;
-            if (activateCost > teamMoneyPool.Money)
-            {
-                return Task.FromResult(new CreatCharacterRes { ActSuccess = false });
-            }
-            var playerId = game.ActivateCharacter(
-                request.TeamId,
-                Transformation.CharacterTypeFromProto(request.CharacterType),
-                request.BirthpointIndex);
+        //     // //     _ => int.MaxValue
+        //     // // };
+        //     // // var teamMoneyPool = game.TeamList[(int)request.TeamId].MoneyPool;
+        //     // // if (activateCost > teamMoneyPool.Money)
+        //     // // {
+        //     // //     return Task.FromResult(new CreatCharacterRes { ActSuccess = false });
+        //     // // }
+        //     // var playerId = game.RecruitCharacterAtFactory(
+        //     //     request.TeamId,
+        //     //     request.PlayerId,
+        //     //     Transformation.CharacterTypeFromProto(request.CharacterType));
 
-            CreatCharacterRes creatCharacterRes = new()
-            {
-                ActSuccess = playerId != GameObj.invalidID,
-                PlayerId = playerId
-            };
-            if (creatCharacterRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
-            GameServerLogging.logger.LogDebug("END CreatCharacterRID");
-            return Task.FromResult(creatCharacterRes);
-        }
+        //     // CreatCharacterRes creatCharacterRes = new()
+        //     // {
+        //     //     ActSuccess = false,
+        //     //     PlayerId = playerId
+        //     // };
+        //     // if (creatCharacterRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
+        //     // GameServerLogging.logger.LogDebug("END CreatCharacterRID");
+        //     return Task.FromResult(creatCharacterRes);
+        // }
 
         public override Task<BoolRes> EndAllAction(IDMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY EndAllAction: Player {request.PlayerId} from Team {request.TeamId}");
             BoolRes boolRes = new();
-            if (request.PlayerId >= spectatorMinPlayerID)
-            {
-                boolRes.ActSuccess = false;
-                return Task.FromResult(boolRes);
-            }
-            boolRes.ActSuccess = game.Stop(request.TeamId, request.PlayerId);
+            // boolRes.ActSuccess = game.Stop(request.TeamId, request.PlayerId);
             GameServerLogging.logger.LogDebug("END EndAllAction");
             return Task.FromResult(boolRes);
         }
