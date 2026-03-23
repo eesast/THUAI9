@@ -47,9 +47,6 @@ namespace Gaming
             return characterManager.RecruitCharacter(teamId, playerId, type, fac.Position);
         }
 
-        /// <summary>
-        /// 请求让指定玩家的单位移动一段时间，朝某个方向（弧度）。
-        /// 使用 teamId + playerId（队内 id）。
         /// </summary>
         /// <param name="teamId">队伍 ID</param>
         /// <param name="playerId">队内玩家/单位 ID</param>
@@ -107,9 +104,6 @@ namespace Gaming
         }
 
 
-        /// <summary>
-        /// 采集指定资源点，持续一定时间。
-        /// 使用 teamId + playerId 来定位采集者。
         /// </summary>
         /// <param name="teamId">队伍 ID</param>
         /// <param name="playerId">队内玩家 ID</param>
@@ -745,6 +739,18 @@ namespace Gaming
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// 指定某队某玩家的角色从工厂装载某类货物到自身（尝试装载 amount 个）。
+        /// 使用 teamId + playerId 定位操作者。
+        /// </summary>
+        public bool Load(long teamId, long playerId, Preparation.Utility.GoodsType type, int amount)
+        {
+            if (amount <= 0) return false;
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character)) return false;
+            if (character == null || character.IsRemoved) return false;
+            return actionManager.Load(character, type, amount);
         }
     }
 }
