@@ -112,6 +112,7 @@ namespace Server
             serializer.Serialize(writer, result);
         }
 
+
         protected void SendGameResult(int[] scores, bool crashed = false)		// 天梯的 Server 给网站发消息记录比赛结果
         {
             string? url2 = Environment.GetEnvironmentVariable("FINISH_URL");
@@ -127,23 +128,25 @@ namespace Server
             }
             string state = crashed ? "Crashed" : "Finished";
             string[][] player_role = new string[4][];
-            for(int i = 0; i < 4; i++)
+            for(int i = 0; i < options.TeamCount; i++)
             {
                 player_role[i] = new string[options.CharacterCount];
             }
-            foreach (var team in game.TeamList)
+            var characters = game.GetAllCharacters();
+            var teams = game.GetAllTeamStatus();
+            foreach (var team in teams)
             {
                 int count = 0;
-                List<Preparation.Utility.CharacterType> list;
-                list = team.CharacterPool.Travel((character) => character.CharacterType);
-                foreach (var type in list)
+
+                foreach (var c in characters.Where(c => c.TeamId == team.TeamId))
                 {
-                    player_role[team.TeamID][count] = type.ToString();
+                    player_role[(int)team.TeamId][count] = c.CharacterType.ToString();
                     count++;
                 }
             }
             httpSender?.SendHttpRequest(scores, state, player_role).Wait();
         }
+
 
         protected double[] PullScore(double[] scores)
         {
@@ -235,7 +238,6 @@ namespace Server
 
         private void OnGameEnd()
         {
-            game.ClearAllLists();
             mwr?.Flush();
             if (options.ResultFileName != DefaultArgumentOptions.FileName)
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
@@ -256,7 +258,7 @@ namespace Server
                     scores = doubleArray.Select(x => (int)x).ToArray();
                 endGameSem.Release();
                 Thread.Sleep(1);
-                SendGameResult(scores, crash);
+                //SendGameResult(scores, crash);
             }
             else if (options.Mode == 1)
             {
@@ -271,13 +273,14 @@ namespace Server
                 */ // 得分计算方式待定
                 endGameSem.Release();
                 Thread.Sleep(1);
-                SendGameResult(s);
+                //SendGameResult(s);
             }
         }
 
         public void ReportGame(GameState gameState, bool requiredGaming = true)
         {
-            var gameObjList = game.GetGameObj();
+            var snapshot = game.GetSnapshot();
+            var gameObjList = snapshot.Objects;
             currentGameInfo = new();
             lock (messageToAllClientsLock)
             {
@@ -296,12 +299,7 @@ namespace Server
                         {
                             MessageOfObj? msg = CopyInfo.Auto(gameObj, time);
                             if (msg != null) currentGameInfo.ObjMessage.Add(msg);
-                        }
-                        foreach (Base team in game.TeamList)
-                        {
-                            MessageOfObj? msg = CopyInfo.Auto(team, time);
-                            if (msg != null) currentGameInfo.ObjMessage.Add(msg);
-                        }
+                        }                      
                         lock (newsLock)
                         {
                             foreach (var news in currentNews)
@@ -343,48 +341,48 @@ namespace Server
 
         private bool PlayerDeceased(int playerID)
         {
-            return game.GameMap.GameObjDict[GameObjType.CHARACTER].Cast<Character>()?.Find(
-                character => character.PlayerID == playerID && character.CharacterState == Preparation.Utility.CharacterState.DECEASED
-                ) != null;
+            var chars = game.GetAllCharacters();
+
+            return chars.Any(c =>
+                c.PlayerId == playerID &&
+                c.State == Preparation.Utility.CharacterState.DECEASED
+            );
         }
-        /*
-        public override int[] GetMoney()
-        {
-            int[] money = new int[2]; // 0代表Team 1，1代表Team 2...
-            foreach (Base team in game.TeamList)
-            {
-                money[(int)team.TeamID] = (int)game.GetTeamMoney(team.TeamID);
-            }
-            return money;
-        }
-        */
+
         public override int[] GetMaterial()
         {
-            int[] material = new int[TeamCount]; 
-            foreach (Base team in game.TeamList)
+            var teams = game.GetAllTeamStatus();
+            int[] material = new int[teams.Count];
+
+            foreach (var t in teams)
             {
-                material[(int)team.TeamID] = (int)game.GetTeamMaterial(team.TeamID);    //GetTeamMaterial还未定义
+                material[(int)t.TeamId] = (int)t.FactoryStorage;
             }
             return material;
         }
         public override int[] GetComputePower()
         {
-            int[] computepower = new int[TeamCount]; 
-            foreach (Base team in game.TeamList)
+            var teams = game.GetAllTeamStatus();
+            int[] cp = new int[teams.Count];
+
+            foreach (var t in teams)
             {
-                computepower[(int)team.TeamID] = (int)game.GetTeamComputePower(team.TeamID); //GetTeamComputePower还未定义
+                cp[(int)t.TeamId] = (int)t.FactoryComputingPower;
             }
-            return computepower;
+            return cp;
         }
+
         public override int[] GetScore()
         {
-            int[] score = new int[TeamCount]; 
-            foreach (Base team in game.TeamList)
+            var teams = game.GetAllTeamStatus();
+            int[] score = new int[teams.Count];
+
+            foreach (var t in teams)
             {
-                score[(int)team.TeamID] = (int)game.GetTeamScore(team.TeamID);
+                score[(int)t.TeamId] = (int)t.Score;
             }
             return score;
-        }
+        }   
 
         private uint GetBirthPointIdx(long playerID)  // 获取出生点位置
         {
@@ -398,24 +396,6 @@ namespace Server
             return false;
         }
 
-        /*
-        private MessageOfAll GetMessageOfAll(int time)
-        {
-            MessageOfAll msg = new()
-            {
-                GameTime = time
-            };
-            int[] score = GetScore();
-            msg.Team1Score = score[0];
-            msg.MonstersTeamScore = score[1];
-            int[] economy = GetMoney();
-            msg.BuddhistsTeamEconomy = economy[0];
-            msg.MonstersTeamEconomy = economy[1];
-            // msg.RedHomeHp = (int)game.TeamList[0].Home.HP;
-            // msg.BlueHomeHp = (int)game.TeamList[1].Home.HP;
-            return msg;
-        }
-        */
         
         private MessageOfAll GetMessageOfAll(int time)
         {
@@ -423,18 +403,17 @@ namespace Server
             {
                 GameTime = time
             };
-            int[] scores = GetScore();
-            int[] materials = GetMaterial();
-            int[] computepower = GetComputePower();
 
-            for (int i = 0; i < options.TeamCount; i++)  // 确保 teams 字段有 TeamCount 个元素，teams[i] 对应 team i+1
+            var teams = game.GetAllTeamStatus();
+
+            foreach (var t in teams.OrderBy(t => t.TeamId))
             {
                 var teamInfo = new MessageOfAll.Types.TeamInfo
                 {
-                    score = (i < scores.Length) ? scores[i] : 0,
-                    material = (i < materials.Length) ? materials[i] : 0,
-                    compute_power = (i < computepower.Length) ? computepower[i] : 0,
-                    factory_hp = 0
+                Score = (int)t.Score,
+                Material = (int)t.FactoryStorage,
+                ComputePower = (int)t.FactoryComputingPower,
+                FactoryHp = (int)t.FactoryHP
                 };
 
                 msg.Teams.Add(teamInfo);
