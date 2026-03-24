@@ -9,7 +9,7 @@ message IDMsg
 {
     int64 player_id = 1;
     int64 team_id = 2;
-    protobuf.GameMode mode = 3; // 客户端发起连接/请求时声明希望的游戏模式
+    //protobuf.GameMode mode = 3; // 客户端发起连接/请求时声明希望的游戏模式
 }
 
 message CharacterMsg
@@ -24,7 +24,7 @@ message RegisterFactoryMsg
 {
     int64 player_id = 1;
     int64 team_id = 2;
-    protobuf.GameMode mode = 3;
+    //protobuf.GameMode mode = 3;
     int32 preferred_spawn_index = 4; // 客户端希望的出生点索引（0表示不指定，由服务器分配）
     int32 side_flag = 5; // 客户端希望的阵营标识
 }
@@ -120,7 +120,7 @@ message CreateCharacterMsg
     CharacterType character_type = 1;
     int64 team_id = 2;
     int64 player_id = 3;
-    protobuf.GameMode mode = 5;  // 创建角色时可以指明模式
+    //protobuf.GameMode mode = 5;  // 创建角色时可以指明模式
 }
 
 message ProduceGoodsMsg
