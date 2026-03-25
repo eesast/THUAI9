@@ -31,16 +31,17 @@ namespace ClientTest
             {
                 PlayerId = playerId,
                 TeamId = teamId,
-                PreferredSpawnIndex = 0,
                 SideFlag = teamId
             };
             var call = client.RegisterFactory(playerInfo);
 
+            Thread.Sleep(3000);
+
             CreateCharacterMsg createMsg = new()
             {
-                CharacterType = CharacterType.Drone,   // 无人机
+                CharacterType = CharacterType.Robot,   // 无人机
                 TeamId = teamId,
-                PlayerId = playerId,
+                PlayerId = 1,
             };
 
             var createRes = client.CreatCharacter(createMsg); // 当前可用接口
@@ -52,7 +53,7 @@ namespace ClientTest
 
             MoveMsg moveMsg = new()
             {
-                PlayerId = playerId,
+                PlayerId = 1,
                 TeamId = teamId,
                 TimeInMilliseconds = 100,
                 Angle = 0

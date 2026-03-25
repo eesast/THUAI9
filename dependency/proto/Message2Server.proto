@@ -25,8 +25,8 @@ message RegisterFactoryMsg
     int64 player_id = 1;
     int64 team_id = 2;
     //protobuf.GameMode mode = 3;
-    int32 preferred_spawn_index = 4; // 客户端希望的出生点索引（0表示不指定，由服务器分配）
-    int32 side_flag = 5; // 客户端希望的阵营标识
+    //int32 preferred_spawn_index = 4; // 客户端希望的出生点索引（0表示不指定，由服务器分配）
+    int32 side_flag = 3; // 客户端希望的阵营标识
 }
 
 message MoveMsg

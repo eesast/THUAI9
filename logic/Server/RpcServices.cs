@@ -54,9 +54,67 @@ namespace Server
 
         protected readonly object addPlayerLock = new();
         public override async Task RegisterFactory(RegisterFactoryMsg request, IServerStreamWriter<MessageToClient> responseStream, ServerCallContext context)
-        {
-            // 待实现
-            await Task.Delay(0);
+        {           
+            GameServerLogging.logger.LogDebug(
+                $"TRY Register Factory: Team {request.TeamId}");
+            if (game.GameMap.Timer.IsGaming)
+                return;
+            if (!ValidPlayerID(request.PlayerId))  //玩家id是否正确
+                return;
+            if (request.TeamId >= TeamCount)  
+                return;
+            if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)  //是否已经添加了该玩家
+                return;
+            GameServerLogging.logger.LogDebug("AddPlayer: Check Correct");
+            lock (addPlayerLock)
+            {
+                GameServerLogging.logger.LogDebug("ch id :" + request.PlayerId + "  te id:" + request.TeamId + " side: " + request.SideFlag);
+                var temp = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
+                GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}");
+                StartGame(); 
+            }
+            bool exitFlag = false;
+            bool firstTime = true;
+            do
+            {
+                semaDicts[request.TeamId][request.PlayerId].Item1.Wait();
+                Character? character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.PlayerId);
+                // if(character!=null)
+                // {
+                //     GameServerLogging.logger.LogInfo($"Character {request.PlayerId} exist! IsRemoved {character.IsRemoved}");
+                // }
+                // else{
+                //     GameServerLogging.logger.LogInfo($"Character {request.PlayerId} null");
+                // }
+                if (!firstTime && request.PlayerId > 0 && (character == null || character.IsRemoved == true))
+                {
+                    // GameServerLogging.logger.LogInfo($"Cannot find character {request.PlayerId} from Team {request.TeamId}!");
+                }
+                else
+                {
+                    if (firstTime)
+                        firstTime = false;
+                    try
+                    {
+                        if (currentGameInfo != null && !exitFlag)
+                        {
+                            await responseStream.WriteAsync(currentGameInfo);
+                            // GameServerLogging.logger.LogInfo(
+                            // $"Send to Player{request.PlayerId} from Team {request.TeamId}!",
+                            //    false);
+                        }
+                    }
+                    catch
+                    {
+                        if (!exitFlag)
+                        {
+                            GameServerLogging.logger.LogInfo($"The client {request.PlayerId} exited");
+                            exitFlag = true;
+                        }
+                    }
+                }
+                semaDicts[request.TeamId][request.PlayerId].Item2.Release();
+            } while (game.GameMap.Timer.IsGaming);
         }
 
         public override Task<MessageOfMap> GetMap(NullRequest request, ServerCallContext context)
