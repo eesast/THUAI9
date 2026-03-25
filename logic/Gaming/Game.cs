@@ -813,5 +813,16 @@ namespace Gaming
             if (character == null || character.IsRemoved) return false;
             return actionManager.Load(character, type, amount);
         }
+
+        /// <summary>
+        /// 让指定队伍的指定玩家的角色立即停止当前所有行动（停止移动/采集/占领/攻击等）。
+        /// 使用 teamId + playerId 定位操作者。
+        /// </summary>
+        public bool Stop(long teamId, long playerId)
+        {
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character)) return false;
+            if (character == null || character.IsRemoved) return false;
+            return ActionManager.Stop(character);
+        }
     }
 }

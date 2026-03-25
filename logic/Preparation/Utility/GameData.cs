@@ -12,7 +12,7 @@ namespace Preparation.Utility
         public const int LimitOfStopAndMove = 15;           // 停止和移动的最大间隔
         public const int ProduceSpeedPerSecond = 200;       // 每秒生产值
         public const int KnockedBackTime = 50;
-        public const int KnockedBackSpeed = 1500;           // 击退速度(额外速度，需加上基础移速）
+        public const int KnockedBackSpeed = 1500;           // 击退速度(额外速度，需加上基础移速)
         public const int AdditionResourceAttackRange = 2000;//加成资源攻击范围
 
         public const int NumOfPosGridPerCell = 1000;    // 每格的【坐标单位】数
@@ -42,6 +42,12 @@ namespace Preparation.Utility
         public const int FactoryStorage = 5;
         public const int FactoryRobust = 5;
         public const int FactoryEfficiency = 1;
+        public const int FactoryComputingPower = 100;
+
+        public const int FactoryEfficiencyMax = 2; // maximum efficiency for factory
+        public const int FactoryInitialSource = 0; // initial source stored in factory
+        public const int FactoryInitialComputingPower = 0; // initial computing power
+        public const int FactoryInitialScore = 0; // initial score award or baseline
 
         public const int DroneHP = 3;
         public const int DroneCost = 50;
@@ -76,6 +82,7 @@ namespace Preparation.Utility
         public const int ComputeCenterRadius = 2;
         public const int ComputeCenterOccupyTimeMs = 10_000;
 
+        // factory compute power production per second
         public const int FactoryComputePowerPerSecond = 1;
 
         public const int BasePriceSemiconductor = 80;

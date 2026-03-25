@@ -67,8 +67,8 @@ public class Factory : Immovable, IFactory
 
     public AtomicInt GetGoodsAtomic(GoodsType type) => goodsCounts[(int)type];
 
-    public Factory(XY initPos, long hpMax, long robustMax, long storageMax, long efficiency, long efficiencyMax = 0,
-                int source = 0, int computingPower = 0, int score = 0,
+    public Factory(XY initPos, long hpMax, long robustMax, long storageMax, long efficiency, long computingPower, long efficiencyMax = 0,
+                int source = 0, int score = 0,
                 IEnumerable<(GoodsType type, int quantity)>? goodsMap = null)
         : base(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.FACTORY)
     {
@@ -79,7 +79,7 @@ public class Factory : Immovable, IFactory
         Storage = new(storageMax);
         Storage.SetMaxV(GameData.MaxStorage);
         Efficiency = new(efficiency);
-        Efficiency.SetMaxV(GameData.MaxEfficiency);
+        Efficiency.SetMaxV(efficiencyMax > 0 ? efficiencyMax : GameData.FactoryEfficiencyMax);
         Source.SetROri(source);
         Efficiency = new(efficiencyMax);
         ComputingPower.SetROri(computingPower);
@@ -89,7 +89,7 @@ public class Factory : Immovable, IFactory
     }
 
     public Factory(XY initPos)
-        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency) { }
+        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency, computingPower: GameData.FactoryComputingPower) { }
 
     public Factory() : this(GameData.PosNotInGame) { }
     public override bool IsRigid(bool args = false) => true;
