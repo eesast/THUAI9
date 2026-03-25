@@ -17,6 +17,12 @@ namespace Preparation.Utility
         public static global::Protobuf.ResourceState ResourceStateToProto(ResourceState state)
             => (global::Protobuf.ResourceState)(int)state;
 
+        public static global::Protobuf.GoodsType GoodsTypeToProto(GoodsType type)
+            => (global::Protobuf.GoodsType)(int)type;
+
+        public static GoodsType GoodsTypeFromProto(global::Protobuf.GoodsType type)
+            => (GoodsType)(int)type;
+
         public static global::Protobuf.MarketType MarketTypeToProto(MarketType type)
             => (global::Protobuf.MarketType)(int)type;
 
