@@ -27,7 +27,7 @@ namespace Server
                     isSpectatorJoin = value;
             }
         }
-        
+
         #region 连接和初始化服务
 
         public override Task<BoolRes> TryConnection(IDMsg request, ServerCallContext context)
@@ -241,10 +241,10 @@ namespace Server
         public override Task<BoolRes> Recover(RecoverMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Recover: Player {request.PlayerId} from Team {request.TeamId}" + 
+                $"TRY Recover: Player {request.PlayerId} from Team {request.TeamId}" +
                 $"RecoveredHp: {request.RecoveredHp}");
             BoolRes boolRes = new();
-            
+
             boolRes.ActSuccess = game.Recover(request.TeamId, request.PlayerId, request.RecoveredHp);
             GameServerLogging.logger.LogDebug($"END Recover:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
@@ -252,7 +252,7 @@ namespace Server
 
         public override Task<BoolRes> Harvest(ResourceMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" + 
+            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" +
             $"HarvestedResource: {request.ResourceId}, Amount: {request.Amount}");
             BoolRes boolRes = new();
             // boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
@@ -286,7 +286,7 @@ namespace Server
             GameServerLogging.logger.LogDebug(
                 $"TRY Send: From Player {request.PlayerId} To Player {request.ToPlayerId} from Team {request.TeamId}");
             BoolRes boolRes = new BoolRes();
-            
+
             GameServerLogging.logger.LogDebug($"Send: As {request.MessageCase}");
             switch (request.MessageCase)
             {
@@ -350,12 +350,13 @@ namespace Server
         public override Task<BoolRes> Load(LoadMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY Load: {request.PlayerId} from Team {request.TeamId} loading Product {request.ProductType} with Amount {request.ProductAmount}");
-            BoolRes boolRes = new() {
-                ActSuccess = 
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
                     game.Load(
-                        request.TeamId, 
-                        request.PlayerId, 
-                        Transformation.GoodsTypeFromProto(request.ProductType), 
+                        request.TeamId,
+                        request.PlayerId,
+                        Transformation.GoodsTypeFromProto(request.ProductType),
                         request.ProductAmount)
             };
             GameServerLogging.logger.LogDebug($"END Load:{boolRes.ActSuccess}");
@@ -366,13 +367,14 @@ namespace Server
         {
             GameServerLogging.logger.LogDebug($"TRY Trade: Player {request.PlayerId} {(request.IsBuy ? "buy from" : "sell to")} Team {request.TeamId}" +
             $" Product:{request.ProductType}, Amount:{request.ProductAmount}");
-            BoolRes boolRes = new(){
-                ActSuccess = 
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
                     game.Trade(
-                        request.TeamId, 
-                        request.PlayerId, 
-                        Transformation.GoodsTypeFromProto(request.ProductType), 
-                        request.ProductAmount, 
+                        request.TeamId,
+                        request.PlayerId,
+                        Transformation.GoodsTypeFromProto(request.ProductType),
+                        request.ProductAmount,
                         request.IsBuy)
             };
             GameServerLogging.logger.LogDebug($"END Trade:{boolRes.ActSuccess}");

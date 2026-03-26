@@ -57,7 +57,7 @@ namespace Server
                 rpcServer.ShutdownAsync().Wait();
 
                 logger.LogInfo("===================  Final Score  ====================");
-                
+
                 logger.LogInfo($"Team0: {server.GetScore()[0]}"); //
                 logger.LogInfo($"Team1: {server.GetScore()[1]}"); //
                 logger.LogInfo($"Team2: {server.GetScore()[2]}"); //
