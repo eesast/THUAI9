@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine", "GameEngine\Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{3461765F-60A1-21BC-764E-FC799869FE2F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playback", "PlayBack\Playback.csproj", "{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{3461765F-60A1-21BC-764E-FC799869FE2F}.Release|x64.Build.0 = Release|Any CPU
 		{3461765F-60A1-21BC-764E-FC799869FE2F}.Release|x86.ActiveCfg = Release|Any CPU
 		{3461765F-60A1-21BC-764E-FC799869FE2F}.Release|x86.Build.0 = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|x64.Build.0 = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Debug|x86.Build.0 = Debug|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|x64.ActiveCfg = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|x64.Build.0 = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|x86.ActiveCfg = Release|Any CPU
+		{00BE45A9-5AA6-9C64-3D64-1BFC9AF400B5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
