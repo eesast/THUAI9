@@ -106,7 +106,7 @@ namespace Server
             result.Add("Team 2", score[1]);
             result.Add("Team 3", score[2]);
             result.Add("Team 4", score[3]);
-            JsonSerializer serializer = new();  
+            JsonSerializer serializer = new();
             using StreamWriter sw = new(path);
             using JsonTextWriter writer = new(sw);
             serializer.Serialize(writer, result);
@@ -128,7 +128,7 @@ namespace Server
             }
             string state = crashed ? "Crashed" : "Finished";
             string[][] player_role = new string[4][];
-            for(int i = 0; i < options.TeamCount; i++)
+            for (int i = 0; i < options.TeamCount; i++)
             {
                 player_role[i] = new string[options.CharacterCount];
             }
@@ -299,7 +299,7 @@ namespace Server
                         {
                             MessageOfObj? msg = CopyInfo.Auto(gameObj, time);
                             if (msg != null) currentGameInfo.ObjMessage.Add(msg);
-                        }                      
+                        }
                         lock (newsLock)
                         {
                             foreach (var news in currentNews)
@@ -382,7 +382,7 @@ namespace Server
                 score[(int)t.TeamId] = (int)t.Score;
             }
             return score;
-        }   
+        }
 
         private uint GetBirthPointIdx(long playerID)  // 获取出生点位置
         {
@@ -396,7 +396,7 @@ namespace Server
             return false;
         }
 
-        
+
         private MessageOfAll GetMessageOfAll(int time)
         {
             MessageOfAll msg = new()
@@ -410,10 +410,10 @@ namespace Server
             {
                 var teamInfo = new MessageOfAll.Types.TeamInfo
                 {
-                Score = (int)t.Score,
-                Material = (int)t.FactoryStorage,
-                ComputePower = (int)t.FactoryComputingPower,
-                FactoryHp = (int)t.FactoryHP
+                    Score = (int)t.Score,
+                    Material = (int)t.FactoryStorage,
+                    ComputePower = (int)t.FactoryComputingPower,
+                    FactoryHp = (int)t.FactoryHP
                 };
 
                 msg.Teams.Add(teamInfo);
