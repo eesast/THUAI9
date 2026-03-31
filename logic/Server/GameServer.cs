@@ -102,10 +102,10 @@ namespace Server
         {
             Dictionary<string, int> result = [];
             int[] score = GetScore();
-            result.Add("Team 1", score[0]);
-            result.Add("Team 2", score[1]);
-            result.Add("Team 3", score[2]);
-            result.Add("Team 4", score[3]);
+            for (int i = 0; i < score.Length; i++)
+            {
+                result.Add($"Team {i + 1}", score[i]);
+            }
             JsonSerializer serializer = new();
             using StreamWriter sw = new(path);
             using JsonTextWriter writer = new(sw);

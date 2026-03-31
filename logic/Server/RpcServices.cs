@@ -146,7 +146,7 @@ namespace Server
                 var playerSemas = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
                 lock (addPlayerLock)
                 {
-                    GameServerLogging.logger.LogDebug($"ch id :{request.PlayerId}  te id:{request.TeamId} side: {request.SideFlag}");
+                    GameServerLogging.logger.LogDebug($"player id :{request.PlayerId}  team id:{request.TeamId} sideflag: {request.SideFlag}");
 
                     if (!semaDicts[request.TeamId].TryAdd(request.PlayerId, playerSemas))
                     {
