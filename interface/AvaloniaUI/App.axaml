@@ -1,0 +1,20 @@
+<Application xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:local="using:THUAI9_Avalonia"
+                     xmlns:converters="using:THUAI9_Avalonia.Converters"
+                     x:Class="THUAI9_Avalonia.App"
+                     RequestedThemeVariant="Light">
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <converters:TeamIdToColorConverter x:Key="TeamIdToColorConverter" />
+        <converters:LevelToColorConverter x:Key="LevelToColorConverter" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://THUAI9_Avalonia/Styles/Colors.axaml" />
+    </Application.Styles>
+</Application>

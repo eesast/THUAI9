@@ -1,0 +1,20 @@
+﻿<UserControl
+    x:Class="THUAI9_Avalonia.Views.MapView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:THUAI9_Avalonia.Models"
+    xmlns:vm="using:THUAI9_Avalonia.ViewModels"
+    mc:Ignorable="d">
+
+    <Viewbox Stretch="Uniform">
+        <Grid Width="1000" Height="1000">
+            <!-- 地图网格 -->
+            <Grid Name="MapGrid" Background="Transparent" />
+
+            <!-- 角色图层 -->
+            <Canvas Name="CharacterCanvas" Background="Transparent" />
+        </Grid>
+    </Viewbox>
+</UserControl>
