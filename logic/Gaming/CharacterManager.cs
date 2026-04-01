@@ -94,7 +94,7 @@ namespace Gaming
                         // 如果找不到合法点则仍使用原位置（可能会导致角色被卡住），但尽量避免该情况
                     }
                 }
-                catch 
+                catch
                 {
                     LogicLogging.LogError($"Error occurred while checking for collisions or finding spawn position for Team {teamId}, Player {playerId}. Defaulting to original position.");
                 }
@@ -125,7 +125,7 @@ namespace Gaming
                         {
                             if (((IMovable)ch).WillCollideWith(obj, pos)) return true;
                         }
-                        catch 
+                        catch
                         {
                             LogicLogging.LogError($"Error occurred while checking collision between Character (Team {ch.TeamID.Get()}, Player {ch.PlayerID.Get()}) and object ID {obj.ID}. Ignoring this object for collision check.");
                         }
@@ -240,7 +240,7 @@ namespace Gaming
                 }
                 if (!dict.TryGetValue(playerId, out var ch))
                 {
-                    LogicLogging.LogError($"Character for Team {teamId}, Player {playerId} not found when trying to destroy."); 
+                    LogicLogging.LogError($"Character for Team {teamId}, Player {playerId} not found when trying to destroy.");
                     return false;
                 }
                 if (!ch.TryToRemoveFromGame(state))

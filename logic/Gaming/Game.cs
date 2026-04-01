@@ -77,30 +77,30 @@ namespace Gaming
                 return false;
             }
 
-                new Thread
-                (
-                    () =>
-                    {
-                        Thread.Sleep(GameData.CheckInterval);
-                        new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
-                        (
-                            loopCondition: () => gameMap.Timer.IsGaming,
-                            loopToDo: () =>
+            new Thread
+            (
+                () =>
+                {
+                    Thread.Sleep(GameData.CheckInterval);
+                    new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
+                    (
+                        loopCondition: () => gameMap.Timer.IsGaming,
+                        loopToDo: () =>
+                        {
+                            foreach (var team in teams)
                             {
-                                foreach (var team in teams)
-                                {
-                                    var fac = team.Value.Factory;
-                                    if (fac == null) continue;
-                                    fac.TickComputingPower(GameData.CheckInterval);
-                                }
+                                var fac = team.Value.Factory;
+                                if (fac == null) continue;
+                                fac.TickComputingPower(GameData.CheckInterval);
+                            }
 
-                                return !CheckAndHandleGameEnd();
-                            },
-                            timeInterval: GameData.CheckInterval,
-                            finallyReturn: () => 0
-                        ).Start();
-                    }
-                ).Start();
+                            return !CheckAndHandleGameEnd();
+                        },
+                        timeInterval: GameData.CheckInterval,
+                        finallyReturn: () => 0
+                    ).Start();
+                }
+            ).Start();
             return true;
         }
 
