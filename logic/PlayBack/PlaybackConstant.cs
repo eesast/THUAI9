@@ -1,4 +1,5 @@
 namespace Playback;
+
 public static class Constants
 {
     /// <summary>

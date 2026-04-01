@@ -4,6 +4,7 @@ using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Preparation.Utility;
 using Protobuf;
+using System.Threading;
 using Utility = Preparation.Utility;
 
 namespace Server
@@ -26,7 +27,7 @@ namespace Server
                     isSpectatorJoin = value;
             }
         }
-        
+
         #region 连接和初始化服务
 
         public override Task<BoolRes> TryConnection(IDMsg request, ServerCallContext context)
@@ -55,8 +56,155 @@ namespace Server
         protected readonly object addPlayerLock = new();
         public override async Task RegisterFactory(RegisterFactoryMsg request, IServerStreamWriter<MessageToClient> responseStream, ServerCallContext context)
         {
-            // 待实现
-            await Task.Delay(0);
+            try
+            {
+                GameServerLogging.logger.LogDebug($"TRY Register Factory: Team {request.TeamId}");
+
+                if (game.GameMap?.Timer?.IsGaming ?? false)
+                    return;
+
+                if (!ValidPlayerID(request.PlayerId))
+                    return;
+
+                if (request.TeamId < 0 || request.TeamId >= TeamCount)
+                    return;
+
+                if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
+                    return;
+
+                // 观战玩家分支
+                if (request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
+                {
+                    GameServerLogging.logger.LogDebug($"TRY Add Spectator: Player {request.PlayerId}");
+                    lock (spectatorJoinLock)
+                    {
+                        if (semaDicts[0].TryAdd(request.PlayerId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
+                        {
+                            GameServerLogging.logger.LogInfo("A new spectator comes to watch this game");
+                            IsSpectatorJoin = true;
+                        }
+                        else
+                        {
+                            GameServerLogging.logger.LogInfo($"Duplicated Spectator ID {request.PlayerId}");
+                            return;
+                        }
+                    }
+
+                    do
+                    {
+                        semaDicts[0][request.PlayerId].Item1.Wait();
+                        try
+                        {
+                            if (currentGameInfo != null)
+                            {
+                                var info = currentGameInfo.Clone();
+                                for (int i = info.ObjMessage.Count - 1; i >= 0; i--)
+                                {
+                                    if (info.ObjMessage[i].NewsMessage != null)
+                                    {
+                                        info.ObjMessage.RemoveAt(i);
+                                    }
+                                }
+                                await responseStream.WriteAsync(info);
+                            }
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            if (semaDicts[0].TryRemove(request.PlayerId, out var semas))
+                            {
+                                try
+                                {
+                                    semas.Item1.Release();
+                                    semas.Item2.Release();
+                                }
+                                catch { }
+                                GameServerLogging.logger.LogInfo($"The spectator {request.PlayerId} exited");
+                                return;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            GameServerLogging.logger.LogInfo(ex.ToString());
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                semaDicts[0][request.PlayerId].Item2.Release();
+                            }
+                            catch { }
+                        }
+                    } while (game.GameMap.Timer.IsGaming);
+
+                    GameServerLogging.logger.LogDebug("END Add Spectator");
+                    return;
+                }
+
+                GameServerLogging.logger.LogDebug("AddPlayer: Check Correct");
+
+                // 加入玩家队列
+                var playerSemas = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
+                lock (addPlayerLock)
+                {
+                    GameServerLogging.logger.LogDebug($"ch id :{request.PlayerId}  te id:{request.TeamId} side: {request.SideFlag}");
+
+                    if (!semaDicts[request.TeamId].TryAdd(request.PlayerId, playerSemas))
+                    {
+                        GameServerLogging.logger.LogWarning($"Player {request.PlayerId} has already been registered in team {request.TeamId}");
+                        return;
+                    }
+
+                    communicationToGameID[request.TeamId][request.PlayerId] = GameObj.invalidID;
+
+                    bool start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
+                    GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}, current joined players: {playerCountNow}");
+
+                    if (start)
+                    {
+                        StartGame();
+                    }
+                }
+
+                bool exitFlag = false;
+                bool firstTime = true;
+                do
+                {
+                    playerSemas.Item1.Wait();
+                    var character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.PlayerId);
+
+                    if (!firstTime && request.PlayerId > 0 && (character == null || character.IsRemoved == true))
+                    {
+                        // character离开/死亡时可安全忽略继续发流
+                    }
+                    else
+                    {
+                        if (firstTime)
+                            firstTime = false;
+
+                        try
+                        {
+                            if (currentGameInfo != null && !exitFlag)
+                            {
+                                await responseStream.WriteAsync(currentGameInfo);
+                            }
+                        }
+                        catch
+                        {
+                            if (!exitFlag)
+                            {
+                                GameServerLogging.logger.LogInfo($"The client {request.PlayerId} exited");
+                                exitFlag = true;
+                            }
+                        }
+                    }
+
+                    playerSemas.Item2.Release();
+                } while (game.GameMap.Timer.IsGaming);
+            }
+            catch (Exception ex)
+            {
+                GameServerLogging.logger.LogError($"RegisterFactory exception: {ex}");
+            }
         }
 
         public override Task<MessageOfMap> GetMap(NullRequest request, ServerCallContext context)
@@ -93,10 +241,10 @@ namespace Server
         public override Task<BoolRes> Recover(RecoverMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug(
-                $"TRY Recover: Player {request.PlayerId} from Team {request.TeamId}" + 
+                $"TRY Recover: Player {request.PlayerId} from Team {request.TeamId}" +
                 $"RecoveredHp: {request.RecoveredHp}");
             BoolRes boolRes = new();
-            
+
             boolRes.ActSuccess = game.Recover(request.TeamId, request.PlayerId, request.RecoveredHp);
             GameServerLogging.logger.LogDebug($"END Recover:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
@@ -104,7 +252,7 @@ namespace Server
 
         public override Task<BoolRes> Harvest(ResourceMsg request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" + 
+            GameServerLogging.logger.LogDebug($"TRY Harvesting: Player {request.PlayerId} from Team {request.TeamId}" +
             $"HarvestedResource: {request.ResourceId}, Amount: {request.Amount}");
             BoolRes boolRes = new();
             // boolRes.ActSuccess = game.Harvest(request.TeamId, request.PlayerId, request.ResourceId, request.Amount);
@@ -138,7 +286,7 @@ namespace Server
             GameServerLogging.logger.LogDebug(
                 $"TRY Send: From Player {request.PlayerId} To Player {request.ToPlayerId} from Team {request.TeamId}");
             BoolRes boolRes = new BoolRes();
-            
+
             GameServerLogging.logger.LogDebug($"Send: As {request.MessageCase}");
             switch (request.MessageCase)
             {
@@ -202,12 +350,13 @@ namespace Server
         public override Task<BoolRes> Load(LoadMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY Load: {request.PlayerId} from Team {request.TeamId} loading Product {request.ProductType} with Amount {request.ProductAmount}");
-            BoolRes boolRes = new() {
-                ActSuccess = 
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
                     game.Load(
-                        request.TeamId, 
-                        request.PlayerId, 
-                        Transformation.GoodsTypeFromProto(request.ProductType), 
+                        request.TeamId,
+                        request.PlayerId,
+                        Transformation.GoodsTypeFromProto(request.ProductType),
                         request.ProductAmount)
             };
             GameServerLogging.logger.LogDebug($"END Load:{boolRes.ActSuccess}");
@@ -218,13 +367,14 @@ namespace Server
         {
             GameServerLogging.logger.LogDebug($"TRY Trade: Player {request.PlayerId} {(request.IsBuy ? "buy from" : "sell to")} Team {request.TeamId}" +
             $" Product:{request.ProductType}, Amount:{request.ProductAmount}");
-            BoolRes boolRes = new(){
-                ActSuccess = 
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
                     game.Trade(
-                        request.TeamId, 
-                        request.PlayerId, 
-                        Transformation.GoodsTypeFromProto(request.ProductType), 
-                        request.ProductAmount, 
+                        request.TeamId,
+                        request.PlayerId,
+                        Transformation.GoodsTypeFromProto(request.ProductType),
+                        request.ProductAmount,
                         request.IsBuy)
             };
             GameServerLogging.logger.LogDebug($"END Trade:{boolRes.ActSuccess}");
