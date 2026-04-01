@@ -50,7 +50,7 @@ namespace ClientTest
                 Console.WriteLine("CreateCharacter failed.");
                 return Task.CompletedTask;
             }
-
+            
             MoveMsg moveMsg = new()
             {
                 PlayerId = 1,
@@ -73,6 +73,7 @@ namespace ClientTest
                 tot++;
                 if (tot % 10 == 0) moveMsg.Angle += 1;
             }
+            
             return Task.CompletedTask;
         }
     }

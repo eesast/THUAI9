@@ -32,7 +32,7 @@ namespace Server
         private bool IsTeamConnected(long teamId)
         {
             int index = (int)teamId;
-            if (index < 0 || index >= TeamCount)
+            if (index <= 0 || index > TeamCount)
             {
                 return false;
             }
@@ -41,7 +41,7 @@ namespace Server
 
         private bool AllTeamsConnected()
         {
-            for (int t = 0; t < TeamCount; t++)
+            for (int t = 1; t <= TeamCount; t++)
             {
                 if (!IsTeamConnected(t))
                 {
@@ -89,7 +89,7 @@ namespace Server
                 if (!ValidPlayerID(request.PlayerId))
                     return;
 
-                if (request.TeamId < 0 || request.TeamId >= TeamCount)
+                if (request.TeamId <= 0 || request.TeamId > TeamCount)
                     return;
 
                 //if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)

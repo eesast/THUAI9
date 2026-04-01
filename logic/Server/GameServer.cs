@@ -444,8 +444,8 @@ namespace Server
         {
             this.options = options;
 
-            semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount];
-            for (int i = 0; i < options.TeamCount; i++)
+            semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount + 1];
+            for (int i = 0; i <= options.TeamCount; i++)
             {
                 semaDicts[i] = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>();
             }
