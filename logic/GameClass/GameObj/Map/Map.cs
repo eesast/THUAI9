@@ -134,7 +134,9 @@ namespace GameClass.GameObj.Map
             XY pos2 = gameObj.Position;
             XY del = pos1 - pos2;
             if (del * del > character.AttackSize * character.AttackSize)
+            {
                 return false;
+            }
             return true;
         }
         public bool Remove(GameObj gameObj)
@@ -145,6 +147,7 @@ namespace GameClass.GameObj.Map
                 ans.TryToRemove();
                 return true;
             }
+            LogicLogging.logger.LogInfo("fail to remove map obj");
             return false;
         }
         public bool RemoveJustFromMap(GameObj gameObj)
@@ -155,6 +158,7 @@ namespace GameClass.GameObj.Map
                 return true;
             }
             return false;
+            LogicLogging.logger.LogInfo("fail to remove from map");
         }
         public void Add(IGameObj gameObj)
         {

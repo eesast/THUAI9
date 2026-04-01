@@ -34,17 +34,30 @@ namespace Gaming
                 teamDict[playerId] = ch;
                 // ensure the character is also added to the map collection
                 map.Add(ch);
+                LogicLogging.LogInfo($"Character created: Team {teamId}, Player {playerId}, Type {type}");
                 return ch;
             }
 
             public bool RecruitCharacter(long teamId, long playerId, CharacterType type, XY birthPos)
             {
                 var factory = game.GetTeamFactory(teamId);
-                if (factory == null) return false;
-                if (!factory.CanRecruit.Get()) return false;
+                if (factory == null)
+                {
+                    LogicLogging.LogError($"Factory not found for Team {teamId} when recruiting character.");
+                    return false;
+                }
+                if (!factory.CanRecruit.Get())
+                {
+                    LogicLogging.LogWarning($"Factory for Team {teamId} cannot recruit at this time.");
+                    return false;
+                }
                 var occ = OccupationFactory.FindIOccupation(type);
                 int cost = occ.Cost;
-                if (factory.ComputingPower.Get() < cost) return false;
+                if (factory.ComputingPower.Get() < cost)
+                {
+                    LogicLogging.LogWarning($"Not enough computing power for Team {teamId} to recruit character. Required: {cost}, Available: {factory.ComputingPower.Get()}");
+                    return false;
+                }
                 factory.ComputingPower.SubRNow(cost);
                 var ch = CreateCharacter(teamId, playerId, type);
                 ActivateCharacter(teamId, playerId, birthPos);
@@ -53,8 +66,16 @@ namespace Gaming
 
             public bool ActivateCharacter(long teamId, long playerId, XY pos)
             {
-                if (!teamCharacters.TryGetValue(teamId, out var dict)) return false;
-                if (!dict.TryGetValue(playerId, out var ch)) return false;
+                if (!teamCharacters.TryGetValue(teamId, out var dict))
+                {
+                    LogicLogging.LogError($"Team {teamId} not found when activating character.");
+                    return false;
+                }
+                if (!dict.TryGetValue(playerId, out var ch))
+                {
+                    LogicLogging.LogError($"Character for Team {teamId}, Player {playerId} not found when activating.");
+                    return false;
+                }
                 ch.IsRemoved.SetROri(false);
                 ch.CanMove.SetROri(true);
 
@@ -73,7 +94,10 @@ namespace Gaming
                         // 如果找不到合法点则仍使用原位置（可能会导致角色被卡住），但尽量避免该情况
                     }
                 }
-                catch { }
+                catch 
+                {
+                    LogicLogging.LogError($"Error occurred while checking for collisions or finding spawn position for Team {teamId}, Player {playerId}. Defaulting to original position.");
+                }
 
                 ch.ReSetPos(spawnPos);
                 ch.SetCharacterState(CharacterState.IDLE);
@@ -101,9 +125,13 @@ namespace Gaming
                         {
                             if (((IMovable)ch).WillCollideWith(obj, pos)) return true;
                         }
-                        catch { }
+                        catch 
+                        {
+                            LogicLogging.LogError($"Error occurred while checking collision between Character (Team {ch.TeamID.Get()}, Player {ch.PlayerID.Get()}) and object ID {obj.ID}. Ignoring this object for collision check.");
+                        }
                     }
                 }
+                LogicLogging.LogDebug($"Position {pos} is free for Character (Team {ch.TeamID.Get()}, Player {ch.PlayerID.Get()}).");
                 return false;
             }
 
@@ -138,8 +166,11 @@ namespace Gaming
 
             private void CheckTech(long teamId, Character ch)
             {
-                if (!game.teams.TryGetValue(teamId, out var t)) return;
-
+                if (!game.teams.TryGetValue(teamId, out var t))
+                {
+                    LogicLogging.LogError($"Team {teamId} not found when checking tech for character.");
+                    return;
+                }
                 int effLevel = t.GetTech("Efficiency");
                 int robustLevel = t.GetTech("Robust");
                 int warriorLevel = t.GetTech("Warrior");
@@ -178,6 +209,7 @@ namespace Gaming
                     if (teamDict.TryGetValue(playerId, out character!)) return true;
                 }
                 character = null!;
+                LogicLogging.LogWarning($"Character for Player {playerId} not found in any team.");
                 return false;
             }
 
@@ -188,6 +220,7 @@ namespace Gaming
                 {
                     return dict.TryGetValue(playerId, out character!);
                 }
+                LogicLogging.LogWarning($"Team {teamId} not found when trying to get character for Player {playerId}.");
                 return false;
             }
 
@@ -200,9 +233,21 @@ namespace Gaming
 
             public bool Destroy(long teamId, long playerId, CharacterState state = CharacterState.NULL_CHARACTER_STATE)
             {
-                if (!teamCharacters.TryGetValue(teamId, out var dict)) return false;
-                if (!dict.TryGetValue(playerId, out var ch)) return false;
-                if (!ch.TryToRemoveFromGame(state)) return false;
+                if (!teamCharacters.TryGetValue(teamId, out var dict))
+                {
+                    LogicLogging.LogError($"Team {teamId} not found when trying to destroy character for Player {playerId}.");
+                    return false;
+                }
+                if (!dict.TryGetValue(playerId, out var ch))
+                {
+                    LogicLogging.LogError($"Character for Team {teamId}, Player {playerId} not found when trying to destroy."); 
+                    return false;
+                }
+                if (!ch.TryToRemoveFromGame(state))
+                {
+                    LogicLogging.LogWarning($"Failed to remove Character for Team {teamId}, Player {playerId} from game. Current state: {ch.CharacterState.Get()}");
+                    return false;
+                }
                 ch.CanMove.SetROri(false);
                 dict.TryRemove(playerId, out _);
                 map.Remove(ch);
@@ -213,6 +258,7 @@ namespace Gaming
             {
                 if (obj.TeamID.Get() == character.TeamID.Get())
                 {
+                    LogicLogging.LogWarning($"Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}) is being attacked by an ally (Team {obj.TeamID.Get()}, Player {obj.PlayerID.Get()}). No damage applied.");
                     return;
                 }
                 long subHP = (long)(obj.AttackPower - character.Robust);
@@ -243,7 +289,10 @@ namespace Gaming
             public bool Recover(Character character, long recover)
             {
                 if (recover <= 0)
+                {
+                    LogicLogging.LogWarning($"Attempted to recover non-positive HP for Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}). No HP recovered.");
                     return false;
+                }
                 character.HP.AddPositiveV(recover);
                 return true;
             }
@@ -251,7 +300,10 @@ namespace Gaming
             public bool ImproveATK(Character character, long ATK)
             {
                 if (ATK <= 0)
+                {
+                    LogicLogging.LogWarning($"Attempted to improve attack power by non-positive value for Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}). No attack power improved.");
                     return false;
+                }
                 character.AttackPower.SetMaxV(character.AttackPower + ATK);
                 character.AttackPower.AddPositiveV(ATK);
                 return true;
@@ -260,7 +312,10 @@ namespace Gaming
             public bool ImproveEfficiency(Character character, long efficiency)
             {
                 if (efficiency <= 0)
+                {
+                    LogicLogging.LogWarning($"Attempted to improve efficiency by non-positive value for Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}). No efficiency improved.");
                     return false;
+                }
                 character.Efficiency.AddPositiveV(efficiency);
                 return true;
             }

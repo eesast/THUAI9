@@ -37,8 +37,16 @@ namespace Gaming
 
             public bool TrySetTech(string key, int value)
             {
-                if (value < 0 || value > 2) return false;
-                if (!Tech.TryGetValue(key, out var atomic)) return false;
+                if (value < 0 || value > 2)
+                {
+                    LogicLogging.logger.LogDebug($"Invalid tech level {value} for {key} of team {TeamId}");
+                    return false;
+                }
+                if (!Tech.TryGetValue(key, out var atomic))
+                {
+                    LogicLogging.logger.LogDebug($"Tech {key} not found for team {TeamId}");
+                    return false;
+                }
                 atomic.SetROri(value);
                 return true;
             }
@@ -96,8 +104,16 @@ namespace Gaming
 
         public bool AddTeamScore(long teamId, long delta)
         {
-            if (!teams.TryGetValue(teamId, out var t)) return false;
-            if (delta == 0) return true;
+            if (!teams.TryGetValue(teamId, out var t))
+            {
+                LogicLogging.logger.LogDebug($"Attempted to add score for non-existent team {teamId}");
+                return false;
+            }
+            if (delta == 0)
+            {
+                LogicLogging.logger.LogDebug($"Attempted to add zero score for team {teamId}, no change made");
+                return true;
+            }
             if (delta > 0) t.Score.AddRNow(delta); else t.Score.SubRNow(-delta);
             return true;
         }

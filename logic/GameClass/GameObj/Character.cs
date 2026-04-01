@@ -69,6 +69,9 @@ public class Character : Movable, ICharacter
             && XY.DistanceCeil3(targetObj.Position, Position)
             < Radius + targetObj.Radius - GameData.AdjustLength)
             return true;
+        LogicLogging.logger.LogDebug(
+             LoggingFunctional.CharacterLogInfo(this) +
+             $" IgnoreCollideExecutor with target {targetObj.ID} of type {targetObj.Type} at position {targetObj.Position}");
         return false;
     }
     private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE, GameObj? gameobj = null)
@@ -83,7 +86,13 @@ public class Character : Movable, ICharacter
         lock (actionLock)
         {
             CharacterState nowState = characterState;
-            if (nowState == value) return -1;
+            if (nowState == value) 
+            {
+                LogicLogging.logger.LogDebug(
+                     LoggingFunctional.CharacterLogInfo(this) +
+                     $" SetCharacterState called with the same state {value}, no change made");
+                return -1
+            };
             else return ChangeCharacterState(value, gameobj);
         }
     }
@@ -135,6 +144,9 @@ public class Character : Movable, ICharacter
             CanMove.SetROri(false);
             position = GameData.PosNotInGame;
         }
+        LogicLogging.logger.LogDebug(
+             LoggingFunctional.CharacterLogInfo(this) +
+             $" TryToRemoveFromGame with state {state} succeeded");
         return true;
     }
 
@@ -190,6 +202,9 @@ public class Character : Movable, ICharacter
             GoodsLoad.SetInternal(type, newValue);
             return true;
         }
+        LogicLogging.logger.LogDebug(
+             LoggingFunctional.CharacterLogInfo(this) +
+             $" SetLoad for {type} to {newValue} failed due to exceeding max carry");
     }
     internal bool AddLoad(GoodsType type, int delta)
     {
@@ -206,6 +221,9 @@ public class Character : Movable, ICharacter
             GoodsLoad.SetInternal(type, target);
             return true;
         }
+        LogicLogging.logger.LogDebug(
+             LoggingFunctional.CharacterLogInfo(this) +
+             $" AddLoad for {type} by {delta} failed due to exceeding max carry");
     }
 }
 
