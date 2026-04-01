@@ -7,7 +7,7 @@ using Preparation.Utility.Value.SafeValue.Atomic;
 namespace GameClass.GameObj.Areas;
 
 public class Market(XY initPos)
-    : Immovable(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.MARKET)
+    : Immovable(initPos, GameData.MarketRadius, GameObjType.MARKET)
 {
     public override bool IsRigid(bool args = false) => true;
     public override ShapeType Shape => ShapeType.SQUARE;

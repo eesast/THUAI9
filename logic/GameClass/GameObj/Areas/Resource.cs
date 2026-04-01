@@ -7,7 +7,7 @@ using System.Threading.Tasks.Dataflow;
 namespace GameClass.GameObj.Areas;
 
 public class Resource(XY initPos)
-    : Immovable(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.RESOURCE)
+    : Immovable(initPos, GameData.ResourceRadius, GameObjType.RESOURCE)
 {
     public InVariableRange<long> HP { get; } = new(GameData.ResourceHP);
     public override bool IsRigid(bool args = false) => true;
