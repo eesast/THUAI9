@@ -42,11 +42,11 @@ namespace Preparation.Utility
         public const int FactoryStorage = 5;
         public const int FactoryRobust = 5;
         public const int FactoryEfficiency = 1;
-        public const int FactoryComputingPower = 100;
+        // initial computing power for newly created factories
+        public const int FactoryInitialComputingPower = 100;
 
         public const int FactoryEfficiencyMax = 2; // maximum efficiency for factory
         public const int FactoryInitialSource = 0; // initial source stored in factory
-        public const int FactoryInitialComputingPower = 0; // initial computing power
         public const int FactoryInitialScore = 0; // initial score award or baseline
 
         public const int DroneHP = 3;
@@ -79,7 +79,6 @@ namespace Preparation.Utility
         public const int RobotEfficiency = 1;
         public const int RobotMoveSpeed = BaseCharacterSpeed;
 
-        public const int ComputeCenterRadius = 2;
         public const int ComputeCenterOccupyTimeMs = 10_000;
 
         // factory compute power production per second
@@ -133,6 +132,14 @@ namespace Preparation.Utility
         public const int TechProductionEfficiencyAddPerLevel = 1;
         public const double TechPriceMultiplierPerLevel = 0.1;
         public const int TechCostDecreasePerLevel = 2;
+
+        // radii for buildings (in position-grid units). Defaults use half a cell.
+        public const int FactoryRadius = NumOfPosGridPerCell / 2;
+        public const int MarketRadius = NumOfPosGridPerCell / 2;
+        public const int ResourceRadius = NumOfPosGridPerCell / 2;
+        public const int ComputeCenterRadius = NumOfPosGridPerCell / 2;
+        public const int SpaceRadius = NumOfPosGridPerCell / 2;
+        public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
         // Efficiency conversion: how much each efficiency unit multiplies task speed
         public const double EfficiencyMultiplierPerLevel = 0.2; // each efficiency point => +20% speed
@@ -188,6 +195,7 @@ namespace Preparation.Utility
         //           gameObjType != GameObjType.HOME &&
         //            gameObjType != GameObjType.OUTOFBOUNDBLOCK;
         //}
+
 
     }
 }

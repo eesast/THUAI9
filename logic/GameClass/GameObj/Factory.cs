@@ -89,7 +89,7 @@ public class Factory : Immovable, IFactory
     }
 
     public Factory(XY initPos)
-        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency, computingPower: GameData.FactoryComputingPower) { }
+        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency, computingPower: GameData.FactoryInitialComputingPower) { }
 
     public Factory() : this(GameData.PosNotInGame) { }
     public override bool IsRigid(bool args = false) => true;

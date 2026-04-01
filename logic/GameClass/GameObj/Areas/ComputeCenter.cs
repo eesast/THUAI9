@@ -6,7 +6,7 @@ using Preparation.Utility.Value.SafeValue.LockedValue;
 namespace GameClass.GameObj.Areas;
 
 public class ComputeCenter(XY initPos)
-    : Immovable(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.COMPUTE_CENTER)
+    : Immovable(initPos, GameData.ComputeCenterRadius, GameObjType.COMPUTE_CENTER)
 {
     public override bool IsRigid(bool args = false) => true;
     public override ShapeType Shape => ShapeType.SQUARE;
