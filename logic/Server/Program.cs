@@ -56,12 +56,16 @@ namespace Server
                 logger.LogInfo("Server end!");
                 rpcServer.ShutdownAsync().Wait();
 
+                var scores = server.GetScore();
+
                 logger.LogInfo("===================  Final Score  ====================");
 
-                logger.LogInfo($"Team0: {server.GetScore()[0]}"); //
-                logger.LogInfo($"Team1: {server.GetScore()[1]}"); //
-                logger.LogInfo($"Team2: {server.GetScore()[2]}"); //
-                logger.LogInfo($"Team3: {server.GetScore()[3]}"); //
+                for (int i = 0; i < scores.Length; i++)
+                {
+                    logger.LogInfo($"Team{i,-5}: {scores[i],5}");
+                }
+
+
             }
             catch (Exception ex)
             {

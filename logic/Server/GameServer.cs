@@ -36,7 +36,7 @@ namespace Server
         private readonly uint spectatorMinPlayerID = 2023;  //?
         public int playerNum;
         public int TeamCount => options.TeamCount;
-        protected long[][] communicationToGameID; // 通信用的ID映射到游戏内的ID，0指向队伍1，1指向队伍2，通信中0为大本营，1-5为船
+        // protected long[][] communicationToGameID; // 通信用的ID映射到游戏内的ID，0指向队伍1，1指向队伍2，通信中0为大本营，1-5为船
         private readonly object messageToAllClientsLock = new();
         public static readonly long SendMessageToClientIntervalInMilliseconds = 50;
         private readonly MessageWriter? mwr = null;
@@ -45,13 +45,13 @@ namespace Server
         public void StartGame()
         {
             if (game.GameMap.Timer.IsGaming) return;
-            foreach (var team in communicationToGameID)
-            {
-                foreach (var id in team)
-                {
-                    if (id == GameObj.invalidID) return;//如果有未初始化的玩家，不开始游戏
-                }
-            }
+            //foreach (var team in communicationToGameID)
+            //{
+            //    foreach (var id in team)
+            //    {
+            //        if (id == GameObj.invalidID) return;//如果有未初始化的玩家，不开始游戏
+            //    }
+            //}
             GameServerLogging.logger.LogInfo("Game starts!");
             CreateStartFile();
             game.StartGame((int)options.GameTimeInSecond * 1000);
@@ -102,10 +102,10 @@ namespace Server
         {
             Dictionary<string, int> result = [];
             int[] score = GetScore();
-            result.Add("Team 1", score[0]);
-            result.Add("Team 2", score[1]);
-            result.Add("Team 3", score[2]);
-            result.Add("Team 4", score[3]);
+            for (int i = 0; i < score.Length; i++)
+            {
+                result.Add($"Team {i + 1}", score[i]);
+            }
             JsonSerializer serializer = new();
             using StreamWriter sw = new(path);
             using JsonTextWriter writer = new(sw);
@@ -444,8 +444,8 @@ namespace Server
         {
             this.options = options;
 
-            semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount];
-            for (int i = 0; i < options.TeamCount; i++)
+            semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount + 1];
+            for (int i = 0; i <= options.TeamCount; i++)
             {
                 semaDicts[i] = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>();
             }
@@ -523,6 +523,7 @@ namespace Server
             }
             currentMapMsg = new() { MapMessage = MapMsg() };
             playerNum = options.CharacterCount + options.HomeCount;
+            /*
             communicationToGameID = new long[TeamCount][];
             for (int i = 0; i < TeamCount; i++)
             {
@@ -537,7 +538,7 @@ namespace Server
                     communicationToGameID[team][i] = GameObj.invalidID; //character
                 }
             }
-
+            */
             if (options.FileName != DefaultArgumentOptions.FileName)
             {
                 try

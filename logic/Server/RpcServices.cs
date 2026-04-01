@@ -4,6 +4,7 @@ using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Preparation.Utility;
 using Protobuf;
+using System.Linq;
 using System.Threading;
 using Utility = Preparation.Utility;
 
@@ -11,7 +12,7 @@ namespace Server
 {
     partial class GameServer : ServerBase
     {
-        private int playerCountNow = 0;
+        private int connectedTeamCount = 0;
         protected object spectatorLock = new();
         protected bool isSpectatorJoin = false;
         protected bool IsSpectatorJoin
@@ -26,6 +27,28 @@ namespace Server
                 lock (spectatorLock)
                     isSpectatorJoin = value;
             }
+        }
+
+        private bool IsTeamConnected(long teamId)
+        {
+            int index = (int)teamId;
+            if (index <= 0 || index > TeamCount)
+            {
+                return false;
+            }
+            return semaDicts[index].Keys.Any(id => id < spectatorMinPlayerID);
+        }
+
+        private bool AllTeamsConnected()
+        {
+            for (int t = 1; t <= TeamCount; t++)
+            {
+                if (!IsTeamConnected(t))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         #region 连接和初始化服务
@@ -66,11 +89,11 @@ namespace Server
                 if (!ValidPlayerID(request.PlayerId))
                     return;
 
-                if (request.TeamId < 0 || request.TeamId >= TeamCount)
+                if (request.TeamId <= 0 || request.TeamId > TeamCount)
                     return;
 
-                if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
-                    return;
+                //if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
+                //    return;
 
                 // 观战玩家分支
                 if (request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
@@ -146,18 +169,22 @@ namespace Server
                 var playerSemas = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
                 lock (addPlayerLock)
                 {
-                    GameServerLogging.logger.LogDebug($"ch id :{request.PlayerId}  te id:{request.TeamId} side: {request.SideFlag}");
+                    GameServerLogging.logger.LogDebug($"player id :{request.PlayerId}  team id:{request.TeamId} sideflag: {request.SideFlag}");
 
+                    bool teamConnectedBefore = IsTeamConnected(request.TeamId);
                     if (!semaDicts[request.TeamId].TryAdd(request.PlayerId, playerSemas))
                     {
                         GameServerLogging.logger.LogWarning($"Player {request.PlayerId} has already been registered in team {request.TeamId}");
                         return;
                     }
 
-                    communicationToGameID[request.TeamId][request.PlayerId] = GameObj.invalidID;
+                    if (!teamConnectedBefore)
+                    {
+                        Interlocked.Increment(ref connectedTeamCount);
+                    }
 
-                    bool start = Interlocked.Increment(ref playerCountNow) == (playerNum * TeamCount);
-                    GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}, current joined players: {playerCountNow}");
+                    bool start = connectedTeamCount == TeamCount;
+                    GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}, connected teams: {connectedTeamCount}/{TeamCount}");
 
                     if (start)
                     {

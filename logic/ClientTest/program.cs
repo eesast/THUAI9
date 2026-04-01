@@ -73,6 +73,7 @@ namespace ClientTest
                 tot++;
                 if (tot % 10 == 0) moveMsg.Angle += 1;
             }
+
             return Task.CompletedTask;
         }
     }
