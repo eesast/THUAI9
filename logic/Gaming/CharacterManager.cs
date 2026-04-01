@@ -57,9 +57,117 @@ namespace Gaming
                 if (!dict.TryGetValue(playerId, out var ch)) return false;
                 ch.IsRemoved.SetROri(false);
                 ch.CanMove.SetROri(true);
-                ch.ReSetPos(pos);
+
+                // 如果建议出生位置与已有物体发生碰撞（例如工厂内部），尝试在工厂附近但在工厂碰撞范围之外寻找合法出生点
+                XY spawnPos = pos;
+                try
+                {
+                    if (IsPositionColliding(ch, spawnPos))
+                    {
+                        var factory = game.GetTeamFactory(teamId);
+                        if (factory != null)
+                        {
+                            var found = TryFindNearbyFreePosition(ch, factory.Position, out var newPos);
+                            if (found) spawnPos = newPos;
+                        }
+                        // 如果找不到合法点则仍使用原位置（可能会导致角色被卡住），但尽量避免该情况
+                    }
+                }
+                catch { }
+
+                ch.ReSetPos(spawnPos);
                 ch.SetCharacterState(CharacterState.IDLE);
                 return true;
+            }
+
+            // 检查指定位置是否会和地图上现存的其它物体发生碰撞或超出边界
+            private bool IsPositionColliding(Character ch, XY pos)
+            {
+                // 边界检查（确保整个角色在地图内）
+                if (pos.x < ch.Radius || pos.x > GameData.MapLength - ch.Radius || pos.y < ch.Radius || pos.y > GameData.MapLength - ch.Radius)
+                    return true;
+
+                // 遍历地图上所有对象，使用 LockedClassList 提供的 ToNewList() 做安全的快照遍历
+                foreach (var kv in map.GameObjDict)
+                {
+                    var listSnapshot = kv.Value.ToNewList();
+                    if (listSnapshot == null) continue;
+                    for (int i = 0; i < listSnapshot.Count; i++)
+                    {
+                        var obj = listSnapshot[i];
+                        if (obj == null) continue;
+                        if (obj.ID == ch.ID) continue; // 跳过自己
+                        try
+                        {
+                            if (((IMovable)ch).WillCollideWith(obj, pos)) return true;
+                        }
+                        catch { }
+                    }
+                }
+                return false;
+            }
+
+            // 在基准位置附近按环形搜索一个非碰撞点
+            private bool TryFindNearbyFreePosition(Character ch, XY center, out XY result)
+            {
+                // 从工厂半径 + 角色半径开始，保证与工厂外部至少间隔1
+                int startDist = GameData.FactoryRadius + ch.Radius + 1;
+                int maxDist = GameData.NumOfPosGridPerCell * 3; // 最多搜索 3 个格子的半径
+                int distStep = Math.Max(1, GameData.NumOfPosGridPerCell / 8);
+                int angleStepDeg = 20;
+
+                for (int d = startDist; d <= maxDist; d += distStep)
+                {
+                    for (int ang = 0; ang < 360; ang += angleStepDeg)
+                    {
+                        double rad = Math.PI * ang / 180.0;
+                        var cand = new XY(rad, d);
+                        var candPos = new XY(center.x + cand.x, center.y + cand.y);
+
+                        if (!IsPositionColliding(ch, candPos))
+                        {
+                            result = candPos;
+                            return true;
+                        }
+                    }
+                }
+
+                result = center; // fallback
+                return false;
+            }
+
+            private void CheckTech(long teamId, Character ch)
+            {
+                if (!game.teams.TryGetValue(teamId, out var t)) return;
+
+                int effLevel = t.GetTech("Efficiency");
+                int robustLevel = t.GetTech("Robust");
+                int warriorLevel = t.GetTech("Warrior");
+
+                if (effLevel > 0)
+                {
+                    ch.Efficiency.AddPositiveV(effLevel);
+                }
+
+                if (robustLevel > 0)
+                {
+                    long baseHp = ch.Occupation.MaxHp;
+                    long newMaxHp = (long)(baseHp * (1.0 + 0.2 * robustLevel));
+                    ch.HP.SetMaxV(newMaxHp);
+                    ch.HP.SetVToMaxV();
+                    ch.Robust.AddPositiveV(robustLevel * 2);
+                }
+
+                if (warriorLevel > 0)
+                {
+                    long baseAtk = ch.Occupation.AttackPower;
+                    long extra = (long)(baseAtk * 0.3 * warriorLevel);
+                    if (extra > 0)
+                    {
+                        ch.AttackPower.AddPositiveV(extra);
+                        ch.AttackPower.SetMaxV(ch.AttackPower + extra);
+                    }
+                }
             }
 
             public bool TryGetCharacter(long playerId, out Character character)
@@ -155,40 +263,6 @@ namespace Gaming
                     return false;
                 character.Efficiency.AddPositiveV(efficiency);
                 return true;
-            }
-
-            private void CheckTech(long teamId, Character ch)
-            {
-                if (!game.teams.TryGetValue(teamId, out var t)) return;
-
-                int effLevel = t.GetTech("Efficiency");
-                int robustLevel = t.GetTech("Robust");
-                int warriorLevel = t.GetTech("Warrior");
-
-                if (effLevel > 0)
-                {
-                    ch.Efficiency.AddPositiveV(effLevel);
-                }
-
-                if (robustLevel > 0)
-                {
-                    long baseHp = ch.Occupation.MaxHp;
-                    long newMaxHp = (long)(baseHp * (1.0 + 0.2 * robustLevel));
-                    ch.HP.SetMaxV(newMaxHp);
-                    ch.HP.SetVToMaxV();
-                    ch.Robust.AddPositiveV(robustLevel * 2);
-                }
-
-                if (warriorLevel > 0)
-                {
-                    long baseAtk = ch.Occupation.AttackPower;
-                    long extra = (long)(baseAtk * 0.3 * warriorLevel);
-                    if (extra > 0)
-                    {
-                        ch.AttackPower.AddPositiveV(extra);
-                        ch.AttackPower.SetMaxV(ch.AttackPower + extra);
-                    }
-                }
             }
 
         }
