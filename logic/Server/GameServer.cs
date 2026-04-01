@@ -36,7 +36,7 @@ namespace Server
         private readonly uint spectatorMinPlayerID = 2023;  //?
         public int playerNum;
         public int TeamCount => options.TeamCount;
-        protected long[][] communicationToGameID; // 通信用的ID映射到游戏内的ID，0指向队伍1，1指向队伍2，通信中0为大本营，1-5为船
+        // protected long[][] communicationToGameID; // 通信用的ID映射到游戏内的ID，0指向队伍1，1指向队伍2，通信中0为大本营，1-5为船
         private readonly object messageToAllClientsLock = new();
         public static readonly long SendMessageToClientIntervalInMilliseconds = 50;
         private readonly MessageWriter? mwr = null;
@@ -45,13 +45,13 @@ namespace Server
         public void StartGame()
         {
             if (game.GameMap.Timer.IsGaming) return;
-            foreach (var team in communicationToGameID)
-            {
-                foreach (var id in team)
-                {
-                    if (id == GameObj.invalidID) return;//如果有未初始化的玩家，不开始游戏
-                }
-            }
+            //foreach (var team in communicationToGameID)
+            //{
+            //    foreach (var id in team)
+            //    {
+            //        if (id == GameObj.invalidID) return;//如果有未初始化的玩家，不开始游戏
+            //    }
+            //}
             GameServerLogging.logger.LogInfo("Game starts!");
             CreateStartFile();
             game.StartGame((int)options.GameTimeInSecond * 1000);
@@ -523,6 +523,7 @@ namespace Server
             }
             currentMapMsg = new() { MapMessage = MapMsg() };
             playerNum = options.CharacterCount + options.HomeCount;
+            /*
             communicationToGameID = new long[TeamCount][];
             for (int i = 0; i < TeamCount; i++)
             {
@@ -537,7 +538,7 @@ namespace Server
                     communicationToGameID[team][i] = GameObj.invalidID; //character
                 }
             }
-
+            */
             if (options.FileName != DefaultArgumentOptions.FileName)
             {
                 try
