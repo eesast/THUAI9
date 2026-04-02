@@ -337,7 +337,7 @@ namespace Gaming
                     factory.AddGoods(type, amount);
                     return false;
                 }
-                LogicLogging.logger.LogInfo("Character {CharacterID} loaded {Amount} of {GoodsType} from factory {FactoryID}", character.PlayerID.Get(), amount, type, factory.PlayerID.Get());
+                LogicLogging.logger.LogInfo($"Character {Character.PlayerID.Get()} loaded {amount} of {type} from factory {factory.PlayerID.Get()}");
                 return true;
             }
 
