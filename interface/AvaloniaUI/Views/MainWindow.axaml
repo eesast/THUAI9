@@ -1,0 +1,324 @@
+<Window
+    x:Class="THUAI9_Avalonia.Views.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:THUAI9_Avalonia.Views"
+    xmlns:vm="using:THUAI9_Avalonia.ViewModels"
+    xmlns:models="using:THUAI9_Avalonia.Models"
+    xmlns:ToolTip="using:Avalonia.Controls"
+    mc:Ignorable="d"
+    x:Name="MainWindowElement"
+    Title="THUAI9 调试界面"
+    Width="1280"
+    Height="800"
+    x:DataType="vm:MainWindowViewModel"
+    Icon="/Assets/avalonia-logo.ico">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Window.Styles>
+        <Style Selector="ProgressBar:horizontal">
+            <Setter Property="MinWidth" Value="100" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+
+        <Style Selector="Button.SecondaryButton">
+            <Setter Property="Background" Value="#E1DFDD" />
+            <Setter Property="Foreground" Value="#201F1E" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.SecondaryButton:pointerover">
+            <Setter Property="Background" Value="#C7C6C5" />
+        </Style>
+        <Style Selector="Button.SecondaryButton:pressed">
+            <Setter Property="Background" Value="#8D8C8C" />
+        </Style>
+
+        <Style Selector="Button.PlayButton">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="#333333" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#D1D1D1" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style Selector="Button.PlayButton:pointerover">
+            <Setter Property="Background" Value="#F3F3F3" />
+            <Setter Property="BorderBrush" Value="#B8B8B8" />
+        </Style>
+        <Style Selector="Button.PlayButton:pressed">
+            <Setter Property="Background" Value="#E1E1E1" />
+            <Setter Property="BorderBrush" Value="#9D9D9D" />
+        </Style>
+
+        <Style Selector="ComboBox.ModernCombo">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#D1D1D1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="400,*" Margin="10">
+        <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,10,0">
+            <Border Grid.Row="0" Background="#F5F5F5" CornerRadius="5" Padding="10" Margin="0,0,0,10">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="Auto,90,Auto,*" VerticalAlignment="Center">
+                        <TextBlock Grid.Column="0"
+                                   Text="队伍ID"
+                                   VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding AvailableTeamIds}"
+                                  SelectedItem="{Binding SelectedTeamId}"
+                                  IsEnabled="{Binding CanConnectToServer}"
+                                  Classes="ModernCombo"
+                                  Margin="8,0,12,0"
+                                  Height="35" />
+                        <TextBlock Grid.Column="2"
+                                   Text="玩家ID"
+                                   VerticalAlignment="Center" />
+                        <TextBox Grid.Column="3"
+                                 Text="{Binding SelectedPlayerIdText}"
+                                 IsEnabled="{Binding CanConnectToServer}"
+                                 Margin="8,0,0,0"
+                                 Watermark="例如 0 / 1 / 2023（TeamId 现从 1 开始）"
+                                 VerticalContentAlignment="Center" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,120">
+                        <TextBox Grid.Column="0"
+                                 x:Name="PlaybackPathBox"
+                                 Watermark="回放文件路径 (.thuaipb)" />
+                        <Button Grid.Column="1"
+                                Content="加载回放"
+                                Command="{Binding LoadPlaybackCommand}"
+                                CommandParameter="{Binding Text, ElementName=PlaybackPathBox}"
+                                Classes="SecondaryButton"
+                                Height="35"/>
+                    </Grid>
+
+                    <Border Background="#E8E8E8" CornerRadius="5" Padding="8" Margin="0,5,0,0">
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto">
+                            <Button Grid.Column="0" Content="▶"
+                                    Command="{Binding PlaybackVM.PlayCommand}"
+                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    VerticalAlignment="Center"
+                                    Classes="PlayButton"
+                                    ToolTip.Tip="播放 (P)"/>
+
+                            <Button Grid.Column="1" Content="⏸"
+                                    Command="{Binding PlaybackVM.PauseCommand}"
+                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    VerticalAlignment="Center"
+                                    Classes="PlayButton"
+                                    ToolTip.Tip="暂停 (S)"/>
+
+                            <Button Grid.Column="2" Content="⏹"
+                                    Command="{Binding PlaybackVM.StopCommand}"
+                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    VerticalAlignment="Center"
+                                    Classes="PlayButton"
+                                    ToolTip.Tip="停止"/>
+
+                            <ComboBox Grid.Column="3"
+                                      SelectedValue="{Binding PlaybackVM.PlaybackSpeed}"
+                                      Width="75" Height="35" Margin="0,0,5,0"
+                                      VerticalAlignment="Center"
+                                      Classes="ModernCombo">
+                                <x:Double>0.25</x:Double>
+                                <x:Double>0.5</x:Double>
+                                <x:Double>1.0</x:Double>
+                                <x:Double>2.0</x:Double>
+                                <x:Double>4.0</x:Double>
+                            </ComboBox>
+
+                            <Slider Grid.Column="4"
+                                    Value="{Binding PlaybackVM.Progress}"
+                                    Minimum="0" Maximum="1"
+                                    VerticalAlignment="Center"
+                                    Margin="5,0"/>
+                        </Grid>
+                    </Border>
+
+                    <Border Background="#E0E0E0" CornerRadius="3" Padding="10" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding CurrentTime}"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="#333333" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" RowDefinitions="*,*">
+                <Border Grid.Row="0" Grid.Column="0" Margin="0,0,4,4" Background="#FFF0F0" CornerRadius="5" Padding="8" BorderBrush="#FFCCCC" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="队伍 1" FontSize="15" FontWeight="Bold" Foreground="Red" />
+                        <TextBlock Text="{Binding TeamScores[0], StringFormat='得分：{0}'}" FontSize="12" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Team1Characters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CharacterViewModel">
+                                        <Border Background="White" CornerRadius="3" Padding="5" Margin="0,2">
+                                            <StackPanel Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                </Grid>
+                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="1" Margin="4,0,0,4" Background="#F0F0FF" CornerRadius="5" Padding="8" BorderBrush="#CCCCFF" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="队伍 2" FontSize="15" FontWeight="Bold" Foreground="Blue" />
+                        <TextBlock Text="{Binding TeamScores[1], StringFormat='得分：{0}'}" FontSize="12" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Team2Characters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CharacterViewModel">
+                                        <Border Background="White" CornerRadius="3" Padding="5" Margin="0,2">
+                                            <StackPanel Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                </Grid>
+                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="0" Margin="0,4,4,0" Background="#F0FFF0" CornerRadius="5" Padding="8" BorderBrush="#CCFFCC" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="队伍 3" FontSize="15" FontWeight="Bold" Foreground="Green" />
+                        <TextBlock Text="{Binding TeamScores[2], StringFormat='得分：{0}'}" FontSize="12" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Team3Characters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CharacterViewModel">
+                                        <Border Background="White" CornerRadius="3" Padding="5" Margin="0,2">
+                                            <StackPanel Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                </Grid>
+                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="1" Margin="4,4,0,0" Background="#FFFFF0" CornerRadius="5" Padding="8" BorderBrush="#FFFFCC" BorderThickness="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="队伍 4" FontSize="15" FontWeight="Bold" Foreground="Orange" />
+                        <TextBlock Text="{Binding TeamScores[3], StringFormat='得分：{0}'}" FontSize="12" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Team4Characters}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CharacterViewModel">
+                                        <Border Background="White" CornerRadius="3" Padding="5" Margin="0,2">
+                                            <StackPanel Spacing="2">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                </Grid>
+                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Margin="0,5,0,0">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Grid.Row="0" Text="事件日志" FontWeight="Bold" Margin="0,0,0,3" />
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="160">
+                        <ItemsControl ItemsSource="{Binding LogConsoleVM.LogEntries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LogEntry">
+                                    <Grid ColumnDefinitions="80,Auto,*" Margin="0,1">
+                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp}" FontSize="9" Foreground="Gray" />
+                                        <Border Grid.Column="1" CornerRadius="2" Padding="2,0" Margin="5,0">
+                                            <Border.Background>
+                                                <SolidColorBrush Color="{Binding Level, Converter={StaticResource LevelToColorConverter}, FallbackValue=LightGray}" />
+                                            </Border.Background>
+                                            <TextBlock Text="{Binding Level}" FontSize="8" Foreground="White" />
+                                        </Border>
+                                        <TextBlock Grid.Column="2" Text="{Binding Message}" FontSize="10" TextWrapping="Wrap" Width="200" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Column="1">
+            <Border Background="White" CornerRadius="5" BorderBrush="Gray" BorderThickness="1">
+                <Grid>
+                    <local:MapView x:Name="MapView" DataContext="{Binding MapVM}" />
+
+                    <Expander Header="地图图例"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Top"
+                              Margin="10"
+                              MaxWidth="180"
+                              Background="#CCFFFFFF"
+                              CornerRadius="5">
+                        <ScrollViewer MaxHeight="300">
+                            <ItemsControl ItemsSource="{Binding MapLegendItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:LegendItem">
+                                        <StackPanel Orientation="Horizontal" Margin="2">
+                                            <Border Width="15" Height="15" Background="{Binding Color}" BorderBrush="{Binding Stroke}" BorderThickness="{Binding BorderThickness}" Margin="0,0,5,0" />
+                                            <TextBlock Text="{Binding Description}" FontSize="10" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Expander>
+
+                    <Border Background="#CC000000" CornerRadius="3" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10">
+                        <TextBlock Text="{Binding ConnectionStatus}" Foreground="White" FontSize="12" />
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

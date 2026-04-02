@@ -1,0 +1,34 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 颜色资源 -->
+    <Styles.Resources>
+        <!-- 队伍颜色 -->
+        <Color x:Key="Team1Color">#FF4444</Color>
+        <Color x:Key="Team2Color">#4444FF</Color>
+        <Color x:Key="Team3Color">#44FF44</Color>
+        <Color x:Key="Team4Color">#FFAA44</Color>
+
+        <!-- 地图颜色 -->
+        <Color x:Key="SpaceColor">#FFFFFF</Color>
+        <Color x:Key="FactoryColor">#00FFFF</Color>
+        <Color x:Key="BarrierColor">#444444</Color>
+        <Color x:Key="BushColor">#90EE90</Color>
+        <Color x:Key="ResourceColor">#FFD700</Color>
+        <Color x:Key="ComputeCenterColor">#ADD8E6</Color>
+        <Color x:Key="MarketColor">#FFFFE0</Color>
+
+        <!-- 日志颜色 -->
+        <Color x:Key="InfoColor">#2196F3</Color>
+        <Color x:Key="SuccessColor">#4CAF50</Color>
+        <Color x:Key="WarningColor">#FF9800</Color>
+        <Color x:Key="ErrorColor">#F44336</Color>
+
+        <!-- 画笔 -->
+        <SolidColorBrush x:Key="Team1Brush" Color="{StaticResource Team1Color}" />
+        <SolidColorBrush x:Key="Team2Brush" Color="{StaticResource Team2Color}" />
+        <SolidColorBrush x:Key="Team3Brush" Color="{StaticResource Team3Color}" />
+        <SolidColorBrush x:Key="Team4Brush" Color="{StaticResource Team4Color}" />
+    </Styles.Resources>
+
+</Styles>
