@@ -245,7 +245,7 @@ namespace Gaming
                 }
                 if (!ch.TryToRemoveFromGame(state))
                 {
-                    LogicLogging.logger.LogWarning($"Failed to remove Character for Team {teamId}, Player {playerId} from game.}");
+                    LogicLogging.logger.LogWarning($"Failed to remove Character for Team {teamId}, Player {playerId} from game.");
                     return false;
                 }
                 ch.CanMove.SetROri(false);
