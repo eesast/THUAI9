@@ -101,6 +101,7 @@ namespace Gaming
                         return true;
                     }
                 }
+                LogicLogging.logger.LogWarning("Character is not commandable");
                 return false;
             }
             public bool Harvest(Character character)
@@ -168,6 +169,7 @@ namespace Gaming
                     }
                 )
                 { IsBackground = true }.Start();
+                LogicLogging.logger.LogInfo("Character starts harvesting resource");
                 return true;
             }
             public bool Occupy(Character character)

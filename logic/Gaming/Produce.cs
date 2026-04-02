@@ -77,7 +77,13 @@ namespace Gaming
                 while (true)
                 {
                     long cur = factory.Source.Get();
-                    if (cur < totalCost) return false;
+                    if (cur < totalCost)
+                    {
+                        LogicLogging.logger.LogDebug(
+                            LoggingFunctional.AutoLogInfo(factory) +
+                            $" failed to start production of {amount} {type} due to insufficient source (current: {cur}, needed: {totalCost})");
+                        return false;
+                    }
                     if (factory.Source.CompareExROri(cur - totalCost, cur) == cur) break;
                 }
 
@@ -110,6 +116,9 @@ namespace Gaming
                     }
                     catch (Exception)
                     {
+                        LogicLogging.logger.LogError(
+                            LoggingFunctional.AutoLogInfo(factory) +
+                            $" encountered an error during production of {amount} {type}, produced so far: {produced}");
                     }
                     finally
                     {
@@ -129,17 +138,38 @@ namespace Gaming
 
         public bool Produce(long teamId, GoodsType type, int amount)
         {
-            if (amount <= 0) return false;
+            if (amount <= 0)
+            {
+                LogicLogging.logger.LogDebug(
+                    LoggingFunctional.AutoLogInfo(teamId) +
+                    $" failed to start production of {amount} {type} due to non-positive amount");
+                return false;
+            }
             var factory = GetTeamFactory(teamId);
-            if (factory == null) return false;
-
-            if (!factory.CanProduce.Get()) return false;
-
+            if (factory == null)
+            {
+                LogicLogging.logger.LogDebug(
+                    LoggingFunctional.AutoLogInfo(teamId) +
+                    $" failed to start production of {amount} {type} due to missing factory");
+                return false;
+            }
+            if (!factory.CanProduce.Get())
+            {
+                LogicLogging.logger.LogDebug(
+                    LoggingFunctional.AutoLogInfo(factory) +
+                    $" failed to start production of {amount} {type} because factory is currently busy");
+                return false;
+            }
             long storageMax = factory.Storage.GetValue();
             int currentTotal = 0;
             for (int i = 1; i <= 5; i++) currentTotal += factory.GetGoods((GoodsType)i);
-            if (currentTotal >= storageMax) return false;
-
+            if (currentTotal >= storageMax)
+            {
+                LogicLogging.logger.LogDebug(
+                    LoggingFunctional.AutoLogInfo(factory) +
+                    $" failed to start production of {amount} {type} because factory storage is already full (current total: {currentTotal}, max: {storageMax})");
+                return false;
+            }
             var production = new Production(this, factory, type, amount);
             return production.Start();
         }
