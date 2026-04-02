@@ -169,7 +169,7 @@ namespace Gaming
                     }
                 )
                 { IsBackground = true }.Start();
-                LogicLogging.logger.LogInformation("Character starts harvesting resource");
+                LogicLogging.logger.LogInfo("Character starts harvesting resource");
                 return true;
             }
             public bool Occupy(Character character)

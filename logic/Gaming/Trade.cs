@@ -28,7 +28,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} due to null character reference");
                     return false;
                 }
@@ -36,14 +36,14 @@ namespace Gaming
                 if (amount <= 0)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} due to non-positive amount");
                     return false;
                 }
                 if (character.IsRemoved)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} because character is removed from the game");
                     return false;
                 }
@@ -51,14 +51,14 @@ namespace Gaming
                 if (market == null)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} because no market is in interaction range");
                     return false;
                 }
                 if (!GameData.ApproachToInteract(character.Position, market.Position))
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} because character is not close enough to the market");
                     return false;
                 }
@@ -66,14 +66,14 @@ namespace Gaming
                 if (have < amount)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} because character only has {have}");
                     return false;
                 }
                 if (!character.GoodsLoad.Add(type, -amount))
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to sell {amount} {type} due to an unexpected error when updating goods load");
                     return false;
                 }
@@ -92,7 +92,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} due to null character reference");
                     return false;
                 }
@@ -100,14 +100,14 @@ namespace Gaming
                 if (amount <= 0)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} due to non-positive amount");
                     return false;
                 }
                 if (character.IsRemoved)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} because character is removed from the game");
                     return false;
                 }
@@ -115,21 +115,21 @@ namespace Gaming
                 if (market == null)
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} because no market is in interaction range");
                     return false;
                 }
                 if (!GameData.ApproachToInteract(character.Position, market.Position))
                 {
                     LogicLogging.logger.LogDebug(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} because character is not close enough to the market");
                     return false;
                 }
                 if (!game.teams.TryGetValue(teamId, out var teamState))
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} because team with ID {teamId} does not exist");
                     return false;
                 }
@@ -140,7 +140,7 @@ namespace Gaming
                     if (curScore < totalCost)
                     {
                         LogicLogging.logger.LogDebug(
-                            LoggingFunctional.TradeLogInfo(character) +
+                            LoggingFunctional.AutoLogInfo(character) +
                             $" failed to buy {amount} {type} because team score {curScore} is less than total cost {totalCost}");
                         return false;
                     }
@@ -151,7 +151,7 @@ namespace Gaming
                 {
                     teamState.Score.AddRNow(totalCost);
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(character) +
+                        LoggingFunctional.AutoLogInfo(character) +
                         $" failed to buy {amount} {type} due to an unexpected error when updating goods load");
                     return false;
                 }
@@ -166,7 +166,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(teamId, playerId) +
+                        LoggingFunctional.AutoLogInfo(teamId, playerId) +
                         $" failed to sell {amount} {type} due to null character reference");
                     return false;
                 }
@@ -179,7 +179,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.TradeLogInfo(teamId, playerId) +
+                        LoggingFunctional.AutoLogInfo(teamId, playerId) +
                         $" failed to buy {amount} {type} due to null character reference");
                     return false;
                 }

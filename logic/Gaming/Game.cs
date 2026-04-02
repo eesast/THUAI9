@@ -73,7 +73,7 @@ namespace Gaming
 
             if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
             {
-                LogicLogging.Log("Failed to start game timer.");
+                LogicLogging.logger.LogError("Failed to start game timer.");
                 return false;
             }
 
@@ -109,7 +109,7 @@ namespace Gaming
             var fac = GetTeamFactory(teamId);
             if (fac == null)
             {
-                LogicLogging.Log($"RecruitCharacterAtFactory failed: Factory for team {teamId} not found.");
+                LogicLogging.logger.LogWarning($"RecruitCharacterAtFactory failed: Factory for team {teamId} not found.");
                 return false;
             }
             return characterManager.RecruitCharacter(teamId, playerId, type, fac.Position);
@@ -125,12 +125,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Move failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Move failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Move failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Move failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return actionManager.MoveCharacter(character, timeMs, direction);
@@ -147,12 +147,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Attack failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Attack failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Attack failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Attack failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             int attackRange = (int)character.AttackSize.GetValue();
@@ -182,7 +182,7 @@ namespace Gaming
             {
                 return actionManager.Attack(character, factory);
             }
-            LogicLogging.Log($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
+            LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
             return false;
         }
 
@@ -195,12 +195,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Harvest failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Harvest failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Harvest failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Harvest failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return actionManager.Harvest(character);
@@ -214,12 +214,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Trade failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Trade failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null)
             {
-                LogicLogging.Log($"Trade failed: Character for team {teamId} player {playerId} is null.");
+                LogicLogging.logger.LogWarning($"Trade failed: Character for team {teamId} player {playerId} is null.");
                 return false;
             }
             return buy ? tradeManager.Buy(character, type, amount) : tradeManager.Sell(character, type, amount);
@@ -233,12 +233,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Occupy failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Occupy failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Occupy failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Occupy failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return actionManager.Occupy(character);
@@ -260,17 +260,17 @@ namespace Gaming
         {
             if (recover <= 0)
             {
-                LogicLogging.Log($"Recover failed: Invalid recover amount {recover} for team {teamId} player {playerId}.");
+                LogicLogging.logger.LogWarning($"Recover failed: Invalid recover amount {recover} for team {teamId} player {playerId}.");
                 return false;
             }
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Recover failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Recover failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Recover failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Recover failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return characterManager.Recover(character, recover);
@@ -283,13 +283,13 @@ namespace Gaming
         {
             if (recover <= 0)
             {
-                LogicLogging.Log($"Recover failed: Invalid recover amount {recover} for team {teamId} factory.");
+                LogicLogging.logger.LogWarning($"Recover failed: Invalid recover amount {recover} for team {teamId} factory.");
                 return false;
             }
             var fac = GetTeamFactory(teamId);
             if (fac == null)
             {
-                LogicLogging.Log($"Recover failed: Factory for team {teamId} not found.");
+                LogicLogging.logger.LogWarning($"Recover failed: Factory for team {teamId} not found.");
                 return false;
             }
             fac.HP.AddPositiveV(recover);
@@ -603,12 +603,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var ch))
             {
-                LogicLogging.Log($"GetCharacterStatus failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"GetCharacterStatus failed: Character for team {teamId} player {playerId} not found.");
                 return null;
             }
             if (ch == null)
             {
-                LogicLogging.Log($"GetCharacterStatus failed: Character for team {teamId} player {playerId} is null.");
+                LogicLogging.logger.LogWarning($"GetCharacterStatus failed: Character for team {teamId} player {playerId} is null.");
                 return null;
             }
             var pos = ch.Position;
@@ -881,17 +881,17 @@ namespace Gaming
         {
             if (amount <= 0)
             {
-                LogicLogging.Log($"Load failed: Invalid amount {amount} for team {teamId} player {playerId}.");
+                LogicLogging.logger.LogWarning($"Load failed: Invalid amount {amount} for team {teamId} player {playerId}.");
                 return false;
             }
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Load failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Load failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Load failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Load failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return actionManager.Load(character, type, amount);
@@ -905,12 +905,12 @@ namespace Gaming
         {
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
-                LogicLogging.Log($"Stop failed: Character for team {teamId} player {playerId} not found.");
+                LogicLogging.logger.LogWarning($"Stop failed: Character for team {teamId} player {playerId} not found.");
                 return false;
             }
             if (character == null || character.IsRemoved)
             {
-                LogicLogging.Log($"Stop failed: Character for team {teamId} player {playerId} is null or removed.");
+                LogicLogging.logger.LogWarning($"Stop failed: Character for team {teamId} player {playerId} is null or removed.");
                 return false;
             }
             return ActionManager.Stop(character);

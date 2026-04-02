@@ -80,7 +80,7 @@ namespace Gaming
                     if (cur < totalCost)
                     {
                         LogicLogging.logger.LogDebug(
-                            LoggingFunctional.ProductionLogInfo(factory) +
+                            LoggingFunctional.AutoLogInfo(factory) +
                             $" failed to start production of {amount} {type} due to insufficient source (current: {cur}, needed: {totalCost})");
                         return false;
                     }
@@ -117,7 +117,7 @@ namespace Gaming
                     catch (Exception)
                     {
                         LogicLogging.logger.LogError(
-                            LoggingFunctional.ProductionLogInfo(factory) +
+                            LoggingFunctional.AutoLogInfo(factory) +
                             $" encountered an error during production of {amount} {type}, produced so far: {produced}");
                     }
                     finally
@@ -141,7 +141,7 @@ namespace Gaming
             if (amount <= 0)
             {
                 LogicLogging.logger.LogDebug(
-                    LoggingFunctional.ProductionLogInfo(teamId) +
+                    LoggingFunctional.AutoLogInfo(teamId) +
                     $" failed to start production of {amount} {type} due to non-positive amount");
                 return false;
             }
@@ -149,14 +149,14 @@ namespace Gaming
             if (factory == null)
             {
                 LogicLogging.logger.LogDebug(
-                    LoggingFunctional.ProductionLogInfo(teamId) +
+                    LoggingFunctional.AutoLogInfo(teamId) +
                     $" failed to start production of {amount} {type} due to missing factory");
                 return false;
             }
             if (!factory.CanProduce.Get())
             {
                 LogicLogging.logger.LogDebug(
-                    LoggingFunctional.ProductionLogInfo(factory) +
+                    LoggingFunctional.AutoLogInfo(factory) +
                     $" failed to start production of {amount} {type} because factory is currently busy");
                 return false;
             }
@@ -166,7 +166,7 @@ namespace Gaming
             if (currentTotal >= storageMax)
             {
                 LogicLogging.logger.LogDebug(
-                    LoggingFunctional.ProductionLogInfo(factory) +
+                    LoggingFunctional.AutoLogInfo(factory) +
                     $" failed to start production of {amount} {type} because factory storage is already full (current total: {currentTotal}, max: {storageMax})");
                 return false;
             }
