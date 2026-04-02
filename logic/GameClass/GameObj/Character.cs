@@ -91,9 +91,9 @@ public class Character : Movable, ICharacter
                 LogicLogging.logger.LogDebug(
                      LoggingFunctional.CharacterLogInfo(this) +
                      $" SetCharacterState called with the same state {value}, no change made");
-                return -1
+                return -1;
             }
-            ;
+
             else return ChangeCharacterState(value, gameobj);
         }
     }
