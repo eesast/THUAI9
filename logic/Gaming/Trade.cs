@@ -166,7 +166,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.AutoLogInfo(teamId, playerId) +
+                        LoggingFunctional.CharacterLogInfo(teamId, playerId) +
                         $" failed to sell {amount} {type} due to null character reference");
                     return false;
                 }
@@ -179,7 +179,7 @@ namespace Gaming
                 if (character == null)
                 {
                     LogicLogging.logger.LogError(
-                        LoggingFunctional.AutoLogInfo(teamId, playerId) +
+                        LoggingFunctional.CharacterLogInfo(teamId, playerId) +
                         $" failed to buy {amount} {type} due to null character reference");
                     return false;
                 }
