@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using THUAI9_Avalonia.Models;
 
@@ -17,6 +18,9 @@ namespace THUAI9_Avalonia.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
+        private const string DefaultServerAddress = "127.0.0.1:8888";
+        private static readonly TimeSpan AutoReconnectInterval = TimeSpan.FromSeconds(2);
+
         [ObservableProperty]
         private string gameLog = "等待连接...";
 
@@ -61,19 +65,66 @@ namespace THUAI9_Avalonia.ViewModels
         private AvailableService.AvailableServiceClient? _client;
         private AsyncServerStreamingCall<MessageToClient>? _stream;
         private bool _isConnected;
+        private bool _isConnecting;
         private bool _hasReceivedFirstFrame;
+        private bool _hasLoggedRetrying;
         private readonly object _drawPicLock = new();
+        private readonly CancellationTokenSource _autoConnectCts = new();
+        private Task? _autoConnectTask;
         private Views.MapView? _mapView;
 
         public MainWindowViewModel()
         {
             InitializeMapLegend();
-            LogConsoleVM.AddLog("THUAI9 调试界面已启动", "INFO");
             PlaybackVM.SetMessageCallback(ProcessPlaybackMessage);
 
             if (Avalonia.Controls.Design.IsDesignMode)
             {
                 InitializeDesignTimeData();
+                return;
+            }
+
+            LogConsoleVM.AddLog("THUAI9 调试界面已启动", "INFO");
+            LogConsoleVM.AddLog($"已启用自动连接，将持续尝试连接 {DefaultServerAddress}", "INFO");
+            StartAutoConnectLoop();
+        }
+
+        private void StartAutoConnectLoop()
+        {
+            if (_autoConnectTask == null || _autoConnectTask.IsCompleted)
+            {
+                _autoConnectTask = AutoConnectLoopAsync(_autoConnectCts.Token);
+            }
+        }
+
+        private async Task AutoConnectLoopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    if (_isConnected || _isConnecting)
+                    {
+                        await Task.Delay(500, cancellationToken);
+                        continue;
+                    }
+
+                    bool connected = await TryConnectOnceAsync(DefaultServerAddress, cancellationToken);
+                    if (!connected)
+                    {
+                        if (!_hasLoggedRetrying)
+                        {
+                            LogConsoleVM.AddLog($"尚未连接到 {DefaultServerAddress}，将继续自动重试", "INFO");
+                            _hasLoggedRetrying = true;
+                        }
+                        ConnectionStatus = "等待服务器";
+                        UpdateConnectionParameterAvailability(true);
+                        await Task.Delay(AutoReconnectInterval, cancellationToken);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
             }
         }
 
@@ -112,16 +163,16 @@ namespace THUAI9_Avalonia.ViewModels
             MapLegendItems.Add(new LegendItem(Brushes.Orange, "队伍 4 建筑"));
         }
 
-        [RelayCommand]
-        private async Task ConnectAsync(string serverAddress)
+        private async Task<bool> TryConnectOnceAsync(string serverAddress, CancellationToken cancellationToken)
         {
+            _isConnecting = true;
             try
             {
-                DisconnectCore(suppressLog: true);
-                UpdateConnectionActionAvailability(canConnect: false, canDisconnect: false);
+                ReleaseConnectionResources();
+                _isConnected = false;
+                _hasReceivedFirstFrame = false;
 
                 string channelTarget = NormalizeGrpcTarget(serverAddress);
-                LogConsoleVM.AddLog($"正在连接到 {channelTarget}...", "INFO");
                 ConnectionStatus = "连接中...";
 
                 var channelOptions = new List<ChannelOption>
@@ -133,9 +184,9 @@ namespace THUAI9_Avalonia.ViewModels
                 _channel = new Channel(channelTarget, ChannelCredentials.Insecure, channelOptions);
                 await _channel.ConnectAsync(deadline: DateTime.UtcNow.AddSeconds(10));
                 _client = new AvailableService.AvailableServiceClient(_channel);
-                _hasReceivedFirstFrame = false;
-                UpdateConnectionActionAvailability(canConnect: false, canDisconnect: true);
 
+                UpdateConnectionParameterAvailability(false);
+                _hasLoggedRetrying = false;
                 ConnectionStatus = "已连通";
                 LogConsoleVM.AddLog($"已建立到 {channelTarget} 的连接", "SUCCESS");
 
@@ -153,8 +204,8 @@ namespace THUAI9_Avalonia.ViewModels
 
                 if (!TryBuildRegisterFactoryRequest(out var request))
                 {
-                    DisconnectCore(suppressLog: true);
-                    return;
+                    ReleaseConnectionResources();
+                    return false;
                 }
 
                 _stream = _client.RegisterFactory(request);
@@ -162,39 +213,24 @@ namespace THUAI9_Avalonia.ViewModels
                 ConnectionStatus = "已连通 / 等待开局";
                 LogConsoleVM.AddLog("已注册消息流，正在等待首帧游戏消息", "INFO");
                 _ = ReceiveMessagesAsync();
+                return true;
             }
-            catch (Exception ex)
+            catch
             {
-                DisconnectCore(suppressLog: true);
-                ConnectionStatus = "连接失败";
-                LogConsoleVM.AddLog($"连接失败：{ex.Message}", "ERROR");
+                ReleaseConnectionResources();
+                _isConnected = false;
+                return false;
             }
-        }
-
-        [RelayCommand]
-        private void Disconnect()
-        {
-            DisconnectCore(suppressLog: false);
-        }
-
-        private void DisconnectCore(bool suppressLog)
-        {
-            _isConnected = false;
-            _hasReceivedFirstFrame = false;
-            ReleaseConnectionResources();
-            UpdateConnectionActionAvailability(canConnect: true, canDisconnect: false);
-
-            ConnectionStatus = "已断开";
-            if (!suppressLog)
+            finally
             {
-                LogConsoleVM.AddLog("已断开连接", "INFO");
+                _isConnecting = false;
             }
         }
 
-        private void UpdateConnectionActionAvailability(bool canConnect, bool canDisconnect)
+        private void UpdateConnectionParameterAvailability(bool canEdit)
         {
-            CanConnectToServer = canConnect;
-            CanDisconnectFromServer = canDisconnect;
+            CanConnectToServer = canEdit;
+            CanDisconnectFromServer = false;
         }
 
         private bool TryBuildRegisterFactoryRequest(out RegisterFactoryMsg request)
@@ -205,7 +241,7 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 ConnectionStatus = "连接失败";
                 LogConsoleVM.AddLog($"队伍 ID 无效：{SelectedTeamId}，应在 1~4 范围内", "ERROR");
-                UpdateConnectionActionAvailability(canConnect: true, canDisconnect: false);
+                UpdateConnectionParameterAvailability(true);
                 return false;
             }
 
@@ -213,7 +249,7 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 ConnectionStatus = "连接失败";
                 LogConsoleVM.AddLog($"玩家 ID 无效：{SelectedPlayerIdText}，请输入非负整数", "ERROR");
-                UpdateConnectionActionAvailability(canConnect: true, canDisconnect: false);
+                UpdateConnectionParameterAvailability(true);
                 return false;
             }
 
@@ -252,8 +288,8 @@ namespace THUAI9_Avalonia.ViewModels
                         LogConsoleVM.AddLog(endMessage, "WARNING");
                         _isConnected = false;
                         ReleaseConnectionResources();
-                        UpdateConnectionActionAvailability(canConnect: true, canDisconnect: false);
-                        ConnectionStatus = "已连通 / 消息流结束";
+                        UpdateConnectionParameterAvailability(true);
+                        ConnectionStatus = "等待服务器";
                         break;
                     }
 
@@ -266,6 +302,10 @@ namespace THUAI9_Avalonia.ViewModels
                 if (_isConnected)
                 {
                     LogConsoleVM.AddLog($"接收消息错误：{ex.Message}", "ERROR");
+                    _isConnected = false;
+                    ReleaseConnectionResources();
+                    UpdateConnectionParameterAvailability(true);
+                    ConnectionStatus = "等待服务器";
                 }
             }
         }
@@ -350,14 +390,7 @@ namespace THUAI9_Avalonia.ViewModels
         {
             int gridX = data.X / 1000;
             int gridY = data.Y / 1000;
-            _mapView?.UpdateCharacterOnMap(
-                data.Guid,
-                GetCharacterName(data.CharacterType),
-                gridX,
-                gridY,
-                (int)data.TeamId,
-                data.Hp,
-                maxHp);
+            _mapView?.UpdateCharacterOnMap(data.Guid, GetCharacterName(data.CharacterType), gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
         }
 
         private ObservableCollection<CharacterViewModel>? GetTeamList(long teamId)
@@ -486,7 +519,7 @@ namespace THUAI9_Avalonia.ViewModels
         {
             if (string.IsNullOrWhiteSpace(serverAddress))
             {
-                return "127.0.0.1:8888";
+                return DefaultServerAddress;
             }
 
             string trimmed = serverAddress.Trim();
@@ -547,7 +580,8 @@ namespace THUAI9_Avalonia.ViewModels
 
         public override void Dispose()
         {
-            DisconnectCore(suppressLog: true);
+            _autoConnectCts.Cancel();
+            ReleaseConnectionResources();
             PlaybackVM.Dispose();
             base.Dispose();
         }
