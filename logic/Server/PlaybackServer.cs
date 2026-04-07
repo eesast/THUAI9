@@ -57,71 +57,94 @@ namespace Server
             return computepower;
         }
 
-        // AddCharacter method has been removed as it's no longer part of the base class
-        /*
-        public override async Task AddCharacter(CharacterMsg request,
-                                             IServerStreamWriter<MessageToClient> responseStream,
-                                             ServerCallContext context)
+        public override async Task RegisterFactory(RegisterFactoryMsg request, IServerStreamWriter<MessageToClient> responseStream, ServerCallContext context)
         {
-            PlaybackServerLogging.logger.LogInfo($"AddPlayer: {request.CharacterId}");
-            if (request.CharacterId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
+            PlaybackServerLogging.logger.LogDebug($"TRY Register Factory (playback): Player {request.PlayerId}");
+
+            // 仅处理观战者分支（回放服务器复用 RegisterFactory 接口作为观战流）
+            if (request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
             {
-                // 观战模式
-                lock (spectatorJoinLock) // 具体原因见另一个上锁的地方
+                PlaybackServerLogging.logger.LogDebug($"TRY Add Spectator (playback): Player {request.PlayerId}");
+                lock (spectatorJoinLock)
                 {
-                    if (semaDict.TryAdd(request.CharacterId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
+                    if (!semaDict.TryAdd(request.PlayerId, (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1))))
                     {
-                        PlaybackServerLogging.logger.LogInfo("A new spectator comes to watch this game");
-                        IsSpectatorJoin = true;
-                    }
-                    else
-                    {
-                        PlaybackServerLogging.logger.LogInfo($"Duplicated Spectator ID {request.CharacterId}");
+                        PlaybackServerLogging.logger.LogInfo($"Duplicated Spectator ID {request.PlayerId}");
                         return;
                     }
+                    PlaybackServerLogging.logger.LogInfo("A new spectator comes to watch this playback");
+                    IsSpectatorJoin = true;
                 }
-                do
+
+                try
                 {
-                    semaDict[request.CharacterId].Item1.Wait();
-                    try
-                    {
-                        if (currentGameInfo != null)
-                        {
-                            await responseStream.WriteAsync(currentGameInfo);
-                            PlaybackServerLogging.logger.LogInfo("Send!");
-                        }
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        if (semaDict.TryRemove(request.CharacterId, out var semas))
-                        {
-                            try
-                            {
-                                semas.Item1.Release();
-                                semas.Item2.Release();
-                            }
-                            catch { }
-                            PlaybackServerLogging.logger.LogInfo($"The spectator {request.CharacterId} exited");
-                            return;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        PlaybackServerLogging.logger.LogInfo(e.ToString());
-                    }
-                    finally
+                    // 循环直到回放结束或客户端取消连接
+                    while (IsGaming && !context.CancellationToken.IsCancellationRequested)
                     {
                         try
                         {
-                            semaDict[request.CharacterId].Item2.Release();
+                            // 等待生产者释放信号（由 ReportGame 调用）
+                            semaDict[request.PlayerId].Item1.Wait(context.CancellationToken);
                         }
-                        catch { }
+                        catch (OperationCanceledException)
+                        {
+                            // 客户端取消或服务器终止等待
+                            break;
+                        }
+
+                        try
+                        {
+                            if (currentGameInfo != null)
+                            {
+                                // 深拷贝并去除新闻消息
+                                var info = currentGameInfo.Clone();
+                                for (int i = info.ObjMessage.Count - 1; i >= 0; i--)
+                                {
+                                    if (info.ObjMessage[i].NewsMessage != null)
+                                        info.ObjMessage.RemoveAt(i);
+                                }
+                                await responseStream.WriteAsync(info);
+                            }
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // 客户端流已关闭 — 清理并退出
+                            if (semaDict.TryRemove(request.PlayerId, out var semas))
+                            {
+                                try { semas.Item1.Release(); } catch { }
+                                try { semas.Item2.Release(); } catch { }
+                                PlaybackServerLogging.logger.LogInfo($"The spectator {request.PlayerId} exited");
+                                return;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PlaybackServerLogging.logger.LogInfo(ex.ToString());
+                        }
+                        finally
+                        {
+                            try { semaDict[request.PlayerId].Item2.Release(); } catch { }
+                        }
                     }
-                } while (IsGaming);
+                }
+                finally
+                {
+                    // 确保清理（无论是正常退出还是异常）
+                    if (semaDict.TryRemove(request.PlayerId, out var sema))
+                    {
+                        try { sema.Item1.Release(); } catch { }
+                        try { sema.Item2.Release(); } catch { }
+                    }
+                    PlaybackServerLogging.logger.LogDebug($"END Add Spectator (playback): Player {request.PlayerId}");
+                }
+            }
+            else
+            {
+                // 非观战者或不允许观战时直接返回（回放服务器当前仅支持观战流）
+                PlaybackServerLogging.logger.LogDebug($"RegisterFactory (playback) ignored: Player {request.PlayerId}");
                 return;
             }
         }
-        */
 
         public void ReportGame(MessageToClient? msg)
         {
@@ -206,9 +229,10 @@ namespace Server
                             if (msg.GameState == GameState.GameEnd)
                             {
                                 PlaybackServerLogging.logger.LogInfo("Game over normally!");
-                                // finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
-                                // finalScore[1] = msg.AllMessage.MonstersTeamScore;
-                                // 请回来修改
+                                for (int i = 0; i < TeamCount; i++)
+                                {
+                                    finalScore[i] = msg.AllMessage.Teams[i].Score;
+                                }
                                 goto endParse;
                             }
                         }
@@ -279,8 +303,10 @@ namespace Server
                             {
                                 PlaybackServerLogging.logger.LogInfo("Game over normally!");
                                 IsGaming = false;
-                                // finalScore[0] = msg.AllMessage.BuddhistsTeamScore;
-                                // finalScore[1] = msg.AllMessage.MonstersTeamScore;
+                                for (int i = 0; i < TeamCount; i++)
+                                {
+                                    finalScore[i] = msg.AllMessage.Teams[i].Score;
+                                }
                                 ReportGame(msg);
                                 return false;
                             }
