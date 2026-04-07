@@ -130,6 +130,12 @@ message ProduceGoodsMsg
     int32 max_produce_num = 3;
 }
 
+message UplevelTechMsg
+{
+    int64 team_id = 1;
+    TechType tech_type = 2;
+}
+
 //message RepairFactoryMsg
 //{
 //    int64 player_id = 1;

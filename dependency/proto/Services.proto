@@ -29,6 +29,7 @@ service AvailableService
     rpc CreatCharacterRID(CreateCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
     rpc Produce(ProduceGoodsMsg) returns (BoolRes);               // 生产产品
     //rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+    rpc UplevelTech(UplevelTechMsg) returns (BoolRes);              // 升级科技
     rpc EndAllAction(IDMsg) returns (BoolRes);                      // 结束所有动作
 
     // 智慧大脑
