@@ -434,7 +434,7 @@ namespace Server
                 $"produce Type {request.ProductType}, with produce {request.MaxProduceNum} at most");
             BoolRes boolRes = new()
             {
-                ActSuccess = 
+                ActSuccess =
                     game.Produce(
                         request.TeamId,
                         Transformation.GoodsTypeFromProto(request.ProductType),
