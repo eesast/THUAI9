@@ -1,4 +1,4 @@
-using Grpc.Core;
+﻿using Grpc.Core;
 using Protobuf;
 
 namespace ClientTest
@@ -44,7 +44,7 @@ namespace ClientTest
                 PlayerId = 1,
             };
 
-            var createRes = client.CreatCharacter(createMsg); // 当前可用接口
+            var createRes = client.CreateCharacter(createMsg); // 当前可用接口
             if (!createRes.ActSuccess)
             {
                 Console.WriteLine("CreateCharacter failed.");
