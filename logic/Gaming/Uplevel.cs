@@ -17,8 +17,11 @@ namespace Gaming
 
             public bool UplevelTech(long teamId, TechType tech)
             {
-                if (!game.teams.TryGetValue(teamId, out var teamState)) return false;
-
+                if (!game.teams.TryGetValue(teamId, out var teamState))
+                {
+                    LogicLogging.logger.LogError($"Failed to uplevel tech for team {teamId} because team not found");
+                    return false;
+                }
                 string key;
                 int cost;
                 switch (tech)
@@ -48,15 +51,25 @@ namespace Gaming
                 }
 
                 int curLevel = teamState.GetTech(key);
-                if (curLevel >= GameData.TechMaxLevel) return false;
-
+                if (curLevel >= GameData.TechMaxLevel)
+                {
+                    LogicLogging.logger.LogDebug($"Failed to uplevel tech {key} for team {teamId} because current level {curLevel} is already at or above max level");
+                    return false;
+                }
                 var factory = game.GetTeamFactory(teamId);
-                if (factory == null) return false;
-
+                if (factory == null)
+                {
+                    LogicLogging.logger.LogError($"Failed to uplevel tech {key} for team {teamId} because team factory not found");
+                    return false;
+                }
                 while (true)
                 {
                     long cur = factory.ComputingPower.Get();
-                    if (cur < cost) return false;
+                    if (cur < cost)
+                    {
+                        LogicLogging.logger.LogDebug($"Failed to uplevel tech {key} for team {teamId} because current computing power {cur} is less than cost {cost}");
+                        return false;
+                    }
                     if (factory.ComputingPower.CompareExROri(cur - cost, cur) == cur) break;
                 }
 
@@ -64,6 +77,7 @@ namespace Gaming
                 if (!setOk)
                 {
                     factory.AddComputingPower(cost);
+                    LogicLogging.logger.LogError($"Failed to uplevel tech {key} for team {teamId} because failed to update tech level in team state");
                     return false;
                 }
 

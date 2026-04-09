@@ -11,12 +11,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("playback")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("installer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+766320efb019d4e884b8edfa18de33081a87502a")]
-[assembly: System.Reflection.AssemblyProductAttribute("playback")]
-[assembly: System.Reflection.AssemblyTitleAttribute("playback")]
+[assembly: System.Reflection.AssemblyProductAttribute("installer")]
+[assembly: System.Reflection.AssemblyTitleAttribute("installer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。
