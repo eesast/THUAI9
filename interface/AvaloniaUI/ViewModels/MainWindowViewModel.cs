@@ -61,6 +61,11 @@ namespace THUAI9_Avalonia.ViewModels
         public ObservableCollection<LegendItem> MapLegendItems { get; } = new();
         public ObservableCollection<int> AvailableTeamIds { get; } = new() { 1, 2, 3, 4 };
 
+        private readonly Dictionary<long, CharacterViewModel> _team1CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team2CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team3CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team4CharacterIndex = new();
+
         private Channel? _channel;
         private AvailableService.AvailableServiceClient? _client;
         private AsyncServerStreamingCall<MessageToClient>? _stream;
@@ -347,7 +352,13 @@ namespace THUAI9_Avalonia.ViewModels
                     continue;
                 }
 
-                var existingCharacter = targetList.FirstOrDefault(c => c.Guid == data.Guid);
+                var targetIndex = GetTeamCharacterIndex(data.TeamId);
+                if (targetIndex == null)
+                {
+                    continue;
+                }
+
+                targetIndex.TryGetValue(data.Guid, out var existingCharacter);
                 if (existingCharacter == null)
                 {
                     var newCharacter = new CharacterViewModel
@@ -364,33 +375,40 @@ namespace THUAI9_Avalonia.ViewModels
                         ActiveState = data.CharacterActiveState.ToString()
                     };
 
-                    Dispatcher.UIThread.Post(() => targetList.Add(newCharacter));
+                    targetList.Add(newCharacter);
+                    targetIndex[data.Guid] = newCharacter;
                     UpdateCharacterOnMap(data, newCharacter.MaxHp);
                     continue;
                 }
 
-                Dispatcher.UIThread.Post(() =>
-                {
-                    existingCharacter.Hp = data.Hp;
-                    existingCharacter.PosX = data.X;
-                    existingCharacter.PosY = data.Y;
-                    existingCharacter.ActiveState = data.CharacterActiveState.ToString();
-                });
+                string activeState = data.CharacterActiveState.ToString();
+                bool visualChanged = existingCharacter.PosX != data.X
+                    || existingCharacter.PosY != data.Y
+                    || existingCharacter.Hp != data.Hp
+                    || existingCharacter.ActiveState != activeState;
 
-                UpdateCharacterOnMap(data, existingCharacter.MaxHp);
+                existingCharacter.Hp = data.Hp;
+                existingCharacter.PosX = data.X;
+                existingCharacter.PosY = data.Y;
+                existingCharacter.ActiveState = activeState;
+
+                if (visualChanged)
+                {
+                    UpdateCharacterOnMap(data, existingCharacter.MaxHp);
+                }
             }
 
-            RemoveUnseenCharacters(Team1Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team2Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team3Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team4Characters, currentFrameGuids);
+            RemoveUnseenCharacters(Team1Characters, _team1CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team2Characters, _team2CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team3Characters, _team3CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team4Characters, _team4CharacterIndex, currentFrameGuids);
         }
 
         private void UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
         {
             int gridX = data.X / 1000;
             int gridY = data.Y / 1000;
-            _mapView?.UpdateCharacterOnMap(data.Guid, GetCharacterName(data.CharacterType), gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
+            _mapView?.UpdateCharacterOnMap(data.Guid, gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
         }
 
         private ObservableCollection<CharacterViewModel>? GetTeamList(long teamId)
@@ -405,12 +423,28 @@ namespace THUAI9_Avalonia.ViewModels
             };
         }
 
-        private void RemoveUnseenCharacters(ObservableCollection<CharacterViewModel> characterList, HashSet<long> seenGuids)
+        private Dictionary<long, CharacterViewModel>? GetTeamCharacterIndex(long teamId)
+        {
+            return teamId switch
+            {
+                0 => _team1CharacterIndex,
+                1 => _team2CharacterIndex,
+                2 => _team3CharacterIndex,
+                3 => _team4CharacterIndex,
+                _ => null
+            };
+        }
+
+        private void RemoveUnseenCharacters(
+            ObservableCollection<CharacterViewModel> characterList,
+            Dictionary<long, CharacterViewModel> characterIndex,
+            HashSet<long> seenGuids)
         {
             var charactersToRemove = characterList.Where(c => !seenGuids.Contains(c.Guid)).ToList();
             foreach (var character in charactersToRemove)
             {
-                Dispatcher.UIThread.Post(() => characterList.Remove(character));
+                characterList.Remove(character);
+                characterIndex.Remove(character.Guid);
                 _mapView?.RemoveCharacterFromMap(character.Guid);
             }
         }

@@ -10,9 +10,21 @@ namespace THUAI9_Avalonia.Views
 {
     public partial class MapView : UserControl
     {
+        private sealed class CharacterVisual
+        {
+            public required Grid Root { get; init; }
+            public required Ellipse Body { get; init; }
+            public required Border HpBar { get; init; }
+            public int GridX { get; set; }
+            public int GridY { get; set; }
+            public int TeamId { get; set; }
+            public int Hp { get; set; }
+            public int MaxHp { get; set; }
+        }
+
         private Canvas? _characterCanvas;
         private Grid? _mapGrid;
-        private readonly Dictionary<long, Control> _characterElements = new();
+        private readonly Dictionary<long, CharacterVisual> _characterElements = new();
         private MapViewModel? _viewModel;
         private bool _isMapInitialized;
 
@@ -133,7 +145,7 @@ namespace THUAI9_Avalonia.Views
             }
         }
 
-        public void UpdateCharacterOnMap(long guid, string characterType, int gridX, int gridY, int teamId, int hp, int maxHp)
+        public void UpdateCharacterOnMap(long guid, int gridX, int gridY, int teamId, int hp, int maxHp)
         {
             if (_characterCanvas == null)
             {
@@ -153,27 +165,42 @@ namespace THUAI9_Avalonia.Views
                 _ => Brushes.Gray
             };
 
-            if (_characterElements.TryGetValue(guid, out var existingElement) && existingElement is Grid characterGrid)
+            if (_characterElements.TryGetValue(guid, out var visual))
             {
-                Canvas.SetLeft(characterGrid, x - 10);
-                Canvas.SetTop(characterGrid, y - 10);
-
-                if (characterGrid.Children[1] is Grid existingHpBarContainer && existingHpBarContainer.Children[0] is Border existingHpBar)
+                if (visual.GridX != gridX || visual.GridY != gridY)
                 {
-                    existingHpBar.Width = Math.Max(4, 20 * ((double)hp / maxHp));
+                    Canvas.SetLeft(visual.Root, x - 10);
+                    Canvas.SetTop(visual.Root, y - 10);
+                    visual.GridX = gridX;
+                    visual.GridY = gridY;
                 }
+
+                if (visual.TeamId != teamId)
+                {
+                    visual.Body.Fill = teamColor;
+                    visual.TeamId = teamId;
+                }
+
+                if (visual.Hp != hp || visual.MaxHp != maxHp)
+                {
+                    visual.HpBar.Width = Math.Max(4, 20 * ((double)hp / maxHp));
+                    visual.Hp = hp;
+                    visual.MaxHp = maxHp;
+                }
+
                 return;
             }
 
-            var newCharacterGrid = new Grid();
-            newCharacterGrid.Children.Add(new Ellipse
+            var body = new Ellipse
             {
                 Width = 16,
                 Height = 16,
                 Fill = teamColor,
                 Stroke = Brushes.White,
                 StrokeThickness = 1
-            });
+            };
+            var newCharacterGrid = new Grid();
+            newCharacterGrid.Children.Add(body);
 
             var newHpBarContainer = new Grid();
             var newHpBarBackground = new Border
@@ -198,7 +225,17 @@ namespace THUAI9_Avalonia.Views
             Canvas.SetTop(newCharacterGrid, y - 10);
 
             _characterCanvas.Children.Add(newCharacterGrid);
-            _characterElements[guid] = newCharacterGrid;
+            _characterElements[guid] = new CharacterVisual
+            {
+                Root = newCharacterGrid,
+                Body = body,
+                HpBar = newHpBar,
+                GridX = gridX,
+                GridY = gridY,
+                TeamId = teamId,
+                Hp = hp,
+                MaxHp = maxHp
+            };
         }
 
         public void RemoveCharacterFromMap(long guid)
@@ -208,9 +245,9 @@ namespace THUAI9_Avalonia.Views
                 return;
             }
 
-            if (_characterElements.TryGetValue(guid, out var element))
+            if (_characterElements.TryGetValue(guid, out var visual))
             {
-                _characterCanvas.Children.Remove(element);
+                _characterCanvas.Children.Remove(visual.Root);
                 _characterElements.Remove(guid);
             }
         }
