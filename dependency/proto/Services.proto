@@ -1,4 +1,4 @@
-syntax = "proto3";
+﻿syntax = "proto3";
 package protobuf;
 
 import "Message2Clients.proto";
@@ -25,8 +25,8 @@ service AvailableService
     rpc Trade(TradeMsg) returns (BoolRes);                            // 出售产品
 
     // 游戏过程中核心角色（工厂）可以执行操作的服务
-    rpc CreatCharacter(CreateCharacterMsg) returns (BoolRes);        // 创建角色
-    rpc CreatCharacterRID(CreateCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
+    rpc CreateCharacter(CreateCharacterMsg) returns (BoolRes);        // 创建角色
+    rpc CreateCharacterRID(CreateCharacterMsg) returns (CreatCharacterRes); // 获取角色编号
     rpc Produce(ProduceGoodsMsg) returns (BoolRes);               // 生产产品
     //rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
     rpc EndAllAction(IDMsg) returns (BoolRes);                      // 结束所有动作
