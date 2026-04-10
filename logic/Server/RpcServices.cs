@@ -1,4 +1,4 @@
-using GameClass.GameObj;
+﻿using GameClass.GameObj;
 using Gaming;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
@@ -412,7 +412,7 @@ namespace Server
 
         #region 核心角色操作
 
-        public override Task<BoolRes> CreatCharacter(CreateCharacterMsg request, ServerCallContext context)
+        public override Task<BoolRes> CreateCharacter(CreateCharacterMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
             BoolRes boolRes = new()
@@ -424,41 +424,25 @@ namespace Server
                         Transformation.CharacterTypeFromProto(request.CharacterType))
             };
             // if (boolRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
-            GameServerLogging.logger.LogDebug($"END CreatCharacter:{boolRes.ActSuccess}");
+            GameServerLogging.logger.LogDebug($"END CreateCharacter:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
 
-        // 暂时废弃CreatCharacterRID，因为playerId由玩家自行指定
-        // public override Task<CreatCharacterRes> CreatCharacterRID(CreateCharacterMsg request, ServerCallContext context)
-        // {
-        //     // GameServerLogging.logger.LogDebug($"TRY CreatCharacterRID: CharacterType {request.CharacterType} from Team {request.TeamId}");
-        //     // // var activateCost = Transformation.CharacterTypeFromProto(request.CharacterType) switch
-        //     // // {
-        //     // //     Utility.CharacterType.DRONE => GameData.DroneCost,
-        //     // //     Utility.CharacterType.ROBOT => GameData.RobotCost,
-        //     // //     Utility.CharacterType.AUTONOMOUS_CAR => GameData.AutonomouCarCost,
-
-        //     // //     _ => int.MaxValue
-        //     // // };
-        //     // // var teamMoneyPool = game.TeamList[(int)request.TeamId].MoneyPool;
-        //     // // if (activateCost > teamMoneyPool.Money)
-        //     // // {
-        //     // //     return Task.FromResult(new CreatCharacterRes { ActSuccess = false });
-        //     // // }
-        //     // var playerId = game.RecruitCharacterAtFactory(
-        //     //     request.TeamId,
-        //     //     request.PlayerId,
-        //     //     Transformation.CharacterTypeFromProto(request.CharacterType));
-
-        //     // CreatCharacterRes creatCharacterRes = new()
-        //     // {
-        //     //     ActSuccess = false,
-        //     //     PlayerId = playerId
-        //     // };
-        //     // if (creatCharacterRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
-        //     // GameServerLogging.logger.LogDebug("END CreatCharacterRID");
-        //     return Task.FromResult(creatCharacterRes);
-        // }
+        public override Task<BoolRes> Produce(ProduceGoodsMsg request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY Produce Goods: Team {request.TeamId} want to " +
+                $"produce Type {request.ProductType}, with produce {request.MaxProduceNum} at most");
+            BoolRes boolRes = new()
+            {
+                ActSuccess =
+                    game.Produce(
+                        request.TeamId,
+                        Transformation.GoodsTypeFromProto(request.ProductType),
+                        request.MaxProduceNum)
+            };
+            GameServerLogging.logger.LogDebug($"END Produce Goods: {boolRes.ActSuccess}");
+            return Task.FromResult(boolRes);
+        }
 
         public override Task<BoolRes> EndAllAction(IDMsg request, ServerCallContext context)
         {
@@ -472,19 +456,14 @@ namespace Server
 
         #endregion
 
-        #region AI 服务
-
         public override Task<StrategicAIResponse> AskAI(StrategicAIRequest request, ServerCallContext context)
         {
-            GameServerLogging.logger.LogDebug($"TRY AskAI: Team {request.TeamId}");
+            GameServerLogging.logger.LogDebug($"TRY AskAI: Team {request.TeamId} at {request.CurrentGameTime}");
             StrategicAIResponse response = new();
             // 待实现
-            Boolean boolRes = new();
             // boolRes.ActSuccess = game.AskAI(request.TeamId, request.GameState, request.AIAction);
             GameServerLogging.logger.LogDebug("END AskAI");
             return Task.FromResult(response);
         }
-
-        #endregion
     }
 }
