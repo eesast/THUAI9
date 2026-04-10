@@ -86,15 +86,9 @@ public class Character : Movable, ICharacter
         lock (actionLock)
         {
             CharacterState nowState = characterState;
-            if (nowState == value)
-            {
-                LogicLogging.logger.LogDebug(
-                     LoggingFunctional.CharacterLogInfo(this) +
-                     $" SetCharacterState called with the same state {value}, no change made");
+            if (nowState == CharacterState.KNOCKED_BACK && value != CharacterState.KNOCKED_BACK)
                 return -1;
-            }
-
-            else return ChangeCharacterState(value, gameobj);
+            return ChangeCharacterState(value, gameobj);
         }
     }
     public bool ResetCharacterState(long state, CharacterState value = CharacterState.NULL_CHARACTER_STATE)

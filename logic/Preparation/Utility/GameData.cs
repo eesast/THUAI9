@@ -141,6 +141,13 @@ namespace Preparation.Utility
         public const int SpaceRadius = NumOfPosGridPerCell / 2;
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
+        public const string API_key = "5cf561815d204d689866430a8b8d96fc.JymsA799a5N6o2Eq";
+        public const string API_url = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+        public const string ModelName = "glm-4.7-flash";
+        public const int AskAICostComputingPower = 10;
+        public const int AskAIPromptMaxLength = 512;
+        public const int AskAITimeoutMs = 60_000;
+
         // Efficiency conversion: how much each efficiency unit multiplies task speed
         public const double EfficiencyMultiplierPerLevel = 0.2; // each efficiency point => +20% speed
 

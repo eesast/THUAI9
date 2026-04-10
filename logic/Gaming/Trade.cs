@@ -78,7 +78,17 @@ namespace Gaming
                     return false;
                 }
 
-                int price = market.GetPrice(type);
+                int price = game.GetAdjustedMarketPrice(market.GetPrice(type), type);
+                if (game.teams.TryGetValue(teamId, out var sellerTeamState))
+                {
+                    int priceTechLevel = sellerTeamState.GetTech("Price");
+                    if (priceTechLevel > 0)
+                    {
+                        double mul = 1.0 + priceTechLevel * GameData.TechPriceMultiplierPerLevel;
+                        price = (int)Math.Round(price * mul);
+                        if (price < 0) price = 0;
+                    }
+                }
                 long revenue = (long)price * amount;
                 game.AddTeamScore(teamId, revenue);
 
@@ -133,7 +143,8 @@ namespace Gaming
                         $" failed to buy {amount} {type} because team with ID {teamId} does not exist");
                     return false;
                 }
-                long totalCost = (long)market.GetPrice(type) * amount;
+                int price = game.GetAdjustedMarketPrice(market.GetPrice(type), type);
+                long totalCost = (long)price * amount;
                 while (true)
                 {
                     long curScore = teamState.Score.Get();

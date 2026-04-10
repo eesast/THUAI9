@@ -1,0 +1,5 @@
+obj\Debug\net8.0/Services.cs \
+obj\Debug\net8.0/ServicesGrpc.cs: ../../dependency/proto/MessageType.proto\
+ ../../dependency/proto/Message2Clients.proto\
+ ../../dependency/proto/Message2Server.proto\
+ ../../dependency/proto/Services.proto
