@@ -138,6 +138,8 @@ namespace Gaming
 
         public bool Produce(long teamId, GoodsType type, int amount)
         {
+            if (!EnsureGameStarted(nameof(Produce)))
+                return false;
             if (amount <= 0)
             {
                 LogicLogging.logger.LogDebug(

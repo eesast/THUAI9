@@ -41,12 +41,21 @@ namespace Gaming
 
         }
 
+        private bool EnsureGameStarted(string actionName)
+        {
+            if (gameMap.Timer.IsGaming) return true;
+            LogicLogging.logger.LogWarning($"{actionName} failed: game has not started.");
+            return false;
+        }
+
         public bool StartGame(int milliSeconds)
         {
             if (milliSeconds <= 0)
                 return false;
             if (gameMap.Timer.IsGaming)
                 return false;
+
+            ResetEventSchedule();
 
             lock (gameEndLock)
             {
@@ -87,6 +96,9 @@ namespace Gaming
                         loopCondition: () => gameMap.Timer.IsGaming,
                         loopToDo: () =>
                         {
+                            int nowTimeMs = NowTime();
+                            TryTriggerPeriodicEvent(nowTimeMs);
+
                             foreach (var team in teams)
                             {
                                 var fac = team.Value.Factory;
@@ -106,6 +118,9 @@ namespace Gaming
 
         public bool RecruitCharacterAtFactory(long teamId, long playerId, Preparation.Utility.CharacterType type)
         {
+            if (!EnsureGameStarted(nameof(RecruitCharacterAtFactory)))
+                return false;
+
             var fac = GetTeamFactory(teamId);
             if (fac == null)
             {
@@ -123,6 +138,9 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Move(long teamId, long playerId, int timeMs, double direction)
         {
+            if (!EnsureGameStarted(nameof(Move)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Move failed: Character for team {teamId} player {playerId} not found.");
@@ -145,6 +163,9 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Attack(long teamId, long playerId)
         {
+            if (!EnsureGameStarted(nameof(Attack)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Attack failed: Character for team {teamId} player {playerId} not found.");
@@ -193,6 +214,9 @@ namespace Gaming
         /// <returns>是否成功受理</returns>
         public bool Harvest(long teamId, long playerId)
         {
+            if (!EnsureGameStarted(nameof(Harvest)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Harvest failed: Character for team {teamId} player {playerId} not found.");
@@ -212,6 +236,9 @@ namespace Gaming
         /// </summary>
         public bool Trade(long teamId, long playerId, Preparation.Utility.GoodsType type, int amount, bool buy)
         {
+            if (!EnsureGameStarted(nameof(Trade)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Trade failed: Character for team {teamId} player {playerId} not found.");
@@ -226,11 +253,82 @@ namespace Gaming
         }
 
         /// <summary>
+        /// 获取当前生效事件（名称与描述）。
+        /// 使用 teamId + playerId 标识调用者。
+        /// </summary>
+        public EventStatus? GetCurrentEventStatus(long teamId, long playerId)
+        {
+            if (!EnsureGameStarted(nameof(GetCurrentEventStatus)))
+                return null;
+
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            {
+                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} not found.");
+                return null;
+            }
+            if (character == null || character.IsRemoved)
+            {
+                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} is null or removed.");
+                return null;
+            }
+
+            return new EventStatus(marketEvent.Name, marketEvent.Description);
+        }
+
+        /// <summary>
+        /// 选手传入提示词请求 AI 答复，会消耗本队工厂算力。
+        /// 返回 null 表示请求失败。
+        /// </summary>
+        public string? AskAI(long teamId, string prompt)
+        {
+            if (!EnsureGameStarted(nameof(AskAI)))
+                return null;
+
+            if (string.IsNullOrWhiteSpace(prompt) || prompt.Length > GameData.AskAIPromptMaxLength)
+            {
+                LogicLogging.logger.LogWarning($"AskAI failed: invalid prompt length for team {teamId}.");
+                return null;
+            }
+
+            var fac = GetTeamFactory(teamId);
+            if (fac == null)
+            {
+                LogicLogging.logger.LogWarning($"AskAI failed: Factory for team {teamId} not found.");
+                return null;
+            }
+
+            int cost = GameData.AskAICostComputingPower;
+            while (true)
+            {
+                long cur = fac.ComputingPower.Get();
+                if (cur < cost)
+                {
+                    LogicLogging.logger.LogWarning($"AskAI failed: insufficient computing power for team {teamId}. current={cur}, need={cost}");
+                    return null;
+                }
+                if (fac.ComputingPower.CompareExROri(cur - cost, cur) == cur) break;
+            }
+
+            var answer = marketEvent.AskWithPrompt(prompt);
+            if (string.IsNullOrWhiteSpace(answer))
+            {
+                fac.AddComputingPower(cost);
+                LogicLogging.logger.LogWarning($"AskAI failed: model returned empty response for team {teamId}.");
+                return null;
+            }
+
+            return answer;
+        }
+
+        /// <summary>
         /// 占领指定算力中心，一般需要持续占领一段时间。
         /// 使用 teamId + playerId 标识操作者。
         /// </summary>
         public bool Occupy(long teamId, long playerId)
         {
+            if (!EnsureGameStarted(nameof(Occupy)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Occupy failed: Character for team {teamId} player {playerId} not found.");
@@ -250,6 +348,9 @@ namespace Gaming
         /// </summary>
         public bool UplevelTech(long teamId, Preparation.Utility.TechType tech)
         {
+            if (!EnsureGameStarted(nameof(UplevelTech)))
+                return false;
+
             return uplevelManager.UplevelTech(teamId, tech);
         }
 
@@ -258,6 +359,9 @@ namespace Gaming
         /// </summary>
         public bool Recover(long teamId, long playerId, long recover)
         {
+            if (!EnsureGameStarted(nameof(Recover)))
+                return false;
+
             if (recover <= 0)
             {
                 LogicLogging.logger.LogWarning($"Recover failed: Invalid recover amount {recover} for team {teamId} player {playerId}.");
@@ -281,6 +385,9 @@ namespace Gaming
         /// </summary>
         public bool Recover(long teamId, long recover)
         {
+            if (!EnsureGameStarted(nameof(Recover)))
+                return false;
+
             if (recover <= 0)
             {
                 LogicLogging.logger.LogWarning($"Recover failed: Invalid recover amount {recover} for team {teamId} factory.");
@@ -560,6 +667,21 @@ namespace Gaming
                 IsRemoved = isRemoved;
                 CanMove = canMove;
                 GoodsLoad = goodsLoad;
+            }
+        }
+
+        /// <summary>
+        /// 当前事件快照。
+        /// </summary>
+        public readonly struct EventStatus
+        {
+            public string Name { get; }
+            public string Description { get; }
+
+            public EventStatus(string name, string description)
+            {
+                Name = name;
+                Description = description;
             }
         }
 
@@ -879,6 +1001,9 @@ namespace Gaming
         /// </summary>
         public bool Load(long teamId, long playerId, Preparation.Utility.GoodsType type, int amount)
         {
+            if (!EnsureGameStarted(nameof(Load)))
+                return false;
+
             if (amount <= 0)
             {
                 LogicLogging.logger.LogWarning($"Load failed: Invalid amount {amount} for team {teamId} player {playerId}.");
@@ -903,6 +1028,9 @@ namespace Gaming
         /// </summary>
         public bool Stop(long teamId, long playerId)
         {
+            if (!EnsureGameStarted(nameof(Stop)))
+                return false;
+
             if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
             {
                 LogicLogging.logger.LogWarning($"Stop failed: Character for team {teamId} player {playerId} not found.");
