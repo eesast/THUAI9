@@ -45,18 +45,21 @@ namespace Gaming
                     LogicLogging.logger.LogWarning("Character is not commandable");
                     return false;
                 }
+                if (!characterToMove.ThreadNum.WaitOne(0))
+                {
+                    return true;
+                }
                 new Thread
                 (
                     () =>
                     {
-                        characterToMove.ThreadNum.WaitOne();
                         if (!characterToMove.StartThread(stateNum))
                         {
                             characterToMove.ThreadNum.Release();
                             return;
                         }
 
-                        moveEngine.MoveObj(characterToMove, moveTimeInMilliseconds, moveDirection, characterToMove.StateNum, 0);
+                        moveEngine.MoveObj(characterToMove, moveTimeInMilliseconds, moveDirection, stateNum, 0);
                         Thread.Sleep(moveTimeInMilliseconds);
                         characterToMove.ResetCharacterState(stateNum);
                     }
@@ -73,17 +76,20 @@ namespace Gaming
                     LogicLogging.logger.LogWarning("Character can not be knocked back");
                     return false;
                 }
+                if (!characterToMove.ThreadNum.WaitOne(0))
+                {
+                    return false;
+                }
                 new Thread
                 (
                     () =>
                     {
-                        characterToMove.ThreadNum.WaitOne();
                         if (!characterToMove.StartThread(stateNum))
                         {
                             characterToMove.ThreadNum.Release();
                             return;
                         }
-                        moveEngine.MoveObj(characterToMove, GameData.KnockedBackTime, moveDirection, characterToMove.StateNum, GameData.KnockedBackSpeed);
+                        moveEngine.MoveObj(characterToMove, GameData.KnockedBackTime, moveDirection, stateNum, GameData.KnockedBackSpeed);
                         Thread.Sleep(GameData.KnockedBackTime);
                         characterToMove.ResetCharacterState(stateNum);
                     }

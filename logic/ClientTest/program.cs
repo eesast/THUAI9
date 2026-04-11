@@ -58,7 +58,6 @@ namespace ClientTest
                 TimeInMilliseconds = 100,
                 Angle = 0
             };
-            int tot = 0;
             while (call.ResponseStream.MoveNext().Result)
             {
                 var currentGameInfo = call.ResponseStream.Current;
@@ -66,12 +65,10 @@ namespace ClientTest
             }
             while (true)
             {
-                Thread.Sleep(50);
+                Thread.Sleep(500);
 
                 MoveRes boolRes = client.Move(moveMsg);
                 //if (boolRes.ActSuccess == false) break;
-                tot++;
-                if (tot % 10 == 0) moveMsg.Angle += 1;
             }
 
             return Task.CompletedTask;
