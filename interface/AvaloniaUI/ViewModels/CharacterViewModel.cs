@@ -38,7 +38,7 @@ namespace THUAI9_Avalonia.ViewModels
         [ObservableProperty]
         private CharacterType characterType;
 
-        public string Coordinates => $"坐标 ({PosX / 1000},{PosY / 1000})";
+        public string Coordinates => $"坐标 ({PosX / 1000.0:0.0},{PosY / 1000.0:0.0})";
 
         public string HealthText => $"生命值 {Hp}";
 
