@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,28 +22,10 @@ namespace THUAI9_Avalonia.ViewModels
         private static readonly TimeSpan AutoReconnectInterval = TimeSpan.FromSeconds(2);
 
         [ObservableProperty]
-        private string gameLog = "等待连接...";
-
-        [ObservableProperty]
-        private string currentTime = "00:00";
-
-        [ObservableProperty]
         private ObservableCollection<int> teamScores = new() { 0, 0, 0, 0 };
 
         [ObservableProperty]
         private string connectionStatus = "未连接";
-
-        [ObservableProperty]
-        private bool canConnectToServer = true;
-
-        [ObservableProperty]
-        private bool canDisconnectFromServer;
-
-        [ObservableProperty]
-        private int selectedTeamId = 1;
-
-        [ObservableProperty]
-        private string selectedPlayerIdText = "0";
 
         [ObservableProperty]
         private MapViewModel mapVM = new();
@@ -54,12 +36,30 @@ namespace THUAI9_Avalonia.ViewModels
         [ObservableProperty]
         private PlaybackViewModel playbackVM = new();
 
+        [ObservableProperty]
+        private string buildingSummary = "工厂：等待数据";
+
+        [ObservableProperty]
+        private string resourceSummary = "资源点：等待数据";
+
+        [ObservableProperty]
+        private string objectiveSummary = "算力中心：等待数据";
+
+        [ObservableProperty]
+        private string marketSummary = "市场：等待数据";
+
         public ObservableCollection<CharacterViewModel> Team1Characters { get; } = new();
         public ObservableCollection<CharacterViewModel> Team2Characters { get; } = new();
         public ObservableCollection<CharacterViewModel> Team3Characters { get; } = new();
         public ObservableCollection<CharacterViewModel> Team4Characters { get; } = new();
         public ObservableCollection<LegendItem> MapLegendItems { get; } = new();
-        public ObservableCollection<int> AvailableTeamIds { get; } = new() { 1, 2, 3, 4 };
+        public ObservableCollection<TeamOverviewItem> TeamOverviews { get; } = new();
+
+        private readonly Dictionary<long, CharacterViewModel> _team1CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team2CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team3CharacterIndex = new();
+        private readonly Dictionary<long, CharacterViewModel> _team4CharacterIndex = new();
+        private readonly MapDynamicStateManager _dynamicStateManager;
 
         private Channel? _channel;
         private AvailableService.AvailableServiceClient? _client;
@@ -68,6 +68,7 @@ namespace THUAI9_Avalonia.ViewModels
         private bool _isConnecting;
         private bool _hasReceivedFirstFrame;
         private bool _hasLoggedRetrying;
+        private bool _playbackModeActive;
         private readonly object _drawPicLock = new();
         private readonly CancellationTokenSource _autoConnectCts = new();
         private Task? _autoConnectTask;
@@ -75,7 +76,9 @@ namespace THUAI9_Avalonia.ViewModels
 
         public MainWindowViewModel()
         {
+            InitializeTeamOverviews();
             InitializeMapLegend();
+            _dynamicStateManager = new MapDynamicStateManager(MapVM);
             PlaybackVM.SetMessageCallback(ProcessPlaybackMessage);
 
             if (Avalonia.Controls.Design.IsDesignMode)
@@ -87,6 +90,22 @@ namespace THUAI9_Avalonia.ViewModels
             LogConsoleVM.AddLog("THUAI9 调试界面已启动", "INFO");
             LogConsoleVM.AddLog($"已启用自动连接，将持续尝试连接 {DefaultServerAddress}", "INFO");
             StartAutoConnectLoop();
+        }
+
+        private void InitializeTeamOverviews()
+        {
+            TeamOverviews.Clear();
+            for (int teamId = 1; teamId <= 4; teamId++)
+            {
+                TeamOverviews.Add(new TeamOverviewItem
+                {
+                    TeamId = teamId,
+                    Score = 0,
+                    Material = 0,
+                    ComputePower = 0,
+                    FactoryHp = 0
+                });
+            }
         }
 
         private void StartAutoConnectLoop()
@@ -103,7 +122,7 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (_isConnected || _isConnecting)
+                    if (_playbackModeActive || _isConnected || _isConnecting)
                     {
                         await Task.Delay(500, cancellationToken);
                         continue;
@@ -117,8 +136,8 @@ namespace THUAI9_Avalonia.ViewModels
                             LogConsoleVM.AddLog($"尚未连接到 {DefaultServerAddress}，将继续自动重试", "INFO");
                             _hasLoggedRetrying = true;
                         }
+
                         ConnectionStatus = "等待服务器";
-                        UpdateConnectionParameterAvailability(true);
                         await Task.Delay(AutoReconnectInterval, cancellationToken);
                     }
                 }
@@ -130,37 +149,51 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void InitializeDesignTimeData()
         {
-            GameLog = "设计模式 - 模拟数据";
-            CurrentTime = "05:30";
             ConnectionStatus = "设计模式";
+            BuildingSummary = "工厂：队伍1 1 座（总血量 3） | 队伍2 1 座（总血量 3） | 队伍3 0 座 | 队伍4 0 座";
+            ResourceSummary = "资源点：3 处 · 剩余 210/300 · 可采集 2 处";
+            ObjectiveSummary = "算力中心：队伍1 1 座 | 队伍2 0 座 | 队伍3 0 座 | 队伍4 0 座 | 中立 1 座 | 正在争夺 1 座";
+            MarketSummary = "市场：2 处 · 当前价目 10 条";
 
             Team1Characters.Add(new CharacterViewModel
             {
                 Guid = 1,
                 Name = "无人机 1 号",
-                Hp = 80,
-                MaxHp = 100,
+                Hp = 2,
+                MaxHp = 3,
                 PosX = 10000,
                 PosY = 10000,
-                TeamId = 0,
-                ActiveState = "移动"
+                TeamId = 1,
+                ActiveState = "移动中"
             });
+
+            if (TeamOverviews.Count >= 4)
+            {
+                TeamOverviews[0].Score = 12;
+                TeamOverviews[0].Material = 80;
+                TeamOverviews[0].ComputePower = 45;
+                TeamOverviews[0].FactoryHp = 3;
+                TeamOverviews[1].Score = 9;
+                TeamOverviews[1].Material = 65;
+                TeamOverviews[1].ComputePower = 30;
+                TeamOverviews[1].FactoryHp = 2;
+            }
         }
 
         private void InitializeMapLegend()
         {
             MapLegendItems.Clear();
-            MapLegendItems.Add(new LegendItem(Brushes.Cyan, "工厂"));
+            MapLegendItems.Add(new LegendItem(Brushes.Cyan, "工厂出生点"));
             MapLegendItems.Add(new LegendItem(Brushes.White, "空地", Brushes.LightGray, new Thickness(1)));
             MapLegendItems.Add(new LegendItem(Brushes.LightGreen, "草丛"));
             MapLegendItems.Add(new LegendItem(Brushes.DarkGray, "障碍物"));
-            MapLegendItems.Add(new LegendItem(Brushes.Gold, "资源点"));
-            MapLegendItems.Add(new LegendItem(Brushes.LightBlue, "算力中心"));
-            MapLegendItems.Add(new LegendItem(Brushes.LightYellow, "市场"));
-            MapLegendItems.Add(new LegendItem(Brushes.Red, "队伍 1 建筑"));
-            MapLegendItems.Add(new LegendItem(Brushes.Blue, "队伍 2 建筑"));
-            MapLegendItems.Add(new LegendItem(Brushes.Green, "队伍 3 建筑"));
-            MapLegendItems.Add(new LegendItem(Brushes.Orange, "队伍 4 建筑"));
+            MapLegendItems.Add(new LegendItem(Brushes.Gold, "资源点底图"));
+            MapLegendItems.Add(new LegendItem(Brushes.LightBlue, "算力中心底图"));
+            MapLegendItems.Add(new LegendItem(Brushes.LightYellow, "市场底图"));
+            MapLegendItems.Add(new LegendItem(Brushes.Red, "队伍 1 覆盖物"));
+            MapLegendItems.Add(new LegendItem(Brushes.Blue, "队伍 2 覆盖物"));
+            MapLegendItems.Add(new LegendItem(Brushes.Green, "队伍 3 覆盖物"));
+            MapLegendItems.Add(new LegendItem(Brushes.Orange, "队伍 4 覆盖物"));
         }
 
         private async Task<bool> TryConnectOnceAsync(string serverAddress, CancellationToken cancellationToken)
@@ -185,34 +218,27 @@ namespace THUAI9_Avalonia.ViewModels
                 await _channel.ConnectAsync(deadline: DateTime.UtcNow.AddSeconds(10));
                 _client = new AvailableService.AvailableServiceClient(_channel);
 
-                UpdateConnectionParameterAvailability(false);
                 _hasLoggedRetrying = false;
-                ConnectionStatus = "已连通";
-                LogConsoleVM.AddLog($"已建立到 {channelTarget} 的连接", "SUCCESS");
+                ConnectionStatus = "已连接";
+                LogConsoleVM.AddLog($"已连接到 {channelTarget}", "SUCCESS");
+
+                ResetMatchVisualizationState(resetBaseMap: true);
 
                 try
                 {
                     var mapMessage = await _client.GetMapAsync(new NullRequest()).ResponseAsync;
                     MapVM.UpdateMap(mapMessage);
                     _mapView?.RefreshMap();
-                    LogConsoleVM.AddLog("已主动拉取静态地图，可在比赛开始前用于调试界面", "INFO");
+                    LogConsoleVM.AddLog("已成功拉取静态地图", "INFO");
                 }
                 catch (Exception ex)
                 {
-                    LogConsoleVM.AddLog($"已连通，但拉取静态地图失败：{ex.Message}", "WARNING");
+                    LogConsoleVM.AddLog($"连接成功，但拉取静态地图失败：{ex.Message}", "WARNING");
                 }
 
-                if (!TryBuildRegisterFactoryRequest(out var request))
-                {
-                    ReleaseConnectionResources();
-                    return false;
-                }
-
-                _stream = _client.RegisterFactory(request);
                 _isConnected = true;
-                ConnectionStatus = "已连通 / 等待开局";
-                LogConsoleVM.AddLog("已注册消息流，正在等待首帧游戏消息", "INFO");
-                _ = ReceiveMessagesAsync();
+                ConnectionStatus = "已连接";
+                LogConsoleVM.AddLog("实时注册已禁用，当前客户端不会自动占用队伍", "INFO");
                 return true;
             }
             catch
@@ -225,39 +251,6 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 _isConnecting = false;
             }
-        }
-
-        private void UpdateConnectionParameterAvailability(bool canEdit)
-        {
-            CanConnectToServer = canEdit;
-            CanDisconnectFromServer = false;
-        }
-
-        private bool TryBuildRegisterFactoryRequest(out RegisterFactoryMsg request)
-        {
-            request = new RegisterFactoryMsg();
-
-            if (!AvailableTeamIds.Contains(SelectedTeamId))
-            {
-                ConnectionStatus = "连接失败";
-                LogConsoleVM.AddLog($"队伍 ID 无效：{SelectedTeamId}，应在 1~4 范围内", "ERROR");
-                UpdateConnectionParameterAvailability(true);
-                return false;
-            }
-
-            if (!long.TryParse(SelectedPlayerIdText?.Trim(), out long playerId) || playerId < 0)
-            {
-                ConnectionStatus = "连接失败";
-                LogConsoleVM.AddLog($"玩家 ID 无效：{SelectedPlayerIdText}，请输入非负整数", "ERROR");
-                UpdateConnectionParameterAvailability(true);
-                return false;
-            }
-
-            request.TeamId = SelectedTeamId;
-            request.PlayerId = playerId;
-            request.SideFlag = SelectedTeamId;
-            LogConsoleVM.AddLog($"本次注册参数：TeamId={request.TeamId}, PlayerId={request.PlayerId}, SideFlag={request.SideFlag}", "INFO");
-            return true;
         }
 
         private void ReleaseConnectionResources()
@@ -288,7 +281,6 @@ namespace THUAI9_Avalonia.ViewModels
                         LogConsoleVM.AddLog(endMessage, "WARNING");
                         _isConnected = false;
                         ReleaseConnectionResources();
-                        UpdateConnectionParameterAvailability(true);
                         ConnectionStatus = "等待服务器";
                         break;
                     }
@@ -301,10 +293,9 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 if (_isConnected)
                 {
-                    LogConsoleVM.AddLog($"接收消息错误：{ex.Message}", "ERROR");
+                    LogConsoleVM.AddLog($"接收消息失败：{ex.Message}", "ERROR");
                     _isConnected = false;
                     ReleaseConnectionResources();
-                    UpdateConnectionParameterAvailability(true);
                     ConnectionStatus = "等待服务器";
                 }
             }
@@ -312,6 +303,11 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void ProcessMessage(MessageToClient message)
         {
+            if (_playbackModeActive)
+            {
+                return;
+            }
+
             lock (_drawPicLock)
             {
                 if (!_hasReceivedFirstFrame)
@@ -347,7 +343,13 @@ namespace THUAI9_Avalonia.ViewModels
                     continue;
                 }
 
-                var existingCharacter = targetList.FirstOrDefault(c => c.Guid == data.Guid);
+                var targetIndex = GetTeamCharacterIndex(data.TeamId);
+                if (targetIndex == null)
+                {
+                    continue;
+                }
+
+                targetIndex.TryGetValue(data.Guid, out var existingCharacter);
                 if (existingCharacter == null)
                 {
                     var newCharacter = new CharacterViewModel
@@ -361,58 +363,95 @@ namespace THUAI9_Avalonia.ViewModels
                         Hp = data.Hp,
                         PosX = data.X,
                         PosY = data.Y,
-                        ActiveState = data.CharacterActiveState.ToString()
+                        ActiveState = GetCharacterStateName(data.CharacterActiveState)
                     };
 
-                    Dispatcher.UIThread.Post(() => targetList.Add(newCharacter));
+                    targetList.Add(newCharacter);
+                    targetIndex[data.Guid] = newCharacter;
                     UpdateCharacterOnMap(data, newCharacter.MaxHp);
                     continue;
                 }
 
-                Dispatcher.UIThread.Post(() =>
-                {
-                    existingCharacter.Hp = data.Hp;
-                    existingCharacter.PosX = data.X;
-                    existingCharacter.PosY = data.Y;
-                    existingCharacter.ActiveState = data.CharacterActiveState.ToString();
-                });
+                string activeState = GetCharacterStateName(data.CharacterActiveState);
+                bool visualChanged = existingCharacter.PosX != data.X
+                    || existingCharacter.PosY != data.Y
+                    || existingCharacter.Hp != data.Hp
+                    || existingCharacter.ActiveState != activeState
+                    || existingCharacter.TeamId != data.TeamId;
 
-                UpdateCharacterOnMap(data, existingCharacter.MaxHp);
+                existingCharacter.TeamId = (int)data.TeamId;
+                existingCharacter.Hp = data.Hp;
+                existingCharacter.PosX = data.X;
+                existingCharacter.PosY = data.Y;
+                existingCharacter.ActiveState = activeState;
+
+                if (visualChanged)
+                {
+                    UpdateCharacterOnMap(data, existingCharacter.MaxHp);
+                }
             }
 
-            RemoveUnseenCharacters(Team1Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team2Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team3Characters, currentFrameGuids);
-            RemoveUnseenCharacters(Team4Characters, currentFrameGuids);
+            RemoveUnseenCharacters(Team1Characters, _team1CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team2Characters, _team2CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team3Characters, _team3CharacterIndex, currentFrameGuids);
+            RemoveUnseenCharacters(Team4Characters, _team4CharacterIndex, currentFrameGuids);
         }
 
         private void UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
         {
             int gridX = data.X / 1000;
             int gridY = data.Y / 1000;
-            _mapView?.UpdateCharacterOnMap(data.Guid, GetCharacterName(data.CharacterType), gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
+            _mapView?.UpdateCharacterOnMap(data.Guid, gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
         }
 
         private ObservableCollection<CharacterViewModel>? GetTeamList(long teamId)
         {
             return teamId switch
             {
-                0 => Team1Characters,
-                1 => Team2Characters,
-                2 => Team3Characters,
-                3 => Team4Characters,
+                1 => Team1Characters,
+                2 => Team2Characters,
+                3 => Team3Characters,
+                4 => Team4Characters,
                 _ => null
             };
         }
 
-        private void RemoveUnseenCharacters(ObservableCollection<CharacterViewModel> characterList, HashSet<long> seenGuids)
+        private Dictionary<long, CharacterViewModel>? GetTeamCharacterIndex(long teamId)
+        {
+            return teamId switch
+            {
+                1 => _team1CharacterIndex,
+                2 => _team2CharacterIndex,
+                3 => _team3CharacterIndex,
+                4 => _team4CharacterIndex,
+                _ => null
+            };
+        }
+
+        private void RemoveUnseenCharacters(ObservableCollection<CharacterViewModel> characterList, Dictionary<long, CharacterViewModel> characterIndex, HashSet<long> seenGuids)
         {
             var charactersToRemove = characterList.Where(c => !seenGuids.Contains(c.Guid)).ToList();
             foreach (var character in charactersToRemove)
             {
-                Dispatcher.UIThread.Post(() => characterList.Remove(character));
+                characterList.Remove(character);
+                characterIndex.Remove(character.Guid);
                 _mapView?.RemoveCharacterFromMap(character.Guid);
             }
+        }
+
+        private void ClearCharacterState()
+        {
+            Team1Characters.Clear();
+            Team2Characters.Clear();
+            Team3Characters.Clear();
+            Team4Characters.Clear();
+
+            _team1CharacterIndex.Clear();
+            _team2CharacterIndex.Clear();
+            _team3CharacterIndex.Clear();
+            _team4CharacterIndex.Clear();
+
+            _mapView?.ClearAllCharacters();
         }
 
         public void SetMapView(Views.MapView mapView)
@@ -428,57 +467,122 @@ namespace THUAI9_Avalonia.ViewModels
             }
 
             var all = message.AllMessage;
-            CurrentTime = FormatGameTime(all.GameTime);
-
-            for (int i = 0; i < all.Teams.Count && i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
+                int score = 0;
+                int material = 0;
+                int computePower = 0;
+                int factoryHp = 0;
+
+                if (i < all.Teams.Count)
+                {
+                    score = all.Teams[i].Score;
+                    material = all.Teams[i].Material;
+                    computePower = all.Teams[i].ComputePower;
+                    factoryHp = all.Teams[i].FactoryHp;
+                }
+
                 if (i < TeamScores.Count)
                 {
-                    TeamScores[i] = all.Teams[i].Score;
+                    TeamScores[i] = score;
+                }
+
+                if (i < TeamOverviews.Count)
+                {
+                    TeamOverviews[i].Score = score;
+                    TeamOverviews[i].Material = material;
+                    TeamOverviews[i].ComputePower = computePower;
+                    TeamOverviews[i].FactoryHp = factoryHp;
                 }
             }
         }
 
         private void UpdateMapElements(MessageToClient message)
         {
+            bool mapUpdated = false;
+
             foreach (var obj in message.ObjMessage)
             {
                 if (obj.MapMessage != null)
                 {
                     MapVM.UpdateMap(obj.MapMessage);
-                }
-                else if (obj.ResourceMessage != null)
-                {
-                    var res = obj.ResourceMessage;
-                    MapVM.UpdateResourceCell(res.X / 1000, res.Y / 1000, res.RemainingAmount);
-                }
-                else if (obj.FactoryMessage != null)
-                {
-                    var factory = obj.FactoryMessage;
-                    MapVM.UpdateBuildingCell(factory.X / 1000, factory.Y / 1000, GetTeamName(factory.TeamId), "Factory", factory.Hp);
-                }
-                else if (obj.ComputeCenterMessage != null)
-                {
-                    var center = obj.ComputeCenterMessage;
-                    string teamName = center.OccupyProgress > 0 ? GetTeamName(center.OwnerTeamId) : "Neutral";
-                    MapVM.UpdateBuildingCell(center.X / 1000, center.Y / 1000, teamName, "ComputeCenter", center.OccupyProgress);
-                }
-                else if (obj.MarketMessage != null)
-                {
-                    var market = obj.MarketMessage;
-                    MapVM.UpdateBuildingCell(market.X / 1000, market.Y / 1000, "Unknown", "Market", market.PriceList.Count);
+                    mapUpdated = true;
                 }
             }
 
-            _mapView?.RefreshMap();
+            _dynamicStateManager.ApplyFrame(message.ObjMessage, LogSemanticEvent);
+            ApplyDynamicSummary();
+
+            if (mapUpdated)
+            {
+                _mapView?.RefreshMap();
+            }
         }
 
-        private string FormatGameTime(int gameTimeInMilliseconds)
+        private void ApplyDynamicSummary()
         {
-            int totalSeconds = gameTimeInMilliseconds / 1000;
-            int minutes = totalSeconds / 60;
-            int seconds = totalSeconds % 60;
-            return $"{minutes:D2}:{seconds:D2}";
+            BuildingSummary = _dynamicStateManager.Summary.BuildingSummary;
+            ResourceSummary = _dynamicStateManager.Summary.ResourceSummary;
+            ObjectiveSummary = _dynamicStateManager.Summary.ObjectiveSummary;
+            MarketSummary = _dynamicStateManager.Summary.MarketSummary;
+        }
+
+        private void ResetMatchVisualizationState(bool resetBaseMap)
+        {
+            ClearCharacterState();
+            _dynamicStateManager.Reset(resetBaseMap);
+            ResetSummaryState();
+            ResetTeamOverviewState();
+            ResetScores();
+            if (resetBaseMap)
+            {
+                _mapView?.RefreshMap();
+            }
+        }
+
+        private void ResetSummaryState()
+        {
+            BuildingSummary = "工厂：等待数据";
+            ResourceSummary = "资源点：等待数据";
+            ObjectiveSummary = "算力中心：等待数据";
+            MarketSummary = "市场：等待数据";
+        }
+
+        private void ResetScores()
+        {
+            if (TeamScores.Count != 4)
+            {
+                TeamScores = new ObservableCollection<int> { 0, 0, 0, 0 };
+                return;
+            }
+
+            for (int i = 0; i < TeamScores.Count; i++)
+            {
+                TeamScores[i] = 0;
+            }
+        }
+
+        private void ResetTeamOverviewState()
+        {
+            if (TeamOverviews.Count != 4)
+            {
+                InitializeTeamOverviews();
+                return;
+            }
+
+            for (int i = 0; i < TeamOverviews.Count; i++)
+            {
+                TeamOverviews[i].TeamId = i + 1;
+                TeamOverviews[i].Score = 0;
+                TeamOverviews[i].Material = 0;
+                TeamOverviews[i].ComputePower = 0;
+                TeamOverviews[i].FactoryHp = 0;
+            }
+        }
+
+        private void LogSemanticEvent(string message, string level)
+        {
+            LogConsoleVM.AddLog(message, level);
         }
 
         private string GetCharacterName(CharacterType type)
@@ -492,26 +596,31 @@ namespace THUAI9_Avalonia.ViewModels
             };
         }
 
+        private static string GetCharacterStateName(CharacterState state)
+        {
+            return state switch
+            {
+                CharacterState.None => "未知",
+                CharacterState.Idle => "空闲",
+                CharacterState.Harvesting => "采集中",
+                CharacterState.Attacking => "攻击中",
+                CharacterState.Ocuppying => "占领中",
+                CharacterState.Trading => "交易中",
+                CharacterState.Moving => "移动中",
+                CharacterState.KnockedBack => "被击退",
+                CharacterState.Deceased => "已死亡",
+                _ => "未知"
+            };
+        }
+
         private int GetCharacterMaxHp(CharacterType type)
         {
             return type switch
             {
-                CharacterType.Drone => 100,
-                CharacterType.Robot => 350,
-                CharacterType.AutonomousCar => 300,
+                CharacterType.Drone => 3,
+                CharacterType.Robot => 3,
+                CharacterType.AutonomousCar => 3,
                 _ => 1
-            };
-        }
-
-        private static string GetTeamName(long teamId)
-        {
-            return teamId switch
-            {
-                0 => "Team1",
-                1 => "Team2",
-                2 => "Team3",
-                3 => "Team4",
-                _ => "Unknown"
             };
         }
 
@@ -548,17 +657,27 @@ namespace THUAI9_Avalonia.ViewModels
                     return;
                 }
 
+                _playbackModeActive = true;
+                _isConnected = false;
+                _isConnecting = false;
+                ReleaseConnectionResources();
+                ResetMatchVisualizationState(resetBaseMap: true);
+
                 LogConsoleVM.AddLog($"正在加载回放：{filePath}", "INFO");
                 PlaybackVM.Stop();
                 PlaybackVM.LoadPlayback(filePath);
+                ConnectionStatus = "回放模式";
+                LogConsoleVM.AddLog("已进入回放模式，实时自动连接已暂停", "INFO");
                 LogConsoleVM.AddLog("回放加载成功", "SUCCESS");
             }
             catch (FileNotFoundException ex)
             {
+                _playbackModeActive = false;
                 LogConsoleVM.AddLog($"回放文件不存在：{ex.FileName}", "ERROR");
             }
             catch (Exception ex)
             {
+                _playbackModeActive = false;
                 LogConsoleVM.AddLog($"回放加载失败：{ex.Message}", "ERROR");
             }
 

@@ -14,7 +14,7 @@ public static class Constants
 public class FileFormatNotLegalException(string fileName) : Exception
 {
     public string FileName { get; } = fileName;
-    public override string Message { get; } = $"The file: {fileName} is not a legal playback file for THUAI{Constants.Version}.";
+    public override string Message { get; } = $"文件 {fileName} 不是适用于 THUAI{Constants.Version} 的合法回放文件。";
 }
 
 public static class Utils
