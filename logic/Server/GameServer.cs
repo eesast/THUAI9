@@ -384,10 +384,10 @@ namespace Server
             return score;
         }
 
-        private uint GetBirthPointIdx(long playerID)  // 获取出生点位置
-        {
-            return (uint)playerID + 1; // ID从0-8,出生点从1-9
-        }
+        //private uint GetBirthPointIdx(long playerID)  // 获取出生点位置
+        //{
+        //    return (uint)playerID + 1; // ID从0-8,出生点从1-9
+        //}
 
         private bool ValidPlayerID(long playerID)
         {
