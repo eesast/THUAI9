@@ -1,4 +1,4 @@
-<Window
+﻿<Window
     x:Class="THUAI9_Avalonia.Views.MainWindow"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -21,11 +21,6 @@
     </Design.DataContext>
 
     <Window.Styles>
-        <Style Selector="ProgressBar:horizontal">
-            <Setter Property="MinWidth" Value="100" />
-            <Setter Property="MinHeight" Value="0" />
-        </Style>
-
         <Style Selector="Button.SecondaryButton">
             <Setter Property="Background" Value="#E1DFDD" />
             <Setter Property="Foreground" Value="#201F1E" />
@@ -49,7 +44,7 @@
             <Setter Property="BorderBrush" Value="#D1D1D1" />
             <Setter Property="Padding" Value="8" />
             <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Bold" />
         </Style>
         <Style Selector="Button.PlayButton:pointerover">
@@ -60,43 +55,12 @@
             <Setter Property="Background" Value="#E1E1E1" />
             <Setter Property="BorderBrush" Value="#9D9D9D" />
         </Style>
-
-        <Style Selector="ComboBox.ModernCombo">
-            <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#D1D1D1" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="4" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="FontSize" Value="13" />
-        </Style>
     </Window.Styles>
 
     <Grid ColumnDefinitions="400,*" Margin="10">
         <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,10,0">
             <Border Grid.Row="0" Background="#F5F5F5" CornerRadius="5" Padding="10" Margin="0,0,0,10">
                 <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="Auto,90,Auto,*" VerticalAlignment="Center">
-                        <TextBlock Grid.Column="0"
-                                   Text="队伍ID"
-                                   VerticalAlignment="Center" />
-                        <ComboBox Grid.Column="1"
-                                  ItemsSource="{Binding AvailableTeamIds}"
-                                  SelectedItem="{Binding SelectedTeamId}"
-                                  IsEnabled="{Binding CanConnectToServer}"
-                                  Classes="ModernCombo"
-                                  Margin="8,0,12,0"
-                                  Height="35" />
-                        <TextBlock Grid.Column="2"
-                                   Text="玩家ID"
-                                   VerticalAlignment="Center" />
-                        <TextBox Grid.Column="3"
-                                 Text="{Binding SelectedPlayerIdText}"
-                                 IsEnabled="{Binding CanConnectToServer}"
-                                 Margin="8,0,0,0"
-                                 Watermark="例如 0 / 1 / 2023（TeamId 现从 1 开始）"
-                                 VerticalContentAlignment="Center" />
-                    </Grid>
-
                     <Grid ColumnDefinitions="*,120">
                         <TextBox Grid.Column="0"
                                  x:Name="PlaybackPathBox"
@@ -106,57 +70,35 @@
                                 Command="{Binding LoadPlaybackCommand}"
                                 CommandParameter="{Binding Text, ElementName=PlaybackPathBox}"
                                 Classes="SecondaryButton"
-                                Height="35"/>
+                                Height="35" />
                     </Grid>
 
                     <Border Background="#E8E8E8" CornerRadius="5" Padding="8" Margin="0,5,0,0">
-                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto">
-                            <Button Grid.Column="0" Content="▶"
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button Content="播放"
                                     Command="{Binding PlaybackVM.PlayCommand}"
-                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    Width="56"
+                                    Height="35"
                                     VerticalAlignment="Center"
                                     Classes="PlayButton"
-                                    ToolTip.Tip="播放 (P)"/>
+                                    ToolTip.Tip="播放" />
 
-                            <Button Grid.Column="1" Content="⏸"
+                            <Button Content="暂停"
                                     Command="{Binding PlaybackVM.PauseCommand}"
-                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    Width="56"
+                                    Height="35"
                                     VerticalAlignment="Center"
                                     Classes="PlayButton"
-                                    ToolTip.Tip="暂停 (S)"/>
+                                    ToolTip.Tip="暂停" />
 
-                            <Button Grid.Column="2" Content="⏹"
+                            <Button Content="停止"
                                     Command="{Binding PlaybackVM.StopCommand}"
-                                    Width="45" Height="35" Margin="0,0,5,0"
+                                    Width="56"
+                                    Height="35"
                                     VerticalAlignment="Center"
                                     Classes="PlayButton"
-                                    ToolTip.Tip="停止"/>
-
-                            <ComboBox Grid.Column="3"
-                                      SelectedValue="{Binding PlaybackVM.PlaybackSpeed}"
-                                      Width="75" Height="35" Margin="0,0,5,0"
-                                      VerticalAlignment="Center"
-                                      Classes="ModernCombo">
-                                <x:Double>0.25</x:Double>
-                                <x:Double>0.5</x:Double>
-                                <x:Double>1.0</x:Double>
-                                <x:Double>2.0</x:Double>
-                                <x:Double>4.0</x:Double>
-                            </ComboBox>
-
-                            <Slider Grid.Column="4"
-                                    Value="{Binding PlaybackVM.Progress}"
-                                    Minimum="0" Maximum="1"
-                                    VerticalAlignment="Center"
-                                    Margin="5,0"/>
-                        </Grid>
-                    </Border>
-
-                    <Border Background="#E0E0E0" CornerRadius="3" Padding="10" HorizontalAlignment="Center">
-                        <TextBlock Text="{Binding CurrentTime}"
-                                   FontSize="24"
-                                   FontWeight="Bold"
-                                   Foreground="#333333" />
+                                    ToolTip.Tip="停止" />
+                        </StackPanel>
                     </Border>
                 </StackPanel>
             </Border>
@@ -174,10 +116,11 @@
                                             <StackPanel Spacing="2">
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding PlayerText}" FontSize="10" Foreground="Gray" />
                                                 </Grid>
-                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding HealthText}" FontSize="10" Foreground="Gray" />
                                                 <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                                <TextBlock Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -199,10 +142,11 @@
                                             <StackPanel Spacing="2">
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding PlayerText}" FontSize="10" Foreground="Gray" />
                                                 </Grid>
-                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding HealthText}" FontSize="10" Foreground="Gray" />
                                                 <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                                <TextBlock Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -224,10 +168,11 @@
                                             <StackPanel Spacing="2">
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding PlayerText}" FontSize="10" Foreground="Gray" />
                                                 </Grid>
-                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding HealthText}" FontSize="10" Foreground="Gray" />
                                                 <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                                <TextBlock Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -249,10 +194,11 @@
                                             <StackPanel Spacing="2">
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding PlayerText}" FontSize="10" Foreground="Gray" />
                                                 </Grid>
-                                                <ProgressBar Value="{Binding Hp}" Maximum="{Binding MaxHp}" Height="10" ShowProgressText="True" ProgressTextFormat="{}{0}/{3}" />
+                                                <TextBlock Text="{Binding HealthText}" FontSize="10" Foreground="Gray" />
                                                 <TextBlock Text="{Binding ActiveState}" FontSize="10" />
+                                                <TextBlock Text="{Binding Coordinates}" FontSize="10" Foreground="Gray" />
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -264,60 +210,93 @@
             </Grid>
 
             <Border Grid.Row="2" Margin="0,5,0,0">
-                <Grid RowDefinitions="Auto,*">
-                    <TextBlock Grid.Row="0" Text="事件日志" FontWeight="Bold" Margin="0,0,0,3" />
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="160">
-                        <ItemsControl ItemsSource="{Binding LogConsoleVM.LogEntries}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:LogEntry">
-                                    <Grid ColumnDefinitions="80,Auto,*" Margin="0,1">
-                                        <TextBlock Grid.Column="0" Text="{Binding Timestamp}" FontSize="9" Foreground="Gray" />
-                                        <Border Grid.Column="1" CornerRadius="2" Padding="2,0" Margin="5,0">
-                                            <Border.Background>
-                                                <SolidColorBrush Color="{Binding Level, Converter={StaticResource LevelToColorConverter}, FallbackValue=LightGray}" />
-                                            </Border.Background>
-                                            <TextBlock Text="{Binding Level}" FontSize="8" Foreground="White" />
-                                        </Border>
-                                        <TextBlock Grid.Column="2" Text="{Binding Message}" FontSize="10" TextWrapping="Wrap" Width="200" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
-        </Grid>
+                <Grid RowDefinitions="Auto,Auto,*">
+                    <TextBlock Grid.Row="0" Text="对局摘要" FontWeight="Bold" Margin="0,0,0,6" />
 
-        <Grid Grid.Column="1">
-            <Border Background="White" CornerRadius="5" BorderBrush="Gray" BorderThickness="1">
-                <Grid>
-                    <local:MapView x:Name="MapView" DataContext="{Binding MapVM}" />
-
-                    <Expander Header="地图图例"
-                              HorizontalAlignment="Right"
-                              VerticalAlignment="Top"
-                              Margin="10"
-                              MaxWidth="180"
-                              Background="#CCFFFFFF"
-                              CornerRadius="5">
-                        <ScrollViewer MaxHeight="300">
-                            <ItemsControl ItemsSource="{Binding MapLegendItems}">
+                    <Border Grid.Row="1" Background="#F7F7F7" CornerRadius="5" Padding="10" Margin="0,0,0,8">
+                        <StackPanel Spacing="6">
+                            <ItemsControl ItemsSource="{Binding TeamOverviews}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="models:LegendItem">
-                                        <StackPanel Orientation="Horizontal" Margin="2">
-                                            <Border Width="15" Height="15" Background="{Binding Color}" BorderBrush="{Binding Stroke}" BorderThickness="{Binding BorderThickness}" Margin="0,0,5,0" />
-                                            <TextBlock Text="{Binding Description}" FontSize="10" VerticalAlignment="Center" />
-                                        </StackPanel>
+                                    <DataTemplate x:DataType="models:TeamOverviewItem">
+                                        <Grid ColumnDefinitions="58,*" Margin="0,1">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding Header}"
+                                                       FontSize="10"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding TeamId, Converter={StaticResource TeamIdToColorConverter}}" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding SummaryText}"
+                                                       FontSize="10"
+                                                       TextWrapping="Wrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Border Height="1" Background="#22000000" Margin="0,2" />
+
+                            <TextBlock Text="{Binding BuildingSummary}" FontSize="10" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ResourceSummary}" FontSize="10" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ObjectiveSummary}" FontSize="10" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding MarketSummary}" FontSize="10" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0" Text="事件日志" FontWeight="Bold" Margin="0,0,0,3" />
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="160">
+                            <ItemsControl ItemsSource="{Binding LogConsoleVM.LogEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LogEntry">
+                                        <Grid ColumnDefinitions="80,Auto,*" Margin="0,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding Timestamp}" FontSize="9" Foreground="Gray" />
+                                            <Border Grid.Column="1" CornerRadius="2" Padding="2,0" Margin="5,0">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding Level, Converter={StaticResource LevelToColorConverter}, FallbackValue=LightGray}" />
+                                                </Border.Background>
+                                                <TextBlock Text="{Binding Level}" FontSize="8" Foreground="White" />
+                                            </Border>
+                                            <TextBlock Grid.Column="2" Text="{Binding Message}" FontSize="10" TextWrapping="Wrap" Width="200" />
+                                        </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                    </Expander>
-
-                    <Border Background="#CC000000" CornerRadius="3" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10">
-                        <TextBlock Text="{Binding ConnectionStatus}" Foreground="White" FontSize="12" />
-                    </Border>
+                    </Grid>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,8">
+                <Border Grid.Column="0" Background="#F5F5F5" CornerRadius="5" Padding="10,6" Margin="0,0,8,0">
+                    <TextBlock Text="{Binding ConnectionStatus}" FontSize="12" FontWeight="SemiBold" />
+                </Border>
+
+                <Border Grid.Column="1" Background="#F5F5F5" CornerRadius="5" Padding="8,6">
+                    <StackPanel>
+                        <TextBlock Text="地图图例" FontWeight="Bold" Margin="0,0,0,4" />
+                        <ItemsControl ItemsSource="{Binding MapLegendItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" ItemWidth="120" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:LegendItem">
+                                    <StackPanel Orientation="Horizontal" Margin="2">
+                                        <Border Width="15" Height="15" Background="{Binding Color}" BorderBrush="{Binding Stroke}" BorderThickness="{Binding BorderThickness}" Margin="0,0,5,0" />
+                                        <TextBlock Text="{Binding Description}" FontSize="10" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="1" Background="White" CornerRadius="5" BorderBrush="Gray" BorderThickness="1">
+                <local:MapView x:Name="MapView" DataContext="{Binding MapVM}" />
             </Border>
         </Grid>
     </Grid>

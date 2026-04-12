@@ -15,28 +15,15 @@ namespace THUAI9_Avalonia.ViewModels
 
     public partial class PlaybackViewModel : ViewModelBase
     {
+        private const double FrameIntervalMs = 100;
         private readonly PlaybackReader _reader = new();
         private System.Timers.Timer? _playbackTimer;
-        private TimeSpan _totalDuration;
-        private TimeSpan _currentPosition;
         private int _currentFrame;
         private int _totalFrames;
         private Action<MessageToClient>? _onMessageReceived;
 
         [ObservableProperty]
         private PlaybackState state = PlaybackState.Stopped;
-
-        [ObservableProperty]
-        private double progress;
-
-        [ObservableProperty]
-        private string currentPositionText = "00:00";
-
-        [ObservableProperty]
-        private string totalDurationText = "10:00";
-
-        [ObservableProperty]
-        private double playbackSpeed = 1.0;
 
         [ObservableProperty]
         private bool isFileLoaded;
@@ -62,12 +49,7 @@ namespace THUAI9_Avalonia.ViewModels
                 _reader.Open(filePath);
                 FilePath = filePath;
                 IsFileLoaded = true;
-
                 _totalFrames = CountTotalFrames();
-                _totalDuration = TimeSpan.FromMilliseconds(_totalFrames * 100);
-                TotalDurationText = FormatTime(_totalDuration);
-                CurrentPositionText = "00:00";
-                Progress = 0;
                 _currentFrame = 0;
                 State = PlaybackState.Stopped;
             }
@@ -121,55 +103,12 @@ namespace THUAI9_Avalonia.ViewModels
             StopPlaybackTimer();
             _reader.Reset();
             _currentFrame = 0;
-            Progress = 0;
-            CurrentPositionText = "00:00";
             State = PlaybackState.Stopped;
-        }
-
-        [RelayCommand]
-        public void Seek(double newProgress)
-        {
-            if (!IsFileLoaded || _totalFrames == 0)
-            {
-                return;
-            }
-
-            var targetFrame = (int)(newProgress * _totalFrames);
-            SeekToFrame(targetFrame);
-        }
-
-        private void SeekToFrame(int frameIndex)
-        {
-            _reader.Reset();
-            _currentFrame = 0;
-
-            while (_currentFrame < frameIndex)
-            {
-                var msg = _reader.ReadNext();
-                if (msg == null)
-                {
-                    break;
-                }
-                _currentFrame++;
-            }
-
-            Progress = (double)_currentFrame / _totalFrames;
-            UpdateCurrentPositionText();
-        }
-
-        partial void OnPlaybackSpeedChanging(double value)
-        {
-            if (State == PlaybackState.Playing)
-            {
-                StopPlaybackTimer();
-                StartPlaybackTimer();
-            }
         }
 
         private void StartPlaybackTimer()
         {
-            double interval = 100 / PlaybackSpeed;
-            _playbackTimer = new System.Timers.Timer(interval);
+            _playbackTimer = new System.Timers.Timer(FrameIntervalMs);
             _playbackTimer.Elapsed += OnPlaybackTimerElapsed;
             _playbackTimer.Start();
         }
@@ -194,20 +133,7 @@ namespace THUAI9_Avalonia.ViewModels
             }
 
             _currentFrame++;
-            Progress = (double)_currentFrame / _totalFrames;
-            UpdateCurrentPositionText();
             _onMessageReceived?.Invoke(message);
-        }
-
-        private void UpdateCurrentPositionText()
-        {
-            _currentPosition = TimeSpan.FromMilliseconds(_totalDuration.TotalMilliseconds * Progress);
-            CurrentPositionText = FormatTime(_currentPosition);
-        }
-
-        private string FormatTime(TimeSpan time)
-        {
-            return $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}";
         }
 
         public override void Dispose()

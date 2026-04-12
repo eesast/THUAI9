@@ -13,6 +13,9 @@
             <!-- 地图网格 -->
             <Grid Name="MapGrid" Background="Transparent" />
 
+            <!-- 动态对象覆盖层 -->
+            <Canvas Name="DynamicOverlayCanvas" Background="Transparent" />
+
             <!-- 角色图层 -->
             <Canvas Name="CharacterCanvas" Background="Transparent" />
         </Grid>
