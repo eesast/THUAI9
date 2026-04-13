@@ -28,6 +28,7 @@ namespace THUAI9_Avalonia.Views
 
         private const int GridSize = 50;
         private const double CellSize = 20;
+        private const double CharacterVisualSize = 20;
 
         private Canvas? _characterCanvas;
         private Canvas? _dynamicOverlayCanvas;
