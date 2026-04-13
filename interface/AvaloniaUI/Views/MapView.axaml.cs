@@ -14,9 +14,21 @@ namespace THUAI9_Avalonia.Views
 {
     public partial class MapView : UserControl
     {
+        private sealed class CharacterVisual
+        {
+            public required Grid Root { get; init; }
+            public required Ellipse Body { get; init; }
+            public required Border HpBar { get; init; }
+            public int GridX { get; set; }
+            public int GridY { get; set; }
+            public int TeamId { get; set; }
+            public int Hp { get; set; }
+            public int MaxHp { get; set; }
+        }
+
+        private const int GridSize = 50;
         private const double CellSize = 20;
-        private const double GameUnitsPerCell = 1000.0;
-        private const double CharacterVisualSize = 20;
+
         private Canvas? _characterCanvas;
         private Canvas? _dynamicOverlayCanvas;
         private Grid? _mapGrid;
@@ -78,15 +90,19 @@ namespace THUAI9_Avalonia.Views
             }
 
             _mapGrid.Children.Clear();
+            _mapGrid.ColumnDefinitions.Clear();
+            _mapGrid.RowDefinitions.Clear();
 
-            const int gridSize = 50;
+            for (int i = 0; i < GridSize; i++)
+            {
+                _mapGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
+                _mapGrid.RowDefinitions.Add(new RowDefinition(new GridLength(CellSize)));
+            }
 
             foreach (var cell in _viewModel.MapCells)
             {
                 var border = new Border
                 {
-                    Width = CellSize,
-                    Height = CellSize,
                     Width = CellSize,
                     Height = CellSize,
                     Background = cell.DisplayColor,
@@ -109,12 +125,6 @@ namespace THUAI9_Avalonia.Views
                 Grid.SetColumn(border, cell.CellY);
                 Grid.SetRow(border, cell.CellX);
                 _mapGrid.Children.Add(border);
-            }
-
-            for (int i = 0; i < gridSize; i++)
-            {
-                _mapGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
-                _mapGrid.RowDefinitions.Add(new RowDefinition(new GridLength(CellSize)));
             }
         }
 
@@ -156,16 +166,147 @@ namespace THUAI9_Avalonia.Views
             }
         }
 
-        public void UpdateCharacterOnMap(long guid, string characterType, int gridX, int gridY, int teamId, int hp, int maxHp)
+        private void DynamicOverlays_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (_dynamicOverlayCanvas == null)
+            {
+                return;
+            }
+
+            if (e.Action == NotifyCollectionChangedAction.Reset)
+            {
+                _dynamicOverlayCanvas.Children.Clear();
+                _dynamicOverlayElements.Clear();
+                return;
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (MapOverlayItem overlay in e.OldItems)
+                {
+                    overlay.PropertyChanged -= Overlay_PropertyChanged;
+                    RemoveDynamicOverlayVisual(overlay.Key);
+                }
+            }
+
+            if (e.NewItems != null)
+            {
+                foreach (MapOverlayItem overlay in e.NewItems)
+                {
+                    overlay.PropertyChanged += Overlay_PropertyChanged;
+                    AddDynamicOverlayVisual(overlay);
+                }
+            }
+        }
+
+        private void Overlay_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (sender is MapOverlayItem overlay)
+            {
+                UpdateDynamicOverlayVisual(overlay);
+            }
+        }
+
+        private void RefreshDynamicOverlays()
+        {
+            if (_viewModel == null || _dynamicOverlayCanvas == null)
+            {
+                return;
+            }
+
+            _dynamicOverlayCanvas.Children.Clear();
+            _dynamicOverlayElements.Clear();
+
+            foreach (var overlay in _viewModel.DynamicOverlays)
+            {
+                overlay.PropertyChanged -= Overlay_PropertyChanged;
+                overlay.PropertyChanged += Overlay_PropertyChanged;
+                AddDynamicOverlayVisual(overlay);
+            }
+        }
+
+        private void AddDynamicOverlayVisual(MapOverlayItem overlay)
+        {
+            if (_dynamicOverlayCanvas == null || _dynamicOverlayElements.ContainsKey(overlay.Key))
+            {
+                return;
+            }
+
+            var textBlock = new TextBlock
+            {
+                FontSize = 8,
+                FontWeight = FontWeight.Bold,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            };
+
+            var border = new Border
+            {
+                Width = 18,
+                Height = 18,
+                CornerRadius = new CornerRadius(4),
+                BorderThickness = new Thickness(1),
+                Child = textBlock
+            };
+
+            ToolTip.SetTip(border, overlay.Tooltip);
+            _dynamicOverlayCanvas.Children.Add(border);
+            _dynamicOverlayElements[overlay.Key] = border;
+            UpdateDynamicOverlayVisual(overlay);
+        }
+
+        private void UpdateDynamicOverlayVisual(MapOverlayItem overlay)
+        {
+            if (_dynamicOverlayCanvas == null || !_dynamicOverlayElements.TryGetValue(overlay.Key, out var border))
+            {
+                return;
+            }
+
+            border.Background = overlay.Background;
+            border.BorderBrush = overlay.BorderBrush;
+            border.Opacity = overlay.Opacity;
+            border.CornerRadius = overlay.Kind switch
+            {
+                MapOverlayKind.Resource => new CornerRadius(9),
+                MapOverlayKind.ComputeCenter => new CornerRadius(3),
+                MapOverlayKind.Market => new CornerRadius(6),
+                _ => new CornerRadius(4)
+            };
+
+            if (border.Child is TextBlock textBlock)
+            {
+                textBlock.Text = overlay.Label;
+                textBlock.Foreground = overlay.Foreground;
+            }
+
+            ToolTip.SetTip(border, overlay.Tooltip);
+            Canvas.SetLeft(border, overlay.CellY * CellSize + 1);
+            Canvas.SetTop(border, overlay.CellX * CellSize + 1);
+        }
+
+        private void RemoveDynamicOverlayVisual(string key)
+        {
+            if (_dynamicOverlayCanvas == null)
+            {
+                return;
+            }
+
+            if (_dynamicOverlayElements.TryGetValue(key, out var border))
+            {
+                _dynamicOverlayCanvas.Children.Remove(border);
+                _dynamicOverlayElements.Remove(key);
+            }
+        }
+
+        public void UpdateCharacterOnMap(long guid, int gridX, int gridY, int teamId, int hp, int maxHp)
         {
             if (_characterCanvas == null)
             {
                 return;
             }
 
-            const double cellSize = 20;
-            double x = gridY * cellSize + cellSize / 2;
-            double y = gridX * cellSize + cellSize / 2;
+            double x = gridY * CellSize + CellSize / 2;
+            double y = gridX * CellSize + CellSize / 2;
 
             var teamColor = teamId switch
             {
@@ -176,12 +317,23 @@ namespace THUAI9_Avalonia.Views
                 _ => Brushes.Gray
             };
 
-            if (_characterElements.TryGetValue(guid, out var existingElement) && existingElement is Grid characterGrid)
+            if (_characterElements.TryGetValue(guid, out var visual))
             {
-                Canvas.SetLeft(characterGrid, x - 10);
-                Canvas.SetTop(characterGrid, y - 10);
+                if (visual.GridX != gridX || visual.GridY != gridY)
+                {
+                    Canvas.SetLeft(visual.Root, x - 10);
+                    Canvas.SetTop(visual.Root, y - 10);
+                    visual.GridX = gridX;
+                    visual.GridY = gridY;
+                }
 
-                if (characterGrid.Children[1] is Grid existingHpBarContainer && existingHpBarContainer.Children[0] is Border existingHpBar)
+                if (visual.TeamId != teamId)
+                {
+                    visual.Body.Fill = teamColor;
+                    visual.TeamId = teamId;
+                }
+
+                if (visual.Hp != hp || visual.MaxHp != maxHp)
                 {
                     visual.HpBar.Width = Math.Max(4, 20 * ((double)hp / Math.Max(maxHp, 1)));
                     visual.Hp = hp;

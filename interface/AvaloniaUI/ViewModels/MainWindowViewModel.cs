@@ -399,7 +399,9 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void  UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
         {
-            _mapView?.UpdateCharacterOnMap(data.Guid, GetCharacterName(data.CharacterType), data.X, data.Y, (int)data.TeamId, data.Hp, maxHp);
+            int gridX = data.X / 1000;
+            int gridY = data.Y / 1000;
+            _mapView?.UpdateCharacterOnMap(data.Guid, gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
         }
 
         private ObservableCollection<CharacterViewModel>? GetTeamList(long teamId)

@@ -75,11 +75,7 @@ namespace ClientTest
             */
             while (true)
             {
-<<<<<<< HEAD
-                Thread.Sleep(200);
-=======
                 Thread.Sleep(1000);
->>>>>>> d15cb22ab81c229a32cbc9756bb55bd2f10739aa
 
                 MoveRes boolRes = client.Move(moveMsg);
                 //if (boolRes.ActSuccess == false) break;
