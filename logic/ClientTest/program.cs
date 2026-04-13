@@ -37,6 +37,12 @@ namespace ClientTest
 
             Thread.Sleep(3000);
 
+            while (call.ResponseStream.MoveNext().Result)
+            {
+                var currentGameInfo = call.ResponseStream.Current;
+                if (currentGameInfo.GameState == GameState.GameStart) break;
+            }
+
             CreateCharacterMsg createMsg = new()
             {
                 CharacterType = CharacterType.Robot,   // 无人机
@@ -51,6 +57,8 @@ namespace ClientTest
                 return Task.CompletedTask;
             }
 
+            //Thread.Sleep(3000);
+
             MoveMsg moveMsg = new()
             {
                 PlayerId = 1,
@@ -58,14 +66,20 @@ namespace ClientTest
                 TimeInMilliseconds = 100,
                 Angle = 0
             };
+            /*
             while (call.ResponseStream.MoveNext().Result)
             {
                 var currentGameInfo = call.ResponseStream.Current;
                 if (currentGameInfo.GameState == GameState.GameStart) break;
             }
+            */
             while (true)
             {
-                Thread.Sleep(500);
+<<<<<<< HEAD
+                Thread.Sleep(200);
+=======
+                Thread.Sleep(1000);
+>>>>>>> d15cb22ab81c229a32cbc9756bb55bd2f10739aa
 
                 MoveRes boolRes = client.Move(moveMsg);
                 //if (boolRes.ActSuccess == false) break;

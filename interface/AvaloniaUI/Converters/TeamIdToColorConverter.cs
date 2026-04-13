@@ -16,10 +16,10 @@ namespace THUAI9_Avalonia.Converters
             {
                 return teamId switch
                 {
-                    0 => new SolidColorBrush(Colors.Red),
-                    1 => new SolidColorBrush(Colors.Blue),
-                    2 => new SolidColorBrush(Colors.Green),
-                    3 => new SolidColorBrush(Colors.Orange),
+                    1 => new SolidColorBrush(Colors.Red),
+                    2 => new SolidColorBrush(Colors.Blue),
+                    3 => new SolidColorBrush(Colors.Green),
+                    4 => new SolidColorBrush(Colors.Orange),
                     _ => new SolidColorBrush(Colors.Gray)
                 };
             }
