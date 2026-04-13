@@ -212,8 +212,8 @@ namespace THUAI9_Avalonia.ViewModels
                 CellX = center.X / 1000,
                 CellY = center.Y / 1000,
                 Label = center.OwnerTeamId > 0
-                    ? $"队{center.OwnerTeamId}"
-                    : center.OccupyProgress > 0 ? $"{center.OccupyProgress}%" : "算力",
+                    ? center.OwnerTeamId.ToString(CultureInfo.InvariantCulture)
+                    : center.OccupyProgress > 0 ? center.OccupyProgress.ToString(CultureInfo.InvariantCulture) : string.Empty,
                 Tooltip = $"算力中心 #{center.CenterId}\n归属：{(center.OwnerTeamId > 0 ? GetTeamName(center.OwnerTeamId) : "中立")}\n占领进度：{center.OccupyProgress}",
                 Background = center.OwnerTeamId > 0 ? GetTeamBrush(center.OwnerTeamId) : Brushes.LightBlue,
                 BorderBrush = Brushes.White,
@@ -234,7 +234,7 @@ namespace THUAI9_Avalonia.ViewModels
                 Kind = MapOverlayKind.Market,
                 CellX = market.X / 1000,
                 CellY = market.Y / 1000,
-                Label = market.PriceList.Count > 0 ? $"市场{market.PriceList.Count}" : "市场",
+                Label = string.Empty,
                 Tooltip = BuildMarketTooltip(market),
                 Background = Brushes.MediumPurple,
                 BorderBrush = Brushes.White,
