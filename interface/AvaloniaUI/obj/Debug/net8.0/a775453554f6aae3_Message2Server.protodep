@@ -1,0 +1,2 @@
+obj\Debug\net8.0/Message2Server.cs: ../../dependency/proto/MessageType.proto\
+ ../../dependency/proto/Message2Server.proto
