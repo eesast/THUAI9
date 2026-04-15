@@ -69,9 +69,9 @@ public class Character : Movable, ICharacter
             && XY.DistanceCeil3(targetObj.Position, Position)
             < Radius + targetObj.Radius - GameData.AdjustLength)
             return true;
-        LogicLogging.logger.LogDebug(
-             LoggingFunctional.CharacterLogInfo(this) +
-             $" IgnoreCollideExecutor with target {targetObj.ID} of type {targetObj.Type} at position {targetObj.Position}");
+        //LogicLogging.logger.LogDebug(
+        //     LoggingFunctional.CharacterLogInfo(this) +
+        //     $" IgnoreCollideExecutor with target {targetObj.ID} of type {targetObj.Type} at position {targetObj.Position}");
         return false;
     }
     private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE, GameObj? gameobj = null)

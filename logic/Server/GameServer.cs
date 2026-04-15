@@ -41,6 +41,7 @@ namespace Server
         public static readonly long SendMessageToClientIntervalInMilliseconds = 50;
         private readonly MessageWriter? mwr = null;
         private readonly object spectatorJoinLock = new();
+        private const int ClientAckTimeoutMs = 200;
 
         public void StartGame()
         {
@@ -329,11 +330,25 @@ namespace Server
 
                 // 若此时观战者加入，则死锁，所以需要 spectatorJoinLock
 
-                foreach (var dict in semaDicts)
+                var staleClients = new List<(int dictIndex, long playerId)>();
+                for (int i = 0; i < semaDicts.Length; i++)
                 {
-                    foreach (var kvp in dict)
+                    foreach (var kvp in semaDicts[i])
                     {
-                        kvp.Value.Item2.Wait();     // 可能存在无限等待的问题
+                        if (!kvp.Value.Item2.Wait(ClientAckTimeoutMs))
+                        {
+                            staleClients.Add((i, kvp.Key));
+                            GameServerLogging.logger.LogWarning($"Client ack timeout, remove stream listener. dict={i}, player={kvp.Key}");
+                        }
+                    }
+                }
+
+                foreach (var (dictIndex, playerId) in staleClients)
+                {
+                    if (semaDicts[dictIndex].TryRemove(playerId, out var semas))
+                    {
+                        try { semas.Item1.Release(); } catch { }
+                        try { semas.Item2.Release(); } catch { }
                     }
                 }
             }
@@ -356,7 +371,7 @@ namespace Server
 
             foreach (var t in teams)
             {
-                material[(int)t.TeamId] = (int)t.FactoryStorage;
+                material[(int)t.TeamId] = (int)t.FactorySource;
             }
             return material;
         }
@@ -411,7 +426,7 @@ namespace Server
                 var teamInfo = new MessageOfAll.Types.TeamInfo
                 {
                     Score = (int)t.Score,
-                    Material = (int)t.FactoryStorage,
+                    Material = (int)t.FactorySource,
                     ComputePower = (int)t.FactoryComputingPower,
                     FactoryHp = (int)t.FactoryHP
                 };
