@@ -5,6 +5,6 @@
 logs/
 .DS_Store
  
- # .NET build outputs
- [Bb]in/
- [Oo]bj/
+# .NET build outputs
+[Bb]in/
+[Oo]bj/
