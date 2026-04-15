@@ -455,7 +455,7 @@ namespace THUAI9_Avalonia.ViewModels
             RemoveUnseenCharacters(Team4Characters, _team4CharacterIndex, currentFrameGuids);
         }
 
-        private void  UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
+        private void UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
         {
             _mapView?.UpdateCharacterOnMap(
                 data.Guid,
