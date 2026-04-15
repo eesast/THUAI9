@@ -371,7 +371,7 @@ namespace Server
 
             foreach (var t in teams)
             {
-                material[(int)t.TeamId] = (int)t.FactoryStorage;
+                material[(int)t.TeamId] = (int)t.FactorySource;
             }
             return material;
         }
@@ -426,7 +426,7 @@ namespace Server
                 var teamInfo = new MessageOfAll.Types.TeamInfo
                 {
                     Score = (int)t.Score,
-                    Material = (int)t.FactoryStorage,
+                    Material = (int)t.FactorySource,
                     ComputePower = (int)t.FactoryComputingPower,
                     FactoryHp = (int)t.FactoryHP
                 };
