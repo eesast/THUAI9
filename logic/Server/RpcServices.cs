@@ -83,6 +83,8 @@ namespace Server
             {
                 GameServerLogging.logger.LogDebug($"TRY Register Factory: Team {request.TeamId}");
 
+                bool isSpectatorRequest = request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false;
+
 
                 //if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
                 //    return;

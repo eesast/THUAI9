@@ -340,7 +340,7 @@ namespace THUAI9_Avalonia.ViewModels
                     }
 
                     var message = _stream.ResponseStream.Current;
-                    _ = Dispatcher.UIThread.InvokeAsync(() => ProcessMessage(message));
+                    await Dispatcher.UIThread.InvokeAsync(() => ProcessMessage(message));
                 }
             }
             catch (Exception ex)
