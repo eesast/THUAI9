@@ -83,14 +83,6 @@ namespace Server
             {
                 GameServerLogging.logger.LogDebug($"TRY Register Factory: Team {request.TeamId}");
 
-                if (game.GameMap?.Timer?.IsGaming ?? false)
-                    return;
-
-                if (!ValidPlayerID(request.PlayerId))
-                    return;
-
-                if (request.TeamId <= 0 || request.TeamId > TeamCount)
-                    return;
 
                 //if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
                 //    return;
@@ -162,6 +154,15 @@ namespace Server
                     GameServerLogging.logger.LogDebug("END Add Spectator");
                     return;
                 }
+
+                if (game.GameMap?.Timer?.IsGaming ?? false)
+                    return;
+
+                if (!ValidPlayerID(request.PlayerId))
+                    return;
+
+                if (request.TeamId <= 0 || request.TeamId > TeamCount)
+                    return;
 
                 GameServerLogging.logger.LogDebug("AddPlayer: Check Correct");
 
