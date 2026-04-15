@@ -83,20 +83,25 @@ namespace Server
             {
                 GameServerLogging.logger.LogDebug($"TRY Register Factory: Team {request.TeamId}");
 
-                if (game.GameMap?.Timer?.IsGaming ?? false)
-                    return;
+                bool isSpectatorRequest = request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false;
 
-                if (!ValidPlayerID(request.PlayerId))
-                    return;
+                if (!isSpectatorRequest)
+                {
+                    if (game.GameMap?.Timer?.IsGaming ?? false)
+                        return;
 
-                if (request.TeamId <= 0 || request.TeamId > TeamCount)
-                    return;
+                    if (!ValidPlayerID(request.PlayerId))
+                        return;
+
+                    if (request.TeamId <= 0 || request.TeamId > TeamCount)
+                        return;
+                }
 
                 //if (communicationToGameID[request.TeamId][request.PlayerId] != GameObj.invalidID)
                 //    return;
 
                 // 观战玩家分支
-                if (request.PlayerId >= spectatorMinPlayerID && options.NotAllowSpectator == false)
+                if (isSpectatorRequest)
                 {
                     GameServerLogging.logger.LogDebug($"TRY Add Spectator: Player {request.PlayerId}");
                     lock (spectatorJoinLock)
