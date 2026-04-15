@@ -101,7 +101,6 @@ namespace THUAI9_Avalonia.ViewModels
                 case PlaceType.Factory:
                     cell.CellType = MapCellType.Factory;
                     cell.DisplayColor = new SolidColorBrush(Colors.Cyan);
-                    cell.DisplayText = "厂";
                     break;
                 case PlaceType.Space:
                     cell.CellType = MapCellType.Space;
@@ -118,17 +117,14 @@ namespace THUAI9_Avalonia.ViewModels
                 case PlaceType.Resource:
                     cell.CellType = MapCellType.Resource;
                     cell.DisplayColor = new SolidColorBrush(Colors.Gold);
-                    cell.DisplayText = "资";
                     break;
                 case PlaceType.ComputeCenter:
                     cell.CellType = MapCellType.ComputeCenter;
                     cell.DisplayColor = new SolidColorBrush(Colors.LightBlue);
-                    cell.DisplayText = "算";
                     break;
                 case PlaceType.Market:
                     cell.CellType = MapCellType.Market;
                     cell.DisplayColor = new SolidColorBrush(Colors.LightYellow);
-                    cell.DisplayText = "市";
                     break;
                 default:
                     cell.CellType = MapCellType.Space;

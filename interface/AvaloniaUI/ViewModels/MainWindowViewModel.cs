@@ -19,6 +19,8 @@ namespace THUAI9_Avalonia.ViewModels
     public partial class MainWindowViewModel : ViewModelBase
     {
         private const string DefaultServerAddress = "127.0.0.1:8888";
+        private const long SpectatorTeamId = 0;
+        private const int SpectatorSideFlag = 0;
         private static readonly TimeSpan AutoReconnectInterval = TimeSpan.FromSeconds(2);
 
         [ObservableProperty]
@@ -60,6 +62,7 @@ namespace THUAI9_Avalonia.ViewModels
         private readonly Dictionary<long, CharacterViewModel> _team3CharacterIndex = new();
         private readonly Dictionary<long, CharacterViewModel> _team4CharacterIndex = new();
         private readonly MapDynamicStateManager _dynamicStateManager;
+        private readonly long _spectatorPlayerId = 2023 + Environment.ProcessId;
 
         private Channel? _channel;
         private AvailableService.AvailableServiceClient? _client;
@@ -237,8 +240,17 @@ namespace THUAI9_Avalonia.ViewModels
                 }
 
                 _isConnected = true;
-                ConnectionStatus = "已连接";
-                LogConsoleVM.AddLog("实时注册已禁用，当前客户端不会自动占用队伍", "INFO");
+                bool streamStarted = await StartSpectatorStreamAsync(cancellationToken);
+                if (!streamStarted)
+                {
+                    ReleaseConnectionResources();
+                    _isConnected = false;
+                    ConnectionStatus = "等待服务器";
+                    return false;
+                }
+
+                ConnectionStatus = "等待首帧";
+                LogConsoleVM.AddLog("当前以 spectator 身份接入实时流，不占用任何队伍。", "INFO");
                 return true;
             }
             catch
@@ -263,6 +275,48 @@ namespace THUAI9_Avalonia.ViewModels
             {
                 _channel.ShutdownAsync().GetAwaiter().GetResult();
                 _channel = null;
+            }
+        }
+
+        private async Task<bool> StartSpectatorStreamAsync(CancellationToken cancellationToken)
+        {
+            if (_client == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                _stream?.Dispose();
+                _stream = null;
+                _hasReceivedFirstFrame = false;
+
+                var request = new RegisterFactoryMsg
+                {
+                    TeamId = SpectatorTeamId,
+                    PlayerId = _spectatorPlayerId,
+                    SideFlag = SpectatorSideFlag
+                };
+
+                _stream = _client.RegisterFactory(request, cancellationToken: cancellationToken);
+                LogConsoleVM.AddLog($"已发起实时观战流注册：SpectatorId={_spectatorPlayerId}", "INFO");
+                _ = ReceiveMessagesAsync();
+                await Task.Yield();
+                return true;
+            }
+            catch (RpcException ex)
+            {
+                LogConsoleVM.AddLog($"实时观战流注册失败：{ex.Status.StatusCode} - {ex.Status.Detail}", "ERROR");
+                _stream?.Dispose();
+                _stream = null;
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogConsoleVM.AddLog($"实时观战流注册失败：{ex.Message}", "ERROR");
+                _stream?.Dispose();
+                _stream = null;
+                return false;
             }
         }
 
@@ -313,8 +367,8 @@ namespace THUAI9_Avalonia.ViewModels
                 if (!_hasReceivedFirstFrame)
                 {
                     _hasReceivedFirstFrame = true;
-                    ConnectionStatus = "已收到首帧";
-                    LogConsoleVM.AddLog("已收到首帧游戏消息", "SUCCESS");
+                    ConnectionStatus = "实时观战中";
+                    LogConsoleVM.AddLog("已收到首帧实时游戏消息", "SUCCESS");
                 }
 
                 UpdateCharacters(message);
@@ -363,18 +417,22 @@ namespace THUAI9_Avalonia.ViewModels
                         Hp = data.Hp,
                         PosX = data.X,
                         PosY = data.Y,
-                        ActiveState = GetCharacterStateName(data.CharacterActiveState)
+                        ActiveState = GetCharacterStateName(data.CharacterActiveState, keepMoving: false)
                     };
 
-                    targetList.Add(newCharacter);
+                    InsertCharacterSorted(targetList, newCharacter);
                     targetIndex[data.Guid] = newCharacter;
                     UpdateCharacterOnMap(data, newCharacter.MaxHp);
                     continue;
                 }
 
-                string activeState = GetCharacterStateName(data.CharacterActiveState);
-                bool visualChanged = existingCharacter.PosX != data.X
+                bool movedThisFrame = existingCharacter.PosX != data.X
                     || existingCharacter.PosY != data.Y
+                    ;
+                string activeState = GetCharacterStateName(
+                    data.CharacterActiveState,
+                    keepMoving: existingCharacter.ActiveState == "移动中" && movedThisFrame);
+                bool visualChanged = movedThisFrame
                     || existingCharacter.Hp != data.Hp
                     || existingCharacter.ActiveState != activeState
                     || existingCharacter.TeamId != data.TeamId;
@@ -399,9 +457,26 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void  UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
         {
-            int gridX = data.X / 1000;
-            int gridY = data.Y / 1000;
-            _mapView?.UpdateCharacterOnMap(data.Guid, gridX, gridY, (int)data.TeamId, data.Hp, maxHp);
+            _mapView?.UpdateCharacterOnMap(
+                data.Guid,
+                data.X,
+                data.Y,
+                (int)data.TeamId,
+                data.Hp,
+                maxHp,
+                data.PlayerId,
+                data.CharacterType);
+        }
+
+        private static void InsertCharacterSorted(ObservableCollection<CharacterViewModel> targetList, CharacterViewModel character)
+        {
+            int insertIndex = 0;
+            while (insertIndex < targetList.Count && targetList[insertIndex].CharacterId <= character.CharacterId)
+            {
+                insertIndex++;
+            }
+
+            targetList.Insert(insertIndex, character);
         }
 
         private ObservableCollection<CharacterViewModel>? GetTeamList(long teamId)
@@ -596,11 +671,11 @@ namespace THUAI9_Avalonia.ViewModels
             };
         }
 
-        private static string GetCharacterStateName(CharacterState state)
+        private static string GetCharacterStateName(CharacterState state, bool keepMoving)
         {
             return state switch
             {
-                CharacterState.None => "未知",
+                CharacterState.None => keepMoving ? "移动中" : "空闲",
                 CharacterState.Idle => "空闲",
                 CharacterState.Harvesting => "采集中",
                 CharacterState.Attacking => "攻击中",

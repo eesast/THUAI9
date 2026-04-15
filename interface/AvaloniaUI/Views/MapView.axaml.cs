@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Protobuf;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -17,13 +18,16 @@ namespace THUAI9_Avalonia.Views
         private sealed class CharacterVisual
         {
             public required Grid Root { get; init; }
-            public required Ellipse Body { get; init; }
+            public required Border Body { get; init; }
             public required Border HpBar { get; init; }
-            public int GridX { get; set; }
-            public int GridY { get; set; }
+            public required TextBlock Label { get; init; }
+            public double GameX { get; set; }
+            public double GameY { get; set; }
             public int TeamId { get; set; }
             public int Hp { get; set; }
             public int MaxHp { get; set; }
+            public long PlayerId { get; set; }
+            public CharacterType CharacterType { get; set; }
         }
 
         private const int GridSize = 50;
@@ -243,10 +247,8 @@ namespace THUAI9_Avalonia.Views
 
             var border = new Border
             {
-                Width = 18,
-                Height = 18,
-                CornerRadius = new CornerRadius(4),
-                BorderThickness = new Thickness(1),
+                Width = CellSize,
+                Height = CellSize,
                 Child = textBlock
             };
 
@@ -263,16 +265,11 @@ namespace THUAI9_Avalonia.Views
                 return;
             }
 
-            border.Background = overlay.Background;
-            border.BorderBrush = overlay.BorderBrush;
-            border.Opacity = overlay.Opacity;
-            border.CornerRadius = overlay.Kind switch
-            {
-                MapOverlayKind.Resource => new CornerRadius(9),
-                MapOverlayKind.ComputeCenter => new CornerRadius(3),
-                MapOverlayKind.Market => new CornerRadius(6),
-                _ => new CornerRadius(4)
-            };
+            border.Background = Brushes.Transparent;
+            border.BorderBrush = Brushes.Transparent;
+            border.BorderThickness = new Thickness(0);
+            border.Opacity = 1;
+            border.CornerRadius = new CornerRadius(0);
 
             if (border.Child is TextBlock textBlock)
             {
@@ -280,9 +277,11 @@ namespace THUAI9_Avalonia.Views
                 textBlock.Foreground = overlay.Foreground;
             }
 
+            border.Width = CellSize;
+            border.Height = CellSize;
             ToolTip.SetTip(border, overlay.Tooltip);
-            Canvas.SetLeft(border, overlay.CellY * CellSize + 1);
-            Canvas.SetTop(border, overlay.CellX * CellSize + 1);
+            Canvas.SetLeft(border, overlay.CellY * CellSize);
+            Canvas.SetTop(border, overlay.CellX * CellSize);
         }
 
         private void RemoveDynamicOverlayVisual(string key)
@@ -299,17 +298,126 @@ namespace THUAI9_Avalonia.Views
             }
         }
 
-        public void UpdateCharacterOnMap(long guid, int gridX, int gridY, int teamId, int hp, int maxHp)
+        public void UpdateCharacterOnMap(long guid, int gameX, int gameY, int teamId, int hp, int maxHp, long playerId, CharacterType characterType)
         {
             if (_characterCanvas == null)
             {
                 return;
             }
 
-            double x = gridY * CellSize + CellSize / 2;
-            double y = gridX * CellSize + CellSize / 2;
+            double x = gameY / 1000.0 * CellSize + CellSize / 2;
+            double y = gameX / 1000.0 * CellSize + CellSize / 2;
+            var teamColor = GetTeamBrush(teamId);
 
-            var teamColor = teamId switch
+            if (_characterElements.TryGetValue(guid, out var visual))
+            {
+                if (Math.Abs(visual.GameX - gameX) > double.Epsilon || Math.Abs(visual.GameY - gameY) > double.Epsilon)
+                {
+                    Canvas.SetLeft(visual.Root, x - 8);
+                    Canvas.SetTop(visual.Root, y - 10);
+                    visual.GameX = gameX;
+                    visual.GameY = gameY;
+                }
+
+                if (visual.TeamId != teamId || visual.CharacterType != characterType)
+                {
+                    ApplyBodyStyle(visual.Body, characterType, teamColor);
+                    visual.TeamId = teamId;
+                    visual.CharacterType = characterType;
+                }
+
+                if (visual.Hp != hp || visual.MaxHp != maxHp)
+                {
+                    visual.HpBar.Width = Math.Max(4, 24 * ((double)hp / Math.Max(maxHp, 1)));
+                    visual.Hp = hp;
+                    visual.MaxHp = maxHp;
+                }
+
+                if (visual.PlayerId != playerId)
+                {
+                    visual.Label.Text = $"P{playerId}";
+                    visual.PlayerId = playerId;
+                }
+
+                return;
+            }
+
+            var body = new Border
+            {
+                Width = 10,
+                Height = 10,
+                BorderBrush = Brushes.White,
+                BorderThickness = new Thickness(1)
+            };
+            ApplyBodyStyle(body, characterType, teamColor);
+
+            var label = new TextBlock
+            {
+                Text = $"P{playerId}",
+                FontSize = 8,
+                FontWeight = FontWeight.Bold,
+                Foreground = teamColor,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+
+            var hpBarBackground = new Border
+            {
+                Width = 16,
+                Height = 3,
+                Background = Brushes.DarkGray,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+            };
+            var hpBar = new Border
+            {
+                Width = Math.Max(3, 16 * ((double)hp / Math.Max(maxHp, 1))),
+                Height = 3,
+                Background = Brushes.LimeGreen,
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left
+            };
+
+            var hpBarContainer = new Grid
+            {
+                Margin = new Thickness(0, 0, 0, 1)
+            };
+            hpBarContainer.Children.Add(hpBarBackground);
+            hpBarContainer.Children.Add(hpBar);
+
+            var root = new Grid
+            {
+                Width = 16,
+                Height = 22,
+                RowDefinitions = new RowDefinitions("Auto,Auto,*")
+            };
+            Grid.SetRow(hpBarContainer, 0);
+            Grid.SetRow(body, 1);
+            Grid.SetRow(label, 2);
+            root.Children.Add(hpBarContainer);
+            root.Children.Add(body);
+            root.Children.Add(label);
+
+            Canvas.SetLeft(root, x - 8);
+            Canvas.SetTop(root, y - 10);
+
+            _characterCanvas.Children.Add(root);
+            _characterElements[guid] = new CharacterVisual
+            {
+                Root = root,
+                Body = body,
+                HpBar = hpBar,
+                Label = label,
+                GameX = gameX,
+                GameY = gameY,
+                TeamId = teamId,
+                Hp = hp,
+                MaxHp = maxHp,
+                PlayerId = playerId,
+                CharacterType = characterType
+            };
+        }
+
+        private static IBrush GetTeamBrush(int teamId)
+        {
+            return teamId switch
             {
                 1 => Brushes.Red,
                 2 => Brushes.Blue,
@@ -317,78 +425,34 @@ namespace THUAI9_Avalonia.Views
                 4 => Brushes.Orange,
                 _ => Brushes.Gray
             };
+        }
 
-            if (_characterElements.TryGetValue(guid, out var visual))
+        private static void ApplyBodyStyle(Border body, CharacterType characterType, IBrush teamColor)
+        {
+            body.Background = teamColor;
+            switch (characterType)
             {
-                if (visual.GridX != gridX || visual.GridY != gridY)
-                {
-                    Canvas.SetLeft(visual.Root, x - 10);
-                    Canvas.SetTop(visual.Root, y - 10);
-                    visual.GridX = gridX;
-                    visual.GridY = gridY;
-                }
-
-                if (visual.TeamId != teamId)
-                {
-                    visual.Body.Fill = teamColor;
-                    visual.TeamId = teamId;
-                }
-
-                if (visual.Hp != hp || visual.MaxHp != maxHp)
-                {
-                    visual.HpBar.Width = Math.Max(4, 20 * ((double)hp / Math.Max(maxHp, 1)));
-                    visual.Hp = hp;
-                    visual.MaxHp = maxHp;
-                }
-
-                return;
+                case CharacterType.Drone:
+                    body.CornerRadius = new CornerRadius(5);
+                    body.Width = 10;
+                    body.Height = 10;
+                    break;
+                case CharacterType.Robot:
+                    body.CornerRadius = new CornerRadius(2);
+                    body.Width = 10;
+                    body.Height = 10;
+                    break;
+                case CharacterType.AutonomousCar:
+                    body.CornerRadius = new CornerRadius(3);
+                    body.Width = 14;
+                    body.Height = 8;
+                    break;
+                default:
+                    body.CornerRadius = new CornerRadius(4);
+                    body.Width = 10;
+                    body.Height = 10;
+                    break;
             }
-
-            var body = new Ellipse
-            {
-                Width = 16,
-                Height = 16,
-                Fill = teamColor,
-                Stroke = Brushes.White,
-                StrokeThickness = 1
-            };
-            var newCharacterGrid = new Grid();
-            newCharacterGrid.Children.Add(body);
-
-            var newHpBarContainer = new Grid();
-            var newHpBarBackground = new Border
-            {
-                Width = 20,
-                Height = 3,
-                Background = Brushes.DarkGray,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
-            };
-            var newHpBar = new Border
-            {
-                Width = Math.Max(4, 20 * ((double)hp / Math.Max(maxHp, 1))),
-                Height = 3,
-                Background = Brushes.LimeGreen,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left
-            };
-            newHpBarContainer.Children.Add(newHpBarBackground);
-            newHpBarContainer.Children.Add(newHpBar);
-            newCharacterGrid.Children.Add(newHpBarContainer);
-
-            Canvas.SetLeft(newCharacterGrid, x - CharacterVisualSize / 2);
-            Canvas.SetTop(newCharacterGrid, y - CharacterVisualSize / 2);
-
-            _characterCanvas.Children.Add(newCharacterGrid);
-            _characterElements[guid] = new CharacterVisual
-            {
-                Root = newCharacterGrid,
-                Body = body,
-                HpBar = newHpBar,
-                GridX = gridX,
-                GridY = gridY,
-                TeamId = teamId,
-                Hp = hp,
-                MaxHp = maxHp
-            };
         }
 
         public void RemoveCharacterFromMap(long guid)
