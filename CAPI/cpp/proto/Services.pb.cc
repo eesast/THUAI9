@@ -30,34 +30,32 @@ static constexpr ::_pb::Message* const* file_default_instances = nullptr;
 
 const char descriptor_table_protodef_Services_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\016Services.proto\022\010protobuf\032\025Message2Clie"
-  "nts.proto\032\024Message2Server.proto2\243\010\n\020Avai"
+  "nts.proto\032\024Message2Server.proto2\331\007\n\020Avai"
   "lableService\0223\n\rTryConnection\022\017.protobuf"
-  ".IDMsg\032\021.protobuf.BoolRes\022C\n\014AddCharacte"
-  "r\022\026.protobuf.CharacterMsg\032\031.protobuf.Mes"
-  "sageToClient0\001\0227\n\006GetMap\022\025.protobuf.Null"
-  "Request\032\026.protobuf.MessageOfMap\022,\n\004Move\022"
-  "\021.protobuf.MoveMsg\032\021.protobuf.MoveRes\0222\n"
-  "\007Recover\022\024.protobuf.RecoverMsg\032\021.protobu"
-  "f.BoolRes\022-\n\007Produce\022\017.protobuf.IDMsg\032\021."
-  "protobuf.BoolRes\0224\n\007Rebuild\022\026.protobuf.C"
-  "onstructMsg\032\021.protobuf.BoolRes\0226\n\tConstr"
-  "uct\022\026.protobuf.ConstructMsg\032\021.protobuf.B"
-  "oolRes\022>\n\rConstructTrap\022\032.protobuf.Const"
-  "ructTrapMsg\032\021.protobuf.BoolRes\022.\n\005Equip\022"
-  "\022.protobuf.EquipMsg\032\021.protobuf.BoolRes\0220"
-  "\n\006Attack\022\023.protobuf.AttackMsg\032\021.protobuf"
-  ".BoolRes\022,\n\004Cast\022\021.protobuf.CastMsg\032\021.pr"
-  "otobuf.BoolRes\022H\n\022AttackConstruction\022\037.p"
-  "rotobuf.AttackConstructionMsg\032\021.protobuf"
-  ".BoolRes\022P\n\026AttackAdditionResource\022#.pro"
-  "tobuf.AttackAdditionResourceMsg\032\021.protob"
-  "uf.BoolRes\022,\n\004Send\022\021.protobuf.SendMsg\032\021."
-  "protobuf.BoolRes\022@\n\016CreatCharacter\022\033.pro"
-  "tobuf.CreatCharacterMsg\032\021.protobuf.BoolR"
-  "es\022M\n\021CreatCharacterRID\022\033.protobuf.Creat"
-  "CharacterMsg\032\033.protobuf.CreatCharacterRe"
-  "s\0222\n\014EndAllAction\022\017.protobuf.IDMsg\032\021.pro"
-  "tobuf.BoolResb\006proto3"
+  ".IDMsg\032\021.protobuf.BoolRes\022L\n\017RegisterFac"
+  "tory\022\034.protobuf.RegisterFactoryMsg\032\031.pro"
+  "tobuf.MessageToClient0\001\0227\n\006GetMap\022\025.prot"
+  "obuf.NullRequest\032\026.protobuf.MessageOfMap"
+  "\022,\n\004Move\022\021.protobuf.MoveMsg\032\021.protobuf.M"
+  "oveRes\0222\n\007Recover\022\024.protobuf.RecoverMsg\032"
+  "\021.protobuf.BoolRes\0223\n\007Harvest\022\025.protobuf"
+  ".ResourceMsg\032\021.protobuf.BoolRes\0220\n\006Attac"
+  "k\022\023.protobuf.AttackMsg\032\021.protobuf.BoolRe"
+  "s\0220\n\006Occupy\022\023.protobuf.OccupyMsg\032\021.proto"
+  "buf.BoolRes\022,\n\004Send\022\021.protobuf.SendMsg\032\021"
+  ".protobuf.BoolRes\022,\n\004Load\022\021.protobuf.Loa"
+  "dMsg\032\021.protobuf.BoolRes\022.\n\005Trade\022\022.proto"
+  "buf.TradeMsg\032\021.protobuf.BoolRes\022B\n\017Creat"
+  "eCharacter\022\034.protobuf.CreateCharacterMsg"
+  "\032\021.protobuf.BoolRes\022O\n\022CreateCharacterRI"
+  "D\022\034.protobuf.CreateCharacterMsg\032\033.protob"
+  "uf.CreatCharacterRes\0227\n\007Produce\022\031.protob"
+  "uf.ProduceGoodsMsg\032\021.protobuf.BoolRes\022:\n"
+  "\013UplevelTech\022\030.protobuf.UplevelTechMsg\032\021"
+  ".protobuf.BoolRes\0222\n\014EndAllAction\022\017.prot"
+  "obuf.IDMsg\032\021.protobuf.BoolRes\022D\n\005AskAI\022\034"
+  ".protobuf.StrategicAIRequest\032\035.protobuf."
+  "StrategicAIResponseb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_Services_2eproto_deps[2] = {
   &::descriptor_table_Message2Clients_2eproto,
@@ -65,7 +63,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_Services_2eproto_de
 };
 static ::_pbi::once_flag descriptor_table_Services_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_Services_2eproto = {
-    false, false, 1141, descriptor_table_protodef_Services_2eproto,
+    false, false, 1067, descriptor_table_protodef_Services_2eproto,
     "Services.proto",
     &descriptor_table_Services_2eproto_once, descriptor_table_Services_2eproto_deps, 2, 0,
     schemas, file_default_instances, TableStruct_Services_2eproto::offsets,
