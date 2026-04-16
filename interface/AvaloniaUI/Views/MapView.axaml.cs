@@ -32,7 +32,17 @@ namespace THUAI9_Avalonia.Views
 
         private const int GridSize = 50;
         private const double CellSize = 20;
-        private const double CharacterVisualSize = 20;
+        private const double GameUnitsPerCell = 1000.0;
+        private const double CharacterCollisionRadiusInGameUnits = 300.0;
+        private const double CharacterBodySize = CellSize * (CharacterCollisionRadiusInGameUnits * 2 / GameUnitsPerCell);
+        private const double CharacterRootWidth = 16;
+        private const double CharacterRootHeight = 22;
+        private const double CharacterBodyTopOffset = HpBarHeight + 1;
+        private const double CharacterRootBodyCenterOffsetY = CharacterBodyTopOffset + CharacterBodySize / 2;
+        private const double HpBarWidth = 16;
+        private const double HpBarHeight = 3;
+        private const double HpBarMinWidth = 3;
+        private const double HpBarUpdateMinWidth = 4;
 
         private Canvas? _characterCanvas;
         private Canvas? _dynamicOverlayCanvas;
@@ -305,16 +315,16 @@ namespace THUAI9_Avalonia.Views
                 return;
             }
 
-            double x = gameY / 1000.0 * CellSize + CellSize / 2;
-            double y = gameX / 1000.0 * CellSize + CellSize / 2;
+            double x = gameY / GameUnitsPerCell * CellSize;
+            double y = gameX / GameUnitsPerCell * CellSize;
             var teamColor = GetTeamBrush(teamId);
 
             if (_characterElements.TryGetValue(guid, out var visual))
             {
                 if (Math.Abs(visual.GameX - gameX) > double.Epsilon || Math.Abs(visual.GameY - gameY) > double.Epsilon)
                 {
-                    Canvas.SetLeft(visual.Root, x - 8);
-                    Canvas.SetTop(visual.Root, y - 10);
+                    Canvas.SetLeft(visual.Root, x - CharacterRootWidth / 2);
+                    Canvas.SetTop(visual.Root, y - CharacterRootBodyCenterOffsetY);
                     visual.GameX = gameX;
                     visual.GameY = gameY;
                 }
@@ -328,7 +338,7 @@ namespace THUAI9_Avalonia.Views
 
                 if (visual.Hp != hp || visual.MaxHp != maxHp)
                 {
-                    visual.HpBar.Width = Math.Max(4, 24 * ((double)hp / Math.Max(maxHp, 1)));
+                    visual.HpBar.Width = Math.Max(HpBarUpdateMinWidth, HpBarWidth * ((double)hp / Math.Max(maxHp, 1)));
                     visual.Hp = hp;
                     visual.MaxHp = maxHp;
                 }
@@ -344,8 +354,8 @@ namespace THUAI9_Avalonia.Views
 
             var body = new Border
             {
-                Width = 10,
-                Height = 10,
+                Width = CharacterBodySize,
+                Height = CharacterBodySize,
                 BorderBrush = Brushes.White,
                 BorderThickness = new Thickness(1)
             };
@@ -362,15 +372,15 @@ namespace THUAI9_Avalonia.Views
 
             var hpBarBackground = new Border
             {
-                Width = 16,
-                Height = 3,
+                Width = HpBarWidth,
+                Height = HpBarHeight,
                 Background = Brushes.DarkGray,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
             };
             var hpBar = new Border
             {
-                Width = Math.Max(3, 16 * ((double)hp / Math.Max(maxHp, 1))),
-                Height = 3,
+                Width = Math.Max(HpBarMinWidth, HpBarWidth * ((double)hp / Math.Max(maxHp, 1))),
+                Height = HpBarHeight,
                 Background = Brushes.LimeGreen,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left
             };
@@ -384,8 +394,8 @@ namespace THUAI9_Avalonia.Views
 
             var root = new Grid
             {
-                Width = 16,
-                Height = 22,
+                Width = CharacterRootWidth,
+                Height = CharacterRootHeight,
                 RowDefinitions = new RowDefinitions("Auto,Auto,*")
             };
             Grid.SetRow(hpBarContainer, 0);
@@ -395,8 +405,8 @@ namespace THUAI9_Avalonia.Views
             root.Children.Add(body);
             root.Children.Add(label);
 
-            Canvas.SetLeft(root, x - 8);
-            Canvas.SetTop(root, y - 10);
+            Canvas.SetLeft(root, x - CharacterRootWidth / 2);
+            Canvas.SetTop(root, y - CharacterRootBodyCenterOffsetY);
 
             _characterCanvas.Children.Add(root);
             _characterElements[guid] = new CharacterVisual
@@ -433,24 +443,24 @@ namespace THUAI9_Avalonia.Views
             switch (characterType)
             {
                 case CharacterType.Drone:
-                    body.CornerRadius = new CornerRadius(5);
-                    body.Width = 10;
-                    body.Height = 10;
+                    body.CornerRadius = new CornerRadius(CharacterBodySize / 2);
+                    body.Width = CharacterBodySize;
+                    body.Height = CharacterBodySize;
                     break;
                 case CharacterType.Robot:
                     body.CornerRadius = new CornerRadius(2);
-                    body.Width = 10;
-                    body.Height = 10;
+                    body.Width = CharacterBodySize;
+                    body.Height = CharacterBodySize;
                     break;
                 case CharacterType.AutonomousCar:
                     body.CornerRadius = new CornerRadius(3);
-                    body.Width = 14;
-                    body.Height = 8;
+                    body.Width = CharacterBodySize;
+                    body.Height = CharacterBodySize;
                     break;
                 default:
                     body.CornerRadius = new CornerRadius(4);
-                    body.Width = 10;
-                    body.Height = 10;
+                    body.Width = CharacterBodySize;
+                    body.Height = CharacterBodySize;
                     break;
             }
         }
