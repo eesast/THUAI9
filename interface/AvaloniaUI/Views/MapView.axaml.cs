@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
@@ -21,6 +22,7 @@ namespace THUAI9_Avalonia.Views
             public required Border Body { get; init; }
             public required Border HpBar { get; init; }
             public required TextBlock Label { get; init; }
+            public required TranslateTransform Transform { get; init; }
             public double GameX { get; set; }
             public double GameY { get; set; }
             public int TeamId { get; set; }
@@ -43,6 +45,7 @@ namespace THUAI9_Avalonia.Views
         private const double HpBarHeight = 3;
         private const double HpBarMinWidth = 3;
         private const double HpBarUpdateMinWidth = 4;
+        private static readonly TimeSpan MoveTransitionDuration = TimeSpan.FromMilliseconds(20);
 
         private Canvas? _characterCanvas;
         private Canvas? _dynamicOverlayCanvas;
@@ -323,8 +326,8 @@ namespace THUAI9_Avalonia.Views
             {
                 if (Math.Abs(visual.GameX - gameX) > double.Epsilon || Math.Abs(visual.GameY - gameY) > double.Epsilon)
                 {
-                    Canvas.SetLeft(visual.Root, x - CharacterRootWidth / 2);
-                    Canvas.SetTop(visual.Root, y - CharacterRootBodyCenterOffsetY);
+                    visual.Transform.X = x - CharacterRootWidth / 2;
+                    visual.Transform.Y = y - CharacterRootBodyCenterOffsetY;
                     visual.GameX = gameX;
                     visual.GameY = gameY;
                 }
@@ -405,8 +408,18 @@ namespace THUAI9_Avalonia.Views
             root.Children.Add(body);
             root.Children.Add(label);
 
-            Canvas.SetLeft(root, x - CharacterRootWidth / 2);
-            Canvas.SetTop(root, y - CharacterRootBodyCenterOffsetY);
+            double initX = x - CharacterRootWidth / 2;
+            double initY = y - CharacterRootBodyCenterOffsetY;
+
+            var transform = new TranslateTransform(initX, initY);
+            transform.Transitions = new Transitions
+            {
+                new DoubleTransition { Property = TranslateTransform.XProperty, Duration = MoveTransitionDuration },
+                new DoubleTransition { Property = TranslateTransform.YProperty, Duration = MoveTransitionDuration },
+            };
+            Canvas.SetLeft(root, 0);
+            Canvas.SetTop(root, 0);
+            root.RenderTransform = transform;
 
             _characterCanvas.Children.Add(root);
             _characterElements[guid] = new CharacterVisual
@@ -415,13 +428,14 @@ namespace THUAI9_Avalonia.Views
                 Body = body,
                 HpBar = hpBar,
                 Label = label,
+                Transform = transform,
                 GameX = gameX,
                 GameY = gameY,
                 TeamId = teamId,
                 Hp = hp,
                 MaxHp = maxHp,
                 PlayerId = playerId,
-                CharacterType = characterType
+                CharacterType = characterType,
             };
         }
 
