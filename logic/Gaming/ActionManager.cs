@@ -45,7 +45,7 @@ namespace Gaming
                     LogicLogging.logger.LogWarning("Character is not commandable");
                     return false;
                 }
-                if (!characterToMove.ThreadNum.WaitOne(0))
+                if (!characterToMove.ThreadNum.WaitOne(25))
                 {
                     return true;
                 }

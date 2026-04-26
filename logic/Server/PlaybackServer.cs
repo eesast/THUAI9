@@ -286,7 +286,7 @@ namespace Server
                                 foreach (var item in msg.ObjMessage)
                                 {
                                     if (item.TeamMessage != null)
-                                        teamScore[item.TeamMessage.TeamId] = item.TeamMessage.Score;
+                                        teamScore[item.TeamMessage.TeamId - 1] = item.TeamMessage.Score;
 
                                 }
                             }
