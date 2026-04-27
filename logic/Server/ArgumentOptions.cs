@@ -31,7 +31,7 @@ namespace Server
         public ushort HomeCount { get; set; } = 1;
 
         [Option('f', "fileName", Required = false, HelpText = "The file to store playback file or to read file.")]
-        public string FileName { get; set; } = "xxxxxxxxx";
+        public string FileName { get; set; } = "mygame";
 
         [Option("notAllowSpectator", Required = false, HelpText = "Whether to allow a spectator to watch the game.")]
         public bool NotAllowSpectator { get; set; } = false;

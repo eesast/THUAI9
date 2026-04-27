@@ -5,7 +5,7 @@ public static class Constants
     /// <summary>
     /// 回放版本
     /// </summary>
-    public const int Version = 7;
+    public const int Version = 9;
     /// <summary>
     /// 回放文件扩展名
     /// </summary>

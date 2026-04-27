@@ -64,7 +64,7 @@ namespace ClientTest
                 PlayerId = 1,
                 TeamId = teamId,
                 TimeInMilliseconds = 100,
-                Angle = 0
+                Angle = 1.57
             };
             /*
             while (call.ResponseStream.MoveNext().Result)

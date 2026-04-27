@@ -128,7 +128,7 @@ namespace Server
                 httpSender.Token = options.Token;
             }
             string state = crashed ? "Crashed" : "Finished";
-            string[][] player_role = new string[4][];
+            string[][] player_role = new string[options.TeamCount][];
             for (int i = 0; i < options.TeamCount; i++)
             {
                 player_role[i] = new string[options.CharacterCount];
@@ -141,7 +141,7 @@ namespace Server
 
                 foreach (var c in characters.Where(c => c.TeamId == team.TeamId))
                 {
-                    player_role[(int)team.TeamId][count] = c.CharacterType.ToString();
+                    player_role[(int)team.TeamId - 1][count] = c.CharacterType.ToString();
                     count++;
                 }
             }
@@ -276,6 +276,10 @@ namespace Server
                 Thread.Sleep(1);
                 //SendGameResult(s);
             }
+            else
+            {
+                endGameSem.Release();
+            }
         }
 
         public void ReportGame(GameState gameState, bool requiredGaming = true)
@@ -371,7 +375,7 @@ namespace Server
 
             foreach (var t in teams)
             {
-                material[(int)t.TeamId] = (int)t.FactorySource;
+                material[(int)t.TeamId - 1] = (int)t.FactorySource;
             }
             return material;
         }
@@ -382,7 +386,7 @@ namespace Server
 
             foreach (var t in teams)
             {
-                cp[(int)t.TeamId] = (int)t.FactoryComputingPower;
+                cp[(int)t.TeamId - 1] = (int)t.FactoryComputingPower;
             }
             return cp;
         }
@@ -394,7 +398,7 @@ namespace Server
 
             foreach (var t in teams)
             {
-                score[(int)t.TeamId] = (int)t.Score;
+                score[(int)t.TeamId - 1] = (int)t.Score;
             }
             return score;
         }
