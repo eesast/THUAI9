@@ -179,6 +179,8 @@ namespace Gaming
                 public List<double>? Multipliers { get; set; }
             }
 
+            private static readonly HttpClient httpClient = new();
+
             private static async Task<GeneratedEvent?> RequestEventFromLLMAsync(CancellationToken cancellationToken)
             {
                 if (string.IsNullOrWhiteSpace(GameData.API_key) ||
@@ -189,8 +191,8 @@ namespace Gaming
                     return null;
                 }
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
+                if (httpClient.DefaultRequestHeaders.Authorization == null)
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
 
                 var req = new ChatRequest
                 {
@@ -212,7 +214,7 @@ namespace Gaming
 
                 var json = JsonSerializer.Serialize(req);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await http.PostAsync(GameData.API_url, content, cancellationToken);
+                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"Event LLM HTTP failed: {(int)resp.StatusCode}");
@@ -246,8 +248,8 @@ namespace Gaming
                     return null;
                 }
 
-                using var http = new HttpClient();
-                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
+                if (httpClient.DefaultRequestHeaders.Authorization == null)
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
 
                 var req = new ChatRequest
                 {
@@ -270,7 +272,7 @@ namespace Gaming
 
                 var json = JsonSerializer.Serialize(req);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await http.PostAsync(GameData.API_url, content, cancellationToken);
+                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"AskAI HTTP failed: {(int)resp.StatusCode}");

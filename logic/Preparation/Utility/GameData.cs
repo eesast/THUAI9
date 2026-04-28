@@ -20,7 +20,7 @@ namespace Preparation.Utility
         public const int MapRows = 50;                  // 行数
         public const int MapCols = 50;                  // 列数
 
-        public const int CharacterRadius = 200;         // 角色半径
+        public const int CharacterRadius = 700;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
         public const int MaxRobust = 10;
