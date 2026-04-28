@@ -79,6 +79,7 @@ namespace Gaming
                     long cur = factory.Source.Get();
                     if (cur < totalCost)
                     {
+                        factory.CanProduce.SetROri(true);
                         LogicLogging.logger.LogDebug(
                             LoggingFunctional.AutoLogInfo(factory) +
                             $" failed to start production of {amount} {type} due to insufficient source (current: {cur}, needed: {totalCost})");
@@ -90,7 +91,6 @@ namespace Gaming
                 new Thread(() =>
                 {
                     int produced = 0;
-                    factory.CanProduce.SetROri(false);
                     try
                     {
                         for (int i = 0; i < amount; i++)
@@ -155,7 +155,7 @@ namespace Gaming
                     $" failed to start production of {amount} {type} due to missing factory");
                 return false;
             }
-            if (!factory.CanProduce.Get())
+            if (!factory.CanProduce.TrySet(false))
             {
                 LogicLogging.logger.LogDebug(
                     LoggingFunctional.AutoLogInfo(factory) +
@@ -173,7 +173,12 @@ namespace Gaming
                 return false;
             }
             var production = new Production(this, factory, type, amount);
-            return production.Start();
+            bool ok = production.Start();
+            if (!ok)
+            {
+                factory.CanProduce.SetROri(true);
+            }
+            return ok;
         }
     }
 }
