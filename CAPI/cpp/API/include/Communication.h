@@ -38,22 +38,16 @@ public:
     // Character
     bool Move(int32_t playerID, int32_t teamID, int64_t moveTimeInMilliseconds, double angle);
     bool Recover(int32_t playerID, int64_t recover, int32_t teamID);
-    bool Produce(int64_t playerID, int64_t teamID);  // 兼容旧接口，等价于 Harvest
     bool Harvest(int64_t playerID, int64_t teamID);
     bool Occupy(int64_t playerID, int64_t teamID);
     bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount, bool isBuy);
-    bool Construct(int32_t playerID, int32_t teamID, THUAI9::ConstructionType constructionType);  // 兼容旧接口，等价于 Occupy
-    bool ConstructTrap(int32_t playerID, int32_t teamID, THUAI9::TrapType trapType);
     bool Skill_Attack(int64_t playerID, int64_t teamID, double angle);
     bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
-    bool AttackConstruction(int64_t playerID, int64_t teamID);
-    bool AttackAdditionResource(int64_t playerID, int64_t teamID);
     bool Send(int32_t playerID, int32_t toPlayerID, int32_t teamID, std::string message, bool binary);
 
     // Team
-    bool InstallEquipment(int32_t playerID, int32_t teamID, THUAI9::EquipmentType equipmentType);
-    bool BuildCharacter(int32_t teamID, THUAI9::CharacterType CharacterType, int32_t birthIndex);
+    bool CreateCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType CharacterType);
     bool ProduceGoods(int64_t teamID, THUAI9::GoodsType goodsType, int32_t maxProduceNum);
     bool UplevelTech(int64_t teamID, THUAI9::TechType techType);
 

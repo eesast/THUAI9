@@ -61,14 +61,14 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         TCLAP::ValueArg<std::string> serverPort("P", "serverPort", "Port the server listens to 7777 in default", false, "7777", "USORT");
         cmd.add(serverPort);
 
-        std::vector<int> validTeamIDs{0, 1};  // 取经队伍0 妖怪队伍1
+        std::vector<int> validTeamIDs{0, 1, 2, 3};  // 队伍0~3
         TCLAP::ValuesConstraint<int> teamIdConstraint(validTeamIDs);
-        TCLAP::ValueArg<int> teamID("t", "teamID", "Team ID 0,1 valid only", true, -1, &teamIdConstraint);
+        TCLAP::ValueArg<int> teamID("t", "teamID", "Team ID 0,1,2,3 valid only", true, -1, &teamIdConstraint);
         cmd.add(teamID);
 
-        std::vector<int> validPlayerIDs{0, 1, 2, 3, 4, 5, 6};  // 0代表每队的Hero
+        std::vector<int> validPlayerIDs{0, 1, 2, 3};  // 0代表每队的Factory
         TCLAP::ValuesConstraint<int> playerIdConstraint(validPlayerIDs);
-        TCLAP::ValueArg<int> playerID("p", "playerID", "Player ID 0,1,2,3,4,5,6 valid only", true, -1, &playerIdConstraint);
+        TCLAP::ValueArg<int> playerID("p", "playerID", "Player ID 0,1,2,3 valid only", true, -1, &playerIdConstraint);
         cmd.add(playerID);
 
         std::string DebugDesc = "Set this flag to save the debug log to ./logs folder.\n";
@@ -78,11 +78,6 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         std::string OutputDesc = "Set this flag to print the debug log to the screen.\n";
         TCLAP::SwitchArg output("o", "output", OutputDesc);
         cmd.add(output);
-
-        std::vector<int> valid_side_flag{0, 1};  // 0代表取经队伍 1代表妖怪队伍
-        TCLAP::ValuesConstraint<int> sideFlagConstraint(valid_side_flag);
-        TCLAP::ValueArg<int> sideFlag("s", "side_flag", "Side flag 0,1 valid only", true, -1, &sideFlagConstraint);
-        cmd.add(sideFlag);
 
         TCLAP::SwitchArg warning("w", "warning", "Set this flag to only print warning on the screen.\n"
                                                  "This flag will be ignored if the output flag is not set\n");
@@ -94,7 +89,6 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         pID = playerID.getValue();
         sIP = serverIP.getValue();
         sPort = serverPort.getValue();
-        side_flag = sideFlag.getValue();
         file = debug.getValue();
         print = output.getValue();
         if (print)
@@ -114,10 +108,7 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         else
         {
             playerType = THUAI9::PlayerType::Character;
-            if (!side_flag)
-                CharacterType = BuddhistsCharacterTypeDict[pID - 1];
-            else
-                CharacterType = MonstersCharacterTypeDict[pID - 1];
+            CharacterType = CharacterTypeDict[pID - 1];
         }
 #ifdef _MSC_VER
         std::cout

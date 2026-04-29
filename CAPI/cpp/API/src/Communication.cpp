@@ -91,7 +91,7 @@ bool Communication::Recover(int32_t playerID, int64_t recover, int32_t teamID)
     return status.ok() && recoverResult.act_success();
 }
 
-bool Communication::Produce(int64_t playerID, int64_t teamID)
+bool Communication::Harvest(int64_t playerID, int64_t teamID)
 {
     return Harvest(playerID, teamID);
 }
@@ -144,28 +144,6 @@ bool Communication::Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType go
     return status.ok() && tradeResult.act_success();
 }
 
-bool Communication::Construct(int32_t playerID, int32_t teamID, THUAI9::ConstructionType constructionType)
-{
-    (void)constructionType;
-    return Occupy(playerID, teamID);
-}
-
-bool Communication::ConstructTrap(int32_t playerID, int32_t teamID, THUAI9::TrapType trapType)
-{
-    (void)playerID;
-    (void)teamID;
-    (void)trapType;
-    return false;
-}
-
-bool Communication::InstallEquipment(int32_t playerID, int32_t teamID, THUAI9::EquipmentType equipmentType)
-{
-    (void)playerID;
-    (void)teamID;
-    (void)equipmentType;
-    return false;
-}
-
 bool Communication::Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID)
 {
     if (!ConsumeQuota(mtxLimit, counter, limit))
@@ -178,15 +156,14 @@ bool Communication::Common_Attack(int64_t teamID, int64_t playerID, int64_t atta
     return status.ok() && commonAttackResult.act_success();
 }
 
-bool Communication::BuildCharacter(int32_t teamID, THUAI9::CharacterType charactertype, int32_t birthIndex)
+bool Communication::CreateCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType charactertype)
 {
     if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
 
     protobuf::BoolRes reply;
     ClientContext context;
-    (void)birthIndex;
-    auto request = THUAI9Proto::THUAI92ProtobufCreateCharacterMsg(teamID, charactertype);
+    auto request = THUAI9Proto::THUAI92ProtobufCreateCharacterMsg(teamID, playerID, charactertype);
     auto status = THUAI9Stub->CreateCharacter(&context, request, &reply);
     return status.ok() && reply.act_success();
 }
@@ -220,20 +197,6 @@ bool Communication::Skill_Attack(int64_t teamID, int64_t playerID, double angle)
     (void)teamID;
     (void)playerID;
     (void)angle;
-    return false;
-}
-
-bool Communication::AttackConstruction(int64_t playerID, int64_t teamID)
-{
-    (void)playerID;
-    (void)teamID;
-    return false;
-}
-
-bool Communication::AttackAdditionResource(int64_t playerID, int64_t teamID)
-{
-    (void)playerID;
-    (void)teamID;
     return false;
 }
 

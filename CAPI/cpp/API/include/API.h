@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef API_H
 #define API_H
 
@@ -44,11 +44,11 @@ public:
     [[nodiscard]] virtual std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const = 0;
     [[nodiscard]] virtual std::vector<int64_t> GetPlayerGUIDs() const = 0;
     [[nodiscard]] virtual THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual int32_t GetEnergy() const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::Resource> GetResourceState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::ComputeCenter> GetComputeCenterState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::Market> GetMarketState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::Factory> GetFactoryState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual int32_t GetComputingPower() const = 0;
     [[nodiscard]] virtual int32_t GetMaterial() const = 0;
     [[nodiscard]] virtual int32_t GetScore() const = 0;
 

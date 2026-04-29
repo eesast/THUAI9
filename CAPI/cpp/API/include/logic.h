@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef LOGIC_H
 #define LOGIC_H
@@ -98,11 +98,11 @@ private:
     [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const;
     [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] int32_t GetEnergy() const;
+    [[nodiscard]] std::optional<THUAI9::Resource> GetResourceState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::ComputeCenter> GetComputeCenterState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::Market> GetMarketState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::Factory> GetFactoryState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] int32_t GetComputingPower() const;
     [[nodiscard]] int32_t GetMaterial() const;
     [[nodiscard]] int32_t GetScore() const;
 
@@ -121,10 +121,7 @@ private:
     bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Buy(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Sell(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
-    bool Skill_Attack(int64_t teamID, int64_t playerID, double angleInRadian);
     bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
-    bool AttackConstruction(int64_t playerID, int64_t teamID);
-    bool AttackAdditionResource(int64_t playerID, int64_t teamID);
     bool Recover(int64_t recover);
     bool Produce(int64_t playerID, int64_t teamID);
     // bool Rebuild(THUAI9::ConstructionType constructionType);
@@ -158,13 +155,13 @@ private:
     void Wait() noexcept;
 
 public:
-    Logic(int32_t playerID, int32_t teamID, THUAI9::PlayerType playerType, THUAI9::CharacterType CharacterType, bool side_flag);
+    Logic(int32_t playerID, int32_t teamID, THUAI9::PlayerType playerType, THUAI9::CharacterType CharacterType);
 
     ~Logic()
     {
     }
 
-    void Main(CreateAIFunc createAI, std::string IP, std::string port, bool file, bool print, bool warnOnly, bool side_flag);
+    void Main(CreateAIFunc createAI, std::string IP, std::string port, bool file, bool print, bool warnOnly);
 };
 
 #endif

@@ -1,4 +1,4 @@
-#include "logic.h"
+﻿#include "logic.h"
 #include "structures.h"
 #include <grpcpp/grpcpp.h>
 #include <spdlog/spdlog.h>
@@ -14,7 +14,7 @@
 
 extern const bool asynchronous;
 
-Logic::Logic(int32_t pID, int32_t tID, THUAI9::PlayerType pType, THUAI9::CharacterType cType, bool side_flag) :
+Logic::Logic(int32_t pID, int32_t tID, THUAI9::PlayerType pType, THUAI9::CharacterType cType) :
     playerID(pID),
     teamID(tID),
     playerType(pType),

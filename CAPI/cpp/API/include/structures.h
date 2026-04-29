@@ -281,6 +281,15 @@ namespace THUAI9
         ComputeCenterState state = ComputeCenterState::NullComputeCenterState;
     };
 
+    struct Resource
+    {
+        int64_t resourceID = 0;
+        ResourceType resourceType = ResourceType::NullResourceType;
+        int32_t x = 0;
+        int32_t y = 0;
+        ResourceState state = ResourceState::NullResourceState;
+    };
+
 
     using cellxy_t = std::pair<int32_t, int32_t>;
 
