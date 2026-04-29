@@ -1,0 +1,5 @@
+# ninja log v6
+231	3779	7991747527501604	CMakeFiles/capi.dir/proto/MessageType.pb.cc.obj	7c1b9a8e74fac96a
+294	4016	7991747528147742	CMakeFiles/capi.dir/proto/Services.pb.cc.obj	ec675489b57f4bad
+204	4054	7991747527233838	CMakeFiles/capi.dir/proto/Message2Server.pb.cc.obj	78c36a521228ed7a
+178	4311	7991747526976736	CMakeFiles/capi.dir/proto/Message2Clients.pb.cc.obj	94a10da447ce0dd0

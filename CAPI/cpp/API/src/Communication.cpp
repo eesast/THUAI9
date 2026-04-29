@@ -93,11 +93,6 @@ bool Communication::Recover(int32_t playerID, int64_t recover, int32_t teamID)
 
 bool Communication::Harvest(int64_t playerID, int64_t teamID)
 {
-    return Harvest(playerID, teamID);
-}
-
-bool Communication::Harvest(int64_t playerID, int64_t teamID)
-{
     if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
         return false;
 
@@ -156,7 +151,7 @@ bool Communication::Common_Attack(int64_t teamID, int64_t playerID, int64_t atta
     return status.ok() && commonAttackResult.act_success();
 }
 
-bool Communication::CreateCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType charactertype)
+bool Communication::BuildCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType charactertype)
 {
     if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
@@ -190,14 +185,6 @@ bool Communication::UplevelTech(int64_t teamID, THUAI9::TechType techType)
     auto request = THUAI9Proto::THUAI92ProtobufUplevelTechMsg(teamID, techType);
     auto status = THUAI9Stub->UplevelTech(&context, request, &result);
     return status.ok() && result.act_success();
-}
-
-bool Communication::Skill_Attack(int64_t teamID, int64_t playerID, double angle)
-{
-    (void)teamID;
-    (void)playerID;
-    (void)angle;
-    return false;
 }
 
 bool Communication::TryConnection(int32_t playerID, int32_t teamID)

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
@@ -94,53 +94,60 @@ namespace Proto2THUAI9
 
     inline std::map<protobuf::MessageOfObj::MessageOfObjCase, THUAI9::MessageOfObj> messageOfObjDict{
         {protobuf::MessageOfObj::MessageOfObjCase::kCharacterMessage, THUAI9::MessageOfObj::CharacterMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kFactoryMessage, THUAI9::MessageOfObj::BarracksMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kResourceMessage, THUAI9::MessageOfObj::EconomyResourceMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kMarketMessage, THUAI9::MessageOfObj::AdditionResourceMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kComputeCenterMessage, THUAI9::MessageOfObj::SpringMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kFactoryMessage, THUAI9::MessageOfObj::FactoryMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kResourceMessage, THUAI9::MessageOfObj::ResourceMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kMarketMessage, THUAI9::MessageOfObj::MarketMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kComputeCenterMessage, THUAI9::MessageOfObj::ComputeCenterMessage},
         {protobuf::MessageOfObj::MessageOfObjCase::kMapMessage, THUAI9::MessageOfObj::MapMessage},
         {protobuf::MessageOfObj::MessageOfObjCase::kNewsMessage, THUAI9::MessageOfObj::NewsMessage},
         {protobuf::MessageOfObj::MessageOfObjCase::kTeamMessage, THUAI9::MessageOfObj::TeamMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kBarrierMessage, THUAI9::MessageOfObj::TrapMessage},
-        {protobuf::MessageOfObj::MessageOfObjCase::kBushMessage, THUAI9::MessageOfObj::FarmMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kBarrierMessage, THUAI9::MessageOfObj::BarrierMessage},
+        {protobuf::MessageOfObj::MessageOfObjCase::kBushMessage, THUAI9::MessageOfObj::BushMessage},
         {protobuf::MessageOfObj::MessageOfObjCase::MESSAGE_OF_OBJ_NOT_SET, THUAI9::MessageOfObj::NullMessageOfObj},
     };
 
     inline std::map<protobuf::PlaceType, THUAI9::PlaceType> placeTypeDict{
         {protobuf::PlaceType::NULL_PLACE_TYPE, THUAI9::PlaceType::NullPlaceType},
-        {protobuf::PlaceType::FACTORY, THUAI9::PlaceType::Home},
+        {protobuf::PlaceType::FACTORY, THUAI9::PlaceType::Factory},
         {protobuf::PlaceType::SPACE, THUAI9::PlaceType::Space},
         {protobuf::PlaceType::BARRIER, THUAI9::PlaceType::Barrier},
         {protobuf::PlaceType::BUSH, THUAI9::PlaceType::Bush},
-        {protobuf::PlaceType::RESOURCE, THUAI9::PlaceType::EconomyResource},
-        {protobuf::PlaceType::COMPUTE_CENTER, THUAI9::PlaceType::Construction},
-        {protobuf::PlaceType::MARKET, THUAI9::PlaceType::AdditionResource},
+        {protobuf::PlaceType::RESOURCE, THUAI9::PlaceType::Resource},
+        {protobuf::PlaceType::COMPUTE_CENTER, THUAI9::PlaceType::ComputeCenter},
+        {protobuf::PlaceType::MARKET, THUAI9::PlaceType::Market},
     };
 
     inline std::map<protobuf::CharacterType, THUAI9::CharacterType> characterTypeDict{
         {protobuf::CharacterType::NULL_CHARACTER_TYPE, THUAI9::CharacterType::NullCharacterType},
-        {protobuf::CharacterType::DRONE, THUAI9::CharacterType::TangSeng},
-        {protobuf::CharacterType::ROBOT, THUAI9::CharacterType::SunWukong},
-        {protobuf::CharacterType::AUTONOMOUS_CAR, THUAI9::CharacterType::ZhuBajie},
+        {protobuf::CharacterType::DRONE, THUAI9::CharacterType::Drone},
+        {protobuf::CharacterType::ROBOT, THUAI9::CharacterType::Robot},
+        {protobuf::CharacterType::AUTONOMOUS_CAR, THUAI9::CharacterType::AutonomousCar},
     };
 
     inline std::map<protobuf::CharacterState, THUAI9::CharacterState> characterStateDict{
-        {protobuf::CharacterState::CHARACTER_STATE_NONE, THUAI9::CharacterState::NullCharacterState},
+        {protobuf::CharacterState::CHARACTER_STATE_NONE, THUAI9::CharacterState::None},
         {protobuf::CharacterState::CHARACTER_STATE_IDLE, THUAI9::CharacterState::Idle},
         {protobuf::CharacterState::CHARACTER_STATE_HARVESTING, THUAI9::CharacterState::Harvesting},
         {protobuf::CharacterState::CHARACTER_STATE_ATTACKING, THUAI9::CharacterState::Attacking},
-        {protobuf::CharacterState::CHARACTER_STATE_OCUPPYING, THUAI9::CharacterState::Constructing},
-        {protobuf::CharacterState::CHARACTER_STATE_TRADING, THUAI9::CharacterState::SkillCasting},
+        {protobuf::CharacterState::CHARACTER_STATE_OCUPPYING, THUAI9::CharacterState::Ocuppying},
+        {protobuf::CharacterState::CHARACTER_STATE_TRADING, THUAI9::CharacterState::Trading},
         {protobuf::CharacterState::CHARACTER_STATE_MOVING, THUAI9::CharacterState::Moving},
         {protobuf::CharacterState::CHARACTER_STATE_KNOCKED_BACK, THUAI9::CharacterState::KnockedBack},
         {protobuf::CharacterState::CHARACTER_STATE_DECEASED, THUAI9::CharacterState::Deceased},
     };
 
-    inline std::map<protobuf::ResourceType, THUAI9::EconomyResourceType> resourceTypeDict{
-        {protobuf::ResourceType::NULL_RESOURCE_TYPE, THUAI9::EconomyResourceType::NullEconomyResourceType},
-        {protobuf::ResourceType::SMALL_RESOURCE, THUAI9::EconomyResourceType::SmallEconomyResource},
-        {protobuf::ResourceType::MEDIUM_RESOURCE, THUAI9::EconomyResourceType::MediumEconomyResource},
-        {protobuf::ResourceType::LARGE_RESOURCE, THUAI9::EconomyResourceType::LargeEconomyResource},
+    inline std::map<protobuf::ResourceType, THUAI9::ResourceType> resourceTypeDict{
+        {protobuf::ResourceType::NULL_RESOURCE_TYPE, THUAI9::ResourceType::NullResourceType},
+        {protobuf::ResourceType::SMALL_RESOURCE, THUAI9::ResourceType::SmallResource},
+        {protobuf::ResourceType::MEDIUM_RESOURCE, THUAI9::ResourceType::MediumResource},
+        {protobuf::ResourceType::LARGE_RESOURCE, THUAI9::ResourceType::LargeResource},
+    };
+
+    inline std::map<protobuf::ResourceState, THUAI9::ResourceState> resourceStateDict{
+        {protobuf::ResourceState::NULL_ECONOMY_RESOURCE_STSTE, THUAI9::ResourceState::NullResourceState},
+        {protobuf::ResourceState::HARVESTABLE, THUAI9::ResourceState::Harvestable},
+        {protobuf::ResourceState::BEING_HARVESTED, THUAI9::ResourceState::BeingHarvested},
+        {protobuf::ResourceState::HARVESTED, THUAI9::ResourceState::Harvested},
     };
 
     inline std::map<protobuf::GoodsType, THUAI9::GoodsType> goodsTypeDict{
@@ -176,8 +183,8 @@ namespace Proto2THUAI9
 
     inline std::map<protobuf::MessageOfNews::NewsCase, THUAI9::NewsType> newsTypeDict{
         {protobuf::MessageOfNews::NewsCase::NEWS_NOT_SET, THUAI9::NewsType::NullNewsType},
-        {protobuf::MessageOfNews::NewsCase::kTextMessage, THUAI9::NewsType::TextMessage},
-        {protobuf::MessageOfNews::NewsCase::kBinaryMessage, THUAI9::NewsType::BinaryMessage},
+        {protobuf::MessageOfNews::NewsCase::kTextMessage, THUAI9::NewsType::Text},
+        {protobuf::MessageOfNews::NewsCase::kBinaryMessage, THUAI9::NewsType::Binary},
     };
 
     inline std::shared_ptr<THUAI9::Character> Protobuf2THUAI9Character(const protobuf::MessageOfCharacter& characterMsg)
@@ -192,7 +199,7 @@ namespace Proto2THUAI9
         character->characterType = (typeIt != characterTypeDict.end()) ? typeIt->second : THUAI9::CharacterType::NullCharacterType;
 
         auto stateIt = characterStateDict.find(characterMsg.character_active_state());
-        character->characterActiveState = (stateIt != characterStateDict.end()) ? stateIt->second : THUAI9::CharacterState::NullCharacterState;
+        character->characterActiveState = (stateIt != characterStateDict.end()) ? stateIt->second : THUAI9::CharacterState::None;
 
         character->x = characterMsg.x();
         character->y = characterMsg.y();
@@ -207,32 +214,7 @@ namespace Proto2THUAI9
         character->hp = characterMsg.hp();
         character->carryCapacity = characterMsg.carry_capacity();
         character->currentLoad = characterMsg.current_load();
-
-        character->characterPassiveState = THUAI9::CharacterState::NullCharacterState;
-        character->skillAttackCD = 0;
-        character->economyDepletion = characterMsg.harvest_rate_per_sec();
-        character->killScore = 0;
-        character->shieldEquipment = 0;
-        character->shoesEquipment = 0;
-        character->shoesTime = 0;
-        character->isBlind = false;
-        character->blindTime = 0;
-        character->isStunned = false;
-        character->stunnedTime = 0;
-        character->isInvisible = false;
-        character->invisibleTime = 0;
-        character->isBurned = false;
-        character->burnedTime = 0;
-        character->harmCut = 0;
-        character->harmCutTime = 0;
-        character->isPurified = false;
-        character->purifiedTime = 0;
-        character->isBerserk = false;
-        character->berserkTime = 0;
-        character->attackBuffNum = 0;
-        character->attackBuffTime = 0;
-        character->speedBuffTime = 0;
-        character->visionBuffTime = 0;
+        character->harvestRatePerSec = characterMsg.harvest_rate_per_sec();
 
         return character;
     }
@@ -244,7 +226,7 @@ namespace Proto2THUAI9
         team->playerID = teamMsg.player_id();
         team->score = teamMsg.score();
         team->material = teamMsg.material();
-        team->energy = teamMsg.compute_power();
+        team->computePower = teamMsg.compute_power();
         team->factoryHP = 0;
         return team;
     }
@@ -258,6 +240,7 @@ namespace Proto2THUAI9
         for (const auto& teamMsg : gameInfoMsg.teams())
         {
             gameInfo->teams.push_back(THUAI9::TeamGameInfo{
+                static_cast<int32_t>(gameInfo->teams.size() + 1),
                 teamMsg.score(),
                 teamMsg.material(),
                 teamMsg.compute_power(),
@@ -265,42 +248,19 @@ namespace Proto2THUAI9
             });
         }
 
-        if (gameInfoMsg.teams_size() > 0)
-        {
-            gameInfo->buddhistsTeamScore = gameInfoMsg.teams(0).score();
-            gameInfo->buddhistsTeamEconomy = gameInfoMsg.teams(0).material();
-            gameInfo->buddhistsHeroHP = gameInfoMsg.teams(0).factory_hp();
-        }
-        else
-        {
-            gameInfo->buddhistsTeamScore = 0;
-            gameInfo->buddhistsTeamEconomy = 0;
-            gameInfo->buddhistsHeroHP = 0;
-        }
-
-        if (gameInfoMsg.teams_size() > 1)
-        {
-            gameInfo->monstersTeamScore = gameInfoMsg.teams(1).score();
-            gameInfo->monstersTeamEconomy = gameInfoMsg.teams(1).material();
-            gameInfo->monstersHeroHP = gameInfoMsg.teams(1).factory_hp();
-        }
-        else
-        {
-            gameInfo->monstersTeamScore = 0;
-            gameInfo->monstersTeamEconomy = 0;
-            gameInfo->monstersHeroHP = 0;
-        }
-
         return gameInfo;
     }
 
-    inline std::shared_ptr<THUAI9::EconomyResource> Protobuf2THUAI9EconomyResource(const protobuf::MessageOfResource& resourceMsg)
+    inline std::shared_ptr<THUAI9::Resource> Protobuf2THUAI9EconomyResource(const protobuf::MessageOfResource& resourceMsg)
     {
-        auto resource = std::make_shared<THUAI9::EconomyResource>();
+        auto resource = std::make_shared<THUAI9::Resource>();
         auto typeIt = resourceTypeDict.find(resourceMsg.resource_type());
-        resource->economyResourceType = (typeIt != resourceTypeDict.end()) ? typeIt->second : THUAI9::EconomyResourceType::NullEconomyResourceType;
-        resource->process = resourceMsg.remaining_amount();
-        resource->team_id = resourceMsg.id();
+        resource->resourceType = (typeIt != resourceTypeDict.end()) ? typeIt->second : THUAI9::ResourceType::NullResourceType;
+        auto stateIt = resourceStateDict.find(resourceMsg.resource_state());
+        resource->state = (stateIt != resourceStateDict.end()) ? stateIt->second : THUAI9::ResourceState::NullResourceState;
+        resource->resourceID = resourceMsg.id();
+        resource->x = resourceMsg.x();
+        resource->y = resourceMsg.y();
         return resource;
     }
 
@@ -364,18 +324,9 @@ namespace THUAI9Proto
 {
     inline std::map<THUAI9::CharacterType, protobuf::CharacterType> characterTypeDict{
         {THUAI9::CharacterType::NullCharacterType, protobuf::CharacterType::NULL_CHARACTER_TYPE},
-        {THUAI9::CharacterType::TangSeng, protobuf::CharacterType::DRONE},
-        {THUAI9::CharacterType::SunWukong, protobuf::CharacterType::ROBOT},
-        {THUAI9::CharacterType::ZhuBajie, protobuf::CharacterType::AUTONOMOUS_CAR},
-        {THUAI9::CharacterType::ShaWujing, protobuf::CharacterType::DRONE},
-        {THUAI9::CharacterType::BaiLongma, protobuf::CharacterType::ROBOT},
-        {THUAI9::CharacterType::Monkid, protobuf::CharacterType::AUTONOMOUS_CAR},
-        {THUAI9::CharacterType::JiuLing, protobuf::CharacterType::DRONE},
-        {THUAI9::CharacterType::HongHaier, protobuf::CharacterType::ROBOT},
-        {THUAI9::CharacterType::NiuMowang, protobuf::CharacterType::AUTONOMOUS_CAR},
-        {THUAI9::CharacterType::TieShan, protobuf::CharacterType::DRONE},
-        {THUAI9::CharacterType::ZhiZhujing, protobuf::CharacterType::ROBOT},
-        {THUAI9::CharacterType::Pawn, protobuf::CharacterType::AUTONOMOUS_CAR},
+        {THUAI9::CharacterType::Drone, protobuf::CharacterType::DRONE},
+        {THUAI9::CharacterType::Robot, protobuf::CharacterType::ROBOT},
+        {THUAI9::CharacterType::AutonomousCar, protobuf::CharacterType::AUTONOMOUS_CAR},
     };
 
     inline std::map<THUAI9::GoodsType, protobuf::GoodsType> goodsTypeDict{
@@ -453,11 +404,11 @@ namespace THUAI9Proto
         return attackMsg;
     }
 
-    inline protobuf::CreateCharacterMsg THUAI92ProtobufCreateCharacterMsg(int64_t teamID, THUAI9::CharacterType characterType)
+    inline protobuf::CreateCharacterMsg THUAI92ProtobufCreateCharacterMsg(int64_t teamID, int64_t playerID, THUAI9::CharacterType characterType)
     {
         protobuf::CreateCharacterMsg createCharacterMsg;
         createCharacterMsg.set_team_id(teamID);
-        createCharacterMsg.set_player_id(0);
+        createCharacterMsg.set_player_id(playerID);
 
         auto it = characterTypeDict.find(characterType);
         createCharacterMsg.set_character_type((it != characterTypeDict.end()) ? it->second : protobuf::CharacterType::NULL_CHARACTER_TYPE);

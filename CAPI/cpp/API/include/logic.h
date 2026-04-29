@@ -50,7 +50,6 @@ private:
     int32_t playerID;
     int32_t teamID;
     bool side_flag;
-    THUAI9::PlayerTeam playerTeam;
     THUAI9::CharacterType CharacterType;
     std::unique_ptr<IGameTimer> timer;
     std::thread tAI;  // 用于运行AI的线程
@@ -116,24 +115,18 @@ private:
 
     // ICharacterAPI使用的部分
     bool Move(int64_t moveTimeInMilliseconds, double angle);
+    bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
+    bool Recover(int64_t recover);
     bool Harvest(int64_t playerID, int64_t teamID);
     bool Occupy(int64_t playerID, int64_t teamID);
     bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Buy(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Sell(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
-    bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
-    bool Recover(int64_t recover);
-    bool Produce(int64_t playerID, int64_t teamID);
-    // bool Rebuild(THUAI9::ConstructionType constructionType);
-    bool Construct(THUAI9::ConstructionType constructionType);
-    bool ConstructTrap(THUAI9::TrapType trapType);
 
     [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const;
 
     // ITeamAPI
-    bool InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype);
-    // bool Recycle(int32_t playerID,int32_t targetID);
-    bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex);
+    bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t playerID);
     bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum);
     bool UplevelTech(THUAI9::TechType techType);
 

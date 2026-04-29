@@ -1,4 +1,4 @@
-﻿#include <memory>
+#include <memory>
 #include "AI.h"
 #include "API.h"
 
@@ -6,7 +6,10 @@
 #undef SendMessage
 #undef PeekMessage
 
-#define PI 3.14159265358979323846
+namespace
+{
+    constexpr double pi = 3.14159265358979323846;
+}
 
 std::future<bool> CharacterAPI::SendTextMessage(int32_t toID, std::string message)
 {
@@ -64,18 +67,12 @@ int32_t TeamAPI::GetFrameCount() const
 
 bool CharacterAPI::Wait()
 {
-    if (logic.GetCounter() == -1)
-        return false;
-    else
-        return logic.WaitThread();
+    return logic.GetCounter() != -1 && logic.WaitThread();
 }
 
 bool TeamAPI::Wait()
 {
-    if (logic.GetCounter() == -1)
-        return false;
-    else
-        return logic.WaitThread();
+    return logic.GetCounter() != -1 && logic.WaitThread();
 }
 
 std::future<bool> CharacterAPI::EndAllAction()
@@ -120,7 +117,7 @@ std::vector<std::vector<THUAI9::PlaceType>> TeamAPI::GetFullMap() const
     return logic.GetFullMap();
 }
 
-THUAI9::PlaceType CharacterDebugAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
+THUAI9::PlaceType CharacterAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
 {
     return logic.GetPlaceType(cellX, cellY);
 }
@@ -140,6 +137,46 @@ std::shared_ptr<const THUAI9::GameInfo> TeamAPI::GetGameInfo() const
     return logic.GetGameInfo();
 }
 
+std::optional<THUAI9::Resource> CharacterAPI::GetResourceState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetResourceState(cellX, cellY);
+}
+
+std::optional<THUAI9::ComputeCenter> CharacterAPI::GetComputeCenterState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetComputeCenterState(cellX, cellY);
+}
+
+std::optional<THUAI9::Market> CharacterAPI::GetMarketState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetMarketState(cellX, cellY);
+}
+
+std::optional<THUAI9::Factory> CharacterAPI::GetFactoryState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetFactoryState(cellX, cellY);
+}
+
+std::optional<THUAI9::Resource> TeamAPI::GetResourceState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetResourceState(cellX, cellY);
+}
+
+std::optional<THUAI9::ComputeCenter> TeamAPI::GetComputeCenterState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetComputeCenterState(cellX, cellY);
+}
+
+std::optional<THUAI9::Market> TeamAPI::GetMarketState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetMarketState(cellX, cellY);
+}
+
+std::optional<THUAI9::Factory> TeamAPI::GetFactoryState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetFactoryState(cellX, cellY);
+}
+
 std::vector<int64_t> CharacterAPI::GetPlayerGUIDs() const
 {
     return logic.GetPlayerGUIDs();
@@ -150,38 +187,14 @@ std::vector<int64_t> TeamAPI::GetPlayerGUIDs() const
     return logic.GetPlayerGUIDs();
 }
 
-std::shared_ptr<const THUAI9::Character> CharacterAPI::GetSelfInfo() const
+int32_t CharacterAPI::GetComputingPower() const
 {
-    return logic.CharacterGetSelfInfo();
+    return logic.GetComputingPower();
 }
 
-std::shared_ptr<const THUAI9::Team> TeamAPI::GetSelfInfo() const
+int32_t TeamAPI::GetComputingPower() const
 {
-    return logic.TeamGetSelfInfo();
-}
-
-int32_t CharacterAPI::GetScore() const
-{
-    return logic.GetScore();
-}
-
-int32_t TeamAPI::GetScore() const
-{
-    return logic.GetScore();
-}
-THUAI9::PlaceType CharacterAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
-{
-    return logic.GetPlaceType(cellX, cellY);
-}
-
-int32_t CharacterAPI::GetEnergy() const
-{
-    return logic.GetEnergy();
-}
-
-int32_t TeamAPI::GetEnergy() const
-{
-    return logic.GetEnergy();
+    return logic.GetComputingPower();
 }
 
 int32_t CharacterAPI::GetMaterial() const
@@ -194,13 +207,31 @@ int32_t TeamAPI::GetMaterial() const
     return logic.GetMaterial();
 }
 
+int32_t CharacterAPI::GetScore() const
+{
+    return logic.GetScore();
+}
+
+int32_t TeamAPI::GetScore() const
+{
+    return logic.GetScore();
+}
+
+std::shared_ptr<const THUAI9::Character> CharacterAPI::GetSelfInfo() const
+{
+    return logic.CharacterGetSelfInfo();
+}
+
+std::shared_ptr<const THUAI9::Team> TeamAPI::GetSelfInfo() const
+{
+    return logic.TeamGetSelfInfo();
+}
 
 std::future<bool> CharacterAPI::Move(int64_t moveTimeInMilliseconds, double angle)
 {
     return std::async(std::launch::async, [=]()
                       { return logic.Move(moveTimeInMilliseconds, angle); });
 }
-
 
 std::future<bool> CharacterAPI::MoveDown(int64_t timeInMilliseconds)
 {
@@ -209,86 +240,93 @@ std::future<bool> CharacterAPI::MoveDown(int64_t timeInMilliseconds)
 
 std::future<bool> CharacterAPI::MoveRight(int64_t timeInMilliseconds)
 {
-    return Move(timeInMilliseconds, PI * 0.5);
+    return Move(timeInMilliseconds, pi * 0.5);
 }
 
 std::future<bool> CharacterAPI::MoveUp(int64_t timeInMilliseconds)
 {
-    return Move(timeInMilliseconds, PI);
+    return Move(timeInMilliseconds, pi);
 }
 
 std::future<bool> CharacterAPI::MoveLeft(int64_t timeInMilliseconds)
 {
-    return Move(timeInMilliseconds, PI * 1.5);
+    return Move(timeInMilliseconds, pi * 1.5);
 }
+
 std::future<bool> CharacterAPI::Common_Attack(int64_t attackedPlayerID)
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Common_Attack(this->GetSelfInfo()->teamID, this->GetSelfInfo()->playerID, 0, attackedPlayerID); });
+    return std::async(std::launch::async, [this, attackedPlayerID]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID);
+                      });
 }
 
-std::future<bool> CharacterAPI::Skill_Attack(double angle)
-{
-    return std::async(std::launch::async, [=]()
-                      { return logic.Skill_Attack(this->GetSelfInfo()->teamID, this->GetSelfInfo()->playerID, angle); });
-}
-
-std::future <bool> CharacterAPI::AttackConstruction()
-{
-    return std::async(std::launch::async, [=]()
-                      { return logic.AttackConstruction(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID); });
-}
-
-std::future<bool> CharacterAPI::AttackAdditionResource()
-{
-    return std::async(std::launch::async, [=]()
-                      { return logic.AttackAdditionResource(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID); });
-}
 std::future<bool> CharacterAPI::Recover(int64_t recover)
 {
     return std::async(std::launch::async, [=]()
                       { return logic.Recover(recover); });
 }
 
-std::future<bool> CharacterAPI::Produce()
-{
-    return std::async(std::launch::async, [=]()
-                      { return logic.Produce(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID); });
-}
-
 std::future<bool> CharacterAPI::Harvest()
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Harvest(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID); });
+    return std::async(std::launch::async, [this]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Harvest(self->playerID, self->teamID);
+                      });
 }
 
 std::future<bool> CharacterAPI::Occupy()
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Occupy(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID); });
+    return std::async(std::launch::async, [this]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Occupy(self->playerID, self->teamID);
+                      });
 }
 
 std::future<bool> CharacterAPI::Load(THUAI9::GoodsType goodsType, int32_t amount)
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Load(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount); });
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Load(self->playerID, self->teamID, goodsType, amount);
+                      });
 }
 
 std::future<bool> CharacterAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Buy(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount); });
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Buy(self->playerID, self->teamID, goodsType, amount);
+                      });
 }
 
 std::future<bool> CharacterAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount)
 {
-    return std::async(std::launch::async, [=]()
-                      { return logic.Sell(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount); });
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Sell(self->playerID, self->teamID, goodsType, amount);
+                      });
 }
 
 bool CharacterAPI::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const
 {
-    auto selfInfo = GetSelfInfo();
     return logic.HaveView(x, y, newX, newY, viewRange, map);
 }
 
@@ -297,11 +335,10 @@ void CharacterAPI::Play(IAI& ai)
     ai.play(*this);
 }
 
-// Team独有
-std::future<bool> TeamAPI::BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex)
+std::future<bool> TeamAPI::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerID)
 {
     return std::async(std::launch::async, [=]()
-                      { return logic.BuildCharacter(CharacterType, birthIndex); });
+                      { return logic.BuildCharacter(characterType, playerID); });
 }
 
 std::future<bool> TeamAPI::ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum)

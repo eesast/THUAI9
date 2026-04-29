@@ -237,6 +237,7 @@ namespace THUAI9
         int64_t score;
         int64_t material;
         int64_t computePower;
+        int64_t factoryHP = 0;
     };
 
     struct Factory
@@ -295,10 +296,10 @@ namespace THUAI9
 
     struct GameMap
     {
-        // x,y,id,hp
         std::map<cellxy_t, Factory> factories;
         std::map<cellxy_t, Market> markets;
         std::map<cellxy_t, ComputeCenter> computeCenters;
+        std::map<cellxy_t, Resource> resources;
     };
 
     struct TeamGameInfo
@@ -312,7 +313,7 @@ namespace THUAI9
 
     struct GameInfo
     {
-        int32_t gameTime;
+        int32_t gameTime = 0;
         std::vector<TeamGameInfo> teams;
     };
 

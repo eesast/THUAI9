@@ -1,38 +1,44 @@
+#include <chrono>
+#include <ctime>
+#include <memory>
 #include <optional>
 #include <string>
+
 #include "AI.h"
 #include "API.h"
-#include "utils.hpp"
 #include "structures.h"
-#include <memory>
+#include "utils.hpp"
+
 #undef GetMessage
 #undef SendMessage
 #undef PeekMessage
 
-#define PI 3.14159265358979323846
-
-CharacterDebugAPI::CharacterDebugAPI(ILogic& logic, bool file, bool print, bool warnOnly, int32_t CharacterID, int32_t TeamID) :
-    logic(logic),
-    logger(nullptr)  // 显式初始化 logger 为 nullptr
+namespace
 {
-    std::string fileName = "logs/api-" + std::to_string(TeamID) + "-" + std::to_string(CharacterID) + "log.txt";
-    auto fileLogger = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName, true);
-    auto printLogger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    std::string pattern = "[api " + std::to_string(TeamID) + std::to_string(CharacterID) + "] [%H:%M:%S.%e] [%l] %v";
-    fileLogger->set_pattern(pattern);
-    printLogger->set_pattern(pattern);
-    if (file)
-        fileLogger->set_level(spdlog::level::trace);
-    else
-        fileLogger->set_level(spdlog::level::off);
-    if (print)
-        printLogger->set_level(spdlog::level::info);
-    else
-        printLogger->set_level(spdlog::level::off);
-    if (warnOnly)
-        printLogger->set_level(spdlog::level::warn);
-    logger = std::make_unique<spdlog::logger>("apiLogger", spdlog::sinks_init_list{fileLogger, printLogger});
-    logger->flush_on(spdlog::level::warn);
+    constexpr double pi = 3.14159265358979323846;
+
+    std::unique_ptr<spdlog::logger> CreateApiLogger(bool file, bool print, bool warnOnly, int32_t playerID, int32_t teamID)
+    {
+        const std::string fileName = "logs/api-" + std::to_string(teamID) + "-" + std::to_string(playerID) + "-log.txt";
+        auto fileLogger = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName, true);
+        auto printLogger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        const std::string pattern = "[api " + std::to_string(teamID) + "-" + std::to_string(playerID) + "] [%H:%M:%S.%e] [%l] %v";
+        fileLogger->set_pattern(pattern);
+        printLogger->set_pattern(pattern);
+        fileLogger->set_level(file ? spdlog::level::trace : spdlog::level::off);
+        printLogger->set_level(print ? spdlog::level::info : spdlog::level::off);
+        if (warnOnly)
+            printLogger->set_level(spdlog::level::warn);
+        auto logger = std::make_unique<spdlog::logger>("apiLogger-" + std::to_string(teamID) + "-" + std::to_string(playerID), spdlog::sinks_init_list{fileLogger, printLogger});
+        logger->flush_on(spdlog::level::warn);
+        return logger;
+    }
+}
+
+CharacterDebugAPI::CharacterDebugAPI(ILogic& logic, bool file, bool print, bool warnOnly, int32_t characterID, int32_t teamID) :
+    logger(CreateApiLogger(file, print, warnOnly, characterID, teamID)),
+    logic(logic)
+{
 }
 
 void CharacterDebugAPI::StartTimer()
@@ -48,360 +54,43 @@ void CharacterDebugAPI::EndTimer()
     logger->info("Time elapsed: {}ms", Time::TimeSinceStart(startPoint));
 }
 
-int32_t CharacterDebugAPI::GetFrameCount() const
+void CharacterDebugAPI::Play(IAI& ai)
 {
-    return logic.GetCounter();
+    ai.play(*this);
 }
 
 std::future<bool> CharacterDebugAPI::SendTextMessage(int32_t toID, std::string message)
 {
-    logger->info("SendTextMessage: toID = {}, message = {}, called at {}ms", toID, message, Time::TimeSinceStart(startPoint));
+    logger->info("SendTextMessage to {}", toID);
     return std::async(std::launch::async, [=, message = std::move(message)]()
-                      { auto result = logic.Send(toID, std::move(message), false);
-                        if (!result)
-                            logger->warn("SendTextMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+                      { return logic.Send(toID, std::move(message), false); });
 }
 
 std::future<bool> CharacterDebugAPI::SendBinaryMessage(int32_t toID, std::string message)
 {
-    logger->info("SendBinaryMessage: toID = {}, message = {}, called at {}ms", toID, message, Time::TimeSinceStart(startPoint));
+    logger->info("SendBinaryMessage to {}", toID);
     return std::async(std::launch::async, [=, message = std::move(message)]()
-                      { auto result = logic.Send(toID, std::move(message), true);
-                        if (!result)
-                            logger->warn("SendBinaryMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+                      { return logic.Send(toID, std::move(message), true); });
 }
 
 bool CharacterDebugAPI::HaveMessage()
 {
-    logger->info("HaveMessage: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.HaveMessage();
-    if (!result)
-        logger->warn("HaveMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-bool CharacterDebugAPI::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const
-{
-    auto selfInfo = GetSelfInfo();
-    return logic.HaveView(selfInfo->x, selfInfo->y, newX, newX, selfInfo->viewRange, map);
+    return logic.HaveMessage();
 }
 
 std::pair<int32_t, std::string> CharacterDebugAPI::GetMessage()
 {
-    logger->info("GetMessage: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetMessage();
-    if (result.first == -1)
-        logger->warn("GetMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
+    return logic.GetMessage();
 }
 
 bool CharacterDebugAPI::Wait()
 {
-    logger->info("Wait: called at {}ms", Time::TimeSinceStart(startPoint));
-    if (logic.GetCounter() == -1)
-        return false;
-    else
-        return logic.WaitThread();
+    return logic.GetCounter() != -1 && logic.WaitThread();
 }
 
-
-std::future<bool> CharacterDebugAPI::Move(int64_t timeInMilliseconds, double angleInRadian)
+int32_t CharacterDebugAPI::GetFrameCount() const
 {
-    logger->info("Move: timeInMilliseconds = {}, angleInRadian = {}, called at {}ms", timeInMilliseconds, angleInRadian, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Move(timeInMilliseconds, angleInRadian);
-                        if (!result)
-                            logger->warn("Move: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-
-std::future<bool> CharacterDebugAPI::MoveDown(int64_t timeInMilliseconds)
-{
-    return Move(timeInMilliseconds, 0);  
-}
-
-std::future<bool> CharacterDebugAPI::MoveRight(int64_t timeInMilliseconds)
-{
-    return Move(timeInMilliseconds, PI * 0.5);  
-}
-
-std::future<bool> CharacterDebugAPI::MoveUp(int64_t timeInMilliseconds)
-{
-    return Move(timeInMilliseconds, PI);  
-}
-
-std::future<bool> CharacterDebugAPI::MoveLeft(int64_t timeInMilliseconds)
-{
-    return Move(timeInMilliseconds, PI * 1.5);
-}
-
-std::future<bool> CharacterDebugAPI::Skill_Attack(double angle)
-{
-    logger->info("Skill_Attack: player={}, teamID={}, called@{}ms", this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      {
-        auto result = logic.Skill_Attack(this->GetSelfInfo()->teamID,this->GetSelfInfo()->playerID,angle); // 改为传递玩家ID
-        if (!result)
-            logger->warn("Skill_Attack failed@{}ms", Time::TimeSinceStart(startPoint));
-        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::Common_Attack(int64_t attackedPlayerID)
-{
-    logger->info("characterID={}, teamID={}, Common_Attack: target={}, called@{}ms", this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, attackedPlayerID, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      {
-        auto result = logic.Common_Attack(this->GetSelfInfo()->teamID,this->GetSelfInfo()->playerID,0, attackedPlayerID); // 改为传递玩家ID
-        if (!result)
-            logger->warn("Common_Attack failed@{}ms", Time::TimeSinceStart(startPoint));
-        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::AttackConstruction()
-{
-    logger->info("AttackConstruction: teamID = {}, characterID = {}, called at {}ms", this->GetSelfInfo()->teamID, this->GetSelfInfo()->playerID, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.AttackConstruction(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID);
-                        if (!result)
-                            logger->warn("AttackConstruction: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::AttackAdditionResource()
-{
-    logger->info("AttackAdditionResource: teamID = {}, characterID = {}, called at {}ms", this->GetSelfInfo()->teamID, this->GetSelfInfo()->playerID, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.AttackAdditionResource(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID);
-                        if (!result)
-                            logger->warn("AttackAdditionResource: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::Recover(int64_t recover)
-{
-    logger->info("Recover: recover = {}, called at {}ms", recover, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Recover(recover);
-                        if (!result)
-                            logger->warn("Recover: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-std::future<bool> CharacterDebugAPI::Produce()
-{
-    logger->info("Harvest: called at {}ms", Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Produce(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID);
-                        if (!result)
-                            logger->warn("Harvest: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-
-std::future<bool> CharacterDebugAPI::Construct(THUAI9::ConstructionType constructionType)
-{
-    logger->info("Construct: constructionType = {}, called at {}ms", THUAI9::constructionDict.at(constructionType), Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Construct(constructionType);
-                        if (!result)
-                            logger->warn("Construct: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::ConstructTrap(THUAI9::TrapType trapType)
-{
-    logger->info("ConstructTrap: trapType = {}, called at {}ms", THUAI9::trapTypeDict.at(trapType), Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.ConstructTrap(trapType);
-                        if (!result)
-                            logger->warn("ConstructTrap: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::vector<std::shared_ptr<const THUAI9::Character>> CharacterDebugAPI::GetCharacters() const
-{
-    logger->info("GetCharacters: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetCharacters();
-    if (result.empty())
-        logger->warn("GetCharacters: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<std::shared_ptr<const THUAI9::Character>> CharacterDebugAPI::GetEnemyCharacters() const
-{
-    logger->info("GetEnemyCharacters: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetEnemyCharacters();
-    if (result.empty())
-        logger->warn("GetEnemyCharacters: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<std::vector<THUAI9::PlaceType>> CharacterDebugAPI::GetFullMap() const
-{
-    logger->info("GetFullMap: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetFullMap();
-    if (result.empty())
-        logger->warn("GetFullMap: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::shared_ptr<const THUAI9::GameInfo> CharacterDebugAPI::GetGameInfo() const
-{
-    logger->info("GetGameInfo: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetGameInfo();
-    if (result == nullptr)
-        logger->warn("GetGameInfo: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::optional<THUAI9::EconomyResource> CharacterDebugAPI::GetEconomyResourceState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetEconomyResourceState(cellX, cellY);
-    logger->info("GetEconomyResourceState: teamID = {}, process = {}, type = {}, cellX = {}, cellY = {}, called at {}ms",result->team_id, result->process, THUAI9::economyResourceTypeDict.at(result->economyResourceType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetEconomyResourceState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::optional<THUAI9::AdditionResource> CharacterDebugAPI::GetAdditionResourceState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetAdditionResourceState(cellX, cellY);
-    logger->info("GetAdditionResourceState: teamID = {}, hp = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->hp, THUAI9::additionResourceTypeDict.at(result->additionResourceType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetAdditionResourceState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-std::optional<THUAI9::AdditionResource> TeamDebugAPI::GetAdditionResourceState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetAdditionResourceState(cellX, cellY);
-    logger->info("GetAdditionResourceState: teamID = {}, hp = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->hp, THUAI9::additionResourceTypeDict.at(result->additionResourceType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetAdditionResourceState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-std::optional<THUAI9::ConstructionState> CharacterDebugAPI::GetConstructionState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetConstructionState(cellX, cellY);
-    logger->info("GetConstructionState: teamID = {},  hp = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->hp, THUAI9::constructionTypeDict.at(result->constructionType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetConstructionState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::optional<THUAI9::Trap> CharacterDebugAPI::GetTrapState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetTrapState(cellX, cellY);
-    logger->info("GetTrapState: teamID = {},  valid or not = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->trap_valid, THUAI9::trapTypeDict.at(result->trapType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetTrapState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<int64_t> CharacterDebugAPI::GetPlayerGUIDs() const
-{
-    logger->info("GetPlayerGUIDs: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetPlayerGUIDs();
-    if (result.empty())
-        logger->warn("GetPlayerGUIDs: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-int32_t CharacterDebugAPI::GetEnergy() const
-{
-    logger->info("GetEnergy: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetEnergy();
-    if (result == -1)
-        logger->warn("GetEnergy: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-int32_t CharacterDebugAPI::GetScore() const
-{
-    logger->info("GetScore: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetScore();
-    if (result == -1)
-        logger->warn("GetScore: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::shared_ptr<const THUAI9::Character> CharacterDebugAPI::GetSelfInfo() const
-{
-    logger->info("GetSelfInfo: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.CharacterGetSelfInfo();
-    if (result == nullptr)
-        logger->warn("GetSelfInfo: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-/*bool CharacterDebugAPI::HaveView(int32_t targetX, int32_t targetY) const
-{
-    logger->info("HaveView: targetX = {}, targetY = {}, called at {}ms", targetX, targetY, Time::TimeSinceStart(startPoint));
-    auto result = logic.HaveView(targetX, targetY);
-    if (!result)
-        logger->warn("HaveView: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}*/
-
-void CharacterDebugAPI::Print(std::string str) const
-{
-    logger->info(str);
-}
-
-// facing direction存疑
-void CharacterDebugAPI::PrintCharacter() const
-{
-    for (const auto& Character : logic.GetCharacters())
-    {
-        logger->info("******Character Info******");
-
-        // 确保字典返回值是 std::string
-        std::string characterType = THUAI9::characterTypeDict.at(Character->characterType);
-
-        // 确保成员存在并类型正确
-        int characterID = Character->playerID;
-        int guid = Character->guid;
-        int x = Character->x;
-        int y = Character->y;
-
-        logger->info("type={}, characterID={}, GUID={}, x={}, y={}", characterType, characterID, guid, x, y);
-
-        // 确保字典返回值是 std::string
-        std::string characterActiveState = THUAI9::characterStateDict.at(Character->characterActiveState);
-        std::string characterPassiveState = THUAI9::characterStateDict.at(Character->characterPassiveState);
-        // 确保成员存在并类型正确
-        int speed = Character->speed;
-        int viewRange = Character->viewRange;
-        double facingDirection = Character->facingDirection;
-
-        logger->info("Activestate={}, PassiveState={}, speed={}, view range={}, facing direction={}", characterActiveState, characterPassiveState, speed, viewRange, facingDirection);
-        logger->info("************************\n");
-    }
-}
-
-void CharacterDebugAPI::PrintSelfInfo() const
-{
-    auto self = logic.CharacterGetSelfInfo();
-    if (!self)  // 检查 self 是否为空指针
-    {
-        logger->warn("PrintSelfInfo: self is null");
-        return;
-    }
-
-    logger->info("******Self Info******");
-
-    // 确保字典返回值是 std::string
-    std::string characterType = THUAI9::characterTypeDict.at(self->characterType);
-    std::string characterActiveState = THUAI9::characterStateDict.at(self->characterActiveState);
-    std::string characterPassiveState = THUAI9::characterStateDict.at(self->characterPassiveState);
-
-    // 打印基本信息
-    logger->info("type={}, characterID={}, teamID={}, GUID={}, x={}, y={}", characterType, self->playerID, self->teamID, self->guid, self->x, self->y);
-
-    // 打印状态信息
-    logger->info("activestate={}, passivestate={}, speed={}, view range={}, facing direction={}", characterActiveState, characterPassiveState, self->speed, self->viewRange, self->facingDirection);
-
-    logger->info("************************\n");
+    return logic.GetCounter();
 }
 
 std::future<bool> CharacterDebugAPI::EndAllAction()
@@ -410,26 +99,207 @@ std::future<bool> CharacterDebugAPI::EndAllAction()
                       { return logic.EndAllAction(); });
 }
 
+std::future<bool> CharacterDebugAPI::Move(int64_t moveTimeInMilliseconds, double angle)
+{
+    logger->info("Move {} ms", moveTimeInMilliseconds);
+    return std::async(std::launch::async, [=]()
+                      { return logic.Move(moveTimeInMilliseconds, angle); });
+}
+
+std::future<bool> CharacterDebugAPI::MoveRight(int64_t timeInMilliseconds)
+{
+    return Move(timeInMilliseconds, pi * 0.5);
+}
+
+std::future<bool> CharacterDebugAPI::MoveUp(int64_t timeInMilliseconds)
+{
+    return Move(timeInMilliseconds, pi);
+}
+
+std::future<bool> CharacterDebugAPI::MoveLeft(int64_t timeInMilliseconds)
+{
+    return Move(timeInMilliseconds, pi * 1.5);
+}
+
+std::future<bool> CharacterDebugAPI::MoveDown(int64_t timeInMilliseconds)
+{
+    return Move(timeInMilliseconds, 0);
+}
+
+std::future<bool> CharacterDebugAPI::Common_Attack(int64_t attackedPlayerID)
+{
+    logger->info("Common_Attack {}", attackedPlayerID);
+    return std::async(std::launch::async, [this, attackedPlayerID]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID);
+                      });
+}
+
+std::future<bool> CharacterDebugAPI::Recover(int64_t recover)
+{
+    logger->info("Recover {}", recover);
+    return std::async(std::launch::async, [=]()
+                      { return logic.Recover(recover); });
+}
+
+std::future<bool> CharacterDebugAPI::Harvest()
+{
+    return std::async(std::launch::async, [this]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Harvest(self->playerID, self->teamID);
+                      });
+}
+
+std::future<bool> CharacterDebugAPI::Occupy()
+{
+    return std::async(std::launch::async, [this]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Occupy(self->playerID, self->teamID);
+                      });
+}
+
+std::future<bool> CharacterDebugAPI::Load(THUAI9::GoodsType goodsType, int32_t amount)
+{
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Load(self->playerID, self->teamID, goodsType, amount);
+                      });
+}
+
+std::future<bool> CharacterDebugAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
+{
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Buy(self->playerID, self->teamID, goodsType, amount);
+                      });
+}
+
+std::future<bool> CharacterDebugAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount)
+{
+    return std::async(std::launch::async, [this, goodsType, amount]()
+                      {
+                          auto self = GetSelfInfo();
+                          if (!self)
+                              return false;
+                          return logic.Sell(self->playerID, self->teamID, goodsType, amount);
+                      });
+}
+
+std::vector<std::shared_ptr<const THUAI9::Character>> CharacterDebugAPI::GetCharacters() const
+{
+    return logic.GetCharacters();
+}
+
+std::vector<std::shared_ptr<const THUAI9::Character>> CharacterDebugAPI::GetEnemyCharacters() const
+{
+    return logic.GetEnemyCharacters();
+}
+
+std::vector<std::vector<THUAI9::PlaceType>> CharacterDebugAPI::GetFullMap() const
+{
+    return logic.GetFullMap();
+}
+
+std::shared_ptr<const THUAI9::GameInfo> CharacterDebugAPI::GetGameInfo() const
+{
+    return logic.GetGameInfo();
+}
+
+THUAI9::PlaceType CharacterDebugAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetPlaceType(cellX, cellY);
+}
+
+std::optional<THUAI9::Resource> CharacterDebugAPI::GetResourceState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetResourceState(cellX, cellY);
+}
+
+std::optional<THUAI9::ComputeCenter> CharacterDebugAPI::GetComputeCenterState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetComputeCenterState(cellX, cellY);
+}
+
+std::optional<THUAI9::Market> CharacterDebugAPI::GetMarketState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetMarketState(cellX, cellY);
+}
+
+std::optional<THUAI9::Factory> CharacterDebugAPI::GetFactoryState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetFactoryState(cellX, cellY);
+}
+
+std::vector<int64_t> CharacterDebugAPI::GetPlayerGUIDs() const
+{
+    return logic.GetPlayerGUIDs();
+}
+
+int32_t CharacterDebugAPI::GetComputingPower() const
+{
+    return logic.GetComputingPower();
+}
+
+int32_t CharacterDebugAPI::GetMaterial() const
+{
+    return logic.GetMaterial();
+}
+
+int32_t CharacterDebugAPI::GetScore() const
+{
+    return logic.GetScore();
+}
+
+std::shared_ptr<const THUAI9::Character> CharacterDebugAPI::GetSelfInfo() const
+{
+    return logic.CharacterGetSelfInfo();
+}
+
+bool CharacterDebugAPI::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const
+{
+    return logic.HaveView(x, y, newX, newY, viewRange, map);
+}
+
+void CharacterDebugAPI::Print(std::string str) const
+{
+    logger->info("{}", str);
+}
+
+void CharacterDebugAPI::PrintCharacter() const
+{
+    for (const auto& character : logic.GetCharacters())
+    {
+        logger->info("Character id={}, team={}, type={}, pos=({}, {})", character->playerID, character->teamID, character->characterType, character->x, character->y);
+    }
+}
+
+void CharacterDebugAPI::PrintSelfInfo() const
+{
+    auto self = logic.CharacterGetSelfInfo();
+    if (!self)
+        return;
+    logger->info("Self id={}, team={}, type={}, pos=({}, {})", self->playerID, self->teamID, self->characterType, self->x, self->y);
+}
+
 TeamDebugAPI::TeamDebugAPI(ILogic& logic, bool file, bool print, bool warnOnly, int32_t playerID, int32_t teamID) :
+    logger(CreateApiLogger(file, print, warnOnly, playerID, teamID)),
     logic(logic)
 {
-    std::string fileName = "logs/api-" + std::to_string(playerID) + "-" + std::to_string(teamID) + "-log.txt";
-    auto fileLogger = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName, true);
-    auto printLogger = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    std::string pattern = "[api" + std::to_string(playerID) + "] [%H:%M:%S.%e] [%l] %v";
-    fileLogger->set_pattern(pattern);
-    printLogger->set_pattern(pattern);
-    if (file)
-        fileLogger->set_level(spdlog::level::trace);
-    else
-        fileLogger->set_level(spdlog::level::off);
-    if (print)
-        printLogger->set_level(spdlog::level::info);
-    else
-        printLogger->set_level(spdlog::level::off);
-    if (warnOnly)
-        printLogger->set_level(spdlog::level::warn);
-    logger = std::make_unique<spdlog::logger>("apiLogger", spdlog::sinks_init_list{fileLogger, printLogger});
 }
 
 void TeamDebugAPI::StartTimer()
@@ -445,214 +315,41 @@ void TeamDebugAPI::EndTimer()
     logger->info("Time elapsed: {}ms", Time::TimeSinceStart(startPoint));
 }
 
-int32_t TeamDebugAPI::GetFrameCount() const
-{
-    return logic.GetCounter();
-}
-
-std::future<bool> TeamDebugAPI::SendTextMessage(int32_t toID, std::string message)
-{
-    logger->info("SendTextMessage: toID = {}, message = {}, called at {}ms", toID, message, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=, message = std::move(message)]()
-                      { auto result = logic.Send(toID, std::move(message), false);
-                        if (!result)
-                            logger->warn("SendTextMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> TeamDebugAPI::SendBinaryMessage(int32_t toID, std::string message)
-{
-    logger->info("SendBinaryMessage: toID = {}, message = {}, called at {}ms", toID, message, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=, message = std::move(message)]()
-                      { auto result = logic.Send(toID, std::move(message), true);
-                        if (!result)
-                            logger->warn("SendBinaryMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-bool TeamDebugAPI::HaveMessage()
-{
-    logger->info("HaveMessage: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.HaveMessage();
-    if (!result)
-        logger->warn("HaveMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::pair<int32_t, std::string> TeamDebugAPI::GetMessage()
-{
-    logger->info("GetMessage: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetMessage();
-    if (result.first == -1)
-        logger->warn("GetMessage: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-bool TeamDebugAPI::Wait()
-{
-    logger->info("Wait: called at {}ms", Time::TimeSinceStart(startPoint));
-    if (logic.GetCounter() == -1)
-        return false;
-    else
-        return logic.WaitThread();
-}
-
-std::vector<std::shared_ptr<const THUAI9::Character>> TeamDebugAPI::GetCharacters() const
-{
-    logger->info("GetCharacters: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetCharacters();
-    if (result.empty())
-        logger->warn("GetCharacters: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<std::shared_ptr<const THUAI9::Character>> TeamDebugAPI::GetEnemyCharacters() const
-{
-    logger->info("GetEnemyCharacters: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetEnemyCharacters();
-    if (result.empty())
-        logger->warn("GetEnemyCharacters: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<std::vector<THUAI9::PlaceType>> TeamDebugAPI::GetFullMap() const
-{
-    logger->info("GetFullMap: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetFullMap();
-    if (result.empty())
-        logger->warn("GetFullMap: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::shared_ptr<const THUAI9::GameInfo> TeamDebugAPI::GetGameInfo() const
-{
-    logger->info("GetGameInfo: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetGameInfo();
-    if (result == nullptr)
-        logger->warn("GetGameInfo: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-THUAI9::PlaceType TeamDebugAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
-{
-    logger->info("GetPlaceType: cellX = {}, cellY = {}, called at {}ms", cellX, cellY, Time::TimeSinceStart(startPoint));
-    THUAI9::PlaceType result = logic.GetPlaceType(cellX, cellY);  // 直接获取返回值
-    if (result == THUAI9::PlaceType::NullPlaceType)               // 假设 Unknown 是一个表示失败的默认值
-    {
-        logger->warn("GetPlaceType: failed at {}ms", Time::TimeSinceStart(startPoint));
-        throw std::runtime_error("GetPlaceType failed");  // 如果失败，抛出异常
-    }
-    return result;  // 返回实际值
-}
-
-std::optional<THUAI9::EconomyResource> TeamDebugAPI::GetEconomyResourceState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetEconomyResourceState(cellX, cellY);
-    logger->info("GetEconomyResourceState: teamID = {}, process = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->process, THUAI9::economyResourceTypeDict.at(result->economyResourceType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetEconomyResourceState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::optional<THUAI9::ConstructionState> TeamDebugAPI::GetConstructionState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetConstructionState(cellX, cellY);
-    logger->info("GetConstructionState: teamID = {},  hp = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->hp, THUAI9::constructionTypeDict.at(result->constructionType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetConstructionState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-
-std::optional<THUAI9::Trap> TeamDebugAPI::GetTrapState(int32_t cellX, int32_t cellY) const
-{
-    auto result = logic.GetTrapState(cellX, cellY);
-    logger->info("GetTrapState: teamID = {},  valid or not = {}, type = {}, cellX = {}, cellY = {}, called at {}ms", result->team_id, result->trap_valid, THUAI9::trapTypeDict.at(result->trapType), cellX, cellY, Time::TimeSinceStart(startPoint));
-    if (!result)
-        logger->warn("GetTrapState: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::vector<int64_t> TeamDebugAPI::GetPlayerGUIDs() const
-{
-    logger->info("GetPlayerGUIDs: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetPlayerGUIDs();
-    if (result.empty())
-        logger->warn("GetPlayerGUIDs: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-int32_t TeamDebugAPI::GetEnergy() const
-{
-    logger->info("GetEnergy: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetEnergy();
-    if (result == -1)
-        logger->warn("GetEnergy: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-int32_t TeamDebugAPI::GetScore() const
-{
-    logger->info("GetScore: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetScore();
-    if (result == -1)
-        logger->warn("GetScore: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
-}
-
-std::shared_ptr<const THUAI9::Team> TeamDebugAPI::GetSelfInfo() const
-{
-    logger->info("GetSelfInfo: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.TeamGetSelfInfo();  // 调用正确的逻辑函数
-    if (result == nullptr)
-    {
-        logger->warn("GetSelfInfo: failed at {}ms", Time::TimeSinceStart(startPoint));
-    }
-    return result;
-}
-
-std::future<bool> TeamDebugAPI::InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype)
-{
-    logger->info("InstallEquipment: playerID = {}, equipmenttype = {}, called at {}ms", playerID, equipmenttype, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.InstallEquipment(playerID, equipmenttype);
-                        if (!result)
-                            logger->warn("InstallEquipment: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-// recycle暂时闲置
-std::future<bool> TeamDebugAPI::BuildCharacter(THUAI9::CharacterType characterType, int32_t birthIndex)
-{
-    logger->info("BuildCharacter: characterType = {}, birthIndex = {}, called at {}ms", characterType, birthIndex, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.BuildCharacter(characterType, birthIndex);
-                        if (!result)
-                            logger->warn("BuildCharacter: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-void TeamDebugAPI::PrintSelfInfo() const
-{
-    auto Team = logic.TeamGetSelfInfo();
-    logger->info("******Self Info******");
-    logger->info("teamID={}, playerID={}, score={}, energy={}", Team->teamID, Team->playerID, Team->score, Team->energy);
-    logger->info("*********************\n");
-}
-
-void CharacterDebugAPI::Play(IAI& ai)
-{
-    ai.play(*this);
-}
-
 void TeamDebugAPI::Play(IAI& ai)
 {
     ai.play(*this);
 }
 
-void TeamDebugAPI::Print(std::string str) const
+std::future<bool> TeamDebugAPI::SendTextMessage(int32_t toID, std::string message)
 {
-    logger->info(str);
+    return std::async(std::launch::async, [=, message = std::move(message)]()
+                      { return logic.Send(toID, std::move(message), false); });
+}
+
+std::future<bool> TeamDebugAPI::SendBinaryMessage(int32_t toID, std::string message)
+{
+    return std::async(std::launch::async, [=, message = std::move(message)]()
+                      { return logic.Send(toID, std::move(message), true); });
+}
+
+bool TeamDebugAPI::HaveMessage()
+{
+    return logic.HaveMessage();
+}
+
+std::pair<int32_t, std::string> TeamDebugAPI::GetMessage()
+{
+    return logic.GetMessage();
+}
+
+bool TeamDebugAPI::Wait()
+{
+    return logic.GetCounter() != -1 && logic.WaitThread();
+}
+
+int32_t TeamDebugAPI::GetFrameCount() const
+{
+    return logic.GetCounter();
 }
 
 std::future<bool> TeamDebugAPI::EndAllAction()
@@ -661,90 +358,103 @@ std::future<bool> TeamDebugAPI::EndAllAction()
                       { return logic.EndAllAction(); });
 }
 
-int32_t CharacterDebugAPI::GetMaterial() const
+std::vector<std::shared_ptr<const THUAI9::Character>> TeamDebugAPI::GetCharacters() const
 {
-    logger->info("GetMaterial: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetMaterial();
-    if (result == -1)
-        logger->warn("GetMaterial: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
+    return logic.GetCharacters();
+}
+
+std::vector<std::shared_ptr<const THUAI9::Character>> TeamDebugAPI::GetEnemyCharacters() const
+{
+    return logic.GetEnemyCharacters();
+}
+
+std::vector<std::vector<THUAI9::PlaceType>> TeamDebugAPI::GetFullMap() const
+{
+    return logic.GetFullMap();
+}
+
+std::shared_ptr<const THUAI9::GameInfo> TeamDebugAPI::GetGameInfo() const
+{
+    return logic.GetGameInfo();
+}
+
+THUAI9::PlaceType TeamDebugAPI::GetPlaceType(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetPlaceType(cellX, cellY);
+}
+
+std::optional<THUAI9::Resource> TeamDebugAPI::GetResourceState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetResourceState(cellX, cellY);
+}
+
+std::optional<THUAI9::ComputeCenter> TeamDebugAPI::GetComputeCenterState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetComputeCenterState(cellX, cellY);
+}
+
+std::optional<THUAI9::Market> TeamDebugAPI::GetMarketState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetMarketState(cellX, cellY);
+}
+
+std::optional<THUAI9::Factory> TeamDebugAPI::GetFactoryState(int32_t cellX, int32_t cellY) const
+{
+    return logic.GetFactoryState(cellX, cellY);
+}
+
+std::vector<int64_t> TeamDebugAPI::GetPlayerGUIDs() const
+{
+    return logic.GetPlayerGUIDs();
+}
+
+int32_t TeamDebugAPI::GetComputingPower() const
+{
+    return logic.GetComputingPower();
 }
 
 int32_t TeamDebugAPI::GetMaterial() const
 {
-    logger->info("GetMaterial: called at {}ms", Time::TimeSinceStart(startPoint));
-    auto result = logic.GetMaterial();
-    if (result == -1)
-        logger->warn("GetMaterial: failed at {}ms", Time::TimeSinceStart(startPoint));
-    return result;
+    return logic.GetMaterial();
 }
 
-std::future<bool> CharacterDebugAPI::Harvest()
+int32_t TeamDebugAPI::GetScore() const
 {
-    logger->info("Harvest: called at {}ms", Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Harvest(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID);
-                        if (!result)
-                            logger->warn("Harvest: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+    return logic.GetScore();
 }
 
-std::future<bool> CharacterDebugAPI::Occupy()
+std::shared_ptr<const THUAI9::Team> TeamDebugAPI::GetSelfInfo() const
 {
-    logger->info("Occupy: called at {}ms", Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Occupy(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID);
-                        if (!result)
-                            logger->warn("Occupy: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+    return logic.TeamGetSelfInfo();
 }
 
-std::future<bool> CharacterDebugAPI::Load(THUAI9::GoodsType goodsType, int32_t amount)
+std::future<bool> TeamDebugAPI::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerID)
 {
-    logger->info("Load: goodsType = {}, amount = {}, called at {}ms", static_cast<int>(goodsType), amount, Time::TimeSinceStart(startPoint));
     return std::async(std::launch::async, [=]()
-                      { auto result = logic.Load(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount);
-                        if (!result)
-                            logger->warn("Load: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
-{
-    logger->info("Buy: goodsType = {}, amount = {}, called at {}ms", static_cast<int>(goodsType), amount, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Buy(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount);
-                        if (!result)
-                            logger->warn("Buy: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
-}
-
-std::future<bool> CharacterDebugAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount)
-{
-    logger->info("Sell: goodsType = {}, amount = {}, called at {}ms", static_cast<int>(goodsType), amount, Time::TimeSinceStart(startPoint));
-    return std::async(std::launch::async, [=]()
-                      { auto result = logic.Sell(this->GetSelfInfo()->playerID, this->GetSelfInfo()->teamID, goodsType, amount);
-                        if (!result)
-                            logger->warn("Sell: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+                      { return logic.BuildCharacter(characterType, playerID); });
 }
 
 std::future<bool> TeamDebugAPI::ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum)
 {
-    logger->info("ProduceGoods: goodsType = {}, maxProduceNum = {}, called at {}ms", static_cast<int>(goodsType), maxProduceNum, Time::TimeSinceStart(startPoint));
     return std::async(std::launch::async, [=]()
-                      { auto result = logic.ProduceGoods(goodsType, maxProduceNum);
-                        if (!result)
-                            logger->warn("ProduceGoods: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+                      { return logic.ProduceGoods(goodsType, maxProduceNum); });
 }
 
 std::future<bool> TeamDebugAPI::UplevelTech(THUAI9::TechType techType)
 {
-    logger->info("UplevelTech: techType = {}, called at {}ms", static_cast<int>(techType), Time::TimeSinceStart(startPoint));
     return std::async(std::launch::async, [=]()
-                      { auto result = logic.UplevelTech(techType);
-                        if (!result)
-                            logger->warn("UplevelTech: failed at {}ms", Time::TimeSinceStart(startPoint));
-                        return result; });
+                      { return logic.UplevelTech(techType); });
+}
+
+void TeamDebugAPI::Print(std::string str) const
+{
+    logger->info("{}", str);
+}
+
+void TeamDebugAPI::PrintSelfInfo() const
+{
+    auto team = logic.TeamGetSelfInfo();
+    if (!team)
+        return;
+    logger->info("Team id={}, score={}, material={}, computePower={}", team->teamID, team->score, team->material, team->computePower);
 }

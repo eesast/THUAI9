@@ -42,12 +42,11 @@ public:
     bool Occupy(int64_t playerID, int64_t teamID);
     bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount, bool isBuy);
-    bool Skill_Attack(int64_t playerID, int64_t teamID, double angle);
     bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
     bool Send(int32_t playerID, int32_t toPlayerID, int32_t teamID, std::string message, bool binary);
 
     // Team
-    bool CreateCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType CharacterType);
+    bool BuildCharacter(int32_t teamID, int32_t playerID, THUAI9::CharacterType CharacterType);
     bool ProduceGoods(int64_t teamID, THUAI9::GoodsType goodsType, int32_t maxProduceNum);
     bool UplevelTech(int64_t teamID, THUAI9::TechType techType);
 
