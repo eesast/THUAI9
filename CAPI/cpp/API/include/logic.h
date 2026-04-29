@@ -46,12 +46,12 @@ private:
     std::unique_ptr<Communication> pComm;
 
     // ID
-    THUAI8::PlayerType playerType;
+    THUAI9::PlayerType playerType;
     int32_t playerID;
     int32_t teamID;
     bool side_flag;
-    THUAI8::PlayerTeam playerTeam;
-    THUAI8::CharacterType CharacterType;
+    THUAI9::PlayerTeam playerTeam;
+    THUAI9::CharacterType CharacterType;
     std::unique_ptr<IGameTimer> timer;
     std::thread tAI;  // 用于运行AI的线程
 
@@ -74,7 +74,7 @@ private:
     int32_t counterState = 0;
     int32_t counterBuffer = 0;
 
-    THUAI8::GameState gameState = THUAI8::GameState::NullGameState;
+    THUAI9::GameState gameState = THUAI9::GameState::NullGameState;
 
     // 是否应该执行player()
     std::atomic_bool AILoop = true;
@@ -90,19 +90,20 @@ private:
 
     // 提供给API使用的函数
 
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Character> CharacterGetSelfInfo() const;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Team> TeamGetSelfInfo() const;  // 该行代码若有问题待后续改进
-    [[nodiscard]] std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const;
-    [[nodiscard]] std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Character> CharacterGetSelfInfo() const;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Team> TeamGetSelfInfo() const;  // 该行代码若有问题待后续改进
+    [[nodiscard]] std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const;
+    [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const;
-    [[nodiscard]] THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const;
-    [[nodiscard]] std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const;
+    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const;
     [[nodiscard]] int32_t GetEnergy() const;
+    [[nodiscard]] int32_t GetMaterial() const;
     [[nodiscard]] int32_t GetScore() const;
 
     // 供IAPI是使用的操作相关的部分
@@ -115,22 +116,29 @@ private:
 
     // ICharacterAPI使用的部分
     bool Move(int64_t moveTimeInMilliseconds, double angle);
+    bool Harvest(int64_t playerID, int64_t teamID);
+    bool Occupy(int64_t playerID, int64_t teamID);
+    bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
+    bool Buy(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
+    bool Sell(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount);
     bool Skill_Attack(int64_t teamID, int64_t playerID, double angleInRadian);
     bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID);
     bool AttackConstruction(int64_t playerID, int64_t teamID);
     bool AttackAdditionResource(int64_t playerID, int64_t teamID);
     bool Recover(int64_t recover);
     bool Produce(int64_t playerID, int64_t teamID);
-    // bool Rebuild(THUAI8::ConstructionType constructionType);
-    bool Construct(THUAI8::ConstructionType constructionType);
-    bool ConstructTrap(THUAI8::TrapType trapType);
+    // bool Rebuild(THUAI9::ConstructionType constructionType);
+    bool Construct(THUAI9::ConstructionType constructionType);
+    bool ConstructTrap(THUAI9::TrapType trapType);
 
-    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const;
+    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const;
 
     // ITeamAPI
-    bool InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmenttype);
+    bool InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype);
     // bool Recycle(int32_t playerID,int32_t targetID);
-    bool BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex);
+    bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex);
+    bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum);
+    bool UplevelTech(THUAI9::TechType techType);
 
     bool TryConnection();
     void ProcessMessage();
@@ -150,7 +158,7 @@ private:
     void Wait() noexcept;
 
 public:
-    Logic(int32_t playerID, int32_t teamID, THUAI8::PlayerType playerType, THUAI8::CharacterType CharacterType, bool side_flag);
+    Logic(int32_t playerID, int32_t teamID, THUAI9::PlayerType playerType, THUAI9::CharacterType CharacterType, bool side_flag);
 
     ~Logic()
     {

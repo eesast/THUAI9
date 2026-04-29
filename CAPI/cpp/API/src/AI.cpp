@@ -1,4 +1,4 @@
-#include <vector>
+﻿#include <vector>
 #include <thread>
 #include <array>
 #include <map>
@@ -9,32 +9,23 @@
 // 为假则play()期间确保游戏状态不更新，为真则只保证游戏状态在调用相关方法时不更新，大致一帧更新一次
 extern const bool asynchronous = false;
 
-// 选手需要依次将player1到player5的角色类型在这里定义
-extern const std::array<THUAI8::CharacterType, 6> BuddhistsCharacterTypeDict = {
-    THUAI8::CharacterType::TangSeng,
-    THUAI8::CharacterType::SunWukong,
-    THUAI8::CharacterType::ZhuBajie,
-    THUAI8::CharacterType::ShaWujing,
-    THUAI8::CharacterType::BaiLongma,
-    THUAI8::CharacterType::Monkid,
+// 选手需要依次将player1到player3的角色类型在这里定义
+extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict = {
+    THUAI9::CharacterType::Robot,
+    THUAI9::CharacterType::Drone,
+    THUAI9::CharacterType::AutonomousCar,
 };
 
-extern const std::array<THUAI8::CharacterType, 6> MonstersCharacterTypeDict = {
-    THUAI8::CharacterType::JiuLing,
-    THUAI8::CharacterType::HongHaier,
-    THUAI8::CharacterType::NiuMowang,
-    THUAI8::CharacterType::TieShan,
-    THUAI8::CharacterType::ZhiZhujing,
-    THUAI8::CharacterType::Pawn,
+// 为所有AI定义提供的默认参数，在选手实现AI之前是按照这个默认参数运行的。
+
+const std::vector<THUAI9::CharacterType> CharacterTypeDict = {
+    THUAI9::CharacterType::Robot,
+    THUAI9::CharacterType::Drone,
+    THUAI9::CharacterType::AutonomousCar,
 };
 
-// 可以在AI.cpp内部声明变量与函数
-
-std::shared_ptr<const THUAI8::Character> selfinfo;
-std::vector<std::vector<THUAI8::PlaceType>> mapinfo;
-
-
-
+std::shared_ptr<const THUAI9::Character> selfinfo;
+std::vector<std::vector<THUAI9::PlaceType>> mapinfo;
 
 void AI::play(ICharacterAPI& api)
 {
@@ -52,14 +43,6 @@ void AI::play(ICharacterAPI& api)
     else if (this->playerID == 3)
     {
         // player3的操作
-    }
-    else if (this->playerID == 4)
-    {
-        // player4的操作
-    }
-    else if (this->playerID == 5)
-    {
-        // player5的操作
     }
 }
 

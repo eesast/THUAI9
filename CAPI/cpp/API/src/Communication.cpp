@@ -1,10 +1,11 @@
-#include "Communication.h"
-#include "utils.hpp"
+﻿#include "Communication.h"
+
 #include "structures.h"
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include "utils.hpp"
+
 #include <memory>
+#include <mutex>
+#include <thread>
 
 #undef GetMessage
 #undef SendMessage
@@ -12,362 +13,247 @@
 
 using grpc::ClientContext;
 
+namespace
+{
+    [[nodiscard]] bool ConsumeActionQuota(std::mutex& mtxLimit, int32_t& counter, int32_t& counterMove, int32_t limit, int32_t moveLimit, bool countAsMove)
+    {
+        std::lock_guard<std::mutex> lock(mtxLimit);
+        if (counter >= limit || (countAsMove && counterMove >= moveLimit))
+            return false;
+        ++counter;
+        if (countAsMove)
+            ++counterMove;
+        return true;
+    }
+
+    [[nodiscard]] bool ConsumeQuota(std::mutex& mtxLimit, int32_t& counter, int32_t limit)
+    {
+        std::lock_guard<std::mutex> lock(mtxLimit);
+        if (counter >= limit)
+            return false;
+        ++counter;
+        return true;
+    }
+}
+
 Communication::Communication(std::string sIP, std::string sPort)
 {
     std::string aim = sIP + ':' + sPort;
     auto channel = grpc::CreateChannel(aim, grpc::InsecureChannelCredentials());
-    THUAI8Stub = protobuf::AvailableService::NewStub(channel);
+    THUAI9Stub = protobuf::AvailableService::NewStub(channel);
 }
 
 bool Communication::Move(int32_t characterID, int32_t teamID, int64_t moveTimeInMilliseconds, double angle)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+        return false;
 
     protobuf::MoveRes moveResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufMoveMsg(teamID, characterID, moveTimeInMilliseconds, angle);
-    auto status = THUAI8Stub->Move(&context, request, &moveResult);
-    if (status.ok())
-    {
-        return moveResult.act_success();
-    }
-    else
-    {
-        return false;
-    }
+    auto request = THUAI9Proto::THUAI92ProtobufMoveMsg(teamID, characterID, moveTimeInMilliseconds, angle);
+    auto status = THUAI9Stub->Move(&context, request, &moveResult);
+    return status.ok() && moveResult.act_success();
 }
 
 bool Communication::Send(int32_t playerID, int32_t toPlayerID, int32_t teamID, std::string message, bool binary)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
+    if (!ConsumeQuota(mtxLimit, counter, limit))
+        return false;
+
     protobuf::BoolRes sendMessageResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufSendMsg(playerID, toPlayerID, teamID, std::move(message), binary);
-    auto status = THUAI8Stub->Send(&context, request, &sendMessageResult);
-    if (status.ok())
-        return sendMessageResult.act_success();
-
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufSendMsg(playerID, toPlayerID, teamID, std::move(message), binary);
+    auto status = THUAI9Stub->Send(&context, request, &sendMessageResult);
+    return status.ok() && sendMessageResult.act_success();
 }
 
 bool Communication::EndAllAction(int32_t playerID, int32_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+        return false;
+
     protobuf::BoolRes endAllActionsResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufIDMsg(playerID, teamID);
-    auto status = THUAI8Stub->EndAllAction(&context, request, &endAllActionsResult);
-    if (status.ok())
-        return endAllActionsResult.act_success();
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufIDMsg(playerID, teamID);
+    auto status = THUAI9Stub->EndAllAction(&context, request, &endAllActionsResult);
+    return status.ok() && endAllActionsResult.act_success();
 }
 
 bool Communication::Recover(int32_t playerID, int64_t recover, int32_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+        return false;
+
     protobuf::BoolRes recoverResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufRecoverMsg(playerID, recover, teamID);
-    auto status = THUAI8Stub->Recover(&context, request, &recoverResult);
-    if (status.ok())
-        return recoverResult.act_success();
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufRecoverMsg(playerID, recover, teamID);
+    auto status = THUAI9Stub->Recover(&context, request, &recoverResult);
+    return status.ok() && recoverResult.act_success();
 }
 
 bool Communication::Produce(int64_t playerID, int64_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
-    protobuf::BoolRes produceResult;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufIDMsg(playerID, teamID);
-    auto status = THUAI8Stub->Produce(&context, request, &produceResult);
-    if (status.ok())
-        return produceResult.act_success();
-    else
-        return false;
+    return Harvest(playerID, teamID);
 }
 
-bool Communication::Construct(int32_t playerID, int32_t teamID, THUAI8::ConstructionType constructionType)
+bool Communication::Harvest(int64_t playerID, int64_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
-    protobuf::BoolRes constructResult;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufConstructMsg(playerID, teamID, constructionType);
-    auto status = THUAI8Stub->Construct(&context, request, &constructResult);
-    if (status.ok())
-        return constructResult.act_success();
-    else
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
         return false;
+
+    protobuf::BoolRes harvestResult;
+    ClientContext context;
+    auto request = THUAI9Proto::THUAI92ProtobufHarvestMsg(playerID, teamID);
+    auto status = THUAI9Stub->Harvest(&context, request, &harvestResult);
+    return status.ok() && harvestResult.act_success();
 }
 
-bool Communication::ConstructTrap(int32_t playerID, int32_t teamID, THUAI8::TrapType trapType)
+bool Communication::Occupy(int64_t playerID, int64_t teamID)
 {
-    std::lock_guard<std::mutex> lock(mtxLimit);
-    if (counter >= limit || counterMove >= moveLimit)
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
         return false;
-    counter++;
-    counterMove++;
 
-    protobuf::BoolRes constructTrapResult;
+    protobuf::BoolRes occupyResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufConstructTrapMsg(playerID, teamID, trapType);
-    auto status = THUAI8Stub->ConstructTrap(&context, request, &constructTrapResult);
-    if (status.ok())
-        return constructTrapResult.act_success();
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufOccupyMsg(playerID, teamID);
+    auto status = THUAI9Stub->Occupy(&context, request, &occupyResult);
+    return status.ok() && occupyResult.act_success();
 }
 
-bool Communication::InstallEquipment(int32_t playerID, int32_t teamID, THUAI8::EquipmentType equipmentType)
+bool Communication::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
-    protobuf::BoolRes installEquipmentResult;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufEquipMsg(playerID, teamID, equipmentType);
-    auto status = THUAI8Stub->Equip(&context, request, &installEquipmentResult);
-    if (status.ok())
-        return installEquipmentResult.act_success();
-    else
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
         return false;
+
+    protobuf::BoolRes loadResult;
+    ClientContext context;
+    auto request = THUAI9Proto::THUAI92ProtobufLoadMsg(playerID, teamID, goodsType, amount);
+    auto status = THUAI9Stub->Load(&context, request, &loadResult);
+    return status.ok() && loadResult.act_success();
 }
 
-/* bool Communication::Rebuild(int32_t playerID, int32_t teamID, THUAI8::ConstructionType constructionType)
+bool Communication::Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount, bool isBuy)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || counterMove >= moveLimit)
-            return false;
-        counter++;
-        counterMove++;
-    }
-    protobuf::BoolRes rebuildResult;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufRebuildMsg(playerID, teamID, constructionType);
-    auto status = THUAI8Stub->Rebuild(&context, request, &rebuildResult);
-    if (status.ok())
-        return rebuildResult.act_success();
-    else
+    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
         return false;
-}*/
 
-// bool Communication::Common_Attack(int32_t playerID, int32_t teamID, double angle)
-// {
-//     {
-//         std::lock_guard<std::mutex> lock(mtxLimit);
-//         if (counter >= limit)
-//             return false;
-//         counter++;
-//     }
-//     protobuf::BoolRes commonAttackResult;
-//     ClientContext context;
-//     auto request = THUAI82Proto::THUAI82ProtobufCommonAttackMsg(playerID, teamID, angle);
-//     auto status = THUAI8Stub->CommonAttack(&context, request, &commonAttackResult);
-//     if (status.ok())
-//         return commonAttackResult.act_success();
-//     else
-//         return false;
-// }
-// 普攻必中，angle改toplayerID
+    protobuf::BoolRes tradeResult;
+    ClientContext context;
+    auto request = THUAI9Proto::THUAI92ProtobufTradeMsg(playerID, teamID, goodsType, amount, isBuy);
+    auto status = THUAI9Stub->Trade(&context, request, &tradeResult);
+    return status.ok() && tradeResult.act_success();
+}
+
+bool Communication::Construct(int32_t playerID, int32_t teamID, THUAI9::ConstructionType constructionType)
+{
+    (void)constructionType;
+    return Occupy(playerID, teamID);
+}
+
+bool Communication::ConstructTrap(int32_t playerID, int32_t teamID, THUAI9::TrapType trapType)
+{
+    (void)playerID;
+    (void)teamID;
+    (void)trapType;
+    return false;
+}
+
+bool Communication::InstallEquipment(int32_t playerID, int32_t teamID, THUAI9::EquipmentType equipmentType)
+{
+    (void)playerID;
+    (void)teamID;
+    (void)equipmentType;
+    return false;
+}
 
 bool Communication::Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
+    if (!ConsumeQuota(mtxLimit, counter, limit))
+        return false;
+
     protobuf::BoolRes commonAttackResult;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufAttackMsg(teamID, playerID, attacked_teamID, attacked_playerID);
-    auto status = THUAI8Stub->Attack(&context, request, &commonAttackResult);
-    if (status.ok())
-        return commonAttackResult.act_success();
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufAttackMsg(teamID, playerID, attacked_teamID, attacked_playerID);
+    auto status = THUAI9Stub->Attack(&context, request, &commonAttackResult);
+    return status.ok() && commonAttackResult.act_success();
 }
 
-bool Communication::BuildCharacter(int32_t teamID, THUAI8::CharacterType charactertype, int32_t birthIndex)
+bool Communication::BuildCharacter(int32_t teamID, THUAI9::CharacterType charactertype, int32_t birthIndex)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
+    if (!ConsumeQuota(mtxLimit, counter, limit))
+        return false;
+
     protobuf::BoolRes reply;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufCreatCharacterMsg(teamID, charactertype, birthIndex);
-    auto status = THUAI8Stub->CreatCharacter(&context, request, &reply);
-    if (status.ok())
-        return reply.act_success();
-    else
-        return false;
+    (void)birthIndex;
+    auto request = THUAI9Proto::THUAI92ProtobufCreateCharacterMsg(teamID, charactertype);
+    auto status = THUAI9Stub->CreateCharacter(&context, request, &reply);
+    return status.ok() && reply.act_success();
 }
 
-/*/ bool Communication::Recycle(int32_t playerID, int32_t teamID)
+bool Communication::ProduceGoods(int64_t teamID, THUAI9::GoodsType goodsType, int32_t maxProduceNum)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
-    protobuf::BoolRes reply;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufIDMsg(playerID, teamID);
-    auto status = THUAI8Stub->(&context, request, &reply);
-    if (status.ok())
-        return reply.act_success();
-    else
+    if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
-}*/
 
-// bool Communication::Skill_Attack(int32_t playerID, int32_t teamID, double angle)
-// {
-//     {
-//         std::lock_guard<std::mutex> lock(mtxLimit);
-//         if (counter >= limit)
-//             return false;
-//         counter++;
-//     }
-//     protobuf::BoolRes reply;
-//     ClientContext context;
-//     auto request = THUAI82Proto::THUAI82ProtobufSkillAttackMsg(playerID, teamID, angle);
-//     auto status = THUAI8Stub->SkillAttack(&context, request, &reply);
-//     if (status.ok())
-//         return reply.act_success();
-//     else
-//         return false;
-// }
-// 技能必中，angle改toplayerID
+    protobuf::BoolRes produceResult;
+    ClientContext context;
+    auto request = THUAI9Proto::THUAI92ProtobufProduceGoodsMsg(teamID, goodsType, maxProduceNum);
+    auto status = THUAI9Stub->Produce(&context, request, &produceResult);
+    return status.ok() && produceResult.act_success();
+}
 
-// 待修改，不知道要不要toteamID
+bool Communication::UplevelTech(int64_t teamID, THUAI9::TechType techType)
+{
+    if (!ConsumeQuota(mtxLimit, counter, limit))
+        return false;
+
+    protobuf::BoolRes result;
+    ClientContext context;
+    auto request = THUAI9Proto::THUAI92ProtobufUplevelTechMsg(teamID, techType);
+    auto status = THUAI9Stub->UplevelTech(&context, request, &result);
+    return status.ok() && result.act_success();
+}
+
 bool Communication::Skill_Attack(int64_t teamID, int64_t playerID, double angle)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
-    protobuf::BoolRes reply;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufCastMsg(teamID, playerID, angle);
-    auto status = THUAI8Stub->Cast(&context, request, &reply);
-    if (status.ok())
-        return reply.act_success();
-    else
-        return false;
+    (void)teamID;
+    (void)playerID;
+    (void)angle;
+    return false;
 }
 
 bool Communication::AttackConstruction(int64_t playerID, int64_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
-    protobuf::BoolRes reply;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufAttackConstructionMsg(playerID, teamID);
-    auto status = THUAI8Stub->AttackConstruction(&context, request, &reply);
-    if (status.ok())
-        return reply.act_success();
-    else
-        return false;
+    (void)playerID;
+    (void)teamID;
+    return false;
 }
 
 bool Communication::AttackAdditionResource(int64_t playerID, int64_t teamID)
 {
-    {
-        std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit)
-            return false;
-        counter++;
-    }
-    protobuf::BoolRes reply;
-    ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufAttackAdditionResourceMsg(teamID, playerID);
-    auto status = THUAI8Stub->AttackAdditionResource(&context, request, &reply);
-    if (status.ok())
-        return reply.act_success();
-    else
-        return false;
+    (void)playerID;
+    (void)teamID;
+    return false;
 }
 
 bool Communication::TryConnection(int32_t playerID, int32_t teamID)
 {
     protobuf::BoolRes reply;
     ClientContext context;
-    auto request = THUAI8Proto::THUAI82ProtobufIDMsg(playerID, teamID);
-    auto status = THUAI8Stub->TryConnection(&context, request, &reply);
-    if (status.ok())
-        return true;
-    else
-        return false;
+    auto request = THUAI9Proto::THUAI92ProtobufIDMsg(playerID, teamID);
+    auto status = THUAI9Stub->TryConnection(&context, request, &reply);
+    return status.ok() && reply.act_success();
 }
 
-void Communication::AddPlayer(int32_t playerID, int32_t teamID, THUAI8::CharacterType charactertype, bool side_flag)
+void Communication::AddPlayer(int32_t playerID, int32_t teamID, THUAI9::CharacterType charactertype, bool side_flag)
 {
+    (void)charactertype;
     auto tMessage = [=]()
     {
-        protobuf::CharacterMsg playerMsg = THUAI8Proto::THUAI82ProtobufCharacterMsg(playerID, teamID, charactertype);
-        if (side_flag)
-        {
-            playerMsg.set_side_flag(true);
-        }
-        else
-        {
-            playerMsg.set_side_flag(false);
-        }
+        auto playerMsg = THUAI9Proto::THUAI92ProtobufRegisterFactoryMsg(playerID, teamID, side_flag);
         grpc::ClientContext context;
-        auto MessageReader = THUAI8Stub->AddCharacter(&context, playerMsg);
+        auto MessageReader = THUAI9Stub->RegisterFactory(&context, playerMsg);
 
         protobuf::MessageToClient buffer2Client;
         counter = 0;
@@ -380,7 +266,7 @@ void Communication::AddPlayer(int32_t playerID, int32_t teamID, THUAI8::Characte
                 message2Client = std::move(buffer2Client);
                 haveNewMessage = true;
                 {
-                    std::lock_guard<std::mutex> lock(mtxLimit);
+                    std::lock_guard<std::mutex> limitLock(mtxLimit);
                     counter = 0;
                     counterMove = 0;
                 }

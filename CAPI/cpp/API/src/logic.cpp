@@ -14,7 +14,7 @@
 
 extern const bool asynchronous;
 
-Logic::Logic(int32_t pID, int32_t tID, THUAI8::PlayerType pType, THUAI8::CharacterType cType, bool side_flag) :
+Logic::Logic(int32_t pID, int32_t tID, THUAI9::PlayerType pType, THUAI9::CharacterType cType, bool side_flag) :
     playerID(pID),
     teamID(tID),
     playerType(pType),
@@ -23,78 +23,73 @@ Logic::Logic(int32_t pID, int32_t tID, THUAI8::PlayerType pType, THUAI8::Charact
 {
     currentState = &state[0];
     bufferState = &state[1];
-    currentState->gameInfo = std::make_shared<THUAI8::GameInfo>();
-    currentState->mapInfo = std::make_shared<THUAI8::GameMap>();
-    bufferState->gameInfo = std::make_shared<THUAI8::GameInfo>();
-    bufferState->mapInfo = std::make_shared<THUAI8::GameMap>();
-    if (teamID == 0)
-        playerTeam = THUAI8::PlayerTeam::BuddhistsTeam;
-    else if (teamID == 1)
-        playerTeam = THUAI8::PlayerTeam::MonstersTeam;
-    else
-        playerTeam = THUAI8::PlayerTeam::NullTeam;
+    currentState->gameInfo = std::make_shared<THUAI9::GameInfo>();
+    currentState->mapInfo = std::make_shared<THUAI9::GameMap>();
+    bufferState->gameInfo = std::make_shared<THUAI9::GameInfo>();
+    bufferState->mapInfo = std::make_shared<THUAI9::GameMap>();
+    playerTeam = THUAI9::PlayerTeam::NullTeam;
 }
 
-std::vector<std::shared_ptr<const THUAI8::Character>> Logic::GetCharacters() const
+std::vector<std::shared_ptr<const THUAI9::Character>> Logic::GetCharacters() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
-    std::vector<std::shared_ptr<const THUAI8::Character>> temp(currentState->characters.begin(), currentState->characters.end());
+    std::vector<std::shared_ptr<const THUAI9::Character>> temp(currentState->characters.begin(), currentState->characters.end());
     logger->debug("Called GetCharacters");
     return temp;
 }
 
-std::vector<std::shared_ptr<const THUAI8::Character>> Logic::GetEnemyCharacters() const
+std::vector<std::shared_ptr<const THUAI9::Character>> Logic::GetEnemyCharacters() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
-    std::vector<std::shared_ptr<const THUAI8::Character>> temp(currentState->enemyCharacters.begin(), currentState->enemyCharacters.end());
+    std::vector<std::shared_ptr<const THUAI9::Character>> temp(currentState->enemyCharacters.begin(), currentState->enemyCharacters.end());
     logger->debug("Called GetEnemyCharacters");
     return temp;
 }
 
-std::shared_ptr<const THUAI8::Character> Logic::CharacterGetSelfInfo() const
+std::shared_ptr<const THUAI9::Character> Logic::CharacterGetSelfInfo() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetSelfInfo");
     return currentState->characterSelf;
 }
 
-std::shared_ptr<const THUAI8::Team> Logic::TeamGetSelfInfo() const
+std::shared_ptr<const THUAI9::Team> Logic::TeamGetSelfInfo() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called TeamGetSelfInfo");
     return this->currentState->teamSelf;
 }
 
-std::vector<std::vector<THUAI8::PlaceType>> Logic::GetFullMap() const
+std::vector<std::vector<THUAI9::PlaceType>> Logic::GetFullMap() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetFullMap");
     return currentState->gameMap;
 }
 
-THUAI8::PlaceType Logic::GetPlaceType(int32_t cellX, int32_t cellY) const
+THUAI9::PlaceType Logic::GetPlaceType(int32_t cellX, int32_t cellY) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     if (cellX < 0 || uint64_t(cellX) >= currentState->gameMap.size() || cellY < 0 || uint64_t(cellY) >= currentState->gameMap[0].size())
     {
         logger->warn("Invalid position!");
-        return THUAI8::PlaceType::NullPlaceType;
+        return THUAI9::PlaceType::NullPlaceType;
     }
     logger->debug("Called GetPlaceType");
     return currentState->gameMap[cellX][cellY];
 }
 
-std::optional<THUAI8::EconomyResource> Logic::GetEconomyResourceState(int32_t cellX, int32_t cellY) const
+std::optional<THUAI9::EconomyResource> Logic::GetEconomyResourceState(int32_t cellX, int32_t cellY) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetEconomyResourceState");
 
-    auto pos = THUAI8::cellxy_t(cellX, cellY);
+    auto pos = THUAI9::cellxy_t(cellX, cellY);
     auto it = currentState->mapInfo->economyResource.find(pos);
 
     if (it != currentState->mapInfo->economyResource.end())
     {
-        return std::make_optional<THUAI8::EconomyResource>(
+        return std::make_optional<THUAI9::EconomyResource>(
             it->second.team_id,
             it->second.process,
             it->second.economyResourceType
@@ -104,78 +99,78 @@ std::optional<THUAI8::EconomyResource> Logic::GetEconomyResourceState(int32_t ce
     {
         logger->warn("EconomyResource not found at ({}, {})", cellX, cellY);
         // 返回一个默认值
-        return std::make_optional<THUAI8::EconomyResource>(
+        return std::make_optional<THUAI9::EconomyResource>(
             0,                                                    // 默认 ID
             0,                                                    // 默认进度
-            THUAI8::EconomyResourceType::NullEconomyResourceType  // 默认类型
+            THUAI9::EconomyResourceType::NullEconomyResourceType  // 默认类型
         );
     }
 }
 
-std::optional<THUAI8::AdditionResource> Logic::GetAdditionResourceState(int32_t cellX, int32_t cellY) const
+std::optional<THUAI9::AdditionResource> Logic::GetAdditionResourceState(int32_t cellX, int32_t cellY) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetAdditionResourceState");
-    auto pos = THUAI8::cellxy_t(cellX, cellY);
+    auto pos = THUAI9::cellxy_t(cellX, cellY);
     auto it = currentState->mapInfo->additionResource.find(pos);
     if (it != currentState->mapInfo->additionResource.end())
     {
-        return std::make_optional<THUAI8::AdditionResource>(currentState->mapInfo->additionResource[pos].team_id, currentState->mapInfo->additionResource[pos].hp, currentState->mapInfo->additionResource[pos].additionResourceType);
+        return std::make_optional<THUAI9::AdditionResource>(currentState->mapInfo->additionResource[pos].team_id, currentState->mapInfo->additionResource[pos].hp, currentState->mapInfo->additionResource[pos].additionResourceType);
     }
 
     else
     {
         logger->warn("AdditionResource not found at ({}, {})", cellX, cellY);
-        return std::make_optional<THUAI8::AdditionResource>(
+        return std::make_optional<THUAI9::AdditionResource>(
             0,                                                      // 默认 ID
             0,                                                      // 默认进度
-            THUAI8::AdditionResourceType::NullAdditionResourceType  // 默认类型
+            THUAI9::AdditionResourceType::NullAdditionResourceType  // 默认类型
         );
     }
 }
 
-std::optional<THUAI8::ConstructionState> Logic::GetConstructionState(int32_t cellX, int32_t cellY) const
+std::optional<THUAI9::ConstructionState> Logic::GetConstructionState(int32_t cellX, int32_t cellY) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetConstructionState");
-    auto pos = THUAI8::cellxy_t(cellX, cellY);
+    auto pos = THUAI9::cellxy_t(cellX, cellY);
     auto it = currentState->mapInfo->barracksState.find(pos);
     auto it2 = currentState->mapInfo->springState.find(pos);
     auto it3 = currentState->mapInfo->farmState.find(pos);
     if (it != currentState->mapInfo->barracksState.end())
     {
-        return std::make_optional<THUAI8::ConstructionState>(currentState->mapInfo->barracksState[pos].first, currentState->mapInfo->barracksState[pos].second, THUAI8::ConstructionType::Barracks);
+        return std::make_optional<THUAI9::ConstructionState>(currentState->mapInfo->barracksState[pos].first, currentState->mapInfo->barracksState[pos].second, THUAI9::ConstructionType::Barracks);
     }
     else if (it2 != currentState->mapInfo->springState.end())
-        return std::make_optional<THUAI8::ConstructionState>(currentState->mapInfo->springState[pos].first, currentState->mapInfo->springState[pos].second, THUAI8::ConstructionType::Spring);
+        return std::make_optional<THUAI9::ConstructionState>(currentState->mapInfo->springState[pos].first, currentState->mapInfo->springState[pos].second, THUAI9::ConstructionType::Spring);
     else if (it3 != currentState->mapInfo->farmState.end())
-        return std::make_optional<THUAI8::ConstructionState>(currentState->mapInfo->farmState[pos].first, currentState->mapInfo->farmState[pos].second, THUAI8::ConstructionType::Farm);
+        return std::make_optional<THUAI9::ConstructionState>(currentState->mapInfo->farmState[pos].first, currentState->mapInfo->farmState[pos].second, THUAI9::ConstructionType::Farm);
     else
     {
         logger->warn("Construction not found at ({}, {})", cellX, cellY);
-        return std::make_optional<THUAI8::ConstructionState>(
+        return std::make_optional<THUAI9::ConstructionState>(
             0,                                              // 默认 ID
             0,                                              // 默认进度
-            THUAI8::ConstructionType::NullConstructionType  // 默认类型
+            THUAI9::ConstructionType::NullConstructionType  // 默认类型
         );
     }
 }
 
-std::optional<THUAI8::Trap> Logic::GetTrapState(int32_t cellX, int32_t cellY) const
+std::optional<THUAI9::Trap> Logic::GetTrapState(int32_t cellX, int32_t cellY) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetTrapState");
-    auto pos = THUAI8::cellxy_t(cellX, cellY);
+    auto pos = THUAI9::cellxy_t(cellX, cellY);
     auto it = currentState->mapInfo->trapState.find(pos);
     if (it != currentState->mapInfo->trapState.end())
     {
-        return std::make_optional<THUAI8::Trap>(currentState->mapInfo->trapState[pos].trapType, currentState->mapInfo->trapState[pos].trap_valid, currentState->mapInfo->trapState[pos].team_id);
+        return std::make_optional<THUAI9::Trap>(currentState->mapInfo->trapState[pos].trapType, currentState->mapInfo->trapState[pos].trap_valid, currentState->mapInfo->trapState[pos].team_id);
     }
     else
     {
         logger->warn("Trap not found at ({}, {})", cellX, cellY);
-        return std::make_optional<THUAI8::Trap>(
-            THUAI8::TrapType::NullTrapType,  // 默认类型
+        return std::make_optional<THUAI9::Trap>(
+            THUAI9::TrapType::NullTrapType,  // 默认类型
             false,                           // 默认有效性
             0                                // 默认 ID
         );
@@ -185,34 +180,40 @@ std::optional<THUAI8::Trap> Logic::GetTrapState(int32_t cellX, int32_t cellY) co
 int32_t Logic::GetEnergy() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
-    logger->debug("Called GetEconomy");
-    if (playerTeam == THUAI8::PlayerTeam::BuddhistsTeam)
-        return currentState->gameInfo->buddhistsTeamEconomy;
-    else if (playerTeam == THUAI8::PlayerTeam::MonstersTeam)
-        return currentState->gameInfo->monstersTeamEconomy;
-    else
-    {
-        logger->warn("Invalid playerTeam");
-        return -1;
-    }
+    logger->debug("Called GetEnergy");
+    if (currentState->teamSelf)
+        return static_cast<int32_t>(currentState->teamSelf->energy);
+    if (teamID > 0 && static_cast<size_t>(teamID) <= currentState->gameInfo->teams.size())
+        return currentState->gameInfo->teams[teamID - 1].computePower;
+    logger->warn("Team info not ready when calling GetEnergy");
+    return -1;
+}
+
+int32_t Logic::GetMaterial() const
+{
+    std::unique_lock<std::mutex> lock(mtxState);
+    logger->debug("Called GetMaterial");
+    if (currentState->teamSelf)
+        return static_cast<int32_t>(currentState->teamSelf->material);
+    if (teamID > 0 && static_cast<size_t>(teamID) <= currentState->gameInfo->teams.size())
+        return currentState->gameInfo->teams[teamID - 1].material;
+    logger->warn("Team info not ready when calling GetMaterial");
+    return -1;
 }
 
 int32_t Logic::GetScore() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetScore");
-    if (playerTeam == THUAI8::PlayerTeam::BuddhistsTeam)
-        return currentState->gameInfo->buddhistsTeamScore;
-    else if (playerTeam == THUAI8::PlayerTeam::MonstersTeam)
-        return currentState->gameInfo->monstersTeamScore;
-    else
-    {
-        logger->warn("Invalid playerTeam");
-        return -1;
-    }
+    if (currentState->teamSelf)
+        return static_cast<int32_t>(currentState->teamSelf->score);
+    if (teamID > 0 && static_cast<size_t>(teamID) <= currentState->gameInfo->teams.size())
+        return currentState->gameInfo->teams[teamID - 1].score;
+    logger->warn("Team info not ready when calling GetScore");
+    return -1;
 }
 
-std::shared_ptr<const THUAI8::GameInfo> Logic::GetGameInfo() const
+std::shared_ptr<const THUAI9::GameInfo> Logic::GetGameInfo() const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     logger->debug("Called GetGameInfo");
@@ -274,19 +275,49 @@ bool Logic::Recover(int64_t recover)
     return pComm->Recover(playerID, recover, teamID);
 }
 
-bool Logic::Construct(THUAI8::ConstructionType constructiontype)
+bool Logic::Harvest(int64_t playerID, int64_t teamID)
+{
+    logger->debug("Called Harvest");
+    return pComm->Harvest(playerID, teamID);
+}
+
+bool Logic::Occupy(int64_t playerID, int64_t teamID)
+{
+    logger->debug("Called Occupy");
+    return pComm->Occupy(playerID, teamID);
+}
+
+bool Logic::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
+{
+    logger->debug("Called Load");
+    return pComm->Load(playerID, teamID, goodsType, amount);
+}
+
+bool Logic::Buy(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
+{
+    logger->debug("Called Buy");
+    return pComm->Trade(playerID, teamID, goodsType, amount, true);
+}
+
+bool Logic::Sell(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
+{
+    logger->debug("Called Sell");
+    return pComm->Trade(playerID, teamID, goodsType, amount, false);
+}
+
+bool Logic::Construct(THUAI9::ConstructionType constructiontype)
 {
     logger->debug("Called Construct");
     return pComm->Construct(playerID, teamID, constructiontype);
 }
 
-bool Logic::ConstructTrap(THUAI8::TrapType trapType)
+bool Logic::ConstructTrap(THUAI9::TrapType trapType)
 {
     logger->debug("Called ConstructTrap");
     return pComm->ConstructTrap(playerID, teamID, trapType);
 }
 
-bool Logic::BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex)
+bool Logic::BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex)
 {
     logger->debug("Called BuildCharacter");
     return pComm->BuildCharacter(teamID, CharacterType, birthIndex);
@@ -311,16 +342,28 @@ bool Logic::Move(int64_t moveTimeInMilliseconds, double angle)
     return pComm->Move(playerID, teamID, moveTimeInMilliseconds, angle);
 }
 
-/*bool Logic::Rebuild(THUAI8::ConstructionType constructionType)
+/*bool Logic::Rebuild(THUAI9::ConstructionType constructionType)
 {
     logger->debug("Called Rebuild");
     return pComm->Rebuild(playerID, teamID, constructionType);
 }*/
 
-bool Logic::InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmentType)
+bool Logic::InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmentType)
 {
     logger->debug("Called InstallEquipment");
     return pComm->InstallEquipment(playerID, teamID, equipmentType);
+}
+
+bool Logic::ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum)
+{
+    logger->debug("Called ProduceGoods");
+    return pComm->ProduceGoods(teamID, goodsType, maxProduceNum);
+}
+
+bool Logic::UplevelTech(THUAI9::TechType techType)
+{
+    logger->debug("Called UplevelTech");
+    return pComm->UplevelTech(teamID, techType);
 }
 
 bool Logic::EndAllAction()
@@ -345,31 +388,31 @@ void Logic::ProcessMessage()
             // TODO
             logger->info("Message thread start!");
             pComm->AddPlayer(playerID, teamID, CharacterType, side_flag);
-            while (gameState != THUAI8::GameState::GameEnd)
+            while (gameState != THUAI9::GameState::GameEnd)
             {
                 auto clientMsg = pComm->GetMessage2Client();
                 // 在获得新消息之前阻塞
                 logger->debug("Get message from server!");
-                gameState = Proto2THUAI8::gameStateDict[clientMsg.game_state()];
+                gameState = Proto2THUAI9::gameStateDict[clientMsg.game_state()];
                 switch (gameState)
                 {
-                    case THUAI8::GameState::GameStart:
+                    case THUAI9::GameState::GameStart:
                         logger->info("Game Start!");
                         // 读取地图
                         for (const auto& item : clientMsg.obj_message())
                         {
-                            if (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()] == THUAI8::MessageOfObj::MapMessage)
+                            if (Proto2THUAI9::messageOfObjDict[item.message_of_obj_case()] == THUAI9::MessageOfObj::MapMessage)
                             {
-                                auto map = std::vector<std::vector<THUAI8::PlaceType>>();
+                                auto map = std::vector<std::vector<THUAI9::PlaceType>>();
                                 auto& mapResult = item.map_message();
                                 for (int32_t i = 0; i < item.map_message().rows_size(); i++)
                                 {
-                                    std::vector<THUAI8::PlaceType> row;
+                                    std::vector<THUAI9::PlaceType> row;
                                     for (int32_t j = 0; j < mapResult.rows(i).cols_size(); j++)
                                     {
-                                        if (Proto2THUAI8::placeTypeDict.count(mapResult.rows(i).cols(j)) == 0)
+                                        if (Proto2THUAI9::placeTypeDict.count(mapResult.rows(i).cols(j)) == 0)
                                             logger->error("Unknown place type!");
-                                        row.push_back(Proto2THUAI8::placeTypeDict[mapResult.rows(i).cols(j)]);
+                                        row.push_back(Proto2THUAI9::placeTypeDict[mapResult.rows(i).cols(j)]);
                                     }
                                     map.push_back(std::move(row));
                                 }
@@ -388,7 +431,7 @@ void Logic::ProcessMessage()
                         AILoop = true;
                         UnBlockAI();
                         break;
-                    case THUAI8::GameState::GameRunning:
+                    case THUAI9::GameState::GameRunning:
                         LoadBuffer(clientMsg);
                         break;
                     default:
@@ -421,30 +464,37 @@ void Logic::ProcessMessage()
 
 void Logic::LoadBufferSelf(const protobuf::MessageToClient& message)
 {
-    if (playerType == THUAI8::PlayerType::Character)
+    if (playerType == THUAI9::PlayerType::Character)
     {
         for (const auto& item : message.obj_message())
         {
-            if (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()] == THUAI8::MessageOfObj::CharacterMessage && item.character_message().player_id() == playerID && item.character_message().team_id() == teamID)
+            if (Proto2THUAI9::messageOfObjDict[item.message_of_obj_case()] == THUAI9::MessageOfObj::CharacterMessage && item.character_message().player_id() == playerID && item.character_message().team_id() == teamID)
             {
-                bufferState->characterSelf = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
+                bufferState->characterSelf = Proto2THUAI9::Protobuf2THUAI9Character(item.character_message());
                 bufferState->characters.push_back(bufferState->characterSelf);
                 logger->debug("Load Self Character!");
             }
         }
     }
-    else if (playerType == THUAI8::PlayerType::Team)
+    else if (playerType == THUAI9::PlayerType::Team)
     {
+        if (teamID > 0 && teamID <= message.all_message().teams_size())
+        {
+            auto team = std::make_shared<THUAI9::Team>();
+            team->teamID = teamID;
+            team->playerID = playerID;
+            team->score = message.all_message().teams(teamID - 1).score();
+            team->material = message.all_message().teams(teamID - 1).material();
+            team->energy = message.all_message().teams(teamID - 1).compute_power();
+            team->factoryHP = message.all_message().teams(teamID - 1).factory_hp();
+            bufferState->teamSelf = team;
+            logger->debug("Load Self Team From AllMessage!");
+        }
         for (const auto& item : message.obj_message())
         {
-            if (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()] == THUAI8::MessageOfObj::TeamMessage && item.team_message().team_id() == teamID)
+            if (Proto2THUAI9::messageOfObjDict[item.message_of_obj_case()] == THUAI9::MessageOfObj::CharacterMessage && item.character_message().team_id() == teamID)
             {
-                bufferState->teamSelf = Proto2THUAI8::Protobuf2THUAI8Team(item.team_message());
-                logger->debug("Load Self Team!");
-            }
-            else if (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()] == THUAI8::MessageOfObj::CharacterMessage && item.character_message().team_id() == teamID)
-            {
-                std::shared_ptr<THUAI8::Character> Character = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
+                std::shared_ptr<THUAI9::Character> Character = Proto2THUAI9::Protobuf2THUAI9Character(item.character_message());
                 bufferState->characters.push_back(Character);
                 logger->debug("Load Character!");
             }
@@ -454,507 +504,110 @@ void Logic::LoadBufferSelf(const protobuf::MessageToClient& message)
 
 void Logic::LoadBufferCase(const protobuf::MessageOfObj& item)
 {
-    if (playerType == THUAI8::PlayerType::Character)
+    switch (item.message_of_obj_case())
     {
-        int32_t x, y, viewRange;
-        x = bufferState->characterSelf->x, y = bufferState->characterSelf->y, viewRange = bufferState->characterSelf->viewRange;
-        switch (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()])
-        {
-            case THUAI8::MessageOfObj::CharacterMessage:
-                {
-                    if (teamID != item.character_message().team_id())
-                    {
-                        if (AssistFunction::HaveView(x, y, item.character_message().x(), item.character_message().y(), viewRange, bufferState->gameMap) && !item.character_message().is_invisible())
-                        {
-                            std::shared_ptr<THUAI8::Character> Character = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
-                            bufferState->enemyCharacters.push_back(Character);
-                            logger->debug("Load EnemyCharacter!");
-                        }
-                    }
-                    else if (teamID == item.character_message().team_id() && playerID != item.character_message().player_id())
-                    {
-                        std::shared_ptr<THUAI8::Character> Character = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
-                        bufferState->characters.push_back(Character);
-                        logger->debug("Load Character!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::BarracksMessage:
-                {
-                    if (item.barracks_message().team_id() == teamID || AssistFunction::HaveView(x, y, item.barracks_message().x(), item.barracks_message().y(), viewRange, bufferState->gameMap))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.barracks_message().x()),
-                            AssistFunction::GridToCell(item.barracks_message().y())
-                        );
-                        if (bufferState->mapInfo->barracksState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->barracksState.emplace(pos, std::pair(item.barracks_message().team_id(), item.barracks_message().hp()));
-                            bufferState->mapInfo->barracksState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),
-                                std::forward_as_tuple(
-                                    static_cast<int64_t>(item.barracks_message().team_id()),
-                                    static_cast<int32_t>(item.barracks_message().hp())
-                                )
-                            );
-                            if (item.barracks_message().team_id() == teamID)
-                                logger->debug("Load Barracks!");
-                            else
-                                logger->debug("Load EnemyBarracks!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->barracksState[pos].first = item.barracks_message().team_id();
-                            bufferState->mapInfo->barracksState[pos].second = item.barracks_message().hp();
-                            if (item.barracks_message().team_id() == teamID)
-                                logger->debug("Update Barracks!");
-                            else
-                                logger->debug("Update EnemyBarracks!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::SpringMessage:
-                {
-                    if (item.spring_message().team_id() == teamID || AssistFunction::HaveView(x, y, item.spring_message().x(), item.spring_message().y(), viewRange, bufferState->gameMap))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.spring_message().x()),
-                            AssistFunction::GridToCell(item.spring_message().y())
-                        );
-                        if (bufferState->mapInfo->springState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->springState.emplace(pos, std::pair(item.spring_message().team_id(), item.spring_message().hp()));
-                            bufferState->mapInfo->springState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                                std::forward_as_tuple(item.spring_message().team_id(), item.spring_message().hp())
-                            );
-                            if (item.spring_message().team_id() == teamID)
-                                logger->debug("Load Spring!");
-                            else
-                                logger->debug("Load EnemySpring!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->springState[pos].first = item.spring_message().team_id();
-                            bufferState->mapInfo->springState[pos].second = item.spring_message().hp();
-                            if (item.spring_message().team_id() == teamID)
-                                logger->debug("Update Spring!");
-                            else
-                                logger->debug("Update EnemySpring!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::FarmMessage:
-                {
-                    if (item.farm_message().team_id() == teamID || AssistFunction::HaveView(x, y, item.farm_message().x(), item.farm_message().y(), viewRange, bufferState->gameMap))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.farm_message().x()),
-                            AssistFunction::GridToCell(item.farm_message().y())
-                        );
-                        if (bufferState->mapInfo->farmState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->farmState.emplace(pos, std::pair(item.farm_message().team_id(), item.farm_message().hp()));
-                            bufferState->mapInfo->farmState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                                std::forward_as_tuple(item.farm_message().team_id(), item.farm_message().hp())
-                            );
-                            if (item.farm_message().team_id() == teamID)
-                                logger->debug("Load Farm!");
-                            else
-                                logger->debug("Load EnemyFarm!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->farmState[pos].first = item.farm_message().team_id();
-                            bufferState->mapInfo->farmState[pos].second = item.farm_message().hp();
-                            if (item.farm_message().team_id() == teamID)
-                                logger->debug("Update Farm!");
-                            else
-                                logger->debug("Update EnemyFarm!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::TrapMessage:
-                {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.trap_message().x()),
-                        AssistFunction::GridToCell(item.trap_message().y())
-                    );
-                    if (bufferState->mapInfo->trapState.count(pos) == 0)
-                    {
-                        bufferState->mapInfo->trapState.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                            std::forward_as_tuple(
-                                Proto2THUAI8::trapTypeDict.at(item.trap_message().trap_type()),
-                                static_cast<bool>(item.trap_message().trap_valid()),
-                                static_cast<int32_t>(item.trap_message().team_id())
-                            )
-                        );
-                        logger->debug("Load Trap!");
-                    }
-                    else
-                    {
-                        bufferState->mapInfo->trapState[pos].trapType = Proto2THUAI8::trapTypeDict.at(item.trap_message().trap_type());
-                        bufferState->mapInfo->trapState[pos].trap_valid = item.trap_message().trap_valid();
-                        bufferState->mapInfo->trapState[pos].team_id = item.trap_message().team_id();
-                        logger->debug("Update EconomyResource!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::EconomyResourceMessage:
-                {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.economy_resource_message().x()),
-                        AssistFunction::GridToCell(item.economy_resource_message().y())
-                    );
-                    if (bufferState->mapInfo->economyResource.count(pos) == 0)
-                    {
-                        // bufferState->mapInfo->economyResource.emplace(pos, item.economy_resource_message().process());
-                        bufferState->mapInfo->economyResource.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                            std::forward_as_tuple(
-                                static_cast<int32_t>(item.economy_resource_message().id()),
-                                static_cast<int32_t>(item.economy_resource_message().process()),
-                                Proto2THUAI8::economyResourceTypeDict.at(item.economy_resource_message().economy_resource_type())
-                            )
-                        );
-                        logger->debug("Load EconomyResource!");
-                    }
-                    else
-                    {
-                        bufferState->mapInfo->economyResource[pos].team_id = item.economy_resource_message().id();
-                        bufferState->mapInfo->economyResource[pos].process = item.economy_resource_message().process();
-                        bufferState->mapInfo->economyResource[pos].economyResourceType = Proto2THUAI8::economyResourceTypeDict.at(item.economy_resource_message().economy_resource_type());
-                        logger->debug("Update EconomyResource!");
-                    }
-                    break;
-                }
-
-            case THUAI8::MessageOfObj::AdditionResourceMessage:
-                {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.addition_resource_message().x()),
-                        AssistFunction::GridToCell(item.addition_resource_message().y())
-                    );
-                    if (bufferState->mapInfo->additionResource.count(pos) == 0)
-                    {
-                        // bufferState->mapInfo->additionResource.emplace(pos, std::pair(item.addition_resource_message().hp(), item.addition_resource_message().addition_resource_type()));
-                        //   显式将枚举转换为整数
-                        bufferState->mapInfo->additionResource.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),
-                            std::forward_as_tuple(
-                                static_cast<int32_t>(item.addition_resource_message().id()),
-                                static_cast<int32_t>(item.addition_resource_message().hp()),
-                                Proto2THUAI8::additionResourceTypeDict.at(item.addition_resource_message().addition_resource_type())
-                            )
-                        );
-                        logger->debug("Load AdditionResource!");
-                    }
-                    else
-                    {
-                        bufferState->mapInfo->additionResource[pos].team_id = item.addition_resource_message().id();
-                        bufferState->mapInfo->additionResource[pos].hp = item.addition_resource_message().hp();
-                        bufferState->mapInfo->additionResource[pos].additionResourceType = Proto2THUAI8::additionResourceTypeDict.at(item.addition_resource_message().addition_resource_type());
-                        logger->debug("Update AdditionResource!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::NewsMessage:
-                {
-                    auto& news = item.news_message();
-                    if (news.to_id() == playerID && news.team_id() == teamID)
-                    {
-                        if (Proto2THUAI8::newsTypeDict[news.news_case()] == THUAI8::NewsType::TextMessage)
-                        {
-                            // 显式指定 pair 的模板参数类型（假设 key 为 int32_t，value 为 std::string）
-                            messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.text_message()));
-                            logger->debug("Load Text News!");
-                        }
-                        else if (Proto2THUAI8::newsTypeDict[news.news_case()] == THUAI8::NewsType::BinaryMessage)
-                        {
-                            // 显式指定 pair 的模板参数类型（假设 key 为 int32_t，value 为 std::string）
-                            messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.binary_message()));
-                            logger->debug("Load Binary News!");
-                        }
-                        else
-                            logger->error("Unknown NewsType!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::NullMessageOfObj:
-            default:
-                break;
-        }
-    }
-    else if (playerType == THUAI8::PlayerType::Team)
-    {
-        auto HaveOverView = [&](int32_t targetX, int32_t targetY)
-        {
-            for (const auto& character : bufferState->characters)
+        case protobuf::MessageOfObj::MessageOfObjCase::kCharacterMessage:
             {
-                if (AssistFunction::HaveView(character->x, character->y, targetX, targetY, character->viewRange, bufferState->gameMap))
-                    return true;
-            }
-            return false;
-        };
-        auto HaveOverTrapView = [&](int32_t targetX, int32_t targetY)
-        {
-            for (const auto& character : bufferState->characters)
-            {
-                if (AssistFunction::HaveView(character->x, character->y, targetX, targetY, character->viewRange, bufferState->gameMap) && character->visionBuffTime > 0)
-                    return true;
-            }
-            return false;
-        };
-        switch (Proto2THUAI8::messageOfObjDict[item.message_of_obj_case()])
-        {
-            case THUAI8::MessageOfObj::CharacterMessage:
+                const auto& msg = item.character_message();
+                auto character = Proto2THUAI9::Protobuf2THUAI9Character(msg);
+                if (msg.team_id() == teamID)
                 {
-                    if (item.character_message().team_id() != teamID && HaveOverView(item.character_message().x(), item.character_message().y()) && !item.character_message().is_invisible())
-                    {
-                        std::shared_ptr<THUAI8::Character> Character = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
-                        bufferState->enemyCharacters.push_back(Character);
-                        logger->debug("Load EnemyCharacter!");
-                    }
-                    else if (item.character_message().team_id() == teamID && playerID != item.character_message().player_id())
-                    {
-                        std::shared_ptr<THUAI8::Character> Character = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
-                        bufferState->characters.push_back(Character);
-                        logger->debug("Load Character!");
-                    }
-                    else if (item.character_message().team_id() == teamID && playerID == item.character_message().player_id())
-                    {
-                        bufferState->characterSelf = Proto2THUAI8::Protobuf2THUAI8Character(item.character_message());
-                        logger->debug("Load Self Character!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::BarracksMessage:
-                {
-                    if (item.barracks_message().team_id() == teamID || HaveOverView(item.barracks_message().x(), item.barracks_message().y()))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.barracks_message().x()),
-                            AssistFunction::GridToCell(item.barracks_message().y())
-                        );
-                        if (bufferState->mapInfo->barracksState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->barracksState.emplace(pos, std::pair(item.barracks_message().team_id(), item.barracks_message().hp()));
-                            bufferState->mapInfo->barracksState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),
-                                std::forward_as_tuple(
-                                    static_cast<int64_t>(item.barracks_message().team_id()),
-                                    static_cast<int32_t>(item.barracks_message().hp())
-                                )
-                            );
-                            if (item.barracks_message().team_id() == teamID)
-                                logger->debug("Load Barracks!");
-                            else
-                                logger->debug("Load EnemyBarracks!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->barracksState[pos].first = item.barracks_message().team_id();
-                            bufferState->mapInfo->barracksState[pos].second = item.barracks_message().hp();
-                            if (item.barracks_message().team_id() == teamID)
-                                logger->debug("Update Barracks!");
-                            else
-                                logger->debug("Update Enemy Barracks!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::SpringMessage:
-                {
-                    if (item.spring_message().team_id() == teamID || HaveOverView(item.spring_message().x(), item.spring_message().y()))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.spring_message().x()),
-                            AssistFunction::GridToCell(item.spring_message().y())
-                        );
-                        if (bufferState->mapInfo->springState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->springState.emplace(pos, std::pair(item.spring_message().team_id(), item.spring_message().hp()));
-                            bufferState->mapInfo->springState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                                std::forward_as_tuple(item.spring_message().team_id(), item.spring_message().hp())
-                            );
-                            if (item.spring_message().team_id() == teamID)
-                                logger->debug("Load Spring!");
-                            else
-                                logger->debug("Load EnemySpring!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->springState[pos].first = item.spring_message().team_id();
-                            bufferState->mapInfo->springState[pos].second = item.spring_message().hp();
-                            if (item.spring_message().team_id() == teamID)
-                                logger->debug("Update Spring!");
-                            else
-                                logger->debug("Update EnemySpring!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::FarmMessage:
-                {
-                    if (item.farm_message().team_id() == teamID || HaveOverView(item.farm_message().x(), item.farm_message().y()))
-                    {
-                        auto pos = THUAI8::cellxy_t(
-                            AssistFunction::GridToCell(item.farm_message().x()),
-                            AssistFunction::GridToCell(item.farm_message().y())
-                        );
-                        if (bufferState->mapInfo->farmState.count(pos) == 0)
-                        {
-                            // bufferState->mapInfo->farmState.emplace(pos, std::pair(item.farm_message().team_id(), item.farm_message().hp()));
-                            bufferState->mapInfo->farmState.emplace(
-                                std::piecewise_construct,
-                                std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                                std::forward_as_tuple(item.farm_message().team_id(), item.farm_message().hp())
-                            );
-                            if (item.farm_message().team_id() == teamID)
-                                logger->debug("Load Farm!");
-                            else
-                                logger->debug("Load EnemyFarm!");
-                        }
-                        else
-                        {
-                            bufferState->mapInfo->farmState[pos].first = item.farm_message().team_id();
-                            bufferState->mapInfo->farmState[pos].second = item.farm_message().hp();
-                            if (item.farm_message().team_id() == teamID)
-                                logger->debug("Update Farm!");
-                            else
-                                logger->debug("Update EnemyFarm!");
-                        }
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::TrapMessage:
-                {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.trap_message().x()),
-                        AssistFunction::GridToCell(item.trap_message().y())
-                    );
-                    if (bufferState->mapInfo->trapState.count(pos) == 0)
-                    {
-                        bufferState->mapInfo->trapState.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),
-                            std::forward_as_tuple(
-                                Proto2THUAI8::trapTypeDict.at(item.trap_message().trap_type()),
-                                static_cast<bool>(item.trap_message().trap_valid()),
-                                static_cast<int32_t>(item.trap_message().team_id())
-                            )
-                        );
-                        logger->debug("Load Trap!");
-                    }
+                    if (msg.player_id() == playerID)
+                        bufferState->characterSelf = character;
                     else
-                    {
-                        bufferState->mapInfo->trapState[pos].trapType = Proto2THUAI8::trapTypeDict.at(item.trap_message().trap_type());
-                        bufferState->mapInfo->trapState[pos].trap_valid = item.trap_message().trap_valid();
-                        bufferState->mapInfo->trapState[pos].team_id = item.trap_message().team_id();
-                        logger->debug("Update EconomyResource!");
-                    }
-                    break;
+                        bufferState->characters.push_back(character);
                 }
-            case THUAI8::MessageOfObj::EconomyResourceMessage:
+                else
                 {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.economy_resource_message().x()),
-                        AssistFunction::GridToCell(item.economy_resource_message().y())
-                    );
-                    if (bufferState->mapInfo->economyResource.count(pos) == 0)
-                    {
-                        // bufferState->mapInfo->economyResource.emplace(pos, item.economy_resource_message().process());
-                        bufferState->mapInfo->economyResource.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),  // 构造键 cellxy_t{pos.first, pos.second}
-                            std::forward_as_tuple(
-                                static_cast<int32_t>(item.economy_resource_message().id()),
-                                static_cast<int32_t>(item.economy_resource_message().process()),
-                                Proto2THUAI8::economyResourceTypeDict.at(item.economy_resource_message().economy_resource_type())
-                            )
-                        );
-                        logger->debug("Load EconomyResource!");
-                    }
-                    else
-                    {
-                        bufferState->mapInfo->economyResource[pos].team_id = item.economy_resource_message().id();
-                        bufferState->mapInfo->economyResource[pos].process = item.economy_resource_message().process();
-                        bufferState->mapInfo->economyResource[pos].economyResourceType = Proto2THUAI8::economyResourceTypeDict.at(item.economy_resource_message().economy_resource_type());
-                        logger->debug("Update EconomyResource!");
-                    }
-                    break;
+                    bufferState->enemyCharacters.push_back(character);
                 }
-
-            case THUAI8::MessageOfObj::AdditionResourceMessage:
-                {
-                    auto pos = THUAI8::cellxy_t(
-                        AssistFunction::GridToCell(item.addition_resource_message().x()),
-                        AssistFunction::GridToCell(item.addition_resource_message().y())
-                    );
-                    if (bufferState->mapInfo->additionResource.count(pos) == 0)
-                    {
-                        // bufferState->mapInfo->additionResource.emplace(pos, std::pair(item.addition_resource_message().hp(), item.addition_resource_message().addition_resource_type()));
-                        //   显式将枚举转换为整数
-                        bufferState->mapInfo->additionResource.emplace(
-                            std::piecewise_construct,
-                            std::forward_as_tuple(pos.first, pos.second),
-                            std::forward_as_tuple(
-                                static_cast<int32_t>(item.addition_resource_message().id()),
-                                static_cast<int32_t>(item.addition_resource_message().hp()),
-                                Proto2THUAI8::additionResourceTypeDict.at(item.addition_resource_message().addition_resource_type())
-                            )
-                        );
-                        logger->debug("Load AdditionResource!");
-                    }
-                    else
-                    {
-                        bufferState->mapInfo->additionResource[pos].team_id = item.addition_resource_message().id();
-                        bufferState->mapInfo->additionResource[pos].hp = item.addition_resource_message().hp();
-                        bufferState->mapInfo->additionResource[pos].additionResourceType = Proto2THUAI8::additionResourceTypeDict.at(item.addition_resource_message().addition_resource_type());
-                        logger->debug("Update AdditionResource!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::NewsMessage:
-                {
-                    auto& news = item.news_message();
-                    if (news.to_id() == playerID && news.team_id() == teamID)
-                    {
-                        if (Proto2THUAI8::newsTypeDict[news.news_case()] == THUAI8::NewsType::TextMessage)
-                        {
-                            messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.text_message()));
-
-                            logger->debug("Load Text News!");
-                        }
-                        else if (Proto2THUAI8::newsTypeDict[news.news_case()] == THUAI8::NewsType::BinaryMessage)
-                        {
-                            messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.binary_message()));
-
-                            logger->debug("Load Binary News!");
-                        }
-                        else
-                            logger->error("Unknown NewsType!");
-                    }
-                    break;
-                }
-            case THUAI8::MessageOfObj::NullMessageOfObj:
-            default:
                 break;
-        }
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kTeamMessage:
+            {
+                const auto& msg = item.team_message();
+                if (msg.team_id() == teamID)
+                    bufferState->teamSelf = Proto2THUAI9::Protobuf2THUAI9Team(msg);
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kFactoryMessage:
+            {
+                const auto& msg = item.factory_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                bufferState->mapInfo->barracksState[pos] = std::make_pair(msg.team_id(), msg.hp());
+                bufferState->mapInfo->factories[pos] = *Proto2THUAI9::Protobuf2THUAI9Factory(msg);
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kResourceMessage:
+            {
+                const auto& msg = item.resource_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                auto resource = Proto2THUAI9::Protobuf2THUAI9EconomyResource(msg);
+                bufferState->mapInfo->economyResource[pos] = *resource;
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kMarketMessage:
+            {
+                const auto& msg = item.market_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                bufferState->mapInfo->markets[pos] = *Proto2THUAI9::Protobuf2THUAI9Market(msg);
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kComputeCenterMessage:
+            {
+                const auto& msg = item.compute_center_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                bufferState->mapInfo->springState[pos] = std::make_pair(msg.owner_team_id(), msg.occupy_progress());
+                bufferState->mapInfo->computeCenters[pos] = *Proto2THUAI9::Protobuf2THUAI9ComputeCenter(msg);
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kBarrierMessage:
+            {
+                const auto& msg = item.barrier_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                bufferState->mapInfo->trapState[pos] = THUAI9::Trap(THUAI9::TrapType::Hole, true, 0);
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kBushMessage:
+            {
+                const auto& msg = item.bush_message();
+                auto pos = THUAI9::cellxy_t(
+                    AssistFunction::GridToCell(msg.x()),
+                    AssistFunction::GridToCell(msg.y())
+                );
+                bufferState->mapInfo->farmState[pos] = std::make_pair(msg.bush_id(), msg.radius());
+                break;
+            }
+        case protobuf::MessageOfObj::MessageOfObjCase::kNewsMessage:
+            {
+                const auto& news = item.news_message();
+                if (news.to_id() == playerID && news.team_id() == teamID)
+                {
+                    auto newsType = Proto2THUAI9::newsTypeDict[news.news_case()];
+                    if (newsType == THUAI9::NewsType::TextMessage)
+                        messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.text_message()));
+                    else if (newsType == THUAI9::NewsType::BinaryMessage)
+                        messageQueue.emplace(std::pair<int32_t, std::string>(static_cast<int32_t>(news.from_id()), news.binary_message()));
+                }
+                break;
+            }
+        default:
+            break;
     }
 }
 void Logic::LoadBuffer(const protobuf::MessageToClient& message)
@@ -971,15 +624,15 @@ void Logic::LoadBuffer(const protobuf::MessageToClient& message)
         logger->info("Buffer cleared!");
         // 读取新的信息
         for (const auto& obj : message.obj_message())
-            if (Proto2THUAI8::messageOfObjDict[obj.message_of_obj_case()] == THUAI8::MessageOfObj::CharacterMessage)
+            if (Proto2THUAI9::messageOfObjDict[obj.message_of_obj_case()] == THUAI9::MessageOfObj::CharacterMessage)
             {
                 bufferState->allGuids.push_back(obj.character_message().guid());
                 if (obj.character_message().team_id() == teamID)
                     bufferState->guids.push_back(obj.character_message().guid());
             }
-        bufferState->gameInfo = Proto2THUAI8::Protobuf2THUAI8GameInfo(message.all_message());
+        bufferState->gameInfo = Proto2THUAI9::Protobuf2THUAI9GameInfo(message.all_message());
         LoadBufferSelf(message);
-        if (playerType == THUAI8::PlayerType::Character && !bufferState->characterSelf)
+        if (playerType == THUAI9::PlayerType::Character && !bufferState->characterSelf)
         {
             logger->info("exit for nullSelf");
             return;
@@ -1059,7 +712,7 @@ bool Logic::TryConnection()
     return pComm->TryConnection(playerID, teamID);
 }
 
-bool Logic::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const
+bool Logic::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const
 {
     std::unique_lock<std::mutex> lock(mtxState);
     return AssistFunction::HaveView(x, y, newX, newY, viewRange, map);
@@ -1090,16 +743,16 @@ void Logic::Main(CreateAIFunc createAI, std::string IP, std::string port, bool f
     logger->info("*********Basic Info*********");
     logger->info("asynchronous: {}", asynchronous);
     logger->info("server: {}:{}", IP, port);
-    if (playerType == THUAI8::PlayerType::Character)
+    if (playerType == THUAI9::PlayerType::Character)
         logger->info("Character ID: {}", playerID);
-    logger->info("player team: {}", THUAI8::playerTeamDict[playerTeam]);
+    logger->info("team id: {}", teamID);
     logger->info("****************************");
 
     // 建立与服务器之间通信的组件
     pComm = std::make_unique<Communication>(IP, port);
 
     // 构造timer
-    if (playerType == THUAI8::PlayerType::Character)
+    if (playerType == THUAI9::PlayerType::Character)
     {
         if (!file && !print)
             timer = std::make_unique<CharacterAPI>(*this);

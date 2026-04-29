@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 #define FMT_ENABLE_ENUM_IMPLICIT
@@ -12,9 +12,14 @@
 #undef SendMessage
 #undef PeekMessage
 
-namespace THUAI8
+namespace THUAI9
 {
-
+    enum class GameMode : unsigned char
+    {
+        NullGameMode = 0,
+        GameModePve = 1,
+        GameModePvp = 2,
+    };
     // 游戏状态
     enum class GameState : unsigned char
     {
@@ -29,14 +34,13 @@ namespace THUAI8
     enum class PlaceType : unsigned char
     {
         NullPlaceType = 0,
-        Home = 1,
+        Factory = 1,
         Space = 2,
         Barrier = 3,
         Bush = 4,
-        EconomyResource = 5,
-        AdditionResource = 6,
-        Construction = 7,
-        Trap = 8,
+        Resource = 5,
+        ComputeCenter = 6,
+        Market = 7,
     };
 
     // 形状标志
@@ -45,13 +49,6 @@ namespace THUAI8
         NullShapeType = 0,
         Circle = 1,
         Square = 2,
-    };
-
-    enum class PlayerTeam : unsigned char
-    {
-        BuddhistsTeam = 0,
-        MonstersTeam = 1,
-        NullTeam = 2,
     };
 
     enum class PlayerType : unsigned char
@@ -64,148 +61,141 @@ namespace THUAI8
     enum class CharacterType : unsigned char
     {
         NullCharacterType = 0,
-
-        TangSeng = 1,
-        SunWukong = 2,
-        ZhuBajie = 3,
-        ShaWujing = 4,
-        BaiLongma = 5,
-        Monkid = 6,
-        JiuLing = 7,
-        HongHaier = 8,
-        NiuMowang = 9,
-        TieShan = 10,
-        ZhiZhujing = 11,
-        Pawn = 12,
-    };
- 
-    enum class EquipmentType : unsigned char
-    {
-        NullEquipmentType = 0,
-
-        SmallHealthPotion = 1,
-        MediumHealthPotion = 2,
-        LargeHealthPotion = 3,
-
-        SmallShield = 4,
-        MediumShield = 5,
-        LargeShield = 6,
-
-        Speedboots = 7,
-        PurificationPotion = 8,
-        InvisibilityPotion = 9,
-        BerserkPotion = 10,
+        Drone = 1,
+        Robot = 2,
+        AutonomousCar = 3,
     };
 
     enum class CharacterState : unsigned char
     {
-        NullCharacterState = 0,
-
+        None = 0,
         Idle = 1,
         Harvesting = 2,
         Attacking = 3,
-        SkillCasting = 4,
-        Constructing = 5,
+        Ocuppying = 4,
+        Trading = 5,
         Moving = 6,
-
-        Blind = 7,
-        KnockedBack = 8,
-        Stunned = 9,
-        Invisible = 10,
-        Healing = 11,
-        Berserk = 12,
-        Burned = 13,
-        Deceased = 14,
+        KnockedBack = 7,
+        Deceased = 8,
     };
 
-    enum class CharacterBuffType : unsigned char
+    enum class HomeState : unsigned char
     {
-        NullCharacterBuffType = 0,
-
-        AttackBuff1 = 1,
-        AttackBuff2 = 2,
-        AttackBuff3 = 3,
-        DefenseBuff = 4,
-        SpeedBuff = 5,
-        VisionBuff = 6,
+        NullHomeState = 0,
+        HomeStateIdle = 1,
+        HomeStateProducingProduct = 2,
+        HomeStateRepairing = 3,
+        HomeStateProducingCharacter = 4,
     };
 
-    enum class EconomyResourceType : unsigned char
+    enum class ComputeCenterState : unsigned char
     {
-        NullEconomyResourceType = 0,
-
-        SmallEconomyResource = 1,
-        MediumEconomyResource = 2,
-        LargeEconomyResource = 3,
+        NullComputeCenterState = 0,
+        Occupyable = 1,
+        Occupied = 2,
+        Robbed = 3,
     };
 
-    enum class AdditionResourceType : unsigned char
+    enum class ResourceState : unsigned char
     {
-        NullAdditionResourceType = 0,
-
-        LIFE_POOL1 = 1,
-        LIFE_POOL2 = 2,
-        LIFE_POOL3 = 3,
-
-        CRAZY_MAN1 = 4,
-        CRAZY_MAN2 = 5,
-        CRAZY_MAN3 = 6,
-
-        QUICK_STEP = 7,
-
-        WIDE_VIEW = 8,
-    };
-
-    enum class EconomyResourceState : unsigned char
-    {
-        NullEconomyResourceState = 0,
+        NullResourceState = 0,
         Harvestable = 1,
         BeingHarvested = 2,
         Harvested = 3,
     };
-    enum class AdditionResourceState
-    {
-        NullAdditionResourceState = 0,
-        Beatable = 1,
-        BeingBeaten = 2,
-        Beaten = 3,
-    };
 
-    enum class ConstructionType : unsigned char
+    enum class ResourceType : unsigned char
     {
-        NullConstructionType = 0,
-        Barracks = 1,
-        Spring = 2,
-        Farm = 3,
-    };
-
-    enum class TrapType
-    {
-        NullTrapType = 0,
-        Hole = 1,
-        Cage = 2,
-    };
-
-    enum class MessageOfObj : unsigned char
-    {
-        NullMessageOfObj = 0,
-        CharacterMessage = 1,
-        BarracksMessage = 2,
-        SpringMessage = 3,
-        FarmMessage = 4,
-        TrapMessage = 5,
-        EconomyResourceMessage = 6,
-        AdditionResourceMessage = 7,
-        MapMessage = 8,
-        NewsMessage = 9,
-        TeamMessage = 10,
+        NullResourceType = 0,
+        SmallResource = 1,
+        MediumResource = 2,
+        LargeResource = 3,
     };
 
     enum class NewsType : unsigned char
     {
         NullNewsType = 0,
-        TextMessage = 1,
-        BinaryMessage = 2,
+        Text = 1,
+        Binary = 2,
+    };
+
+    enum class GoodsType : unsigned char
+    {
+        NullGoodsType = 0,
+        Semiconductor = 1,
+        Medicine = 2,
+        Toys = 3,
+        Clothes = 4,
+        Food = 5,
+    };
+
+    enum class MarketType : unsigned char
+    {
+        NullMarketType = 0,
+        SmallMarket = 1,
+        MediumMarket = 2,
+        LargeMarket = 3,
+    };
+
+    enum class TechType : unsigned char
+    {
+        NullTechType = 0,
+        IncreaseHP = 1,
+        IncreaseAttackPower = 2,
+        IncreaseAttackSize = 3,
+        IncreaseRobust = 4,
+        IncreaseMoveSpeed = 5,
+        IncreaseCarryCapacity = 6,
+        IncreaseEfficiency = 7,
+        IncreaseProduction = 8,
+        IncreaseStorage = 9,
+        IncreasePrice = 10,
+        DecreaseCost = 11,
+    };
+
+    enum class AIEventCategory : unsigned char
+    {
+        NullAIEventCategory = 0,
+        EconomicEvent = 1,
+        WeatherEvent = 2,
+        TechnologyEvent = 3,
+        CombatEvent = 4,
+    };
+
+    enum class TaskType : unsigned char
+    {
+        NullTaskType = 0,
+        ProduceProduct = 1,
+        HarvestResource = 2,
+        OccupyCenter = 3,
+        RepairUnit = 4,
+    };
+
+    enum class AIActionType : unsigned char
+    {
+        Unknown = 0,
+        Produce = 1,
+        Harvest = 2,
+        Move = 3,
+        Attack = 4,
+        Repair = 5,
+        Sell = 6,
+        Occupy = 7,
+    };
+
+    enum class MessageOfObj : unsigned char
+    {
+        NullMessageOfObj = 0,
+        FactoryMessage = 1,
+        CharacterMessage = 2,
+        ResourceMessage = 3,
+        MarketMessage = 4,
+        ComputeCenterMessage = 5,
+        MapMessage = 6,
+        NewsMessage = 7,
+        TeamMessage = 8,
+        BarrierMessage = 9,
+        BushMessage = 10,
     };
 
     struct Character
@@ -219,19 +209,6 @@ namespace THUAI8
         
         CharacterState characterActiveState;
 
-        bool isBlind;
-        int64_t blindTime;
-        bool isStunned;
-        int64_t stunnedTime;
-        bool isInvisible;
-        int64_t invisibleTime;
-        bool isBurned;
-        int64_t burnedTime;
-        double harmCut;
-        int64_t harmCutTime;
-
-        CharacterState characterPassiveState;
-
         int32_t x;
         int32_t y;
 
@@ -243,26 +220,14 @@ namespace THUAI8
         int64_t commonAttackCD;
         int32_t commonAttackRange;
 
-        int64_t skillAttackCD;
 
-        int32_t economyDepletion;
-        int32_t killScore;
 
         int32_t hp;
 
-        int32_t shieldEquipment;
-        // int32_t shild;
-        int32_t shoesEquipment;
-        int64_t shoesTime;
-        bool isPurified;
-        int64_t purifiedTime;
-        bool isBerserk;
-        int64_t berserkTime;
+        int32_t carryCapacity;
+        int32_t currentLoad;
 
-        int32_t attackBuffNum;
-        int64_t attackBuffTime;
-        int64_t speedBuffTime;
-        int64_t visionBuffTime;
+        int32_t harvestRatePerSec;
     };
 
     struct Team
@@ -270,125 +235,76 @@ namespace THUAI8
         int64_t teamID;
         int64_t playerID;
         int64_t score;
-        int64_t energy;
+        int64_t material;
+        int64_t computePower;
     };
 
-    struct Trap
+    struct Factory
     {
-        TrapType trapType;
-
-        bool trap_valid;
-        int64_t team_id;
-
-        Trap() :
-            trapType(TrapType::NullTrapType),
-            trap_valid(false),
-            team_id(0)
-        {
-        }
-        Trap(TrapType type, bool trap_valid, int64_t team_id) :
-            trapType(type),
-            trap_valid(trap_valid),
-            team_id(team_id)
-        {
-        }
+        int64_t factoryID = 0;
+        int64_t teamID = 0;
+        int32_t x = 0;
+        int32_t y = 0;
+        int32_t hp = 0;
+        int32_t robust = 0;
+        int32_t storage = 0;
+        int32_t efficiency = 0;
+        int64_t source = 0;
+        int64_t computingPower = 0;
+        bool canProduce = false;
+        bool canRecruit = false;
+        std::map<GoodsType, int32_t> productInventory;
     };
 
-    struct EconomyResource
+    struct MarketGoodsInfo
     {
-        EconomyResourceType economyResourceType;
-
-        int32_t process;
-
-        int32_t team_id;
-        // 默认构造函数
-        EconomyResource() :
-            economyResourceType(EconomyResourceType::NullEconomyResourceType),  // 默认值为 NullEconomyResourceType
-            process(0),                                                         // 默认进度为 0
-            team_id(0)                                                               // 默认 ID 为 0
-        {
-        }
-        EconomyResource(int32_t ID, int32_t Process, EconomyResourceType type) :
-            team_id(ID),
-            process(Process),
-            economyResourceType(type)
-        {
-        }
+        int32_t price = 0;
+        int32_t tradedQuantity = 0;
     };
 
-    struct AdditionResource
+    struct Market
     {
-        AdditionResourceType additionResourceType;
-
-        int32_t hp;
-
-        int32_t team_id;
-        // 默认构造函数
-        AdditionResource() :
-            additionResourceType(AdditionResourceType::NullAdditionResourceType),  // 默认值为 NullAdditionResourceType
-            hp(0),                                                                 // 默认进度为 0
-            team_id(0)                                                                  // 默认 ID 为 0
-        {
-        }
-        AdditionResource(int32_t ID, int32_t HP, AdditionResourceType type) :
-            team_id(ID),
-            hp(HP),
-            additionResourceType(type)
-        {
-        }
+        int64_t marketID = 0;
+        int32_t x = 0;
+        int32_t y = 0;
+        MarketType marketType = MarketType::NullMarketType;
+        std::map<GoodsType, MarketGoodsInfo> priceList;
     };
 
-    struct ConstructionState
+    struct ComputeCenter
     {
-        int64_t team_id;
-        int32_t hp;
-        ConstructionType constructionType;
-        ConstructionState() :
-            constructionType(ConstructionType::NullConstructionType),  // 默认值为 NullConstructionType
-            hp(0),                                                     // 默认进度为 0
-            team_id(0)                                                  // 默认 ID 为 0
-        {
-        }
-        ConstructionState(int64_t team_id, int32_t HP, ConstructionType type) :
-            team_id(team_id),
-            hp(HP),
-            constructionType(type)
-        {
-        }
+        int64_t centerID = 0;
+        int32_t x = 0;
+        int32_t y = 0;
+        int64_t ownerTeamID = 0;
+        int32_t occupyProgress = 0;
+        ComputeCenterState state = ComputeCenterState::NullComputeCenterState;
     };
 
-    // struct BombedBullet
-    // {
-    //     BulletType bulletType,
-    //     int32_t x,
-    //     int32_t y,
-    //     double facingDirection,
-    //     int64_t mappingID,
-    //     double bombRange,
-    // };
 
     using cellxy_t = std::pair<int32_t, int32_t>;
 
     struct GameMap
     {
         // x,y,id,hp
-        std::map<cellxy_t, std::pair<int32_t, int32_t>> barracksState;
-        std::map<cellxy_t, std::pair<int32_t, int32_t>> springState;
-        std::map<cellxy_t, std::pair<int32_t, int32_t>> farmState;
-        std::map<cellxy_t, Trap> trapState;
-        std::map<cellxy_t, EconomyResource> economyResource;
-        std::map<cellxy_t, AdditionResource> additionResource;
+        std::map<cellxy_t, Factory> factories;
+        std::map<cellxy_t, Market> markets;
+        std::map<cellxy_t, ComputeCenter> computeCenters;
+    };
+
+    struct TeamGameInfo
+    {
+        int32_t teamID = 0;
+        int32_t score = 0;
+        int32_t material = 0;
+        int32_t computePower = 0;
+        int32_t factoryHP = 0;
     };
 
     struct GameInfo
     {
         int32_t gameTime;
-        int32_t buddhistsTeamScore;
-        int32_t buddhistsTeamEconomy;
-        int32_t buddhistsHeroHP;
-        int32_t monstersTeamScore;
-        int32_t monstersTeamEconomy;
-        int32_t monstersHeroHP;
+        std::vector<TeamGameInfo> teams;
     };
 
     // 仅供DEBUG使用，名称可改动
@@ -403,186 +319,128 @@ namespace THUAI8
 
     inline std::map<CharacterType, std::string> characterTypeDict{
         {CharacterType::NullCharacterType, "NullCharacterType"},
-        {CharacterType::TangSeng, "TangSeng"},
-        {CharacterType::SunWukong, "SunWukong"},
-        {CharacterType::ZhuBajie, "ZhuBajie"},
-        {CharacterType::ShaWujing, "ShaWujing"},
-        {CharacterType::BaiLongma, "BaiLongma"},
-        {CharacterType::Monkid, "Monkid"},
-        {CharacterType::JiuLing, "JiuLing"},
-        {CharacterType::JiuLing, "JiuLing"},
-        {CharacterType::HongHaier, "HongHaier"},
-        {CharacterType::NiuMowang, "NiuMowang"},
-        {CharacterType::TieShan, "TieShan"},
-        {CharacterType::ZhiZhujing, "ZhiZhujing"},
-        {CharacterType::Pawn, "Pawn"},
+        {CharacterType::Drone, "Drone"},
+        {CharacterType::Robot, "Robot"},
+        {CharacterType::AutonomousCar, "AutonomousCar"},
     };
 
     inline std::map<CharacterState, std::string> characterStateDict{
-        {CharacterState::NullCharacterState, "NullCharacterState"},
+        {CharacterState::None, "NullCharacterState"},
         {CharacterState::Idle, "Idle"},
         {CharacterState::Harvesting, "Harvesting"},
         {CharacterState::Attacking, "Attacking"},
-        {CharacterState::SkillCasting, "SkillCasting"},
-        {CharacterState::Constructing, "Constructing"},
+        {CharacterState::Ocuppying, "Ocuppying"},
+        {CharacterState::Trading, "Trading"},
         {CharacterState::Moving, "Moving"},
-        {CharacterState::Blind, "Blind"},
         {CharacterState::KnockedBack, "KnockedBack"},
-        {CharacterState::Stunned, "Stunned"},
-        {CharacterState::Invisible, "Invisible"},
-        {CharacterState::Healing, "Healing"},
-        {CharacterState::Berserk, "Berserk"},
-        {CharacterState::Burned, "Burned"},
         {CharacterState::Deceased, "Deceased"},
-    };
-
-    inline std::map<PlayerTeam, std::string> playerTeamDict{
-        {PlayerTeam::NullTeam, "NullTeam"},
-        {PlayerTeam::BuddhistsTeam, "BuddhistsTeam"},
-        {PlayerTeam::MonstersTeam, "MonstersTeam"},
     };
 
     inline std::map<PlaceType, std::string> placeTypeDict{
         {PlaceType::NullPlaceType, "NullPlaceType"},
-        {PlaceType::Home, "Home"},
+        {PlaceType::Factory, "Factory"},
         {PlaceType::Space, "Space"},
         {PlaceType::Barrier, "Barrier"},
         {PlaceType::Bush, "Bush"},
-        {PlaceType::EconomyResource, "EconomyResource"},
-        {PlaceType::AdditionResource, "AdditionResource"},
-        {PlaceType::Construction, "Construction"},
-        {PlaceType::Trap, "Trap"},
+        {PlaceType::Resource, "Resource"},
+        {PlaceType::ComputeCenter, "ComputeCenter"},
+        {PlaceType::Market, "Market"},
     };
 
-    inline std::map<EquipmentType, std::string> equipmentTypeDict{
-        {EquipmentType::NullEquipmentType, "NullEquipmentType"},
-        {EquipmentType::SmallHealthPotion, "SmallHealthPotion"},
-        {EquipmentType::MediumHealthPotion, "MediumHealthPotion"},
-        {EquipmentType::LargeHealthPotion, "LargeHealthPotion"},
-        {EquipmentType::SmallShield, "SmallShield"},
-        {EquipmentType::MediumShield, "MediumShield"},
-        {EquipmentType::LargeShield, "LargeShield"},
-        {EquipmentType::Speedboots, "Speedboots"},
-        {EquipmentType::PurificationPotion, "PurificationPotion"},
-        {EquipmentType::InvisibilityPotion, "InvisibilityPotion"},
-        {EquipmentType::BerserkPotion, "BerserkPotion"},
-    };
 
-    inline std::map<ConstructionType, std::string> constructionDict{
-        {ConstructionType::NullConstructionType, "NullConstructionType"},
-        {ConstructionType::Barracks, "Barracks"},
-        {ConstructionType::Spring, "Spring"},
-        {ConstructionType::Farm, "Farm"},
-    };
-
-    inline std::map<EconomyResourceType, std::string> economyResourceTypeDict{
-        {EconomyResourceType::NullEconomyResourceType, "NullEconomyResourceType"},
-        {EconomyResourceType::SmallEconomyResource, "SmallEconomyResource"},
-        {EconomyResourceType::MediumEconomyResource, "MediumEconomyResource"},
-        {EconomyResourceType::LargeEconomyResource, "LargeEconomyResource"},
-    };
-
-    inline std::map<AdditionResourceType, std::string> additionResourceTypeDict{
-        {AdditionResourceType::NullAdditionResourceType, "NullAdditionResourceType"},
-        {AdditionResourceType::LIFE_POOL1, "LIFE_POOL1"},
-        {AdditionResourceType::LIFE_POOL2, "MediumAdditionResource1"},
-        {AdditionResourceType::LIFE_POOL3, "LargeAdditionResource1"},
-        {AdditionResourceType::CRAZY_MAN1, "SmallAdditionResource2"},
-        {AdditionResourceType::CRAZY_MAN2, "MediumAdditionResource2"},
-        {AdditionResourceType::CRAZY_MAN3, "LargeAdditionResource2"},
-        {AdditionResourceType::QUICK_STEP, "AdditionResource3"},
-        {AdditionResourceType::WIDE_VIEW, "AdditionResource4"},
-    };
-
-    inline std::map<ConstructionType, std::string> constructionTypeDict{
-        {ConstructionType::NullConstructionType, "NullConstructionType"},
-        {ConstructionType::Barracks, "Barracks"},
-        {ConstructionType::Spring, "Spring"},
-        {ConstructionType::Farm, "Farm"},
-};
-
-    inline std::map<EconomyResourceState, std::string> economyResourceStateDict{
-        {EconomyResourceState::NullEconomyResourceState, "NullEconomyResourceState"},
-        {EconomyResourceState::Harvestable, "Harvestable"},
-        {EconomyResourceState::BeingHarvested, "BeingHarvested"},
-        {EconomyResourceState::Harvested, "Harvested"},
-    };
-
-    inline std::map<AdditionResourceState, std::string> additionResourceStateDict{
-        {AdditionResourceState::NullAdditionResourceState, "NullAdditionReourceType"},
-        {AdditionResourceState::Beatable, "Beatable"},
-        {AdditionResourceState::BeingBeaten, "BeingBeaten"},
-        {AdditionResourceState::Beaten, "Beaten"},
-    };
-
-    inline std::map<TrapType, std::string> trapTypeDict{
-        {TrapType::NullTrapType, "NullTrapType"},
-        {TrapType::Hole, "Hole"},
-        {TrapType::Cage, "Cage"},
+    inline std::map<ResourceState, std::string> resourceStateDict{
+        {ResourceState::NullResourceState, "NullResourceState"},
+        {ResourceState::Harvestable, "Harvestable"},
+        {ResourceState::BeingHarvested, "BeingHarvested"},
+        {ResourceState::Harvested, "Harvested"},
     };
 
     inline std::map<MessageOfObj, std::string> messageOfObjDict{
         {MessageOfObj::NullMessageOfObj, "NullMessageOfObj"},
+        {MessageOfObj::FactoryMessage, "FactoryMessage"},
         {MessageOfObj::CharacterMessage, "CharacterMessage"},
-        {MessageOfObj::BarracksMessage, "BarracksMessage"},
-        {MessageOfObj::SpringMessage, "SpringMessage"},
-        {MessageOfObj::FarmMessage, "FarmMessage"},
-        {MessageOfObj::TrapMessage, "TrapMessage"},
-        {MessageOfObj::EconomyResourceMessage, "EconomyResourceMessage"},
-        {MessageOfObj::AdditionResourceMessage, "AdditionResourceMessage"},
+        {MessageOfObj::ResourceMessage, "ResourceMessage"},
+        {MessageOfObj::MarketMessage, "MarketMessage"},
+        {MessageOfObj::ComputeCenterMessage, "ComputeCenterMessage"},
         {MessageOfObj::MapMessage, "MapMessage"},
         {MessageOfObj::NewsMessage, "NewsMessage"},
         {MessageOfObj::TeamMessage, "TeamMessage"},
+        {MessageOfObj::BarrierMessage, "BarrierMessage"},
+        {MessageOfObj::BushMessage, "BushMessage"},
     };
 
     inline std::map<NewsType, std::string> newsTypeDict{
         {NewsType::NullNewsType, "NullNewsType"},
-        {NewsType::TextMessage, "TextMessage"},
-        {NewsType::BinaryMessage, "BinaryMessage"},
+        {NewsType::Text, "TextMessage"},
+        {NewsType::Binary, "BinaryMessage"},
     };
 
-}  // namespace THUAI8
+    inline std::map<GoodsType, std::string> goodsTypeDict{
+        {GoodsType::NullGoodsType, "NullGoodsType"},
+        {GoodsType::Semiconductor, "Semiconductor"},
+        {GoodsType::Medicine, "Medicine"},
+        {GoodsType::Toys, "Toys"},
+        {GoodsType::Clothes, "Clothes"},
+        {GoodsType::Food, "Food"},
+    };
+
+    inline std::map<MarketType, std::string> marketTypeDict{
+        {MarketType::NullMarketType, "NullMarketType"},
+        {MarketType::SmallMarket, "SmallMarket"},
+        {MarketType::MediumMarket, "MediumMarket"},
+        {MarketType::LargeMarket, "LargeMarket"},
+    };
+
+    inline std::map<TechType, std::string> techTypeDict{
+        {TechType::NullTechType, "NullTechType"},
+        {TechType::IncreaseHP, "IncreaseHP"},
+        {TechType::IncreaseAttackPower, "IncreaseAttackPower"},
+        {TechType::IncreaseAttackSize, "IncreaseAttackSize"},
+        {TechType::IncreaseRobust, "IncreaseRobust"},
+        {TechType::IncreaseMoveSpeed, "IncreaseMoveSpeed"},
+        {TechType::IncreaseCarryCapacity, "IncreaseCarryCapacity"},
+        {TechType::IncreaseEfficiency, "IncreaseEfficiency"},
+        {TechType::IncreaseProduction, "IncreaseProduction"},
+        {TechType::IncreaseStorage, "IncreaseStorage"},
+        {TechType::IncreasePrice, "IncreasePrice"},
+        {TechType::DecreaseCost, "DecreaseCost"},
+    };
+
+}  // namespace THUAI9
+
+// fmt库的formatter特化，方便调试输出枚举类型
+
+
 
 namespace fmt
 {
-    template<>
-    struct formatter<THUAI8::CharacterType> : formatter<std::string>
-    {
-        auto format(THUAI8::CharacterType type, format_context& ctx) const
-        {
-            auto it = THUAI8::characterTypeDict.find(type);
-            formatter<std::string> stringFormatter;
-            return stringFormatter.format(
-                it != THUAI8::characterTypeDict.end() ? it->second : "UnknownCharacterType", ctx
-            );
-        }
+
+    //预处理宏 THUAI9_REGISTER_FORMATTER，为所有 dict 都生成了对应的 fmt::formatter 特化
+#define THUAI9_REGISTER_FORMATTER(EnumType, EnumDict) \
+    template<> \
+    struct formatter<THUAI9::EnumType> : formatter<std::string> \
+    { \
+        auto format(THUAI9::EnumType type, format_context& ctx) const \
+        { \
+            auto it = THUAI9::EnumDict.find(type); \
+            formatter<std::string> stringFormatter; \
+            return stringFormatter.format( \
+                it != THUAI9::EnumDict.end() ? it->second : "Unknown" #EnumType, ctx \
+            ); \
+        } \
     };
 
-    template<>
-    struct formatter<THUAI8::ConstructionType> : formatter<std::string>
-    {
-        auto format(THUAI8::ConstructionType type, format_context& ctx) const
-        {
-            auto it = THUAI8::constructionDict.find(type);
-            formatter<std::string> stringFormatter;
-            return stringFormatter.format(
-                it != THUAI8::constructionDict.end() ? it->second : "UnknownConstructionType", ctx
-            );
-        }
-    };
+    THUAI9_REGISTER_FORMATTER(GameState, gameStateDict)
+    THUAI9_REGISTER_FORMATTER(CharacterType, characterTypeDict)
+    THUAI9_REGISTER_FORMATTER(CharacterState, characterStateDict)
+    THUAI9_REGISTER_FORMATTER(PlaceType, placeTypeDict)
+    THUAI9_REGISTER_FORMATTER(ResourceState, resourceStateDict)
+    THUAI9_REGISTER_FORMATTER(MessageOfObj, messageOfObjDict)
+    THUAI9_REGISTER_FORMATTER(NewsType, newsTypeDict)
+    THUAI9_REGISTER_FORMATTER(GoodsType, goodsTypeDict)
+    THUAI9_REGISTER_FORMATTER(MarketType, marketTypeDict)
+    THUAI9_REGISTER_FORMATTER(TechType, techTypeDict)
 
-    template<>
-    struct formatter<THUAI8::EquipmentType> : formatter<std::string>
-    {
-        auto format(THUAI8::EquipmentType type, format_context& ctx) const
-        {
-            auto it = THUAI8::equipmentTypeDict.find(type);
-            formatter<std::string> stringFormatter;
-            return stringFormatter.format(
-                it != THUAI8::equipmentTypeDict.end() ? it->second : "UnknownEquipmentType", ctx
-            );
-        }
-    };
 }  // namespace fmt
 
 #endif

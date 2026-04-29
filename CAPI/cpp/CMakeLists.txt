@@ -1,7 +1,7 @@
 # 临时CMakeLists，仅供本地调试用
 cmake_minimum_required(VERSION 3.5)
 
-project(THUAI8_CAPI VERSION 1.0)
+project(THUAI9_CAPI VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 

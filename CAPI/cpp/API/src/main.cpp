@@ -1,4 +1,4 @@
-#include "AI.h"
+﻿#include "AI.h"
 #include "logic.h"
 #include "structures.h"
 #include <tclap/CmdLine.h>
@@ -38,23 +38,22 @@ static constexpr std::string_view welcomeString = R"welcome(
                                \/     \/         \/       \/     \/        
 )welcome"sv;
 
-int THUAI8Main(int argc, char** argv, CreateAIFunc AIBuilder)
+int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
 {
     int pID = 0;
     int tID;
-    std::string sIP = "172.22.32.1";
+    std::string sIP = "127.0.0.1";
     std::string sPort = "8888";
     bool file = false;
     bool print = false;
     bool warnOnly = false;
     int side_flag = 0;
-    extern const std::array<THUAI8::CharacterType, 6> BuddhistsCharacterTypeDict;
-    extern const std::array<THUAI8::CharacterType, 6> MonstersCharacterTypeDict;
+    extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict;
 
     // 使用cmdline的正式版本
     try
     {
-        TCLAP::CmdLine cmd("THUAI8 C++ interface commandline parameter introduction");
+        TCLAP::CmdLine cmd("THUAI9 C++ interface commandline parameter introduction");
 
         TCLAP::ValueArg<std::string> serverIP("I", "serverIP", "Server`s IP 127.0.0.1 in default", false, "127.0.0.1", "string");
         cmd.add(serverIP);
@@ -108,13 +107,13 @@ int THUAI8Main(int argc, char** argv, CreateAIFunc AIBuilder)
     }
     try
     {
-        THUAI8::PlayerType playerType;
-        THUAI8::CharacterType CharacterType = THUAI8::CharacterType::NullCharacterType;
+        THUAI9::PlayerType playerType;
+        THUAI9::CharacterType CharacterType = THUAI9::CharacterType::NullCharacterType;
         if (pID == 0)
-            playerType = THUAI8::PlayerType::Team;
+            playerType = THUAI9::PlayerType::Team;
         else
         {
-            playerType = THUAI8::PlayerType::Character;
+            playerType = THUAI9::PlayerType::Character;
             if (!side_flag)
                 CharacterType = BuddhistsCharacterTypeDict[pID - 1];
             else
@@ -145,5 +144,5 @@ std::unique_ptr<IAI> CreateAI(int32_t pID)
 
 int main(int argc, char* argv[])
 {
-    return THUAI8Main(argc, argv, CreateAI);
+    return THUAI9Main(argc, argv, CreateAI);
 }

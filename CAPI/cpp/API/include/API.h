@@ -36,19 +36,20 @@ class ILogic
 
 public:
     // 获取服务器发来的消息
-    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const = 0;
-    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const = 0;
-    [[nodiscard]] virtual std::shared_ptr<const THUAI8::Character> CharacterGetSelfInfo() const = 0;
-    [[nodiscard]] virtual std::shared_ptr<const THUAI8::Team> TeamGetSelfInfo() const = 0;
-    [[nodiscard]] virtual std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const = 0;
-    [[nodiscard]] virtual std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const = 0;
+    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const = 0;
+    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const = 0;
+    [[nodiscard]] virtual std::shared_ptr<const THUAI9::Character> CharacterGetSelfInfo() const = 0;
+    [[nodiscard]] virtual std::shared_ptr<const THUAI9::Team> TeamGetSelfInfo() const = 0;
+    [[nodiscard]] virtual std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const = 0;
+    [[nodiscard]] virtual std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const = 0;
     [[nodiscard]] virtual std::vector<int64_t> GetPlayerGUIDs() const = 0;
-    [[nodiscard]] virtual THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const = 0;
     [[nodiscard]] virtual int32_t GetEnergy() const = 0;
+    [[nodiscard]] virtual int32_t GetMaterial() const = 0;
     [[nodiscard]] virtual int32_t GetScore() const = 0;
 
     // 供IAPI使用的操作相关的公共部分
@@ -63,19 +64,26 @@ public:
     virtual bool Move(int64_t moveTimeInMilliseconds, double angle) = 0;
     virtual bool Recover(int64_t recover) = 0;
     virtual bool Produce(int64_t playerID, int64_t teamID) = 0;
-    // virtual bool Rebuild(THUAI8::ConstructionType constructionType) = 0;
-    virtual bool Construct(THUAI8::ConstructionType constructionType) = 0;
-    virtual bool ConstructTrap(THUAI8::TrapType trapType) = 0;
+    virtual bool Harvest(int64_t playerID, int64_t teamID) = 0;
+    virtual bool Occupy(int64_t playerID, int64_t teamID) = 0;
+    virtual bool Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    virtual bool Buy(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    virtual bool Sell(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    // virtual bool Rebuild(THUAI9::ConstructionType constructionType) = 0;
+    virtual bool Construct(THUAI9::ConstructionType constructionType) = 0;
+    virtual bool ConstructTrap(THUAI9::TrapType trapType) = 0;
     virtual bool Skill_Attack(int64_t teamID, int64_t playerID, double angle) = 0;
     virtual bool Common_Attack(int64_t teamID, int64_t playerID, int64_t attacked_teamID, int64_t attacked_playerID) = 0;
     virtual bool AttackConstruction(int64_t playerID, int64_t teamID) = 0;
     virtual bool AttackAdditionResource(int64_t playerID, int64_t teamID) = 0;
-    [[nodiscard]] virtual bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const = 0;
+    [[nodiscard]] virtual bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const = 0;
 
     // Team使用的部分
     // virtual bool Recycle(int32_t playerID, int32_t targetID) = 0;
-    virtual bool InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmentType) = 0;
-    virtual bool BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex) = 0;
+    virtual bool InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmentType) = 0;
+    virtual bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex) = 0;
+    virtual bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) = 0;
+    virtual bool UplevelTech(THUAI9::TechType techType) = 0;
 };
 
 class IAPI
@@ -94,17 +102,18 @@ public:
     // 等待下一帧
     virtual bool Wait() = 0;
     virtual std::future<bool> EndAllAction() = 0;
-    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const = 0;
-    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const = 0;
-    [[nodiscard]] virtual std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const = 0;
-    [[nodiscard]] virtual std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const = 0;
-    [[nodiscard]] virtual THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const = 0;
-    [[nodiscard]] virtual std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const = 0;
+    [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const = 0;
+    [[nodiscard]] virtual std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const = 0;
+    [[nodiscard]] virtual std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const = 0;
+    [[nodiscard]] virtual THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const = 0;
+    [[nodiscard]] virtual std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const = 0;
     [[nodiscard]] virtual std::vector<int64_t> GetPlayerGUIDs() const = 0;
     [[nodiscard]] virtual int32_t GetEnergy() const = 0;
+    [[nodiscard]] virtual int32_t GetMaterial() const = 0;
     [[nodiscard]] virtual int32_t GetScore() const = 0;
 
     /*****选手可能用的辅助函数*****/
@@ -144,20 +153,27 @@ public:
     virtual std::future<bool> AttackAdditionResource() = 0;
     virtual std::future<bool> Recover(int64_t recover) = 0;
     virtual std::future<bool> Produce() = 0;
-    // virtual std::future<bool> Rebuild(THUAI8::ConstructionType constructionType) = 0;
-    virtual std::future<bool> Construct(THUAI8::ConstructionType constructionType) = 0;
-    virtual std::future<bool> ConstructTrap(THUAI8::TrapType trapType) = 0;
-    virtual std::shared_ptr<const THUAI8::Character> GetSelfInfo() const = 0;
-    virtual bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const = 0;
+    virtual std::future<bool> Harvest() = 0;
+    virtual std::future<bool> Occupy() = 0;
+    virtual std::future<bool> Load(THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    virtual std::future<bool> Buy(THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    virtual std::future<bool> Sell(THUAI9::GoodsType goodsType, int32_t amount) = 0;
+    // virtual std::future<bool> Rebuild(THUAI9::ConstructionType constructionType) = 0;
+    virtual std::future<bool> Construct(THUAI9::ConstructionType constructionType) = 0;
+    virtual std::future<bool> ConstructTrap(THUAI9::TrapType trapType) = 0;
+    virtual std::shared_ptr<const THUAI9::Character> GetSelfInfo() const = 0;
+    virtual bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const = 0;
 };
 
 class ITeamAPI : public IAPI
 {
 public:
-    [[nodiscard]] virtual std::shared_ptr<const THUAI8::Team> GetSelfInfo() const = 0;
-    virtual std::future<bool> InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmenttype) = 0;
+    [[nodiscard]] virtual std::shared_ptr<const THUAI9::Team> GetSelfInfo() const = 0;
+    virtual std::future<bool> InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype) = 0;
     // virtual std::future<bool> Recycle(int32_t playerID, int32_t targetID) = 0;
-    virtual std::future<bool> BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex) = 0;
+    virtual std::future<bool> BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex) = 0;
+    virtual std::future<bool> ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) = 0;
+    virtual std::future<bool> UplevelTech(THUAI9::TechType techType) = 0;
 };
 
 class IGameTimer
@@ -204,23 +220,29 @@ public:
     std::future<bool> AttackAdditionResource() override;
     std::future<bool> Recover(int64_t recover) override;
     std::future<bool> Produce() override;
-    // std::future<bool> Rebuild(THUAI8::ConstructionType constructionType) override;
-    std::future<bool> Construct(THUAI8::ConstructionType constructionType) override;
-    std::future<bool> ConstructTrap(THUAI8::TrapType trapType) override;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const override;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const override;
-    [[nodiscard]] std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const override;
-    [[nodiscard]] THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
+    std::future<bool> Harvest() override;
+    std::future<bool> Occupy() override;
+    std::future<bool> Load(THUAI9::GoodsType goodsType, int32_t amount) override;
+    std::future<bool> Buy(THUAI9::GoodsType goodsType, int32_t amount) override;
+    std::future<bool> Sell(THUAI9::GoodsType goodsType, int32_t amount) override;
+    // std::future<bool> Rebuild(THUAI9::ConstructionType constructionType) override;
+    std::future<bool> Construct(THUAI9::ConstructionType constructionType) override;
+    std::future<bool> ConstructTrap(THUAI9::TrapType trapType) override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;
+    [[nodiscard]] std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const override;
+    [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const override;
     [[nodiscard]] int32_t GetEnergy() const override;
+    [[nodiscard]] int32_t GetMaterial() const override;
     [[nodiscard]] int32_t GetScore() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Character> GetSelfInfo() const override;
-    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Character> GetSelfInfo() const override;
+    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const override;
     void Print(std::string str) const
     {
     }
@@ -262,22 +284,25 @@ public:
     bool Wait() override;
     std::future<bool> EndAllAction() override;
 
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const override;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const override;
-    [[nodiscard]] std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const override;
-    [[nodiscard]] THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;
+    [[nodiscard]] std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const override;
+    [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const override;
     [[nodiscard]] int32_t GetEnergy() const override;
+    [[nodiscard]] int32_t GetMaterial() const override;
     [[nodiscard]] int32_t GetScore() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Team> GetSelfInfo() const override;
-    std::future<bool> InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmenttype) override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Team> GetSelfInfo() const override;
+    std::future<bool> InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype) override;
     // std::future<bool> Recycle(int32_t playerID, int32_t targetID) override;
-    std::future<bool> BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex) override;
+    std::future<bool> BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex) override;
+    std::future<bool> ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) override;
+    std::future<bool> UplevelTech(THUAI9::TechType techType) override;
     void Print(std::string str) const
     {
     }
@@ -320,25 +345,31 @@ public:
     std::future<bool> AttackConstruction() override;
     std::future<bool> AttackAdditionResource() override;
     std::future<bool> Recover(int64_t recover) override;
-    std::future<bool> Produce();
-    // std::future<bool> Rebuild(THUAI8::ConstructionType constructionType) override;
-    std::future<bool> Construct(THUAI8::ConstructionType constructionType) override;
-    std::future<bool> ConstructTrap(THUAI8::TrapType trapType) override;
+    std::future<bool> Produce() override;
+    std::future<bool> Harvest() override;
+    std::future<bool> Occupy() override;
+    std::future<bool> Load(THUAI9::GoodsType goodsType, int32_t amount) override;
+    std::future<bool> Buy(THUAI9::GoodsType goodsType, int32_t amount) override;
+    std::future<bool> Sell(THUAI9::GoodsType goodsType, int32_t amount) override;
+    // std::future<bool> Rebuild(THUAI9::ConstructionType constructionType) override;
+    std::future<bool> Construct(THUAI9::ConstructionType constructionType) override;
+    std::future<bool> ConstructTrap(THUAI9::TrapType trapType) override;
 
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const override;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const override;
-    [[nodiscard]] std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const override;
-    [[nodiscard]] THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;
+    [[nodiscard]] std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const override;
+    [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const override;
     [[nodiscard]] int32_t GetEnergy() const override;
+    [[nodiscard]] int32_t GetMaterial() const override;
     [[nodiscard]] int32_t GetScore() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Character> GetSelfInfo() const override;
-    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI8::PlaceType>>& map) const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Character> GetSelfInfo() const override;
+    [[nodiscard]] bool HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const override;
 
     void Print(std::string str) const override;
     void PrintCharacter() const override;
@@ -370,22 +401,25 @@ public:
     bool Wait() override;
     std::future<bool> EndAllAction() override;
 
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetCharacters() const override;
-    [[nodiscard]] std::vector<std::shared_ptr<const THUAI8::Character>> GetEnemyCharacters() const override;
-    [[nodiscard]] std::vector<std::vector<THUAI8::PlaceType>> GetFullMap() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::GameInfo> GetGameInfo() const override;
-    [[nodiscard]] THUAI8::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
-    [[nodiscard]] std::optional<THUAI8::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
+    [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;
+    [[nodiscard]] std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::GameInfo> GetGameInfo() const override;
+    [[nodiscard]] THUAI9::PlaceType GetPlaceType(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::EconomyResource> GetEconomyResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::AdditionResource> GetAdditionResourceState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::ConstructionState> GetConstructionState(int32_t cellX, int32_t cellY) const override;
+    [[nodiscard]] std::optional<THUAI9::Trap> GetTrapState(int32_t cellX, int32_t cellY) const override;
     [[nodiscard]] std::vector<int64_t> GetPlayerGUIDs() const override;
     [[nodiscard]] int32_t GetEnergy() const override;
+    [[nodiscard]] int32_t GetMaterial() const override;
     [[nodiscard]] int32_t GetScore() const override;
-    [[nodiscard]] std::shared_ptr<const THUAI8::Team> GetSelfInfo() const override;
-    std::future<bool> InstallEquipment(int32_t playerID, THUAI8::EquipmentType equipmenttype) override;
+    [[nodiscard]] std::shared_ptr<const THUAI9::Team> GetSelfInfo() const override;
+    std::future<bool> InstallEquipment(int32_t playerID, THUAI9::EquipmentType equipmenttype) override;
     // std::future<bool> Recycle(int32_t playerID, int32_t targetID) override;
-    std::future<bool> BuildCharacter(THUAI8::CharacterType CharacterType, int32_t birthIndex) override;
+    std::future<bool> BuildCharacter(THUAI9::CharacterType CharacterType, int32_t birthIndex) override;
+    std::future<bool> ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) override;
+    std::future<bool> UplevelTech(THUAI9::TechType techType) override;
     void Print(std::string str) const override;
     void PrintSelfInfo() const override;
     // TODO
