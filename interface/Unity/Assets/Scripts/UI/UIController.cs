@@ -5,6 +5,7 @@ using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Live;
 using THUAI9.Unity.Playback;
+using THUAI9.Unity.WebGL;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -525,7 +526,10 @@ namespace THUAI9.Unity.UI
         {
             ClearCurrentUiSelection();
 
-#if UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebGLFrameBridge.GetOrCreate()?.RequestPlaybackFile();
+            SetReplayHint("WebGL: opened browser playback file picker.", false);
+#elif UNITY_EDITOR
             string startDirectory = GetPlaybackPickerStartDirectory();
             string path = UnityEditor.EditorUtility.OpenFilePanel("选择 THUAI9 回放文件", startDirectory, "thuaipb");
             if (string.IsNullOrWhiteSpace(path))
@@ -567,6 +571,19 @@ namespace THUAI9.Unity.UI
             if (playbackController == null)
             {
                 SetReplayHint("未找到 PlaybackController，无法加载回放。", true);
+                return;
+            }
+
+            string trimmedPath = path?.Trim().Trim('"');
+            if (Playback.PlaybackController.IsPlaybackUrl(trimmedPath))
+            {
+                playbackController.LoadPlaybackUrl(trimmedPath);
+                if (playbackPathInput != null)
+                {
+                    playbackPathInput.text = trimmedPath;
+                }
+
+                SetReplayHint($"Loading Web playback: {ShortenPathForDisplay(trimmedPath)}", false);
                 return;
             }
 

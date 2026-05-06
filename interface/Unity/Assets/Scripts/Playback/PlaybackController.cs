@@ -4,6 +4,7 @@ using System.IO;
 using Protobuf;
 using THUAI9.Unity.Core;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace THUAI9.Unity.Playback
 {
@@ -23,8 +24,10 @@ namespace THUAI9.Unity.Playback
         public float playSpeed = PlayBackConstant.DEFAULT_PLAY_SPEED;
 
         private MessageReader messageReader;
+        private Coroutine loadCoroutine;
         private Coroutine playCoroutine;
         private bool playbackLoaded;
+        private string playbackSourceDisplayName;
         private string statusText = "状态：未加载回放文件";
         private int currentFrameIndex = -1;
         private int firstFrameGameTimeMs = -1;
@@ -56,7 +59,13 @@ namespace THUAI9.Unity.Playback
             messageReader = new MessageReader();
             ApplyDefaultPlaybackSettings();
 
-            if (!string.IsNullOrWhiteSpace(playbackFilePath))
+            bool shouldLoadInitialPlayback = !string.IsNullOrWhiteSpace(playbackFilePath);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Browser builds receive playback files from the hosting page. Avoid
+            // logging a startup error for the editor-only default Assets path.
+            shouldLoadInitialPlayback = shouldLoadInitialPlayback && IsPlaybackUrl(playbackFilePath);
+#endif
+            if (shouldLoadInitialPlayback)
             {
                 LoadPlaybackFile(playbackFilePath);
             }
@@ -64,25 +73,18 @@ namespace THUAI9.Unity.Playback
 
         public void LoadPlaybackFile(string filePath)
         {
-            if (playCoroutine != null || isPlaying || isPaused)
+            if (IsPlaybackUrl(filePath))
             {
-                StopInternal(false);
+                LoadPlaybackUrl(filePath);
+                return;
             }
 
-            playbackFilePath = NormalizePlaybackPath(filePath);
-            playbackLoaded = false;
-            currentFrameIndex = -1;
-            firstFrameGameTimeMs = -1;
-            currentPlaybackTimeMs = 0;
-            playbackMap = null;
-            CoreParam.playbackCurrentFrameIndex = -1;
-            CoreParam.playbackElapsedMilliseconds = 0;
-            statusText = "状态：正在加载回放文件";
-            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+            string normalizedPath = NormalizePlaybackPath(filePath);
+            PreparePlaybackLoad(normalizedPath, GetPlaybackDisplayName(normalizedPath), "Status: loading playback file");
 
             if (!File.Exists(playbackFilePath))
             {
-                statusText = "状态：未找到回放文件";
+                statusText = "Status: playback file not found";
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 Debug.LogError($"Playback file does not exist: {playbackFilePath}");
                 return;
@@ -90,13 +92,99 @@ namespace THUAI9.Unity.Playback
 
             try
             {
-                byte[] data = File.ReadAllBytes(playbackFilePath);
-                messageReader?.LoadData(data);
+                LoadPlaybackData(File.ReadAllBytes(playbackFilePath));
+            }
+            catch (Exception ex)
+            {
+                MarkPlaybackLoadFailed("Status: failed to load playback", ex);
+            }
+        }
+
+        public void LoadPlaybackUrl(string url)
+        {
+            LoadPlaybackUrl(url, null);
+        }
+
+        public void LoadPlaybackUrl(string url, string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                statusText = "Status: playback URL is empty";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+                return;
+            }
+
+            string trimmedUrl = url.Trim().Trim('"');
+            PreparePlaybackLoad(trimmedUrl, displayName ?? GetPlaybackDisplayName(trimmedUrl), "Status: loading playback from browser");
+            loadCoroutine = StartCoroutine(LoadPlaybackUrlCoroutine(trimmedUrl));
+        }
+
+        public void LoadPlaybackBytes(byte[] data, string displayName = null)
+        {
+            PreparePlaybackLoad(displayName ?? "WebGL playback bytes", displayName ?? "WebGL playback", "Status: loading playback bytes from browser");
+            LoadPlaybackData(data);
+        }
+
+        private IEnumerator LoadPlaybackUrlCoroutine(string url)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
+            {
+                request.downloadHandler = new DownloadHandlerBuffer();
+                yield return request.SendWebRequest();
+
+                loadCoroutine = null;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    MarkPlaybackLoadFailed($"Status: browser playback load failed, {request.error}", null);
+                    yield break;
+                }
+
+                LoadPlaybackData(request.downloadHandler?.data);
+            }
+        }
+
+        private void PreparePlaybackLoad(string source, string displayName, string loadingStatus)
+        {
+            if (playCoroutine != null || isPlaying || isPaused)
+            {
+                StopInternal(false);
+            }
+
+            if (loadCoroutine != null)
+            {
+                StopCoroutine(loadCoroutine);
+                loadCoroutine = null;
+            }
+
+            playbackFilePath = source;
+            playbackSourceDisplayName = string.IsNullOrWhiteSpace(displayName) ? GetPlaybackDisplayName(source) : displayName;
+            playbackLoaded = false;
+            currentFrameIndex = -1;
+            firstFrameGameTimeMs = -1;
+            currentPlaybackTimeMs = 0;
+            playbackMap = null;
+            CoreParam.playbackCurrentFrameIndex = -1;
+            CoreParam.playbackElapsedMilliseconds = 0;
+            statusText = loadingStatus;
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+        }
+
+        private void LoadPlaybackData(byte[] data)
+        {
+            try
+            {
+                if (data == null || data.Length == 0)
+                {
+                    throw new InvalidDataException("Playback data is empty.");
+                }
+
+                messageReader ??= new MessageReader();
+                messageReader.LoadData(data);
                 playbackLoaded = messageReader != null && messageReader.GetMessageCount() > 0;
 
                 if (!playbackLoaded)
                 {
-                    statusText = "状态：回放文件中没有可读取帧";
+                    statusText = "Status: playback file has no readable frames";
                     FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                     Debug.LogError($"Playback file contains no readable frames: {playbackFilePath}");
                     return;
@@ -105,7 +193,7 @@ namespace THUAI9.Unity.Playback
                 firstFrameGameTimeMs = GetFrameGameTimeMs(messageReader.ReadMessageAt(0));
                 currentPlaybackTimeMs = 0;
                 playbackMap = FindPlaybackMap();
-                statusText = $"状态：已加载 {messageReader.GetMessageCount()} 帧";
+                statusText = $"Status: loaded {messageReader.GetMessageCount()} frames";
                 if (autoPlayOnLoad)
                 {
                     Play();
@@ -117,10 +205,22 @@ namespace THUAI9.Unity.Playback
             }
             catch (Exception ex)
             {
-                playbackLoaded = false;
-                statusText = "状态：加载回放失败";
-                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+                MarkPlaybackLoadFailed("Status: failed to load playback", ex);
+            }
+        }
+
+        private void MarkPlaybackLoadFailed(string status, Exception ex)
+        {
+            playbackLoaded = false;
+            statusText = status;
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+            if (ex != null)
+            {
                 Debug.LogError($"Failed to load playback file: {ex.Message}");
+            }
+            else
+            {
+                Debug.LogError(status);
             }
         }
 
@@ -454,9 +554,9 @@ namespace THUAI9.Unity.Playback
 
         private string BuildPlaybackSourceName()
         {
-            return string.IsNullOrWhiteSpace(playbackFilePath)
-                ? "回放"
-                : $"回放：{Path.GetFileName(playbackFilePath)}";
+            return string.IsNullOrWhiteSpace(playbackSourceDisplayName)
+                ? "Playback"
+                : $"Playback: {playbackSourceDisplayName}";
         }
 
         private int GetElapsedPlaybackMilliseconds(MessageToClient frame, int frameIndex)
@@ -498,8 +598,71 @@ namespace THUAI9.Unity.Playback
             return File.Exists(projectRelativePath) ? projectRelativePath : normalized;
         }
 
+        public static bool IsPlaybackUrl(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return false;
+            }
+
+            string trimmed = source.Trim().Trim('"');
+            if (trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return Uri.TryCreate(trimmed, UriKind.Absolute, out Uri uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeFile);
+        }
+
+        private static string GetPlaybackDisplayName(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return "Playback";
+            }
+
+            string trimmed = source.Trim().Trim('"');
+            if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri uri))
+            {
+                string uriFileName = SafeFileName(uri.LocalPath);
+                if (!string.IsNullOrWhiteSpace(uriFileName))
+                {
+                    return Uri.UnescapeDataString(uriFileName);
+                }
+
+                if (trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
+                    || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "WebGL playback";
+                }
+            }
+
+            string fileName = SafeFileName(trimmed);
+            return string.IsNullOrWhiteSpace(fileName) ? trimmed : fileName;
+        }
+
+        private static string SafeFileName(string source)
+        {
+            try
+            {
+                return Path.GetFileName(source);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         private void OnDestroy()
         {
+            if (loadCoroutine != null)
+            {
+                StopCoroutine(loadCoroutine);
+                loadCoroutine = null;
+            }
+
             StopInternal(false);
             messageReader?.Dispose();
         }

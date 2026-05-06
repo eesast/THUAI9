@@ -4,7 +4,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+#if !UNITY_WEBGL || UNITY_EDITOR
 using Grpc.Core;
+#endif
 using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Playback;
@@ -31,18 +33,22 @@ namespace THUAI9.Unity.Live
         public bool autoReconnect = true;
         [Min(0.5f)] public float reconnectIntervalSeconds = 2f;
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         private Channel channel;
         private AvailableService.AvailableServiceClient client;
         private AsyncServerStreamingCall<MessageToClient> stream;
         private CancellationTokenSource cancellation;
+#endif
         private PlaybackController playbackController;
 
         private bool liveRequested;
+        private bool externalLiveMode;
         private bool isConnecting;
         private bool isConnected;
         private bool hasReceivedFirstFrame;
         private bool liveEndedCleanly;
         private DateTime nextConnectUtc = DateTime.MinValue;
+        private string externalLiveSourceName = "WebGL Live";
         private string statusText = "实时：未连接";
         private int receivedFrameCount;
         private int lastReceivedObjectCount;
@@ -52,12 +58,14 @@ namespace THUAI9.Unity.Live
         private int lastReceivedResourceCount;
         private int lastReceivedMapMessageCount;
         private int maxReceivedCharacterCount;
+#if !UNITY_WEBGL || UNITY_EDITOR
         private readonly long spectatorPlayerId = 2023 + System.Diagnostics.Process.GetCurrentProcess().Id;
         private static bool nativeGrpcSearchPathConfigured;
+#endif
 
         public bool IsLiveMode => liveRequested || isConnecting || isConnected;
         public bool IsConnecting => isConnecting;
-        public bool IsConnected => isConnected;
+        public bool IsConnected => isConnected || externalLiveMode;
         public string StatusText => statusText;
         public string ServerAddress => serverAddress;
         public int ReceivedFrameCount => receivedFrameCount;
@@ -90,7 +98,7 @@ namespace THUAI9.Unity.Live
         {
             PumpQueuedLiveFrames();
 
-            if (!liveRequested || liveEndedCleanly || isConnected || isConnecting)
+            if (!liveRequested || externalLiveMode || liveEndedCleanly || isConnected || isConnecting)
             {
                 return;
             }
@@ -100,7 +108,9 @@ namespace THUAI9.Unity.Live
                 return;
             }
 
+#if !UNITY_WEBGL || UNITY_EDITOR
             _ = ConnectOnceAsync();
+#endif
         }
 
         private void PumpQueuedLiveFrames()
@@ -123,6 +133,17 @@ namespace THUAI9.Unity.Live
 
         public void StartLive(string address)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                externalLiveSourceName = address.Trim();
+            }
+
+            StartExternalLive(externalLiveSourceName);
+            statusText = $"实时：WebGL 等待网页推帧 {externalLiveSourceName}";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+            return;
+#else
             if (!string.IsNullOrWhiteSpace(address))
             {
                 serverAddress = NormalizeGrpcTarget(address);
@@ -145,11 +166,13 @@ namespace THUAI9.Unity.Live
             FrameSourceHub.Reset(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
 
             _ = ConnectOnceAsync();
+#endif
         }
 
         public void StopLive()
         {
             liveRequested = false;
+            externalLiveMode = false;
             liveEndedCleanly = false;
             hasReceivedFirstFrame = false;
             ResetReceiveCounters();
@@ -158,11 +181,65 @@ namespace THUAI9.Unity.Live
             FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", statusText);
         }
 
-        private async Task ConnectOnceAsync()
+        public void StartExternalLive(string sourceName = null)
+        {
+            if (!string.IsNullOrWhiteSpace(sourceName))
+            {
+                externalLiveSourceName = sourceName.Trim();
+            }
+
+            playbackController ??= FindObjectOfType<PlaybackController>();
+            playbackController?.Stop();
+            ReleaseConnectionResources();
+
+            liveRequested = true;
+            externalLiveMode = true;
+            isConnecting = false;
+            isConnected = false;
+            liveEndedCleanly = false;
+            hasReceivedFirstFrame = false;
+            ResetReceiveCounters();
+            statusText = $"实时：等待 {externalLiveSourceName} 推帧";
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+        }
+
+        public bool SubmitExternalLiveFrame(MessageToClient message, string sourceName = null)
+        {
+            if (message == null)
+            {
+                return false;
+            }
+
+            if (!externalLiveMode)
+            {
+                StartExternalLive(sourceName);
+            }
+            else if (!string.IsNullOrWhiteSpace(sourceName) && sourceName != externalLiveSourceName)
+            {
+                externalLiveSourceName = sourceName.Trim();
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+            }
+
+            receivedFrameCount++;
+            UpdateReceiveCounters(message);
+
+            if (!hasReceivedFirstFrame)
+            {
+                hasReceivedFirstFrame = true;
+                statusText = $"实时：WebGL 观战中 {externalLiveSourceName}";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+            }
+
+            FrameSourceHub.EnqueueFrame(message, -1, 0, statusText);
+            return true;
+        }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+        private Task ConnectOnceAsync()
         {
             if (isConnecting || isConnected)
             {
-                return;
+                return Task.CompletedTask;
             }
 
             isConnecting = true;
@@ -212,6 +289,8 @@ namespace THUAI9.Unity.Live
             {
                 isConnecting = false;
             }
+
+            return Task.CompletedTask;
         }
 
         private async Task ReceiveLoopAsync(CancellationToken token)
@@ -276,9 +355,15 @@ namespace THUAI9.Unity.Live
                 }
             }
         }
+#endif
 
         private string BuildLiveSourceName()
         {
+            if (externalLiveMode)
+            {
+                return $"实时：{externalLiveSourceName}";
+            }
+
             return $"实时：{serverAddress}";
         }
 
@@ -337,6 +422,7 @@ namespace THUAI9.Unity.Live
 
         private void ReleaseConnectionResources()
         {
+#if !UNITY_WEBGL || UNITY_EDITOR
             try
             {
                 cancellation?.Cancel();
@@ -363,9 +449,11 @@ namespace THUAI9.Unity.Live
 
             cancellation?.Dispose();
             cancellation = null;
+#endif
             isConnected = false;
         }
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         private static async void ShutdownChannelInBackground(Channel channelToShutdown)
         {
             try
@@ -437,6 +525,7 @@ namespace THUAI9.Unity.Live
                 File.Copy(sourcePath, destinationPath);
             }
         }
+#endif
 
         private static string NormalizeGrpcTarget(string address)
         {
@@ -462,10 +551,12 @@ namespace THUAI9.Unity.Live
 
         private static string ShortError(Exception ex)
         {
+#if !UNITY_WEBGL || UNITY_EDITOR
             if (ex is RpcException rpc)
             {
                 return $"{rpc.Status.StatusCode}: {rpc.Status.Detail}";
             }
+#endif
 
             return ex.Message;
         }
