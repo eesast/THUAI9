@@ -481,9 +481,17 @@ namespace Server
         public override Task<StrategicAIResponse> AskAI(StrategicAIRequest request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY AskAI: Team {request.TeamId} at {request.CurrentGameTime}");
-            StrategicAIResponse response = new();
-            // 待实现
-            // boolRes.ActSuccess = game.AskAI(request.TeamId, request.GameState, request.AIAction);
+            var response = new StrategicAIResponse();
+            var answer = game.AskAI(request.TeamId, request.Prompt);
+            response.ActSuccess = !string.IsNullOrWhiteSpace(answer);
+            if (response.ActSuccess)
+            {
+                response.Answer = answer!;
+            }
+            else
+            {
+                response.Explanation = "AskAI failed";
+            }
             GameServerLogging.logger.LogDebug("END AskAI");
             return Task.FromResult(response);
         }
