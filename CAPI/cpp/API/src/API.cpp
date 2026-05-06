@@ -260,8 +260,7 @@ std::future<bool> CharacterAPI::Common_Attack(int64_t attackedPlayerID)
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID);
-                      });
+                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID); });
 }
 
 std::future<bool> CharacterAPI::Recover(int64_t recover)
@@ -277,8 +276,7 @@ std::future<bool> CharacterAPI::Harvest()
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Harvest(self->playerID, self->teamID);
-                      });
+                          return logic.Harvest(self->playerID, self->teamID); });
 }
 
 std::future<bool> CharacterAPI::Occupy()
@@ -288,8 +286,7 @@ std::future<bool> CharacterAPI::Occupy()
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Occupy(self->playerID, self->teamID);
-                      });
+                          return logic.Occupy(self->playerID, self->teamID); });
 }
 
 std::future<bool> CharacterAPI::Load(THUAI9::GoodsType goodsType, int32_t amount)
@@ -299,8 +296,7 @@ std::future<bool> CharacterAPI::Load(THUAI9::GoodsType goodsType, int32_t amount
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Load(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Load(self->playerID, self->teamID, goodsType, amount); });
 }
 
 std::future<bool> CharacterAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
@@ -310,8 +306,7 @@ std::future<bool> CharacterAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Buy(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Buy(self->playerID, self->teamID, goodsType, amount); });
 }
 
 std::future<bool> CharacterAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount)
@@ -321,8 +316,7 @@ std::future<bool> CharacterAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Sell(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Sell(self->playerID, self->teamID, goodsType, amount); });
 }
 
 bool CharacterAPI::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t viewRange, std::vector<std::vector<THUAI9::PlaceType>>& map) const

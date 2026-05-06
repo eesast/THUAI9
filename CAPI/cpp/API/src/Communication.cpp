@@ -34,7 +34,7 @@ namespace
         ++counter;
         return true;
     }
-}
+}  // namespace
 
 Communication::Communication(std::string sIP, std::string sPort)
 {

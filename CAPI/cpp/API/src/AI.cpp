@@ -42,7 +42,7 @@ namespace
         return value ? "true" : "false";
     }
 
-    template <class TAPI>
+    template<class TAPI>
     void DrainMessages(TAPI& api, const std::string& who)
     {
         while (api.HaveMessage())
@@ -52,7 +52,7 @@ namespace
         }
     }
 
-    template <class TAPI>
+    template<class TAPI>
     void PrintCommonSnapshot(TAPI& api, const std::string& who)
     {
         auto map = api.GetFullMap();
@@ -90,8 +90,7 @@ namespace
 
         const int32_t cellX = IAPI::GridToCell(self.x);
         const int32_t cellY = IAPI::GridToCell(self.y);
-        api.Print("self cell=(" + std::to_string(cellX) + ", " + std::to_string(cellY) +
-                  "), place=" + std::to_string(static_cast<int>(api.GetPlaceType(cellX, cellY))));
+        api.Print("self cell=(" + std::to_string(cellX) + ", " + std::to_string(cellY) + "), place=" + std::to_string(static_cast<int>(api.GetPlaceType(cellX, cellY))));
 
         api.Print("resource here: " + BoolText(api.GetResourceState(cellX, cellY).has_value()));
         api.Print("compute center here: " + BoolText(api.GetComputeCenterState(cellX, cellY).has_value()));
@@ -134,7 +133,7 @@ namespace
                 break;
         }
     }
-}
+}  // namespace
 
 std::shared_ptr<const THUAI9::Character> selfinfo;
 std::vector<std::vector<THUAI9::PlaceType>> mapinfo;

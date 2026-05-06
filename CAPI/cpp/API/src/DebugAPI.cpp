@@ -33,7 +33,7 @@ namespace
         logger->flush_on(spdlog::level::warn);
         return logger;
     }
-}
+}  // namespace
 
 CharacterDebugAPI::CharacterDebugAPI(ILogic& logic, bool file, bool print, bool warnOnly, int32_t characterID, int32_t teamID) :
     logger(CreateApiLogger(file, print, warnOnly, characterID, teamID)),
@@ -134,8 +134,7 @@ std::future<bool> CharacterDebugAPI::Common_Attack(int64_t attackedPlayerID)
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID);
-                      });
+                          return logic.Common_Attack(self->teamID, self->playerID, 0, attackedPlayerID); });
 }
 
 std::future<bool> CharacterDebugAPI::Recover(int64_t recover)
@@ -152,8 +151,7 @@ std::future<bool> CharacterDebugAPI::Harvest()
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Harvest(self->playerID, self->teamID);
-                      });
+                          return logic.Harvest(self->playerID, self->teamID); });
 }
 
 std::future<bool> CharacterDebugAPI::Occupy()
@@ -163,8 +161,7 @@ std::future<bool> CharacterDebugAPI::Occupy()
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Occupy(self->playerID, self->teamID);
-                      });
+                          return logic.Occupy(self->playerID, self->teamID); });
 }
 
 std::future<bool> CharacterDebugAPI::Load(THUAI9::GoodsType goodsType, int32_t amount)
@@ -174,8 +171,7 @@ std::future<bool> CharacterDebugAPI::Load(THUAI9::GoodsType goodsType, int32_t a
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Load(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Load(self->playerID, self->teamID, goodsType, amount); });
 }
 
 std::future<bool> CharacterDebugAPI::Buy(THUAI9::GoodsType goodsType, int32_t amount)
@@ -185,8 +181,7 @@ std::future<bool> CharacterDebugAPI::Buy(THUAI9::GoodsType goodsType, int32_t am
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Buy(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Buy(self->playerID, self->teamID, goodsType, amount); });
 }
 
 std::future<bool> CharacterDebugAPI::Sell(THUAI9::GoodsType goodsType, int32_t amount)
@@ -196,8 +191,7 @@ std::future<bool> CharacterDebugAPI::Sell(THUAI9::GoodsType goodsType, int32_t a
                           auto self = GetSelfInfo();
                           if (!self)
                               return false;
-                          return logic.Sell(self->playerID, self->teamID, goodsType, amount);
-                      });
+                          return logic.Sell(self->playerID, self->teamID, goodsType, amount); });
 }
 
 std::vector<std::shared_ptr<const THUAI9::Character>> CharacterDebugAPI::GetCharacters() const

@@ -309,7 +309,8 @@ void Logic::LoadBufferCase(const protobuf::MessageOfObj& item)
                 auto factory = Proto2THUAI9::Protobuf2THUAI9Factory(item.factory_message());
                 auto pos = THUAI9::cellxy_t(
                     AssistFunction::GridToCell(item.factory_message().x()),
-                    AssistFunction::GridToCell(item.factory_message().y()));
+                    AssistFunction::GridToCell(item.factory_message().y())
+                );
                 bufferState->mapInfo->factories[pos] = *factory;
                 break;
             }
@@ -318,7 +319,8 @@ void Logic::LoadBufferCase(const protobuf::MessageOfObj& item)
                 auto resource = Proto2THUAI9::Protobuf2THUAI9EconomyResource(item.resource_message());
                 auto pos = THUAI9::cellxy_t(
                     AssistFunction::GridToCell(item.resource_message().x()),
-                    AssistFunction::GridToCell(item.resource_message().y()));
+                    AssistFunction::GridToCell(item.resource_message().y())
+                );
                 bufferState->mapInfo->resources[pos] = *resource;
                 break;
             }
@@ -327,7 +329,8 @@ void Logic::LoadBufferCase(const protobuf::MessageOfObj& item)
                 auto market = Proto2THUAI9::Protobuf2THUAI9Market(item.market_message());
                 auto pos = THUAI9::cellxy_t(
                     AssistFunction::GridToCell(item.market_message().x()),
-                    AssistFunction::GridToCell(item.market_message().y()));
+                    AssistFunction::GridToCell(item.market_message().y())
+                );
                 bufferState->mapInfo->markets[pos] = *market;
                 break;
             }
@@ -336,7 +339,8 @@ void Logic::LoadBufferCase(const protobuf::MessageOfObj& item)
                 auto center = Proto2THUAI9::Protobuf2THUAI9ComputeCenter(item.compute_center_message());
                 auto pos = THUAI9::cellxy_t(
                     AssistFunction::GridToCell(item.compute_center_message().x()),
-                    AssistFunction::GridToCell(item.compute_center_message().y()));
+                    AssistFunction::GridToCell(item.compute_center_message().y())
+                );
                 bufferState->mapInfo->computeCenters[pos] = *center;
                 break;
             }

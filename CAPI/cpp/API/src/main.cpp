@@ -34,7 +34,7 @@ namespace
         std::cerr << "Usage: capi -t <teamID 1-4> -p <playerID 0-3> "
                   << "[-I <serverIP>] [-P <serverPort>] [-d] [-o] [-w]\n";
     }
-}
+}  // namespace
 
 int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
 {

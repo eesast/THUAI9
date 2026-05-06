@@ -206,7 +206,7 @@ namespace THUAI9
         int64_t playerID;
 
         CharacterType characterType;
-        
+
         CharacterState characterActiveState;
 
         int32_t x;
@@ -219,8 +219,6 @@ namespace THUAI9
         int32_t commonAttack;
         int64_t commonAttackCD;
         int32_t commonAttackRange;
-
-
 
         int32_t hp;
 
@@ -291,7 +289,6 @@ namespace THUAI9
         ResourceState state = ResourceState::NullResourceState;
     };
 
-
     using cellxy_t = std::pair<int32_t, int32_t>;
 
     struct GameMap
@@ -357,7 +354,6 @@ namespace THUAI9
         {PlaceType::Market, "Market"},
     };
 
-
     inline std::map<ResourceState, std::string> resourceStateDict{
         {ResourceState::NullResourceState, "NullResourceState"},
         {ResourceState::Harvestable, "Harvestable"},
@@ -420,24 +416,22 @@ namespace THUAI9
 
 // fmt库的formatter特化，方便调试输出枚举类型
 
-
-
 namespace fmt
 {
 
-    //预处理宏 THUAI9_REGISTER_FORMATTER，为所有 dict 都生成了对应的 fmt::formatter 特化
-#define THUAI9_REGISTER_FORMATTER(EnumType, EnumDict) \
-    template<> \
-    struct formatter<THUAI9::EnumType> : formatter<std::string> \
-    { \
-        auto format(THUAI9::EnumType type, format_context& ctx) const \
-        { \
-            auto it = THUAI9::EnumDict.find(type); \
-            formatter<std::string> stringFormatter; \
-            return stringFormatter.format( \
+    // 预处理宏 THUAI9_REGISTER_FORMATTER，为所有 dict 都生成了对应的 fmt::formatter 特化
+#define THUAI9_REGISTER_FORMATTER(EnumType, EnumDict)                                \
+    template<>                                                                       \
+    struct formatter<THUAI9::EnumType> : formatter<std::string>                      \
+    {                                                                                \
+        auto format(THUAI9::EnumType type, format_context& ctx) const                \
+        {                                                                            \
+            auto it = THUAI9::EnumDict.find(type);                                   \
+            formatter<std::string> stringFormatter;                                  \
+            return stringFormatter.format(                                           \
                 it != THUAI9::EnumDict.end() ? it->second : "Unknown" #EnumType, ctx \
-            ); \
-        } \
+            );                                                                       \
+        }                                                                            \
     };
 
     THUAI9_REGISTER_FORMATTER(GameState, gameStateDict)
