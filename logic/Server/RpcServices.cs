@@ -397,16 +397,33 @@ namespace Server
         {
             GameServerLogging.logger.LogDebug($"TRY Trade: Player {request.PlayerId} {(request.IsBuy ? "buy from" : "sell to")} Team {request.TeamId}" +
             $" Product:{request.ProductType}, Amount:{request.ProductAmount}");
+            var goodsType = Transformation.GoodsTypeFromProto(request.ProductType);
             BoolRes boolRes = new()
             {
                 ActSuccess =
                     game.Trade(
                         request.TeamId,
                         request.PlayerId,
-                        Transformation.GoodsTypeFromProto(request.ProductType),
+                        goodsType,
                         request.ProductAmount,
                         request.IsBuy)
             };
+            if (!boolRes.ActSuccess)
+            {
+                if (game.TryGetCharacter(request.TeamId, request.PlayerId, out var character) && character != null)
+                {
+                    int have = character.GoodsLoad.Get(goodsType);
+                    var cell = GameData.PosGridToCellXY(character.Position);
+                    var nearMarket = game.GameMap.OneForInteract(character.Position, Utility.GameObjType.MARKET) != null;
+                    GameServerLogging.logger.LogWarning(
+                        $"Trade failed diagnostics: team={request.TeamId}, player={request.PlayerId}, buy={request.IsBuy}, type={goodsType}, amount={request.ProductAmount}, " +
+                        $"have={have}, pos=({character.Position.x},{character.Position.y}), cell=({cell.x},{cell.y}), nearMarket={nearMarket}");
+                }
+                else
+                {
+                    GameServerLogging.logger.LogWarning($"Trade failed diagnostics: character not found, team={request.TeamId}, player={request.PlayerId}");
+                }
+            }
             GameServerLogging.logger.LogDebug($"END Trade:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
@@ -451,8 +468,10 @@ namespace Server
         {
             GameServerLogging.logger.LogDebug(
                 $"TRY EndAllAction: Player {request.PlayerId} from Team {request.TeamId}");
-            BoolRes boolRes = new();
-            // boolRes.ActSuccess = game.Stop(request.TeamId, request.PlayerId);
+            BoolRes boolRes = new()
+            {
+                ActSuccess = game.Stop(request.TeamId, request.PlayerId)
+            };
             GameServerLogging.logger.LogDebug("END EndAllAction");
             return Task.FromResult(boolRes);
         }
