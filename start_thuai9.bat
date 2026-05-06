@@ -26,13 +26,6 @@ timeout /t 2 /nobreak >nul
 start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run"
 timeout /t 2 /nobreak >nul
 
-echo [THUAI9] Waiting for server to listen on 127.0.0.1:8888...
-powershell -NoProfile -Command "$deadline = (Get-Date).AddMinutes(2); while((Get-Date) -lt $deadline){ try { $c = [System.Net.Sockets.TcpClient]::new('127.0.0.1', 8888); $c.Close(); exit 0 } catch { Start-Sleep -Seconds 1 } }; exit 1"
-if errorlevel 1 (
-    echo [ERROR] Server did not become ready on 127.0.0.1:8888
-    exit /b 1
-)
-
 for /L %%i in (1,1,4) do (
     start "THUAI9 Client %%i" cmd /k "cd /d ""%ROOT%logic\ClientTest2"" && dotnet run -- 0 %%i"
 )

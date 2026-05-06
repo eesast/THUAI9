@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("THUAI9_Avalonia")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e0d2036a7cc77395fe300205e890e7e83470432c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a0c6be1c5b9dcaa6d997a40490a6579e7e12ac57")]
 [assembly: System.Reflection.AssemblyProductAttribute("THUAI9_Avalonia")]
 [assembly: System.Reflection.AssemblyTitleAttribute("THUAI9_Avalonia")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

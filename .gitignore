@@ -4,7 +4,7 @@
 .idea/
 logs/
 .DS_Store
- 
+CAPI\cpp\out
 # .NET build outputs
 [Bb]in/
 [Oo]bj/

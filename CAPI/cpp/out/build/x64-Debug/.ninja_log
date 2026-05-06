@@ -38,3 +38,17 @@
 323	7501	7997791986285491	CMakeFiles/capi.dir/API/src/DebugAPI.cpp.obj	47990e69d2ba762
 342	7560	7997791986464052	CMakeFiles/capi.dir/API/src/logic.cpp.obj	4060d76aba22f953
 7561	14395	7997792058661529	capi.exe	c63c28bd73595f02
+33	3867	7997799417372096	CMakeFiles/capi.dir/API/src/AI.cpp.obj	9f764a3953f89d65
+17	64	7997800381134378	clean	8c45b54705a541e8
+209	3752	7997800383953339	CMakeFiles/capi.dir/proto/MessageType.pb.cc.obj	18c60cf932b1ea2a
+244	4105	7997800384296722	CMakeFiles/capi.dir/proto/Services.pb.cc.obj	f2bfe81e56e8583f
+186	4131	7997800383726655	CMakeFiles/capi.dir/proto/Message2Server.pb.cc.obj	3db2ee79c6493429
+172	4346	7997800383581074	CMakeFiles/capi.dir/proto/Message2Clients.pb.cc.obj	965169af6f81c383
+226	5553	7997800384122882	CMakeFiles/capi.dir/proto/Services.grpc.pb.cc.obj	fbfc48343b8bdc96
+84	6063	7997800382699795	CMakeFiles/capi.dir/API/src/Communication.cpp.obj	96080ee47540c7b6
+49	6742	7997800382350307	CMakeFiles/capi.dir/API/src/AI.cpp.obj	9f764a3953f89d65
+155	7026	7997800383413791	CMakeFiles/capi.dir/API/src/main.cpp.obj	b472095c6457b35e
+66	7099	7997800382472971	CMakeFiles/capi.dir/API/src/API.cpp.obj	8b40f46ae40f5ba1
+115	7792	7997800383016956	CMakeFiles/capi.dir/API/src/DebugAPI.cpp.obj	47990e69d2ba762
+137	7872	7997800383237953	CMakeFiles/capi.dir/API/src/logic.cpp.obj	4060d76aba22f953
+7873	13959	7997800460587205	capi.exe	c63c28bd73595f02

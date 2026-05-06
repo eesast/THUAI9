@@ -5,10 +5,10 @@ namespace Preparation.Utility
     public static class GameData
     {
         public const int NumOfStepPerSecond = 100;          // 每秒行走步数
-        public const int BaseCharacterSpeed = 2500;         // 角色基础移动速度
+        public const int BaseCharacterSpeed = 5000;         // 角色基础移动速度
         public const int FrameDuration = 50;                // 每帧时长
         public const int CheckInterval = 10;                // 检查间隔
-        public const uint GameDurationInSecond = 60 * 10;   // 游戏时长
+        public const uint GameDurationInSecond = 2 * 60;   // 游戏时长
         public const int LimitOfStopAndMove = 15;           // 停止和移动的最大间隔
         public const int ProduceSpeedPerSecond = 200;       // 每秒生产值
         public const int KnockedBackTime = 50;
@@ -20,7 +20,7 @@ namespace Preparation.Utility
         public const int MapRows = 50;                  // 行数
         public const int MapCols = 50;                  // 列数
 
-        public const int CharacterRadius = 200;         // 角色半径
+        public const int CharacterRadius = 300;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
         public const int MaxRobust = 10;
