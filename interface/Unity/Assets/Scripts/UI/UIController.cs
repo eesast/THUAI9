@@ -22,6 +22,8 @@ namespace THUAI9.Unity.UI
         private const string RecentReplayPrefsKey = "ReplayRecentPaths";
         private const int MaxRecentReplayCount = 8;
         private const int MaxReplayDiscoveryScanCount = 128;
+        private const string CjkFontResourcePath = "Fonts/NotoSansCJKsc-Regular";
+        private static Font cachedUiFont;
 
         [Header("对局时间")]
         public Text gameTimeText;
@@ -84,6 +86,7 @@ namespace THUAI9.Unity.UI
                 AutoBindIfNeeded();
                 ConfigureHudVisualStyle();
                 ConfigureTeamStatusLayout();
+                ApplyFontToSceneTexts();
                 RefreshRecentReplayDropdown();
             }
         }
@@ -154,6 +157,7 @@ namespace THUAI9.Unity.UI
 
             UpdatePauseButtonText("Pause");
             UpdateStaticTextFallbacks();
+            ApplyFontToSceneTexts();
         }
 
         private void Update()
@@ -404,6 +408,7 @@ namespace THUAI9.Unity.UI
                 rect.sizeDelta = new Vector2(TeamStatusWidth - 30f, TeamStatusHeight);
 
                 text.alignment = TextAnchor.MiddleLeft;
+                text.font = GetBuiltInUIFont();
                 text.fontSize = 16;
                 text.fontStyle = FontStyle.Bold;
                 text.color = new Color(0.92f, 0.97f, 1f, 1f);
@@ -857,7 +862,11 @@ namespace THUAI9.Unity.UI
                 return;
             }
 
-            text.font = GetBuiltInUIFont();
+            Font font = GetBuiltInUIFont();
+            if (font != null)
+            {
+                text.font = font;
+            }
             text.fontSize = fontSize;
             text.fontStyle = fontStyle;
             text.color = color;
@@ -1127,12 +1136,24 @@ namespace THUAI9.Unity.UI
 
         private static Font GetBuiltInUIFont()
         {
+            if (cachedUiFont != null)
+            {
+                return cachedUiFont;
+            }
+
+            cachedUiFont = Resources.Load<Font>(CjkFontResourcePath);
+            if (cachedUiFont != null)
+            {
+                return cachedUiFont;
+            }
+
             try
             {
                 Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                 if (font != null)
                 {
-                    return font;
+                    cachedUiFont = font;
+                    return cachedUiFont;
                 }
             }
             catch
@@ -1141,11 +1162,26 @@ namespace THUAI9.Unity.UI
 
             try
             {
-                return Resources.GetBuiltinResource<Font>("Arial.ttf");
+                cachedUiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                return cachedUiFont;
             }
             catch
             {
                 return null;
+            }
+        }
+
+        private static void ApplyFontToSceneTexts()
+        {
+            Font font = GetBuiltInUIFont();
+            if (font == null)
+            {
+                return;
+            }
+
+            foreach (Text text in FindObjectsOfType<Text>(true))
+            {
+                text.font = font;
             }
         }
 
