@@ -58,6 +58,46 @@
     window.THUAI9Unity.submitLiveFrameJson = function (json) {
       THUAI9SendMessage(gameObjectName, 'SubmitLiveFrameJson', typeof json === 'string' ? json : JSON.stringify(json));
     };
+    window.THUAI9Unity.connectLiveWebSocket = function (webSocketUrl) {
+      if (!webSocketUrl) {
+        window.dispatchEvent(new CustomEvent('thuai9-live-socket-error', { detail: 'missing-url' }));
+        return;
+      }
+
+      if (window.THUAI9Unity.liveSocket) {
+        window.THUAI9Unity.liveSocket.close();
+      }
+
+      const socket = new WebSocket(webSocketUrl);
+      window.THUAI9Unity.liveSocket = socket;
+      socket.binaryType = 'arraybuffer';
+      socket.onopen = function () {
+        THUAI9SendMessage(gameObjectName, 'StartWebLive', 'WebSocket ' + webSocketUrl);
+        window.dispatchEvent(new CustomEvent('thuai9-live-socket-open', { detail: webSocketUrl }));
+      };
+      socket.onmessage = function (event) {
+        if (typeof event.data === 'string') {
+          const payload = event.data.trim();
+          THUAI9SendMessage(gameObjectName, payload.startsWith('{') ? 'SubmitLiveFrameJson' : 'SubmitLiveFrameBase64', payload);
+          return;
+        }
+
+        THUAI9SendMessage(gameObjectName, 'SubmitLiveFrameBase64', THUAI9ArrayBufferToBase64(event.data));
+      };
+      socket.onerror = function () {
+        window.dispatchEvent(new CustomEvent('thuai9-live-socket-error', { detail: webSocketUrl }));
+      };
+      socket.onclose = function () {
+        window.dispatchEvent(new CustomEvent('thuai9-live-socket-close', { detail: webSocketUrl }));
+      };
+    };
+    window.THUAI9Unity.disconnectLiveWebSocket = function () {
+      if (window.THUAI9Unity.liveSocket) {
+        window.THUAI9Unity.liveSocket.close();
+        window.THUAI9Unity.liveSocket = null;
+      }
+      THUAI9SendMessage(gameObjectName, 'StopWebLive', '');
+    };
     window.dispatchEvent(new CustomEvent('thuai9-unity-ready', { detail: { gameObjectName: gameObjectName } }));
   },
 
@@ -86,4 +126,14 @@ function THUAI9SendMessage(gameObjectName, methodName, payload) {
   }
 
   console.error('[THUAI9] Unity SendMessage is not available', { gameObjectName, methodName });
+}
+
+function THUAI9ArrayBufferToBase64(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
