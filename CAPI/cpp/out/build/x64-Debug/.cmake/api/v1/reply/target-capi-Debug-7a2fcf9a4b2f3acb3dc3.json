@@ -20,6 +20,7 @@
 			"include",
 			"_find_package",
 			"find_package",
+			"add_compile_options",
 			"target_include_directories"
 		],
 		"files" : 
@@ -45,7 +46,7 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 23,
+				"line" : 40,
 				"parent" : 0
 			},
 			{
@@ -57,13 +58,13 @@
 			{
 				"command" : 2,
 				"file" : 1,
-				"line" : 27,
+				"line" : 44,
 				"parent" : 0
 			},
 			{
 				"command" : 6,
 				"file" : 1,
-				"line" : 17,
+				"line" : 34,
 				"parent" : 0
 			},
 			{
@@ -105,7 +106,7 @@
 			{
 				"command" : 6,
 				"file" : 1,
-				"line" : 18,
+				"line" : 35,
 				"parent" : 0
 			},
 			{
@@ -463,7 +464,13 @@
 			{
 				"command" : 7,
 				"file" : 1,
-				"line" : 25,
+				"line" : 26,
+				"parent" : 0
+			},
+			{
+				"command" : 8,
+				"file" : 1,
+				"line" : 42,
 				"parent" : 0
 			}
 		]
@@ -474,7 +481,11 @@
 			"compileCommandFragments" : 
 			[
 				{
-					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc -O2 -pthread /MDd /Zi /Ob0 /Od /RTC1 -std:c++17"
+					"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MTd /Zi /Ob0 /Od /RTC1 -std:c++17"
+				},
+				{
+					"backtrace" : 74,
+					"fragment" : "/utf-8"
 				}
 			],
 			"defines" : 
@@ -487,23 +498,23 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 74,
+					"backtrace" : 75,
 					"path" : "D:/Desktop/THUAI/THUAI9/CAPI/cpp/proto"
 				},
 				{
-					"backtrace" : 74,
+					"backtrace" : 75,
 					"path" : "D:/Desktop/THUAI/THUAI9/CAPI/cpp/API/include"
 				},
 				{
-					"backtrace" : 74,
+					"backtrace" : 75,
 					"path" : "D:/Desktop/THUAI/THUAI9/CAPI/cpp/tclap/include"
 				},
 				{
-					"backtrace" : 74,
+					"backtrace" : 75,
 					"path" : "D:/Desktop/THUAI/THUAI9/CAPI/cpp/spdlog/include"
 				},
 				{
-					"backtrace" : 74,
+					"backtrace" : 75,
 					"path" : "D:/Desktop/THUAI/THUAI9/CAPI/cpp/fmt"
 				},
 				{
@@ -544,7 +555,7 @@
 		"commandFragments" : 
 		[
 			{
-				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc -O2 -pthread /MDd /Zi /Ob0 /Od /RTC1",
+				"fragment" : "/DWIN32 /D_WINDOWS /W3 /GR /EHsc /MTd /Zi /Ob0 /Od /RTC1",
 				"role" : "flags"
 			},
 			{

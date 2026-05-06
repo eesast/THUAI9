@@ -1,21 +1,51 @@
 #include <array>
 #include <memory>
-#include <thread>
 #include <vector>
 
 #include "AI.h"
 #include "constants.h"
 
-// 注意不要使用conio.h，Windows.h等非标准库
-// 为假则play()期间确保游戏状态不更新，为真则只保证游戏状态在调用相关方法时不更新，大致一帧更新一次
 extern const bool asynchronous = false;
 
-// 选手需要依次将player1到player3的角色类型在这里定义
 extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict = {
     THUAI9::CharacterType::Robot,
     THUAI9::CharacterType::Drone,
     THUAI9::CharacterType::AutonomousCar,
 };
+
+namespace
+{
+    std::array<bool, 3> teamCharacterBuilt{};
+
+    void Patrol(ICharacterAPI& api, int32_t playerID)
+    {
+        auto self = api.GetSelfInfo();
+        if (!self)
+            return;
+
+        if (self->characterActiveState == THUAI9::CharacterState::Deceased)
+            return;
+
+        constexpr int64_t moveTime = 200;
+        const int32_t phase = (api.GetFrameCount() + playerID - 1) % 4;
+
+        switch (phase)
+        {
+            case 0:
+                (void)api.MoveRight(moveTime).get();
+                break;
+            case 1:
+                (void)api.MoveDown(moveTime).get();
+                break;
+            case 2:
+                (void)api.MoveLeft(moveTime).get();
+                break;
+            default:
+                (void)api.MoveUp(moveTime).get();
+                break;
+        }
+    }
+}
 
 std::shared_ptr<const THUAI9::Character> selfinfo;
 std::vector<std::vector<THUAI9::PlaceType>> mapinfo;
@@ -24,22 +54,17 @@ void AI::play(ICharacterAPI& api)
 {
     selfinfo = api.GetSelfInfo();
     mapinfo = api.GetFullMap();
-
-    if (playerID == 1)
-    {
-        // player1
-    }
-    else if (playerID == 2)
-    {
-        // player2
-    }
-    else if (playerID == 3)
-    {
-        // player3
-    }
+    Patrol(api, playerID);
 }
 
 void AI::play(ITeamAPI& api)
 {
-    (void)api;
+    for (int32_t i = 1; i <= 3; ++i)
+    {
+        if (teamCharacterBuilt[i - 1])
+            continue;
+
+        if (api.BuildCharacter(CharacterTypeDict[i - 1], i).get())
+            teamCharacterBuilt[i - 1] = true;
+    }
 }

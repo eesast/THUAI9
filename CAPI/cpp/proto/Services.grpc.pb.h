@@ -36,8 +36,24 @@ class AvailableService final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
-    // 连接和初始化服务
     virtual ::grpc::Status TryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status GetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest& request, ::protobuf::MessageOfMap* response) = 0;
+    virtual ::grpc::Status Move(::grpc::ClientContext* context, const ::protobuf::MoveMsg& request, ::protobuf::MoveRes* response) = 0;
+    virtual ::grpc::Status Recover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Harvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Attack(::grpc::ClientContext* context, const ::protobuf::AttackMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Occupy(::grpc::ClientContext* context, const ::protobuf::OccupyMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Send(::grpc::ClientContext* context, const ::protobuf::SendMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Load(::grpc::ClientContext* context, const ::protobuf::LoadMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status Trade(::grpc::ClientContext* context, const ::protobuf::TradeMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status CreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status CreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::protobuf::CreatCharacterRes* response) = 0;
+    virtual ::grpc::Status Produce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status UplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status EndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::protobuf::BoolRes* response) = 0;
+    virtual ::grpc::Status AskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest& request, ::protobuf::StrategicAIResponse* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncTryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncTryConnectionRaw(context, request, cq));
     }
@@ -54,48 +70,48 @@ class AvailableService final {
     std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::protobuf::MessageToClient>> PrepareAsyncRegisterFactory(::grpc::ClientContext* context, const ::protobuf::RegisterFactoryMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderInterface< ::protobuf::MessageToClient>>(PrepareAsyncRegisterFactoryRaw(context, request, cq));
     }
-    // 连接上后等待游戏开始，server会定时通过该服务向所有client发送消息
-    virtual ::grpc::Status GetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest& request, ::protobuf::MessageOfMap* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MessageOfMap>> AsyncGetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MessageOfMap>>(AsyncGetMapRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MessageOfMap>> PrepareAsyncGetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MessageOfMap>>(PrepareAsyncGetMapRaw(context, request, cq));
     }
-    // 游戏过程中普通角色执行操作的服务
-    virtual ::grpc::Status Move(::grpc::ClientContext* context, const ::protobuf::MoveMsg& request, ::protobuf::MoveRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MoveRes>> AsyncMove(::grpc::ClientContext* context, const ::protobuf::MoveMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MoveRes>>(AsyncMoveRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MoveRes>> PrepareAsyncMove(::grpc::ClientContext* context, const ::protobuf::MoveMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::MoveRes>>(PrepareAsyncMoveRaw(context, request, cq));
     }
-    // 移动
-    virtual ::grpc::Status Recover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncRecover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncRecoverRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncRecover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncRecoverRaw(context, request, cq));
     }
-    // 回复
-    virtual ::grpc::Status Harvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncHarvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncHarvestRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncHarvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncHarvestRaw(context, request, cq));
     }
-    // 开采原料资源
-    virtual ::grpc::Status Attack(::grpc::ClientContext* context, const ::protobuf::AttackMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncAttack(::grpc::ClientContext* context, const ::protobuf::AttackMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncAttackRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncAttack(::grpc::ClientContext* context, const ::protobuf::AttackMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncAttackRaw(context, request, cq));
     }
-    // 普通攻击
-    virtual ::grpc::Status Occupy(::grpc::ClientContext* context, const ::protobuf::OccupyMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncOccupy(::grpc::ClientContext* context, const ::protobuf::OccupyMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncOccupyRaw(context, request, cq));
     }
@@ -103,24 +119,24 @@ class AvailableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncOccupyRaw(context, request, cq));
     }
     // 占领算力中心
-    // rpc AttackConstruction(AttackFactoryMsg) returns (BoolRes);     // 攻击工厂（基地）
-    virtual ::grpc::Status Send(::grpc::ClientContext* context, const ::protobuf::SendMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncSend(::grpc::ClientContext* context, const ::protobuf::SendMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncSendRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncSend(::grpc::ClientContext* context, const ::protobuf::SendMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncSendRaw(context, request, cq));
     }
-    // 传递信息
-    virtual ::grpc::Status Load(::grpc::ClientContext* context, const ::protobuf::LoadMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncLoad(::grpc::ClientContext* context, const ::protobuf::LoadMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncLoadRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncLoad(::grpc::ClientContext* context, const ::protobuf::LoadMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncLoadRaw(context, request, cq));
     }
-    // 装载产品
-    virtual ::grpc::Status Trade(::grpc::ClientContext* context, const ::protobuf::TradeMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncTrade(::grpc::ClientContext* context, const ::protobuf::TradeMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncTradeRaw(context, request, cq));
     }
@@ -128,24 +144,24 @@ class AvailableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncTradeRaw(context, request, cq));
     }
     // 出售产品
-    // 游戏过程中核心角色（工厂）可以执行操作的服务
-    virtual ::grpc::Status CreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncCreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncCreateCharacterRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncCreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncCreateCharacterRaw(context, request, cq));
     }
-    // 创建角色
-    virtual ::grpc::Status CreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::protobuf::CreatCharacterRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::CreatCharacterRes>> AsyncCreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::CreatCharacterRes>>(AsyncCreateCharacterRIDRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::CreatCharacterRes>> PrepareAsyncCreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::CreatCharacterRes>>(PrepareAsyncCreateCharacterRIDRaw(context, request, cq));
     }
-    // 获取角色编号
-    virtual ::grpc::Status Produce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncProduce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncProduceRaw(context, request, cq));
     }
@@ -153,16 +169,16 @@ class AvailableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncProduceRaw(context, request, cq));
     }
     // 生产产品
-    // rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
-    virtual ::grpc::Status UplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncUplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncUplevelTechRaw(context, request, cq));
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> PrepareAsyncUplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncUplevelTechRaw(context, request, cq));
     }
-    // 升级科技
-    virtual ::grpc::Status EndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::protobuf::BoolRes* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>> AsyncEndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(AsyncEndAllActionRaw(context, request, cq));
     }
@@ -170,8 +186,8 @@ class AvailableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::BoolRes>>(PrepareAsyncEndAllActionRaw(context, request, cq));
     }
     // 结束所有动作
-    // 智慧大脑
-    virtual ::grpc::Status AskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest& request, ::protobuf::StrategicAIResponse* response) = 0;
+//
+
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::StrategicAIResponse>> AsyncAskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::protobuf::StrategicAIResponse>>(AsyncAskAIRaw(context, request, cq));
     }
@@ -182,59 +198,76 @@ class AvailableService final {
     class async_interface {
      public:
       virtual ~async_interface() {}
-      // 连接和初始化服务
       virtual void TryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void TryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 游戏开局调用一次的服务
       virtual void RegisterFactory(::grpc::ClientContext* context, const ::protobuf::RegisterFactoryMsg* request, ::grpc::ClientReadReactor< ::protobuf::MessageToClient>* reactor) = 0;
-      // 连接上后等待游戏开始，server会定时通过该服务向所有client发送消息
       virtual void GetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest* request, ::protobuf::MessageOfMap* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void GetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest* request, ::protobuf::MessageOfMap* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 游戏过程中普通角色执行操作的服务
       virtual void Move(::grpc::ClientContext* context, const ::protobuf::MoveMsg* request, ::protobuf::MoveRes* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void Move(::grpc::ClientContext* context, const ::protobuf::MoveMsg* request, ::protobuf::MoveRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 移动
       virtual void Recover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void Recover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 回复
       virtual void Harvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void Harvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 开采原料资源
       virtual void Attack(::grpc::ClientContext* context, const ::protobuf::AttackMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void Attack(::grpc::ClientContext* context, const ::protobuf::AttackMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 普通攻击
       virtual void Occupy(::grpc::ClientContext* context, const ::protobuf::OccupyMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Send(::grpc::ClientContext* context, const ::protobuf::SendMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Load(::grpc::ClientContext* context, const ::protobuf::LoadMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Trade(::grpc::ClientContext* context, const ::protobuf::TradeMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::CreatCharacterRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void Produce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void UplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void EndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void AskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest* request, ::protobuf::StrategicAIResponse* response, std::function<void(::grpc::Status)>) = 0;
+//
+
+      virtual void TryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
+//
+
+      virtual void GetMap(::grpc::ClientContext* context, const ::protobuf::NullRequest* request, ::protobuf::MessageOfMap* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
+      virtual void Move(::grpc::ClientContext* context, const ::protobuf::MoveMsg* request, ::protobuf::MoveRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
+      virtual void Recover(::grpc::ClientContext* context, const ::protobuf::RecoverMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
+      virtual void Harvest(::grpc::ClientContext* context, const ::protobuf::ResourceMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
+      virtual void Attack(::grpc::ClientContext* context, const ::protobuf::AttackMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+//
+
       virtual void Occupy(::grpc::ClientContext* context, const ::protobuf::OccupyMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // 占领算力中心
-      // rpc AttackConstruction(AttackFactoryMsg) returns (BoolRes);     // 攻击工厂（基地）
-      virtual void Send(::grpc::ClientContext* context, const ::protobuf::SendMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void Send(::grpc::ClientContext* context, const ::protobuf::SendMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 传递信息
-      virtual void Load(::grpc::ClientContext* context, const ::protobuf::LoadMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void Load(::grpc::ClientContext* context, const ::protobuf::LoadMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 装载产品
-      virtual void Trade(::grpc::ClientContext* context, const ::protobuf::TradeMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void Trade(::grpc::ClientContext* context, const ::protobuf::TradeMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // 出售产品
-      // 游戏过程中核心角色（工厂）可以执行操作的服务
-      virtual void CreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void CreateCharacter(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 创建角色
-      virtual void CreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::CreatCharacterRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void CreateCharacterRID(::grpc::ClientContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::CreatCharacterRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 获取角色编号
-      virtual void Produce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void Produce(::grpc::ClientContext* context, const ::protobuf::ProduceGoodsMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // 生产产品
-      // rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
-      virtual void UplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void UplevelTech(::grpc::ClientContext* context, const ::protobuf::UplevelTechMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      // 升级科技
-      virtual void EndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void EndAllAction(::grpc::ClientContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // 结束所有动作
-      // 智慧大脑
-      virtual void AskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest* request, ::protobuf::StrategicAIResponse* response, std::function<void(::grpc::Status)>) = 0;
+//
+
       virtual void AskAI(::grpc::ClientContext* context, const ::protobuf::StrategicAIRequest* request, ::protobuf::StrategicAIResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       // 客户端请求AI建议
     };
@@ -508,44 +541,61 @@ class AvailableService final {
    public:
     Service();
     virtual ~Service();
-    // 连接和初始化服务
     virtual ::grpc::Status TryConnection(::grpc::ServerContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response);
-    // 游戏开局调用一次的服务
     virtual ::grpc::Status RegisterFactory(::grpc::ServerContext* context, const ::protobuf::RegisterFactoryMsg* request, ::grpc::ServerWriter< ::protobuf::MessageToClient>* writer);
-    // 连接上后等待游戏开始，server会定时通过该服务向所有client发送消息
     virtual ::grpc::Status GetMap(::grpc::ServerContext* context, const ::protobuf::NullRequest* request, ::protobuf::MessageOfMap* response);
-    // 游戏过程中普通角色执行操作的服务
     virtual ::grpc::Status Move(::grpc::ServerContext* context, const ::protobuf::MoveMsg* request, ::protobuf::MoveRes* response);
-    // 移动
     virtual ::grpc::Status Recover(::grpc::ServerContext* context, const ::protobuf::RecoverMsg* request, ::protobuf::BoolRes* response);
-    // 回复
     virtual ::grpc::Status Harvest(::grpc::ServerContext* context, const ::protobuf::ResourceMsg* request, ::protobuf::BoolRes* response);
-    // 开采原料资源
     virtual ::grpc::Status Attack(::grpc::ServerContext* context, const ::protobuf::AttackMsg* request, ::protobuf::BoolRes* response);
-    // 普通攻击
     virtual ::grpc::Status Occupy(::grpc::ServerContext* context, const ::protobuf::OccupyMsg* request, ::protobuf::BoolRes* response);
-    // 占领算力中心
-    // rpc AttackConstruction(AttackFactoryMsg) returns (BoolRes);     // 攻击工厂（基地）
     virtual ::grpc::Status Send(::grpc::ServerContext* context, const ::protobuf::SendMsg* request, ::protobuf::BoolRes* response);
-    // 传递信息
     virtual ::grpc::Status Load(::grpc::ServerContext* context, const ::protobuf::LoadMsg* request, ::protobuf::BoolRes* response);
-    // 装载产品
     virtual ::grpc::Status Trade(::grpc::ServerContext* context, const ::protobuf::TradeMsg* request, ::protobuf::BoolRes* response);
-    // 出售产品
-    // 游戏过程中核心角色（工厂）可以执行操作的服务
     virtual ::grpc::Status CreateCharacter(::grpc::ServerContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::BoolRes* response);
-    // 创建角色
     virtual ::grpc::Status CreateCharacterRID(::grpc::ServerContext* context, const ::protobuf::CreateCharacterMsg* request, ::protobuf::CreatCharacterRes* response);
-    // 获取角色编号
     virtual ::grpc::Status Produce(::grpc::ServerContext* context, const ::protobuf::ProduceGoodsMsg* request, ::protobuf::BoolRes* response);
-    // 生产产品
-    // rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
     virtual ::grpc::Status UplevelTech(::grpc::ServerContext* context, const ::protobuf::UplevelTechMsg* request, ::protobuf::BoolRes* response);
-    // 升级科技
     virtual ::grpc::Status EndAllAction(::grpc::ServerContext* context, const ::protobuf::IDMsg* request, ::protobuf::BoolRes* response);
-    // 结束所有动作
-    // 智慧大脑
     virtual ::grpc::Status AskAI(::grpc::ServerContext* context, const ::protobuf::StrategicAIRequest* request, ::protobuf::StrategicAIResponse* response);
+//
+
+//
+
+//
+
+//
+
+//
+
+//
+
+//
+
+//
+
+    // 占领算力中心
+//
+
+//
+
+//
+
+    // 出售产品
+//
+
+//
+
+//
+
+    // 生产产品
+//
+
+//
+
+    // 结束所有动作
+//
+
     // 客户端请求AI建议
   };
   template <class BaseClass>
@@ -2372,8 +2422,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedTryConnection(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::IDMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_GetMap : public BaseClass {
@@ -2399,8 +2449,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedGetMap(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::NullRequest,::protobuf::MessageOfMap>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Move : public BaseClass {
@@ -2426,8 +2476,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedMove(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::MoveMsg,::protobuf::MoveRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Recover : public BaseClass {
@@ -2453,8 +2503,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedRecover(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::RecoverMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Harvest : public BaseClass {
@@ -2480,8 +2530,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedHarvest(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::ResourceMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Attack : public BaseClass {
@@ -2507,8 +2557,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedAttack(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::AttackMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Occupy : public BaseClass {
@@ -2534,8 +2584,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedOccupy(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::OccupyMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Send : public BaseClass {
@@ -2561,8 +2611,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedSend(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::SendMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Load : public BaseClass {
@@ -2588,8 +2638,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedLoad(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::LoadMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Trade : public BaseClass {
@@ -2615,8 +2665,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedTrade(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::TradeMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_CreateCharacter : public BaseClass {
@@ -2642,8 +2692,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedCreateCharacter(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::CreateCharacterMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_CreateCharacterRID : public BaseClass {
@@ -2669,8 +2719,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedCreateCharacterRID(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::CreateCharacterMsg,::protobuf::CreatCharacterRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_Produce : public BaseClass {
@@ -2696,8 +2746,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedProduce(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::ProduceGoodsMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_UplevelTech : public BaseClass {
@@ -2723,8 +2773,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedUplevelTech(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::UplevelTechMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_EndAllAction : public BaseClass {
@@ -2750,8 +2800,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedEndAllAction(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::IDMsg,::protobuf::BoolRes>* server_unary_streamer) = 0;
+//
+
   };
   template <class BaseClass>
   class WithStreamedUnaryMethod_AskAI : public BaseClass {
@@ -2777,8 +2827,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedAskAI(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::protobuf::StrategicAIRequest,::protobuf::StrategicAIResponse>* server_unary_streamer) = 0;
+//
+
   };
   typedef WithStreamedUnaryMethod_TryConnection<WithStreamedUnaryMethod_GetMap<WithStreamedUnaryMethod_Move<WithStreamedUnaryMethod_Recover<WithStreamedUnaryMethod_Harvest<WithStreamedUnaryMethod_Attack<WithStreamedUnaryMethod_Occupy<WithStreamedUnaryMethod_Send<WithStreamedUnaryMethod_Load<WithStreamedUnaryMethod_Trade<WithStreamedUnaryMethod_CreateCharacter<WithStreamedUnaryMethod_CreateCharacterRID<WithStreamedUnaryMethod_Produce<WithStreamedUnaryMethod_UplevelTech<WithStreamedUnaryMethod_EndAllAction<WithStreamedUnaryMethod_AskAI<Service > > > > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
@@ -2805,8 +2855,8 @@ class AvailableService final {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    // replace default version of method with split streamed
-    virtual ::grpc::Status StreamedRegisterFactory(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::protobuf::RegisterFactoryMsg,::protobuf::MessageToClient>* server_split_streamer) = 0;
+//
+
   };
   typedef WithSplitStreamingMethod_RegisterFactory<Service > SplitStreamedService;
   typedef WithStreamedUnaryMethod_TryConnection<WithSplitStreamingMethod_RegisterFactory<WithStreamedUnaryMethod_GetMap<WithStreamedUnaryMethod_Move<WithStreamedUnaryMethod_Recover<WithStreamedUnaryMethod_Harvest<WithStreamedUnaryMethod_Attack<WithStreamedUnaryMethod_Occupy<WithStreamedUnaryMethod_Send<WithStreamedUnaryMethod_Load<WithStreamedUnaryMethod_Trade<WithStreamedUnaryMethod_CreateCharacter<WithStreamedUnaryMethod_CreateCharacterRID<WithStreamedUnaryMethod_Produce<WithStreamedUnaryMethod_UplevelTech<WithStreamedUnaryMethod_EndAllAction<WithStreamedUnaryMethod_AskAI<Service > > > > > > > > > > > > > > > > > StreamedService;

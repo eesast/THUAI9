@@ -1,14 +1,31 @@
-# 临时CMakeLists，仅供本地调试用
+﻿# 临时CMakeLists，仅供本地调试用
 cmake_minimum_required(VERSION 3.5)
 
 project(THUAI9_CAPI VERSION 1.0)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -pthread")
-
-if(NOT MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    foreach(flag
+        CMAKE_C_FLAGS_DEBUG
+        CMAKE_CXX_FLAGS_DEBUG
+        CMAKE_C_FLAGS_RELEASE
+        CMAKE_CXX_FLAGS_RELEASE
+        CMAKE_C_FLAGS_RELWITHDEBINFO
+        CMAKE_CXX_FLAGS_RELWITHDEBINFO
+        CMAKE_C_FLAGS_MINSIZEREL
+        CMAKE_CXX_FLAGS_MINSIZEREL)
+        if(DEFINED ${flag})
+            string(REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
+            string(REPLACE "/MD" "/MT" ${flag} "${${flag}}")
+        endif()
+    endforeach()
+    add_compile_options(/utf-8)
+else()
+    add_compile_options(-O2 -pthread -Wall -Wextra -Wpedantic)
 endif()
 
 aux_source_directory(./API/src CPP_LIST)

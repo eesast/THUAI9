@@ -1,5 +1,6 @@
 #include "logic.h"
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -559,11 +560,15 @@ void Logic::Main(CreateAIFunc createAI, std::string IP, std::string port, bool f
         }
     };
 
-    if (!TryConnection())
+    int retryCount = 0;
+    while (!TryConnection())
     {
-        AILoop = false;
-        return;
+        ++retryCount;
+        logger->warn("Failed to connect to server {}:{} (attempt {}). Retrying in 1 second...", IP, port, retryCount);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
+    if (retryCount > 0)
+        logger->info("Connected to server {}:{} after {} retries.", IP, port, retryCount);
 
     tAI = std::thread(aiThread);
     if (tAI.joinable())
