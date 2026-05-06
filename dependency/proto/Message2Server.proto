@@ -149,27 +149,12 @@ message StrategicAIRequest
 {
     int64 team_id = 1;
     int64 current_game_time = 2;
+    string prompt = 3;
 }
 
 message StrategicAIResponse 
 {
     bool act_success = 1;
-    repeated ProductionSuggestion production_plan = 2;
-    repeated TaskSuggestion task_plan = 3;
-    string explanation = 4;
-}
-
-message ProductionSuggestion 
-{
-    GoodsType product_type = 1;
-    int32 quantity = 2;
-}
-
-message TaskSuggestion 
-{
-    AIActionType action_type = 1;
-    int64 character_id = 2;
-    int32 target_x = 3;
-    int32 target_y = 4;
-    int64 target_id = 5;
+    string answer = 2;
+    string explanation = 3;
 }

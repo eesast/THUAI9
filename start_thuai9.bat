@@ -15,8 +15,8 @@ if not exist "%ROOT%logic\Server\Server.csproj" (
     exit /b 1
 )
 
-if not exist "%ROOT%logic\ClientTest2\ClientTest2.csproj" (
-    echo [ERROR] Client project not found: logic\ClientTest2\ClientTest2.csproj
+if not exist "%ROOT%logic\ClientTest\ClientTest.csproj" (
+    echo [ERROR] Client project not found: logic\ClientTest\ClientTest.csproj
     exit /b 1
 )
 
@@ -27,7 +27,7 @@ start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run"
 timeout /t 2 /nobreak >nul
 
 for /L %%i in (1,1,4) do (
-    start "THUAI9 Client %%i" cmd /k "cd /d ""%ROOT%logic\ClientTest2"" && dotnet run -- 0 %%i"
+    start "THUAI9 Client %%i" cmd /k "cd /d ""%ROOT%logic\ClientTest"" && dotnet run -- 0 %%i"
 )
 
 echo [THUAI9] All processes launched.
