@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Playback;
+using THUAI9.Unity.Render;
 using UnityEngine;
 
 namespace THUAI9.Unity.Live
@@ -13,7 +16,7 @@ namespace THUAI9.Unity.Live
     /// <summary>
     /// Runtime spectator client for the same gRPC stream used by the Avalonia UI.
     /// It only observes: team_id=0, side_flag=0, and never sends player actions.
-    /// Frames received from the server are pushed into CoreParam.frameQueue and
+    /// Frames received from the server are pushed through FrameSourceHub and
     /// rendered by RenderManager's existing main-thread frame loop.
     /// </summary>
     public class LiveSpectatorClient : MonoBehaviour
@@ -38,15 +41,37 @@ namespace THUAI9.Unity.Live
         private bool isConnecting;
         private bool isConnected;
         private bool hasReceivedFirstFrame;
+        private bool liveEndedCleanly;
         private DateTime nextConnectUtc = DateTime.MinValue;
         private string statusText = "实时：未连接";
+        private int receivedFrameCount;
+        private int lastReceivedObjectCount;
+        private int lastReceivedTeamCount;
+        private int lastReceivedCharacterCount;
+        private int lastReceivedFactoryCount;
+        private int lastReceivedResourceCount;
+        private int lastReceivedMapMessageCount;
+        private int maxReceivedCharacterCount;
         private readonly long spectatorPlayerId = 2023 + System.Diagnostics.Process.GetCurrentProcess().Id;
+        private static bool nativeGrpcSearchPathConfigured;
 
         public bool IsLiveMode => liveRequested || isConnecting || isConnected;
         public bool IsConnecting => isConnecting;
         public bool IsConnected => isConnected;
         public string StatusText => statusText;
         public string ServerAddress => serverAddress;
+        public int ReceivedFrameCount => receivedFrameCount;
+        public int LastReceivedObjectCount => lastReceivedObjectCount;
+        public int LastReceivedTeamCount => lastReceivedTeamCount;
+        public int LastReceivedCharacterCount => lastReceivedCharacterCount;
+        public int LastReceivedFactoryCount => lastReceivedFactoryCount;
+        public int LastReceivedResourceCount => lastReceivedResourceCount;
+        public int LastReceivedMapMessageCount => lastReceivedMapMessageCount;
+        public int MaxReceivedCharacterCount => maxReceivedCharacterCount;
+        public int QueuedFrameCount => FrameSourceHub.QueueSize;
+        public int SubmittedFrameCount => FrameSourceHub.SubmittedFrameCount;
+        public int DequeuedFrameCount => FrameSourceHub.DequeuedFrameCount;
+        public int RenderedFrameCount => FrameSourceHub.RenderedFrameCount;
 
         private void Awake()
         {
@@ -63,7 +88,9 @@ namespace THUAI9.Unity.Live
 
         private void Update()
         {
-            if (!liveRequested || isConnected || isConnecting)
+            PumpQueuedLiveFrames();
+
+            if (!liveRequested || liveEndedCleanly || isConnected || isConnecting)
             {
                 return;
             }
@@ -76,6 +103,24 @@ namespace THUAI9.Unity.Live
             _ = ConnectOnceAsync();
         }
 
+        private void PumpQueuedLiveFrames()
+        {
+            if (!IsLiveMode || FrameSourceHub.ActiveKind != FrameSourceHub.SourceKind.Live || FrameSourceHub.QueueSize <= 0)
+            {
+                return;
+            }
+
+            if (!RenderManager.TryGetInstance(out RenderManager renderManager) || renderManager == null)
+            {
+                return;
+            }
+
+            // Keep this as a safety net only; RenderManager owns the normal frame
+            // loop.  One extra frame per Unity Update is enough to prevent a live
+            // queue from staying permanently stuck if the coroutine was interrupted.
+            renderManager.PumpQueuedFrames(1);
+        }
+
         public void StartLive(string address)
         {
             if (!string.IsNullOrWhiteSpace(address))
@@ -84,17 +129,20 @@ namespace THUAI9.Unity.Live
             }
 
             liveRequested = true;
+            liveEndedCleanly = false;
+            ResetReceiveCounters();
             nextConnectUtc = DateTime.MinValue;
             statusText = $"实时：准备连接 {serverAddress}";
 
             if (isConnected || isConnecting)
             {
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                 return;
             }
 
             playbackController ??= FindObjectOfType<PlaybackController>();
             playbackController?.Stop();
-            CoreParam.Reset();
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
 
             _ = ConnectOnceAsync();
         }
@@ -102,9 +150,12 @@ namespace THUAI9.Unity.Live
         public void StopLive()
         {
             liveRequested = false;
+            liveEndedCleanly = false;
             hasReceivedFirstFrame = false;
+            ResetReceiveCounters();
             statusText = "实时：已断开";
             ReleaseConnectionResources();
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", statusText);
         }
 
         private async Task ConnectOnceAsync()
@@ -116,12 +167,16 @@ namespace THUAI9.Unity.Live
 
             isConnecting = true;
             hasReceivedFirstFrame = false;
+            liveEndedCleanly = false;
+            ResetReceiveCounters();
             statusText = $"实时：连接中 {serverAddress}";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
 
             try
             {
                 ReleaseConnectionResources();
                 cancellation = new CancellationTokenSource();
+                EnsureNativeGrpcSearchPath();
 
                 var channelOptions = new List<ChannelOption>
                 {
@@ -130,10 +185,7 @@ namespace THUAI9.Unity.Live
                 };
 
                 channel = new Channel(serverAddress, ChannelCredentials.Insecure, channelOptions);
-                await channel.ConnectAsync(deadline: DateTime.UtcNow.AddSeconds(10));
                 client = new AvailableService.AvailableServiceClient(channel);
-
-                await TryEnqueueStaticMapAsync(cancellation.Token);
 
                 var request = new RegisterFactoryMsg
                 {
@@ -145,11 +197,14 @@ namespace THUAI9.Unity.Live
                 stream = client.RegisterFactory(request, cancellationToken: cancellation.Token);
                 isConnected = true;
                 statusText = $"实时：已连接，等待首帧 spectator={spectatorPlayerId}";
-                _ = ReceiveLoopAsync(cancellation.Token);
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+                CancellationToken receiveToken = cancellation.Token;
+                _ = Task.Run(() => ReceiveLoopAsync(receiveToken), receiveToken);
             }
             catch (Exception ex)
             {
                 statusText = $"实时：连接失败，{ShortError(ex)}";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                 ReleaseConnectionResources();
                 ScheduleReconnect();
             }
@@ -159,44 +214,22 @@ namespace THUAI9.Unity.Live
             }
         }
 
-        private async Task TryEnqueueStaticMapAsync(CancellationToken token)
-        {
-            if (client == null)
-            {
-                return;
-            }
-
-            try
-            {
-                MessageOfMap map = await client.GetMapAsync(new NullRequest(), cancellationToken: token).ResponseAsync;
-                if (map == null)
-                {
-                    return;
-                }
-
-                var mapFrame = new MessageToClient();
-                mapFrame.ObjMessage.Add(new MessageOfObj { MapMessage = map });
-                CoreParam.firstFrame = mapFrame;
-                statusText = "实时：已拉取静态地图，等待实时帧";
-            }
-            catch (Exception ex)
-            {
-                statusText = $"实时：已连接，但拉取地图失败，{ShortError(ex)}";
-            }
-        }
-
         private async Task ReceiveLoopAsync(CancellationToken token)
         {
+            bool shouldReconnect = true;
             try
             {
                 while (!token.IsCancellationRequested && isConnected && stream != null)
                 {
-                    bool hasMessage = await stream.ResponseStream.MoveNext(token);
+                    bool hasMessage = await stream.ResponseStream.MoveNext(token).ConfigureAwait(false);
                     if (!hasMessage)
                     {
                         statusText = hasReceivedFirstFrame
                             ? "实时：服务器消息流已结束"
                             : "实时：服务器消息流结束，未收到首帧";
+                        FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
+                        liveEndedCleanly = hasReceivedFirstFrame;
+                        shouldReconnect = !hasReceivedFirstFrame;
                         break;
                     }
 
@@ -206,15 +239,17 @@ namespace THUAI9.Unity.Live
                         continue;
                     }
 
+                    receivedFrameCount++;
+                    UpdateReceiveCounters(message);
+
                     if (!hasReceivedFirstFrame)
                     {
                         hasReceivedFirstFrame = true;
                         statusText = "实时：观战中";
+                        FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                     }
 
-                    CoreParam.playbackCurrentFrameIndex = -1;
-                    CoreParam.playbackElapsedMilliseconds = 0;
-                    CoreParam.frameQueue.Add(message);
+                    FrameSourceHub.EnqueueFrame(message, -1, 0);
                 }
             }
             catch (OperationCanceledException)
@@ -228,17 +263,66 @@ namespace THUAI9.Unity.Live
                 if (liveRequested)
                 {
                     statusText = $"实时：接收失败，{ShortError(ex)}";
+                    FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                 }
             }
             finally
             {
                 isConnected = false;
                 ReleaseConnectionResources();
-                if (liveRequested)
+                if (liveRequested && shouldReconnect)
                 {
                     ScheduleReconnect();
                 }
             }
+        }
+
+        private string BuildLiveSourceName()
+        {
+            return $"实时：{serverAddress}";
+        }
+
+        private void ResetReceiveCounters()
+        {
+            receivedFrameCount = 0;
+            lastReceivedObjectCount = 0;
+            lastReceivedTeamCount = 0;
+            lastReceivedCharacterCount = 0;
+            lastReceivedFactoryCount = 0;
+            lastReceivedResourceCount = 0;
+            lastReceivedMapMessageCount = 0;
+            maxReceivedCharacterCount = 0;
+        }
+
+        private void UpdateReceiveCounters(MessageToClient message)
+        {
+            lastReceivedObjectCount = message.ObjMessage.Count;
+            lastReceivedTeamCount = message.AllMessage?.Teams.Count ?? 0;
+            lastReceivedCharacterCount = 0;
+            lastReceivedFactoryCount = 0;
+            lastReceivedResourceCount = 0;
+            lastReceivedMapMessageCount = 0;
+
+            foreach (MessageOfObj obj in message.ObjMessage)
+            {
+                switch (obj.MessageOfObjCase)
+                {
+                    case MessageOfObj.MessageOfObjOneofCase.CharacterMessage:
+                        lastReceivedCharacterCount++;
+                        break;
+                    case MessageOfObj.MessageOfObjOneofCase.FactoryMessage:
+                        lastReceivedFactoryCount++;
+                        break;
+                    case MessageOfObj.MessageOfObjOneofCase.ResourceMessage:
+                        lastReceivedResourceCount++;
+                        break;
+                    case MessageOfObj.MessageOfObjOneofCase.MapMessage:
+                        lastReceivedMapMessageCount++;
+                        break;
+                }
+            }
+
+            maxReceivedCharacterCount = Math.Max(maxReceivedCharacterCount, lastReceivedCharacterCount);
         }
 
         private void ScheduleReconnect()
@@ -273,19 +357,85 @@ namespace THUAI9.Unity.Live
 
             if (channel != null)
             {
-                try
-                {
-                    channel.ShutdownAsync().GetAwaiter().GetResult();
-                }
-                catch
-                {
-                }
+                ShutdownChannelInBackground(channel);
                 channel = null;
             }
 
             cancellation?.Dispose();
             cancellation = null;
             isConnected = false;
+        }
+
+        private static async void ShutdownChannelInBackground(Channel channelToShutdown)
+        {
+            try
+            {
+                await channelToShutdown.ShutdownAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool SetDllDirectory(string lpPathName);
+
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+#endif
+
+        private static void EnsureNativeGrpcSearchPath()
+        {
+            if (nativeGrpcSearchPathConfigured)
+            {
+                return;
+            }
+
+            nativeGrpcSearchPathConfigured = true;
+
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+            string pluginDirectory = Path.Combine(Application.dataPath, "Plugins", "x86_64");
+            if (!Directory.Exists(pluginDirectory))
+            {
+                return;
+            }
+
+            string sourceLibraryPath = Path.Combine(pluginDirectory, "grpc_csharp_ext.x64.dll");
+            if (!File.Exists(sourceLibraryPath))
+            {
+                return;
+            }
+
+            string grpcTempDirectory = Path.Combine(
+                Application.temporaryCachePath,
+                $"grpc-native-{System.Diagnostics.Process.GetCurrentProcess().Id}");
+            Directory.CreateDirectory(grpcTempDirectory);
+
+            // Grpc.Core's Unity fallback imports the native extension by the base
+            // name "grpc_csharp_ext".  The NuGet runtime asset is suffixed
+            // ".x64.dll", so expose both names from a writable runtime directory
+            // instead of duplicating the 12 MB binary inside Assets.
+            string aliasLibraryPath = Path.Combine(grpcTempDirectory, "grpc_csharp_ext.dll");
+            string suffixedLibraryPath = Path.Combine(grpcTempDirectory, "grpc_csharp_ext.x64.dll");
+            CopyNativeLibraryIfMissing(sourceLibraryPath, aliasLibraryPath);
+            CopyNativeLibraryIfMissing(sourceLibraryPath, suffixedLibraryPath);
+
+            SetDllDirectory(grpcTempDirectory);
+            IntPtr loadedLibrary = LoadLibrary(aliasLibraryPath);
+            if (loadedLibrary == IntPtr.Zero)
+            {
+                LoadLibrary(suffixedLibraryPath);
+            }
+#endif
+        }
+
+        private static void CopyNativeLibraryIfMissing(string sourcePath, string destinationPath)
+        {
+            if (!File.Exists(destinationPath))
+            {
+                File.Copy(sourcePath, destinationPath);
+            }
         }
 
         private static string NormalizeGrpcTarget(string address)

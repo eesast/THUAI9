@@ -21,7 +21,7 @@ namespace THUAI9.Unity.Render
         [Header("璋冭瘯淇℃伅")]
         public Text fpsText;
         public bool autoBindSceneReferences = true;
-        public bool showWorldLabels = false;
+        public bool showWorldLabels = true;
 
         [Header("Pixel Assets")]
         public PixelAssetRegistry pixelAssets;
@@ -35,6 +35,7 @@ namespace THUAI9.Unity.Render
 
         private const int DefaultFrameIntervalMs = 25;
         private const int MaxQueueSize = 100;
+        private const int MaxLiveCatchUpFramesPerUpdate = 4;
 
         private readonly Dictionary<PlaceType, Color> _mapColors = new()
         {
@@ -48,9 +49,16 @@ namespace THUAI9.Unity.Render
         };
 
         private Coroutine _updateCoroutine;
+        private bool _usingFallbackGroundMap;
+        private int _frameLoopTickCount;
+        private string _lastRenderError = string.Empty;
         private readonly Dictionary<long, Vector2> _previousCharacterPositions = new();
         private readonly Dictionary<long, int> _previousCharacterLoads = new();
         private readonly Dictionary<long, long> _previousCharacterAttackCooldowns = new();
+
+        public bool IsFrameLoopRunning => _updateCoroutine != null;
+        public int FrameLoopTickCount => _frameLoopTickCount;
+        public string LastRenderError => _lastRenderError;
 
         private enum RuntimeUnitAction
         {
@@ -62,6 +70,12 @@ namespace THUAI9.Unity.Render
 
         protected override void Awake()
         {
+            base.Awake();
+            if (Instance != this)
+            {
+                return;
+            }
+
             if (autoBindSceneReferences)
             {
                 AutoBindSceneReferences();
@@ -71,30 +85,111 @@ namespace THUAI9.Unity.Render
             {
                 pixelAssets.ClearRuntimeCache();
             }
+
+            FrameSourceHub.BindMainThread();
+            SubscribeFrameSourceEvents();
+        }
+
+        private void OnEnable()
+        {
+            FrameSourceHub.BindMainThread();
+            SubscribeFrameSourceEvents();
+            EnsureUpdateCoroutine();
         }
 
         private void Start()
         {
-            if (_updateCoroutine == null)
+            EnsureUpdateCoroutine();
+        }
+
+        private void Update()
+        {
+            EnsureUpdateCoroutine();
+
+            // Live spectator frames arrive from a background gRPC stream.  The
+            // coroutine below is the normal consumer, but this Update-side pump is
+            // an explicit watchdog for editor/runtime cases where a coroutine was
+            // interrupted during Play Mode transitions: if the queue is growing,
+            // render a bounded number of frames on the main thread immediately.
+            if (FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Live && FrameSourceHub.QueueSize > 0)
             {
-                _updateCoroutine = StartCoroutine(UpdateFrameLoop());
+                int catchUpFrames = Mathf.Clamp(FrameSourceHub.QueueSize / 25 + 1, 1, MaxLiveCatchUpFramesPerUpdate);
+                PumpQueuedFrames(catchUpFrames);
             }
         }
 
         private IEnumerator UpdateFrameLoop()
         {
-            while (true)
+            while (isActiveAndEnabled)
             {
+                _frameLoopTickCount++;
                 int waitMilliseconds = GetFrameInterval();
                 UpdateFpsText(waitMilliseconds);
 
-                MessageToClient frame = GetNextFrame();
-                if (frame != null)
-                {
-                    RenderFrame(frame);
-                }
+                PumpQueuedFrames(1);
 
                 yield return new WaitForSecondsRealtime(waitMilliseconds / 1000f);
+            }
+
+            _updateCoroutine = null;
+        }
+
+        private void EnsureUpdateCoroutine()
+        {
+            if (_updateCoroutine == null && isActiveAndEnabled)
+            {
+                _updateCoroutine = StartCoroutine(UpdateFrameLoop());
+            }
+        }
+
+        private void SubscribeFrameSourceEvents()
+        {
+            FrameSourceHub.ImmediateFrameSubmitted -= OnImmediateFrameSubmitted;
+            FrameSourceHub.ImmediateFrameSubmitted += OnImmediateFrameSubmitted;
+            FrameSourceHub.PumpRequested -= OnFramePumpRequested;
+            FrameSourceHub.PumpRequested += OnFramePumpRequested;
+        }
+
+        public int PumpQueuedFrames(int maxFrames)
+        {
+            int rendered = 0;
+            int frameBudget = Mathf.Max(maxFrames, 0);
+            while (rendered < frameBudget)
+            {
+                MessageToClient frame = GetNextFrame();
+                if (frame == null)
+                {
+                    break;
+                }
+
+                try
+                {
+                    RenderFrame(frame);
+                    rendered++;
+                }
+                catch (Exception ex)
+                {
+                    _lastRenderError = ex.Message;
+                    Debug.LogException(ex, this);
+                    break;
+                }
+            }
+
+            return rendered;
+        }
+
+        private void OnFramePumpRequested()
+        {
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
+            int catchUpFrames = Mathf.Clamp(FrameSourceHub.QueueSize / 25 + 1, 1, MaxLiveCatchUpFramesPerUpdate);
+            PumpQueuedFrames(catchUpFrames);
+            if (FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Live && FrameSourceHub.QueueSize > 0)
+            {
+                FrameSourceHub.RequestPump();
             }
         }
 
@@ -114,6 +209,7 @@ namespace THUAI9.Unity.Render
             CoreParam.currentFrame = frame;
             DealFrame(frame);
             ShowFrame();
+            FrameSourceHub.MarkRendered(frame);
 
             if (isFirstVisualFrame)
             {
@@ -142,18 +238,15 @@ namespace THUAI9.Unity.Render
 
         private int GetFrameInterval()
         {
-            int queueSize = CoreParam.frameQueue.GetSize();
+            int queueSize = FrameSourceHub.QueueSize;
             if (queueSize < 50)
             {
                 return DefaultFrameIntervalMs;
             }
 
-            while (CoreParam.frameQueue.GetSize() > MaxQueueSize)
-            {
-                CoreParam.frameQueue.GetValue();
-            }
+            FrameSourceHub.TrimQueueTo(MaxQueueSize);
 
-            return Mathf.Max(1, 1000 / Mathf.Max(CoreParam.frameQueue.GetSize(), 1));
+            return Mathf.Max(1, 1000 / Mathf.Max(FrameSourceHub.QueueSize, 1));
         }
 
         private void UpdateFpsText(int frameIntervalMs)
@@ -166,15 +259,12 @@ namespace THUAI9.Unity.Render
 
         private MessageToClient GetNextFrame()
         {
-            if (!CoreParam.initialized && CoreParam.firstFrame != null)
-            {
-                CoreParam.currentFrame = CoreParam.firstFrame;
-                CoreParam.firstFrame = null;
-                return CoreParam.currentFrame;
-            }
+            return FrameSourceHub.TryDequeueFrame(out MessageToClient frame) ? frame : null;
+        }
 
-            CoreParam.currentFrame = CoreParam.frameQueue.GetValue();
-            return CoreParam.currentFrame;
+        private void OnImmediateFrameSubmitted(MessageToClient frame)
+        {
+            RenderFrame(frame);
         }
 
         private void DealFrame(MessageToClient info)
@@ -188,7 +278,12 @@ namespace THUAI9.Unity.Render
             CoreParam.barriers.Clear();
             CoreParam.bushes.Clear();
             CoreParam.gameState = info.GameState;
-            CoreParam.gameMode = info.GameMode;
+            // The current THUAI9 client frame only carries GameState and AllMessage.
+            // GameMode / AI event fields still exist as UI/Core placeholders, but the
+            // generated MessageToClient no longer exposes them.
+            CoreParam.gameMode = GameMode.NullGameMode;
+            CoreParam.latestAIEvent = null;
+            CoreParam.latestAIEffect = null;
 
             foreach (MessageOfObj obj in info.ObjMessage)
             {
@@ -198,26 +293,6 @@ namespace THUAI9.Unity.Render
             if (info.AllMessage != null)
             {
                 CoreParam.allMessage = info.AllMessage;
-            }
-
-            if (info.AiEvent != null && info.AiEvent.EventId != 0)
-            {
-                CoreParam.latestAIEvent = info.AiEvent;
-                if (CoreParam.aiEvents.Count == 0 || CoreParam.aiEvents[CoreParam.aiEvents.Count - 1].EventId != info.AiEvent.EventId)
-                {
-                    CoreParam.aiEvents.Add(info.AiEvent);
-                    TrimList(CoreParam.aiEvents, 8);
-                }
-            }
-
-            if (info.AiEffect != null && info.AiEffect.EventId != 0)
-            {
-                CoreParam.latestAIEffect = info.AiEffect;
-                if (CoreParam.aiEffects.Count == 0 || CoreParam.aiEffects[CoreParam.aiEffects.Count - 1].EventId != info.AiEffect.EventId)
-                {
-                    CoreParam.aiEffects.Add(info.AiEffect);
-                    TrimList(CoreParam.aiEffects, 8);
-                }
             }
 
             CoreParam.frameCount++;
@@ -299,33 +374,28 @@ namespace THUAI9.Unity.Render
                 gameTimeText.text = $"时间：{FormatPlaybackTime(totalMilliseconds)}";
             }
 
-            if (CoreParam.allMessage == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < teamScoreTexts.Length; i++)
-            {
-                if (teamScoreTexts[i] == null)
-                {
-                    continue;
-                }
-
-                if (i < CoreParam.allMessage.Teams.Count)
-                {
-                    var team = CoreParam.allMessage.Teams[i];
-                    teamScoreTexts[i].text = $"Team {i + 1}: Score {team.Score} | Material {team.Material} | Compute {team.ComputePower}";
-                }
-                else
-                {
-                    teamScoreTexts[i].text = $"Team {i + 1}: No data";
-                }
-            }
+            // Team status text is owned by UIController.  Keeping this renderer-side
+            // writer disabled prevents playback frames from racing the per-frame UI
+            // refresh and making the right-side team panel appear to jitter.
         }
 
         private void ShowMap()
         {
-            if (CoreParam.map == null || CoreParam.mapTilesG.Count > 0)
+            if (CoreParam.map == null)
+            {
+                ShowFallbackGroundMap();
+                return;
+            }
+
+            int rows = Mathf.Max((int)CoreParam.map.Height, 1);
+            int cols = Mathf.Max((int)CoreParam.map.Width, 1);
+            if (_usingFallbackGroundMap || !HasCompleteMapTiles(rows, cols))
+            {
+                ClearSnapshotObjects(CoreParam.mapTilesG);
+                _usingFallbackGroundMap = false;
+            }
+
+            if (CoreParam.mapTilesG.Count > 0)
             {
                 return;
             }
@@ -349,6 +419,55 @@ namespace THUAI9.Unity.Render
                     CoreParam.mapTilesG[key] = CreateMapTile(row, col, placeType);
                 }
             }
+        }
+
+        private void ShowFallbackGroundMap()
+        {
+            int rows = Mathf.Max(Tool.GetMapRows(), 1);
+            int cols = Mathf.Max(Tool.GetMapCols(), 1);
+            if (HasCompleteMapTiles(rows, cols))
+            {
+                return;
+            }
+
+            ClearSnapshotObjects(CoreParam.mapTilesG);
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    Tuple<int, int> key = new Tuple<int, int>(row, col);
+                    CoreParam.mapTilesG[key] = CreateMapTile(row, col, PlaceType.Space);
+                }
+            }
+
+            _usingFallbackGroundMap = true;
+        }
+
+        private static bool HasCompleteMapTiles(int rows, int cols)
+        {
+            if (rows <= 0 || cols <= 0)
+            {
+                return false;
+            }
+
+            if (CoreParam.mapTilesG.Count < rows * cols)
+            {
+                return false;
+            }
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    Tuple<int, int> key = new Tuple<int, int>(row, col);
+                    if (!CoreParam.mapTilesG.TryGetValue(key, out GameObject tile) || tile == null)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         private GameObject CreateMapTile(int row, int col, PlaceType placeType)
@@ -1476,6 +1595,10 @@ namespace THUAI9.Unity.Render
 
         private void OnDestroy()
         {
+            FrameSourceHub.ImmediateFrameSubmitted -= OnImmediateFrameSubmitted;
+            FrameSourceHub.PumpRequested -= OnFramePumpRequested;
+            ReleaseSingletonInstance();
+
             if (_updateCoroutine != null)
             {
                 StopCoroutine(_updateCoroutine);

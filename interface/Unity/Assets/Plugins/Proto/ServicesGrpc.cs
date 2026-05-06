@@ -82,6 +82,8 @@ namespace Protobuf {
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Protobuf.ProduceGoodsMsg> __Marshaller_protobuf_ProduceGoodsMsg = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Protobuf.ProduceGoodsMsg.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Protobuf.UplevelTechMsg> __Marshaller_protobuf_UplevelTechMsg = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Protobuf.UplevelTechMsg.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Protobuf.StrategicAIRequest> __Marshaller_protobuf_StrategicAIRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Protobuf.StrategicAIRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Protobuf.StrategicAIResponse> __Marshaller_protobuf_StrategicAIResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Protobuf.StrategicAIResponse.Parser));
@@ -175,18 +177,18 @@ namespace Protobuf {
         __Marshaller_protobuf_BoolRes);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes> __Method_CreatCharacter = new grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes>(
+    static readonly grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes> __Method_CreateCharacter = new grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes>(
         grpc::MethodType.Unary,
         __ServiceName,
-        "CreatCharacter",
+        "CreateCharacter",
         __Marshaller_protobuf_CreateCharacterMsg,
         __Marshaller_protobuf_BoolRes);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes> __Method_CreatCharacterRID = new grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes>(
+    static readonly grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes> __Method_CreateCharacterRID = new grpc::Method<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes>(
         grpc::MethodType.Unary,
         __ServiceName,
-        "CreatCharacterRID",
+        "CreateCharacterRID",
         __Marshaller_protobuf_CreateCharacterMsg,
         __Marshaller_protobuf_CreatCharacterRes);
 
@@ -196,6 +198,14 @@ namespace Protobuf {
         __ServiceName,
         "Produce",
         __Marshaller_protobuf_ProduceGoodsMsg,
+        __Marshaller_protobuf_BoolRes);
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Protobuf.UplevelTechMsg, global::Protobuf.BoolRes> __Method_UplevelTech = new grpc::Method<global::Protobuf.UplevelTechMsg, global::Protobuf.BoolRes>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "UplevelTech",
+        __Marshaller_protobuf_UplevelTechMsg,
         __Marshaller_protobuf_BoolRes);
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
@@ -358,7 +368,7 @@ namespace Protobuf {
       /// <param name="context">The context of the server-side call handler being invoked.</param>
       /// <returns>The response to send back to the client (wrapped by a task).</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::Protobuf.BoolRes> CreatCharacter(global::Protobuf.CreateCharacterMsg request, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task<global::Protobuf.BoolRes> CreateCharacter(global::Protobuf.CreateCharacterMsg request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -370,7 +380,7 @@ namespace Protobuf {
       /// <param name="context">The context of the server-side call handler being invoked.</param>
       /// <returns>The response to send back to the client (wrapped by a task).</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::Protobuf.CreatCharacterRes> CreatCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::ServerCallContext context)
+      public virtual global::System.Threading.Tasks.Task<global::Protobuf.CreatCharacterRes> CreateCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::ServerCallContext context)
       {
         throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
       }
@@ -389,6 +399,18 @@ namespace Protobuf {
 
       /// <summary>
       ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// </summary>
+      /// <param name="request">The request received from the client.</param>
+      /// <param name="context">The context of the server-side call handler being invoked.</param>
+      /// <returns>The response to send back to the client (wrapped by a task).</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::System.Threading.Tasks.Task<global::Protobuf.BoolRes> UplevelTech(global::Protobuf.UplevelTechMsg request, grpc::ServerCallContext context)
+      {
+        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
+      }
+
+      /// <summary>
+      /// 结束所有动作
       /// </summary>
       /// <param name="request">The request received from the client.</param>
       /// <param name="context">The context of the server-side call handler being invoked.</param>
@@ -925,9 +947,9 @@ namespace Protobuf {
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
       /// <returns>The response received from the server.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Protobuf.BoolRes CreatCharacter(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual global::Protobuf.BoolRes CreateCharacter(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return CreatCharacter(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return CreateCharacter(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
       /// 游戏过程中核心角色（工厂）可以执行操作的服务
@@ -936,9 +958,9 @@ namespace Protobuf {
       /// <param name="options">The options for the call.</param>
       /// <returns>The response received from the server.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Protobuf.BoolRes CreatCharacter(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
+      public virtual global::Protobuf.BoolRes CreateCharacter(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
       {
-        return CallInvoker.BlockingUnaryCall(__Method_CreatCharacter, null, options, request);
+        return CallInvoker.BlockingUnaryCall(__Method_CreateCharacter, null, options, request);
       }
       /// <summary>
       /// 游戏过程中核心角色（工厂）可以执行操作的服务
@@ -949,9 +971,9 @@ namespace Protobuf {
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> CreatCharacterAsync(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> CreateCharacterAsync(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return CreatCharacterAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return CreateCharacterAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
       /// 游戏过程中核心角色（工厂）可以执行操作的服务
@@ -960,9 +982,9 @@ namespace Protobuf {
       /// <param name="options">The options for the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> CreatCharacterAsync(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> CreateCharacterAsync(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_CreatCharacter, null, options, request);
+        return CallInvoker.AsyncUnaryCall(__Method_CreateCharacter, null, options, request);
       }
       /// <summary>
       /// 获取角色编号
@@ -973,9 +995,9 @@ namespace Protobuf {
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
       /// <returns>The response received from the server.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Protobuf.CreatCharacterRes CreatCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual global::Protobuf.CreatCharacterRes CreateCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return CreatCharacterRID(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return CreateCharacterRID(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
       /// 获取角色编号
@@ -984,9 +1006,9 @@ namespace Protobuf {
       /// <param name="options">The options for the call.</param>
       /// <returns>The response received from the server.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::Protobuf.CreatCharacterRes CreatCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
+      public virtual global::Protobuf.CreatCharacterRes CreateCharacterRID(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
       {
-        return CallInvoker.BlockingUnaryCall(__Method_CreatCharacterRID, null, options, request);
+        return CallInvoker.BlockingUnaryCall(__Method_CreateCharacterRID, null, options, request);
       }
       /// <summary>
       /// 获取角色编号
@@ -997,9 +1019,9 @@ namespace Protobuf {
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Protobuf.CreatCharacterRes> CreatCharacterRIDAsync(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.CreatCharacterRes> CreateCharacterRIDAsync(global::Protobuf.CreateCharacterMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
-        return CreatCharacterRIDAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+        return CreateCharacterRIDAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
       /// 获取角色编号
@@ -1008,9 +1030,9 @@ namespace Protobuf {
       /// <param name="options">The options for the call.</param>
       /// <returns>The call object.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual grpc::AsyncUnaryCall<global::Protobuf.CreatCharacterRes> CreatCharacterRIDAsync(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.CreatCharacterRes> CreateCharacterRIDAsync(global::Protobuf.CreateCharacterMsg request, grpc::CallOptions options)
       {
-        return CallInvoker.AsyncUnaryCall(__Method_CreatCharacterRID, null, options, request);
+        return CallInvoker.AsyncUnaryCall(__Method_CreateCharacterRID, null, options, request);
       }
       /// <summary>
       /// 生产产品
@@ -1069,12 +1091,60 @@ namespace Protobuf {
       /// <param name="cancellationToken">An optional token for canceling the call.</param>
       /// <returns>The response received from the server.</returns>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Protobuf.BoolRes UplevelTech(global::Protobuf.UplevelTechMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return UplevelTech(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      /// <summary>
+      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="options">The options for the call.</param>
+      /// <returns>The response received from the server.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Protobuf.BoolRes UplevelTech(global::Protobuf.UplevelTechMsg request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_UplevelTech, null, options, request);
+      }
+      /// <summary>
+      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+      /// <param name="cancellationToken">An optional token for canceling the call.</param>
+      /// <returns>The call object.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> UplevelTechAsync(global::Protobuf.UplevelTechMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return UplevelTechAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      /// <summary>
+      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="options">The options for the call.</param>
+      /// <returns>The call object.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Protobuf.BoolRes> UplevelTechAsync(global::Protobuf.UplevelTechMsg request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_UplevelTech, null, options, request);
+      }
+      /// <summary>
+      /// 结束所有动作
+      /// </summary>
+      /// <param name="request">The request to send to the server.</param>
+      /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
+      /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
+      /// <param name="cancellationToken">An optional token for canceling the call.</param>
+      /// <returns>The response received from the server.</returns>
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
       public virtual global::Protobuf.BoolRes EndAllAction(global::Protobuf.IDMsg request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
       {
         return EndAllAction(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
-      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// 结束所有动作
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="options">The options for the call.</param>
@@ -1085,7 +1155,7 @@ namespace Protobuf {
         return CallInvoker.BlockingUnaryCall(__Method_EndAllAction, null, options, request);
       }
       /// <summary>
-      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// 结束所有动作
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
@@ -1098,7 +1168,7 @@ namespace Protobuf {
         return EndAllActionAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
       }
       /// <summary>
-      ///rpc Repair(RepairFactoryMsg) returns (BoolRes);                    // 修理工厂
+      /// 结束所有动作
       /// </summary>
       /// <param name="request">The request to send to the server.</param>
       /// <param name="options">The options for the call.</param>
@@ -1181,9 +1251,10 @@ namespace Protobuf {
           .AddMethod(__Method_Send, serviceImpl.Send)
           .AddMethod(__Method_Load, serviceImpl.Load)
           .AddMethod(__Method_Trade, serviceImpl.Trade)
-          .AddMethod(__Method_CreatCharacter, serviceImpl.CreatCharacter)
-          .AddMethod(__Method_CreatCharacterRID, serviceImpl.CreatCharacterRID)
+          .AddMethod(__Method_CreateCharacter, serviceImpl.CreateCharacter)
+          .AddMethod(__Method_CreateCharacterRID, serviceImpl.CreateCharacterRID)
           .AddMethod(__Method_Produce, serviceImpl.Produce)
+          .AddMethod(__Method_UplevelTech, serviceImpl.UplevelTech)
           .AddMethod(__Method_EndAllAction, serviceImpl.EndAllAction)
           .AddMethod(__Method_AskAI, serviceImpl.AskAI).Build();
     }
@@ -1206,9 +1277,10 @@ namespace Protobuf {
       serviceBinder.AddMethod(__Method_Send, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.SendMsg, global::Protobuf.BoolRes>(serviceImpl.Send));
       serviceBinder.AddMethod(__Method_Load, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.LoadMsg, global::Protobuf.BoolRes>(serviceImpl.Load));
       serviceBinder.AddMethod(__Method_Trade, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.TradeMsg, global::Protobuf.BoolRes>(serviceImpl.Trade));
-      serviceBinder.AddMethod(__Method_CreatCharacter, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes>(serviceImpl.CreatCharacter));
-      serviceBinder.AddMethod(__Method_CreatCharacterRID, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes>(serviceImpl.CreatCharacterRID));
+      serviceBinder.AddMethod(__Method_CreateCharacter, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.CreateCharacterMsg, global::Protobuf.BoolRes>(serviceImpl.CreateCharacter));
+      serviceBinder.AddMethod(__Method_CreateCharacterRID, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.CreateCharacterMsg, global::Protobuf.CreatCharacterRes>(serviceImpl.CreateCharacterRID));
       serviceBinder.AddMethod(__Method_Produce, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.ProduceGoodsMsg, global::Protobuf.BoolRes>(serviceImpl.Produce));
+      serviceBinder.AddMethod(__Method_UplevelTech, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.UplevelTechMsg, global::Protobuf.BoolRes>(serviceImpl.UplevelTech));
       serviceBinder.AddMethod(__Method_EndAllAction, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.IDMsg, global::Protobuf.BoolRes>(serviceImpl.EndAllAction));
       serviceBinder.AddMethod(__Method_AskAI, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Protobuf.StrategicAIRequest, global::Protobuf.StrategicAIResponse>(serviceImpl.AskAI));
     }

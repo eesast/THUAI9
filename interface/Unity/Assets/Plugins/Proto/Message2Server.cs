@@ -55,18 +55,19 @@ namespace Protobuf {
             "ASgOMhcucHJvdG9idWYuQ2hhcmFjdGVyVHlwZRIPCgd0ZWFtX2lkGAIgASgD",
             "EhEKCXBsYXllcl9pZBgDIAEoAyJmCg9Qcm9kdWNlR29vZHNNc2cSKQoMcHJv",
             "ZHVjdF90eXBlGAEgASgOMhMucHJvdG9idWYuR29vZHNUeXBlEg8KB3RlYW1f",
-            "aWQYAiABKAMSFwoPbWF4X3Byb2R1Y2VfbnVtGAMgASgFIkAKElN0cmF0ZWdp",
-            "Y0FJUmVxdWVzdBIPCgd0ZWFtX2lkGAEgASgDEhkKEWN1cnJlbnRfZ2FtZV90",
-            "aW1lGAIgASgDIqUBChNTdHJhdGVnaWNBSVJlc3BvbnNlEhMKC2FjdF9zdWNj",
-            "ZXNzGAEgASgIEjcKD3Byb2R1Y3Rpb25fcGxhbhgCIAMoCzIeLnByb3RvYnVm",
-            "LlByb2R1Y3Rpb25TdWdnZXN0aW9uEisKCXRhc2tfcGxhbhgDIAMoCzIYLnBy",
-            "b3RvYnVmLlRhc2tTdWdnZXN0aW9uEhMKC2V4cGxhbmF0aW9uGAQgASgJIlMK",
-            "FFByb2R1Y3Rpb25TdWdnZXN0aW9uEikKDHByb2R1Y3RfdHlwZRgBIAEoDjIT",
-            "LnByb3RvYnVmLkdvb2RzVHlwZRIQCghxdWFudGl0eRgCIAEoBSKKAQoOVGFz",
-            "a1N1Z2dlc3Rpb24SKwoLYWN0aW9uX3R5cGUYASABKA4yFi5wcm90b2J1Zi5B",
-            "SUFjdGlvblR5cGUSFAoMY2hhcmFjdGVyX2lkGAIgASgDEhAKCHRhcmdldF94",
-            "GAMgASgFEhAKCHRhcmdldF95GAQgASgFEhEKCXRhcmdldF9pZBgFIAEoA2IG",
-            "cHJvdG8z"));
+            "aWQYAiABKAMSFwoPbWF4X3Byb2R1Y2VfbnVtGAMgASgFIkgKDlVwbGV2ZWxU",
+            "ZWNoTXNnEg8KB3RlYW1faWQYASABKAMSJQoJdGVjaF90eXBlGAIgASgOMhIu",
+            "cHJvdG9idWYuVGVjaFR5cGUiQAoSU3RyYXRlZ2ljQUlSZXF1ZXN0Eg8KB3Rl",
+            "YW1faWQYASABKAMSGQoRY3VycmVudF9nYW1lX3RpbWUYAiABKAMipQEKE1N0",
+            "cmF0ZWdpY0FJUmVzcG9uc2USEwoLYWN0X3N1Y2Nlc3MYASABKAgSNwoPcHJv",
+            "ZHVjdGlvbl9wbGFuGAIgAygLMh4ucHJvdG9idWYuUHJvZHVjdGlvblN1Z2dl",
+            "c3Rpb24SKwoJdGFza19wbGFuGAMgAygLMhgucHJvdG9idWYuVGFza1N1Z2dl",
+            "c3Rpb24SEwoLZXhwbGFuYXRpb24YBCABKAkiUwoUUHJvZHVjdGlvblN1Z2dl",
+            "c3Rpb24SKQoMcHJvZHVjdF90eXBlGAEgASgOMhMucHJvdG9idWYuR29vZHNU",
+            "eXBlEhAKCHF1YW50aXR5GAIgASgFIooBCg5UYXNrU3VnZ2VzdGlvbhIrCgth",
+            "Y3Rpb25fdHlwZRgBIAEoDjIWLnByb3RvYnVmLkFJQWN0aW9uVHlwZRIUCgxj",
+            "aGFyYWN0ZXJfaWQYAiABKAMSEAoIdGFyZ2V0X3gYAyABKAUSEAoIdGFyZ2V0",
+            "X3kYBCABKAUSEQoJdGFyZ2V0X2lkGAUgASgDYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Protobuf.MessageTypeReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -84,6 +85,7 @@ namespace Protobuf {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.TradeMsg), global::Protobuf.TradeMsg.Parser, new[]{ "TeamId", "PlayerId", "ProductType", "ProductAmount", "IsBuy" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.CreateCharacterMsg), global::Protobuf.CreateCharacterMsg.Parser, new[]{ "CharacterType", "TeamId", "PlayerId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.ProduceGoodsMsg), global::Protobuf.ProduceGoodsMsg.Parser, new[]{ "ProductType", "TeamId", "MaxProduceNum" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.UplevelTechMsg), global::Protobuf.UplevelTechMsg.Parser, new[]{ "TeamId", "TechType" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.StrategicAIRequest), global::Protobuf.StrategicAIRequest.Parser, new[]{ "TeamId", "CurrentGameTime" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.StrategicAIResponse), global::Protobuf.StrategicAIResponse.Parser, new[]{ "ActSuccess", "ProductionPlan", "TaskPlan", "Explanation" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.ProductionSuggestion), global::Protobuf.ProductionSuggestion.Parser, new[]{ "ProductType", "Quantity" }, null, null, null, null),
@@ -4355,6 +4357,241 @@ namespace Protobuf {
 
   }
 
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class UplevelTechMsg : pb::IMessage<UplevelTechMsg>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<UplevelTechMsg> _parser = new pb::MessageParser<UplevelTechMsg>(() => new UplevelTechMsg());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<UplevelTechMsg> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[14]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public UplevelTechMsg() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public UplevelTechMsg(UplevelTechMsg other) : this() {
+      teamId_ = other.teamId_;
+      techType_ = other.techType_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public UplevelTechMsg Clone() {
+      return new UplevelTechMsg(this);
+    }
+
+    /// <summary>Field number for the "team_id" field.</summary>
+    public const int TeamIdFieldNumber = 1;
+    private long teamId_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long TeamId {
+      get { return teamId_; }
+      set {
+        teamId_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "tech_type" field.</summary>
+    public const int TechTypeFieldNumber = 2;
+    private global::Protobuf.TechType techType_ = global::Protobuf.TechType.NullTechType;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::Protobuf.TechType TechType {
+      get { return techType_; }
+      set {
+        techType_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as UplevelTechMsg);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(UplevelTechMsg other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (TeamId != other.TeamId) return false;
+      if (TechType != other.TechType) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (TeamId != 0L) hash ^= TeamId.GetHashCode();
+      if (TechType != global::Protobuf.TechType.NullTechType) hash ^= TechType.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (TeamId != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(TeamId);
+      }
+      if (TechType != global::Protobuf.TechType.NullTechType) {
+        output.WriteRawTag(16);
+        output.WriteEnum((int) TechType);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (TeamId != 0L) {
+        output.WriteRawTag(8);
+        output.WriteInt64(TeamId);
+      }
+      if (TechType != global::Protobuf.TechType.NullTechType) {
+        output.WriteRawTag(16);
+        output.WriteEnum((int) TechType);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (TeamId != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(TeamId);
+      }
+      if (TechType != global::Protobuf.TechType.NullTechType) {
+        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) TechType);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(UplevelTechMsg other) {
+      if (other == null) {
+        return;
+      }
+      if (other.TeamId != 0L) {
+        TeamId = other.TeamId;
+      }
+      if (other.TechType != global::Protobuf.TechType.NullTechType) {
+        TechType = other.TechType;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 8: {
+            TeamId = input.ReadInt64();
+            break;
+          }
+          case 16: {
+            TechType = (global::Protobuf.TechType) input.ReadEnum();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 8: {
+            TeamId = input.ReadInt64();
+            break;
+          }
+          case 16: {
+            TechType = (global::Protobuf.TechType) input.ReadEnum();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
   /// <summary>
   /// 智慧大脑相关
   /// </summary>
@@ -4373,7 +4610,7 @@ namespace Protobuf {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[14]; }
+      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4608,7 +4845,7 @@ namespace Protobuf {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[15]; }
+      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4895,7 +5132,7 @@ namespace Protobuf {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[16]; }
+      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[17]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5130,7 +5367,7 @@ namespace Protobuf {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[17]; }
+      get { return global::Protobuf.Message2ServerReflection.Descriptor.MessageTypes[18]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

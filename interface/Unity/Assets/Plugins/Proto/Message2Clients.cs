@@ -96,22 +96,19 @@ namespace Protobuf {
             "KAUSLgoFdGVhbXMYAiADKAsyHy5wcm90b2J1Zi5NZXNzYWdlT2ZBbGwuVGVh",
             "bUluZm8aVgoIVGVhbUluZm8SDQoFc2NvcmUYASABKAUSEAoIbWF0ZXJpYWwY",
             "AiABKAUSFQoNY29tcHV0ZV9wb3dlchgDIAEoBRISCgpmYWN0b3J5X2hwGAQg",
-            "ASgFIpICCg9NZXNzYWdlVG9DbGllbnQSKwoLb2JqX21lc3NhZ2UYASADKAsy",
+            "ASgFIpQBCg9NZXNzYWdlVG9DbGllbnQSKwoLb2JqX21lc3NhZ2UYASADKAsy",
             "Fi5wcm90b2J1Zi5NZXNzYWdlT2ZPYmoSJwoKZ2FtZV9zdGF0ZRgCIAEoDjIT",
-            "LnByb3RvYnVmLkdhbWVTdGF0ZRIlCglnYW1lX21vZGUYAyABKA4yEi5wcm90",
-            "b2J1Zi5HYW1lTW9kZRIrCgthbGxfbWVzc2FnZRgEIAEoCzIWLnByb3RvYnVm",
-            "Lk1lc3NhZ2VPZkFsbBIpCghhaV9ldmVudBgFIAEoCzIXLnByb3RvYnVmLkds",
-            "b2JhbEFJRXZlbnQSKgoJYWlfZWZmZWN0GAYgASgLMhcucHJvdG9idWYuQUlX",
-            "b3JsZEVmZmVjdCJKCgdNb3ZlUmVzEhQKDGFjdHVhbF9zcGVlZBgBIAEoAxIU",
-            "CgxhY3R1YWxfYW5nbGUYAiABKAESEwoLYWN0X3N1Y2Nlc3MYAyABKAgiOwoR",
-            "Q3JlYXRDaGFyYWN0ZXJSZXMSEwoLYWN0X3N1Y2Nlc3MYASABKAgSEQoJcGxh",
-            "eWVyX2lkGAIgASgDIh4KB0Jvb2xSZXMSEwoLYWN0X3N1Y2Nlc3MYASABKAgi",
-            "SAoQQ2hhcmFjdGVySW5mb1JlcxI0Cg5DaGFyYWN0ZXJfaW5mbxgBIAMoCzIc",
-            "LnByb3RvYnVmLk1lc3NhZ2VPZkNoYXJhY3RlciIZCgZFY29SZXMSDwoHZWNv",
-            "bm9teRgBIAEoAyJ6Cg1NZXNzYWdlT2ZOZXdzEhYKDHRleHRfbWVzc2FnZRgB",
-            "IAEoCUgAEhgKDmJpbmFyeV9tZXNzYWdlGAIgASgMSAASDwoHZnJvbV9pZBgD",
-            "IAEoAxINCgV0b19pZBgEIAEoAxIPCgd0ZWFtX2lkGAUgASgDQgYKBG5ld3Ni",
-            "BnByb3RvMw=="));
+            "LnByb3RvYnVmLkdhbWVTdGF0ZRIrCgthbGxfbWVzc2FnZRgDIAEoCzIWLnBy",
+            "b3RvYnVmLk1lc3NhZ2VPZkFsbCJKCgdNb3ZlUmVzEhQKDGFjdHVhbF9zcGVl",
+            "ZBgBIAEoAxIUCgxhY3R1YWxfYW5nbGUYAiABKAESEwoLYWN0X3N1Y2Nlc3MY",
+            "AyABKAgiOwoRQ3JlYXRDaGFyYWN0ZXJSZXMSEwoLYWN0X3N1Y2Nlc3MYASAB",
+            "KAgSEQoJcGxheWVyX2lkGAIgASgDIh4KB0Jvb2xSZXMSEwoLYWN0X3N1Y2Nl",
+            "c3MYASABKAgiSAoQQ2hhcmFjdGVySW5mb1JlcxI0Cg5DaGFyYWN0ZXJfaW5m",
+            "bxgBIAMoCzIcLnByb3RvYnVmLk1lc3NhZ2VPZkNoYXJhY3RlciIZCgZFY29S",
+            "ZXMSDwoHZWNvbm9teRgBIAEoAyJ6Cg1NZXNzYWdlT2ZOZXdzEhYKDHRleHRf",
+            "bWVzc2FnZRgBIAEoCUgAEhgKDmJpbmFyeV9tZXNzYWdlGAIgASgMSAASDwoH",
+            "ZnJvbV9pZBgDIAEoAxINCgV0b19pZBgEIAEoAxIPCgd0ZWFtX2lkGAUgASgD",
+            "QgYKBG5ld3NiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Protobuf.MessageTypeReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -131,7 +128,7 @@ namespace Protobuf {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.TaskTimeModifier), global::Protobuf.TaskTimeModifier.Parser, new[]{ "TaskType", "TimeMultiplier" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfObj), global::Protobuf.MessageOfObj.Parser, new[]{ "FactoryMessage", "CharacterMessage", "ResourceMessage", "MarketMessage", "ComputeCenterMessage", "MapMessage", "NewsMessage", "TeamMessage", "BarrierMessage", "BushMessage" }, new[]{ "MessageOfObj" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll), global::Protobuf.MessageOfAll.Parser, new[]{ "GameTime", "Teams" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll.Types.TeamInfo), global::Protobuf.MessageOfAll.Types.TeamInfo.Parser, new[]{ "Score", "Material", "ComputePower", "FactoryHp" }, null, null, null, null)}),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageToClient), global::Protobuf.MessageToClient.Parser, new[]{ "ObjMessage", "GameState", "GameMode", "AllMessage", "AiEvent", "AiEffect" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageToClient), global::Protobuf.MessageToClient.Parser, new[]{ "ObjMessage", "GameState", "AllMessage" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MoveRes), global::Protobuf.MoveRes.Parser, new[]{ "ActualSpeed", "ActualAngle", "ActSuccess" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.CreatCharacterRes), global::Protobuf.CreatCharacterRes.Parser, new[]{ "ActSuccess", "PlayerId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.BoolRes), global::Protobuf.BoolRes.Parser, new[]{ "ActSuccess" }, null, null, null, null),
@@ -7341,10 +7338,7 @@ namespace Protobuf {
     public MessageToClient(MessageToClient other) : this() {
       objMessage_ = other.objMessage_.Clone();
       gameState_ = other.gameState_;
-      gameMode_ = other.gameMode_;
       allMessage_ = other.allMessage_ != null ? other.allMessage_.Clone() : null;
-      aiEvent_ = other.aiEvent_ != null ? other.aiEvent_.Clone() : null;
-      aiEffect_ = other.aiEffect_ != null ? other.aiEffect_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -7377,20 +7371,8 @@ namespace Protobuf {
       }
     }
 
-    /// <summary>Field number for the "game_mode" field.</summary>
-    public const int GameModeFieldNumber = 3;
-    private global::Protobuf.GameMode gameMode_ = global::Protobuf.GameMode.NullGameMode;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Protobuf.GameMode GameMode {
-      get { return gameMode_; }
-      set {
-        gameMode_ = value;
-      }
-    }
-
     /// <summary>Field number for the "all_message" field.</summary>
-    public const int AllMessageFieldNumber = 4;
+    public const int AllMessageFieldNumber = 3;
     private global::Protobuf.MessageOfAll allMessage_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -7398,30 +7380,6 @@ namespace Protobuf {
       get { return allMessage_; }
       set {
         allMessage_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "ai_event" field.</summary>
-    public const int AiEventFieldNumber = 5;
-    private global::Protobuf.GlobalAIEvent aiEvent_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Protobuf.GlobalAIEvent AiEvent {
-      get { return aiEvent_; }
-      set {
-        aiEvent_ = value;
-      }
-    }
-
-    /// <summary>Field number for the "ai_effect" field.</summary>
-    public const int AiEffectFieldNumber = 6;
-    private global::Protobuf.AIWorldEffect aiEffect_;
-    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
-    public global::Protobuf.AIWorldEffect AiEffect {
-      get { return aiEffect_; }
-      set {
-        aiEffect_ = value;
       }
     }
 
@@ -7442,10 +7400,7 @@ namespace Protobuf {
       }
       if(!objMessage_.Equals(other.objMessage_)) return false;
       if (GameState != other.GameState) return false;
-      if (GameMode != other.GameMode) return false;
       if (!object.Equals(AllMessage, other.AllMessage)) return false;
-      if (!object.Equals(AiEvent, other.AiEvent)) return false;
-      if (!object.Equals(AiEffect, other.AiEffect)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -7455,10 +7410,7 @@ namespace Protobuf {
       int hash = 1;
       hash ^= objMessage_.GetHashCode();
       if (GameState != global::Protobuf.GameState.NullGameState) hash ^= GameState.GetHashCode();
-      if (GameMode != global::Protobuf.GameMode.NullGameMode) hash ^= GameMode.GetHashCode();
       if (allMessage_ != null) hash ^= AllMessage.GetHashCode();
-      if (aiEvent_ != null) hash ^= AiEvent.GetHashCode();
-      if (aiEffect_ != null) hash ^= AiEffect.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -7482,21 +7434,9 @@ namespace Protobuf {
         output.WriteRawTag(16);
         output.WriteEnum((int) GameState);
       }
-      if (GameMode != global::Protobuf.GameMode.NullGameMode) {
-        output.WriteRawTag(24);
-        output.WriteEnum((int) GameMode);
-      }
       if (allMessage_ != null) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(26);
         output.WriteMessage(AllMessage);
-      }
-      if (aiEvent_ != null) {
-        output.WriteRawTag(42);
-        output.WriteMessage(AiEvent);
-      }
-      if (aiEffect_ != null) {
-        output.WriteRawTag(50);
-        output.WriteMessage(AiEffect);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
@@ -7513,21 +7453,9 @@ namespace Protobuf {
         output.WriteRawTag(16);
         output.WriteEnum((int) GameState);
       }
-      if (GameMode != global::Protobuf.GameMode.NullGameMode) {
-        output.WriteRawTag(24);
-        output.WriteEnum((int) GameMode);
-      }
       if (allMessage_ != null) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(26);
         output.WriteMessage(AllMessage);
-      }
-      if (aiEvent_ != null) {
-        output.WriteRawTag(42);
-        output.WriteMessage(AiEvent);
-      }
-      if (aiEffect_ != null) {
-        output.WriteRawTag(50);
-        output.WriteMessage(AiEffect);
       }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
@@ -7543,17 +7471,8 @@ namespace Protobuf {
       if (GameState != global::Protobuf.GameState.NullGameState) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) GameState);
       }
-      if (GameMode != global::Protobuf.GameMode.NullGameMode) {
-        size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) GameMode);
-      }
       if (allMessage_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(AllMessage);
-      }
-      if (aiEvent_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(AiEvent);
-      }
-      if (aiEffect_ != null) {
-        size += 1 + pb::CodedOutputStream.ComputeMessageSize(AiEffect);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -7571,26 +7490,11 @@ namespace Protobuf {
       if (other.GameState != global::Protobuf.GameState.NullGameState) {
         GameState = other.GameState;
       }
-      if (other.GameMode != global::Protobuf.GameMode.NullGameMode) {
-        GameMode = other.GameMode;
-      }
       if (other.allMessage_ != null) {
         if (allMessage_ == null) {
           AllMessage = new global::Protobuf.MessageOfAll();
         }
         AllMessage.MergeFrom(other.AllMessage);
-      }
-      if (other.aiEvent_ != null) {
-        if (aiEvent_ == null) {
-          AiEvent = new global::Protobuf.GlobalAIEvent();
-        }
-        AiEvent.MergeFrom(other.AiEvent);
-      }
-      if (other.aiEffect_ != null) {
-        if (aiEffect_ == null) {
-          AiEffect = new global::Protobuf.AIWorldEffect();
-        }
-        AiEffect.MergeFrom(other.AiEffect);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -7619,29 +7523,11 @@ namespace Protobuf {
             GameState = (global::Protobuf.GameState) input.ReadEnum();
             break;
           }
-          case 24: {
-            GameMode = (global::Protobuf.GameMode) input.ReadEnum();
-            break;
-          }
-          case 34: {
+          case 26: {
             if (allMessage_ == null) {
               AllMessage = new global::Protobuf.MessageOfAll();
             }
             input.ReadMessage(AllMessage);
-            break;
-          }
-          case 42: {
-            if (aiEvent_ == null) {
-              AiEvent = new global::Protobuf.GlobalAIEvent();
-            }
-            input.ReadMessage(AiEvent);
-            break;
-          }
-          case 50: {
-            if (aiEffect_ == null) {
-              AiEffect = new global::Protobuf.AIWorldEffect();
-            }
-            input.ReadMessage(AiEffect);
             break;
           }
         }
@@ -7671,29 +7557,11 @@ namespace Protobuf {
             GameState = (global::Protobuf.GameState) input.ReadEnum();
             break;
           }
-          case 24: {
-            GameMode = (global::Protobuf.GameMode) input.ReadEnum();
-            break;
-          }
-          case 34: {
+          case 26: {
             if (allMessage_ == null) {
               AllMessage = new global::Protobuf.MessageOfAll();
             }
             input.ReadMessage(AllMessage);
-            break;
-          }
-          case 42: {
-            if (aiEvent_ == null) {
-              AiEvent = new global::Protobuf.GlobalAIEvent();
-            }
-            input.ReadMessage(AiEvent);
-            break;
-          }
-          case 50: {
-            if (aiEffect_ == null) {
-              AiEffect = new global::Protobuf.AIWorldEffect();
-            }
-            input.ReadMessage(AiEffect);
             break;
           }
         }

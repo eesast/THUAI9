@@ -3,7 +3,6 @@ using System.Collections;
 using System.IO;
 using Protobuf;
 using THUAI9.Unity.Core;
-using THUAI9.Unity.Render;
 using UnityEngine;
 
 namespace THUAI9.Unity.Playback
@@ -79,10 +78,12 @@ namespace THUAI9.Unity.Playback
             CoreParam.playbackCurrentFrameIndex = -1;
             CoreParam.playbackElapsedMilliseconds = 0;
             statusText = "状态：正在加载回放文件";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
 
             if (!File.Exists(playbackFilePath))
             {
                 statusText = "状态：未找到回放文件";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 Debug.LogError($"Playback file does not exist: {playbackFilePath}");
                 return;
             }
@@ -96,6 +97,7 @@ namespace THUAI9.Unity.Playback
                 if (!playbackLoaded)
                 {
                     statusText = "状态：回放文件中没有可读取帧";
+                    FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                     Debug.LogError($"Playback file contains no readable frames: {playbackFilePath}");
                     return;
                 }
@@ -117,6 +119,7 @@ namespace THUAI9.Unity.Playback
             {
                 playbackLoaded = false;
                 statusText = "状态：加载回放失败";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 Debug.LogError($"Failed to load playback file: {ex.Message}");
             }
         }
@@ -128,7 +131,7 @@ namespace THUAI9.Unity.Playback
                 return;
             }
 
-            CoreParam.Reset();
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), "状态：准备显示首帧");
             RestoreCachedMap();
             messageReader.Seek(0);
 
@@ -141,9 +144,8 @@ namespace THUAI9.Unity.Playback
 
             currentFrameIndex = messageReader.GetCurrentIndex();
             ApplyPlaybackClock(frame, currentFrameIndex);
-            CoreParam.frameCount = currentFrameIndex;
-            RenderManager.Instance.RenderFrame(frame);
             statusText = previewStatus ?? $"状态：已加载 {TotalFrameCount} 帧，显示首帧";
+            FrameSourceHub.SubmitImmediate(frame, currentFrameIndex, currentPlaybackTimeMs, statusText);
         }
 
         public void Play()
@@ -172,6 +174,7 @@ namespace THUAI9.Unity.Playback
             {
                 isPaused = false;
                 statusText = "状态：播放中";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 return;
             }
 
@@ -182,7 +185,7 @@ namespace THUAI9.Unity.Playback
 
             if (currentFrameIndex < 0)
             {
-                CoreParam.Reset();
+                FrameSourceHub.Reset(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), "状态：播放中");
                 messageReader.StartPlay();
                 currentFrameIndex = -1;
             }
@@ -190,6 +193,7 @@ namespace THUAI9.Unity.Playback
             isPlaying = true;
             isPaused = false;
             statusText = "状态：播放中";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
             playCoroutine = StartCoroutine(PlaybackLoop(currentFrameIndex >= 0));
         }
 
@@ -214,6 +218,7 @@ namespace THUAI9.Unity.Playback
 
             isPaused = true;
             statusText = "状态：已暂停";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
         }
 
         public void Stop()
@@ -238,11 +243,12 @@ namespace THUAI9.Unity.Playback
                 return;
             }
 
-            CoreParam.Reset();
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", "状态：已停止");
             messageReader?.Reset();
             currentFrameIndex = -1;
             currentPlaybackTimeMs = 0;
             statusText = playbackLoaded ? "状态：已停止" : "状态：未加载回放文件";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.None, "未选择", statusText);
         }
 
         public void SetSpeed(float speed)
@@ -271,7 +277,7 @@ namespace THUAI9.Unity.Playback
             isPlaying = false;
             isPaused = false;
 
-            CoreParam.Reset();
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), "状态：正在跳转");
             RestoreCachedMap();
 
             messageReader.Seek(clampedIndex);
@@ -286,14 +292,14 @@ namespace THUAI9.Unity.Playback
 
             currentFrameIndex = messageReader.GetCurrentIndex();
             ApplyPlaybackClock(frame, currentFrameIndex);
-            CoreParam.frameCount = currentFrameIndex;
-            RenderManager.Instance.RenderFrame(frame);
             statusText = $"状态：已定位到第 {currentFrameIndex + 1}/{TotalFrameCount} 帧";
+            FrameSourceHub.SubmitImmediate(frame, currentFrameIndex, currentPlaybackTimeMs, statusText);
 
             if (wasPlaying)
             {
                 isPlaying = true;
                 statusText = "状态：播放中";
+                FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 playCoroutine = StartCoroutine(PlaybackLoop(true));
             }
 
@@ -362,6 +368,7 @@ namespace THUAI9.Unity.Playback
                     isPaused = false;
                     playCoroutine = null;
                     statusText = "状态：播放结束";
+                    FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                     yield break;
                 }
 
@@ -387,8 +394,7 @@ namespace THUAI9.Unity.Playback
 
                 currentFrameIndex = messageReader.GetCurrentIndex();
                 ApplyPlaybackClock(message, currentFrameIndex);
-                CoreParam.frameCount = currentFrameIndex;
-                RenderManager.Instance.RenderFrame(message);
+                FrameSourceHub.EnqueueFrame(message, currentFrameIndex, currentPlaybackTimeMs, "状态：播放中");
                 framePrepared = true;
 
                 previousGameTimeMs = currentGameTimeMs;
@@ -443,8 +449,14 @@ namespace THUAI9.Unity.Playback
         private void ApplyPlaybackClock(MessageToClient frame, int frameIndex)
         {
             currentPlaybackTimeMs = GetElapsedPlaybackMilliseconds(frame, frameIndex);
-            CoreParam.playbackCurrentFrameIndex = frameIndex;
-            CoreParam.playbackElapsedMilliseconds = currentPlaybackTimeMs;
+            FrameSourceHub.ApplyPlaybackClock(frameIndex, currentPlaybackTimeMs);
+        }
+
+        private string BuildPlaybackSourceName()
+        {
+            return string.IsNullOrWhiteSpace(playbackFilePath)
+                ? "回放"
+                : $"回放：{Path.GetFileName(playbackFilePath)}";
         }
 
         private int GetElapsedPlaybackMilliseconds(MessageToClient frame, int frameIndex)

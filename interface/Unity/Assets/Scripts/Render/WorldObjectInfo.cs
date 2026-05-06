@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using THUAI9.Unity.Core;
 using UnityEngine;
 
 namespace THUAI9.Unity.Render
@@ -21,6 +22,8 @@ namespace THUAI9.Unity.Render
         public int gridX = -1;
         public int gridY = -1;
         public int observedMaxHp;
+        public int lastSeenFrame;
+        public float lastSeenRealtime;
 
         private void OnEnable()
         {
@@ -44,6 +47,8 @@ namespace THUAI9.Unity.Render
             teamId = ownerTeamId;
             gridX = row;
             gridY = col;
+            lastSeenFrame = CoreParam.frameCount;
+            lastSeenRealtime = Time.realtimeSinceStartup;
         }
 
         public string BuildDisplayText()
@@ -51,7 +56,8 @@ namespace THUAI9.Unity.Render
             string position = gridX >= 0 && gridY >= 0 ? $"\n坐标：({gridX}, {gridY})" : string.Empty;
             string team = teamId > 0 ? $"\n队伍：Team {teamId}" : string.Empty;
             string id = guid != 0 ? $"\nID：{guid}" : string.Empty;
-            return $"{title}{team}{id}{position}\n{detail}";
+            string frame = lastSeenFrame > 0 ? $"\n最后更新帧：{lastSeenFrame}" : string.Empty;
+            return $"{title}{team}{id}{position}{frame}\n{detail}";
         }
 
         public bool TryGetBounds(out Bounds bounds)

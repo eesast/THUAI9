@@ -54,7 +54,7 @@ public static class MainGameUILayoutBuilder
         SetBottomCenter(controlPanel, new Vector2(0f, 18f), new Vector2(860f, 120f));
 
         RectTransform sourcePanel = EnsurePanel(canvasRt, "HUD_SourcePanel", PanelColor);
-        SetBottomCenter(sourcePanel, new Vector2(0f, 146f), new Vector2(1040f, 92f));
+        SetBottomCenter(sourcePanel, new Vector2(0f, 146f), new Vector2(1040f, 132f));
 
         controlPanel.SetAsFirstSibling();
         sourcePanel.SetAsFirstSibling();
@@ -79,8 +79,14 @@ public static class MainGameUILayoutBuilder
         SetChildRect(scoreTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -16f), new Vector2(-36f, 32f), new Vector2(0f, 1f));
         for (int i = 0; i < 4; i++)
         {
-            Text score = MoveText($"TeamScoreText{i + 1}", canvasRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-42f, -166f - i * 38f), new Vector2(340f, 32f), new Vector2(1f, 1f), 15, TextAnchor.MiddleLeft);
-            if (score != null && string.IsNullOrWhiteSpace(score.text)) score.text = $"队伍 {i + 1}   分数 --   算力 --";
+            Text score = MoveText($"TeamScoreText{i + 1}", canvasRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-54f, -156f - i * 44f), new Vector2(310f, 34f), new Vector2(1f, 1f), 16, TextAnchor.MiddleLeft);
+            if (score != null)
+            {
+                if (string.IsNullOrWhiteSpace(score.text)) score.text = $"队伍{i + 1}   分 --   原 --   算 --   厂HP --";
+                score.fontStyle = FontStyle.Bold;
+                score.horizontalOverflow = HorizontalWrapMode.Wrap;
+                score.verticalOverflow = VerticalWrapMode.Truncate;
+            }
         }
 
         Text eventTitle = EnsureText(eventPanel, "HUD_EventTitle", "工业呼吸 / AI 事件", 18, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
@@ -140,26 +146,38 @@ public static class MainGameUILayoutBuilder
     {
         DeleteChildIfExists(panel, "HUD_SourceHintText");
 
-        Text replayLabel = EnsureText(panel, "HUD_ReplayPathLabel", "Replay", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
-        SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -22f), new Vector2(70f, 28f), new Vector2(0f, 1f));
+        Text replayLabel = EnsureText(panel, "HUD_ReplayPathLabel", "回放", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
+        SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -16f), new Vector2(64f, 30f), new Vector2(0f, 1f));
 
-        InputField replayInput = EnsureInputField(panel, "ReplayPathInput", "Assets/Playback/test/official_bot_match.thuaipb", "Replay file path");
-        SetChildRect(replayInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -18f), new Vector2(520f, 30f), new Vector2(0f, 1f));
+        InputField replayInput = EnsureInputField(panel, "ReplayPathInput", "Assets/Playback/test/official_bot_match.thuaipb", "选择 .thuaipb 或输入路径");
+        SetChildRect(replayInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -16f), new Vector2(500f, 30f), new Vector2(0f, 1f));
 
-        Button loadButton = EnsureButton(panel, "LoadReplayButton", "Load", new Color(0.18f, 0.36f, 0.58f, 1f));
-        SetChildRect(loadButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(626f, -18f), new Vector2(82f, 30f), new Vector2(0f, 1f));
+        Button browseButton = EnsureButton(panel, "BrowseReplayButton", "选择文件", new Color(0.20f, 0.48f, 0.72f, 1f));
+        SetChildRect(browseButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(604f, -16f), new Vector2(94f, 30f), new Vector2(0f, 1f));
+
+        Button loadButton = EnsureButton(panel, "LoadReplayButton", "加载", new Color(0.18f, 0.36f, 0.58f, 1f));
+        SetChildRect(loadButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(710f, -16f), new Vector2(82f, 30f), new Vector2(0f, 1f));
+
+        Text recentLabel = EnsureText(panel, "HUD_RecentReplayLabel", "最近", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
+        SetChildRect(recentLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(64f, 30f), new Vector2(0f, 1f));
+
+        Dropdown recentDropdown = EnsureDropdown(panel, "RecentReplayDropdown");
+        SetChildRect(recentDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(500f, 30f), new Vector2(0f, 1f));
+
+        Text hint = EnsureText(panel, "ReplayHintText", "回放：可输入路径、选择文件，或从最近列表直接加载。", 13, FontStyle.Normal, new Color(0.74f, 0.86f, 0.92f, 1f), TextAnchor.UpperLeft);
+        SetChildRect(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(604f, -52f), new Vector2(410f, 66f), new Vector2(0f, 1f));
 
         Text liveLabel = EnsureText(panel, "HUD_LiveAddressLabel", "Live", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
-        SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -56f), new Vector2(70f, 28f), new Vector2(0f, 1f));
+        SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -88f), new Vector2(64f, 30f), new Vector2(0f, 1f));
 
         InputField liveInput = EnsureInputField(panel, "ServerAddressInput", "127.0.0.1:8888", "server:port");
-        SetChildRect(liveInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
+        SetChildRect(liveInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -88f), new Vector2(260f, 30f), new Vector2(0f, 1f));
 
-        Button connectButton = EnsureButton(panel, "ConnectLiveButton", "Connect", new Color(0.12f, 0.48f, 0.32f, 1f));
-        SetChildRect(connectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
+        Button connectButton = EnsureButton(panel, "ConnectLiveButton", "连接", new Color(0.12f, 0.48f, 0.32f, 1f));
+        SetChildRect(connectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -88f), new Vector2(92f, 30f), new Vector2(0f, 1f));
 
-        Button disconnectButton = EnsureButton(panel, "DisconnectLiveButton", "Disconnect", new Color(0.48f, 0.18f, 0.18f, 1f));
-        SetChildRect(disconnectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -52f), new Vector2(118f, 30f), new Vector2(0f, 1f));
+        Button disconnectButton = EnsureButton(panel, "DisconnectLiveButton", "断开", new Color(0.48f, 0.18f, 0.18f, 1f));
+        SetChildRect(disconnectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -88f), new Vector2(118f, 30f), new Vector2(0f, 1f));
     }
 
     private static void ConfigureCamera()
@@ -181,7 +199,10 @@ public static class MainGameUILayoutBuilder
         ui.aiEffectText = aiEffectText;
         ui.selectionInfoText = selectionInfo;
         ui.playbackPathInput = GameObject.Find("ReplayPathInput")?.GetComponent<InputField>();
+        ui.browsePlaybackButton = GameObject.Find("BrowseReplayButton")?.GetComponent<Button>();
         ui.loadPlaybackButton = GameObject.Find("LoadReplayButton")?.GetComponent<Button>();
+        ui.recentReplayDropdown = GameObject.Find("RecentReplayDropdown")?.GetComponent<Dropdown>();
+        ui.replayHintText = GameObject.Find("ReplayHintText")?.GetComponent<Text>();
         ui.serverAddressInput = GameObject.Find("ServerAddressInput")?.GetComponent<InputField>();
         ui.connectLiveButton = GameObject.Find("ConnectLiveButton")?.GetComponent<Button>();
         ui.disconnectLiveButton = GameObject.Find("DisconnectLiveButton")?.GetComponent<Button>();
@@ -189,6 +210,9 @@ public static class MainGameUILayoutBuilder
         WorldSelectionController selectionController = canvas.GetComponent<WorldSelectionController>() ?? canvas.gameObject.AddComponent<WorldSelectionController>();
         selectionController.selectionText = selectionInfo;
         selectionController.targetCamera = Camera.main;
+        InspectorPanelController inspectorController = canvas.GetComponent<InspectorPanelController>() ?? canvas.gameObject.AddComponent<InspectorPanelController>();
+        inspectorController.bodyText = selectionInfo;
+        selectionController.inspectorPanel = inspectorController;
 
         PlaybackController playback = Object.FindObjectOfType<PlaybackController>();
         LiveSpectatorClient liveClient = Object.FindObjectOfType<LiveSpectatorClient>();
@@ -265,16 +289,17 @@ public static class MainGameUILayoutBuilder
         if (existing == null) go.transform.SetParent(parent, false);
 
         Image image = go.GetComponent<Image>() ?? go.AddComponent<Image>();
-        image.color = new Color(0.88f, 0.93f, 0.96f, 1f);
+        image.color = new Color(0.08f, 0.115f, 0.155f, 0.98f);
 
         InputField input = go.GetComponent<InputField>() ?? go.AddComponent<InputField>();
         RectTransform rt = go.GetComponent<RectTransform>();
 
-        Text text = EnsureText(rt, $"{name}Text", value, 14, FontStyle.Normal, Color.black, TextAnchor.MiddleLeft);
+        Text text = EnsureText(rt, $"{name}Text", value, 14, FontStyle.Normal, new Color(0.92f, 0.97f, 1f, 1f), TextAnchor.MiddleLeft);
         Stretch(text.rectTransform, new Vector2(8f, 3f), new Vector2(8f, 3f));
         text.supportRichText = false;
+        text.horizontalOverflow = HorizontalWrapMode.Overflow;
 
-        Text placeholderText = EnsureText(rt, $"{name}Placeholder", placeholder, 14, FontStyle.Normal, new Color(0.25f, 0.30f, 0.34f, 0.72f), TextAnchor.MiddleLeft);
+        Text placeholderText = EnsureText(rt, $"{name}Placeholder", placeholder, 14, FontStyle.Normal, new Color(0.55f, 0.66f, 0.74f, 0.85f), TextAnchor.MiddleLeft);
         Stretch(placeholderText.rectTransform, new Vector2(8f, 3f), new Vector2(8f, 3f));
         placeholderText.supportRichText = false;
 
@@ -286,6 +311,35 @@ public static class MainGameUILayoutBuilder
         }
         input.lineType = InputField.LineType.SingleLine;
         return input;
+    }
+
+    private static Dropdown EnsureDropdown(RectTransform parent, string name)
+    {
+        Transform existing = parent.Find(name);
+        GameObject go = existing != null ? existing.gameObject : DefaultControls.CreateDropdown(new DefaultControls.Resources());
+        go.name = name;
+        if (existing == null) go.transform.SetParent(parent, false);
+
+        Image image = go.GetComponent<Image>() ?? go.AddComponent<Image>();
+        image.color = new Color(0.08f, 0.115f, 0.155f, 0.98f);
+
+        Dropdown dropdown = go.GetComponent<Dropdown>() ?? go.AddComponent<Dropdown>();
+        dropdown.ClearOptions();
+        dropdown.AddOptions(new System.Collections.Generic.List<string> { "最近回放：暂无" });
+        dropdown.interactable = false;
+
+        if (dropdown.captionText != null)
+        {
+            ApplyTextStyle(dropdown.captionText, 14, TextAnchor.MiddleLeft, new Color(0.92f, 0.97f, 1f, 1f), FontStyle.Normal);
+            dropdown.captionText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+
+        if (dropdown.itemText != null)
+        {
+            ApplyTextStyle(dropdown.itemText, 14, TextAnchor.MiddleLeft, Color.black, FontStyle.Normal);
+        }
+
+        return dropdown;
     }
 
     private static Text MoveText(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, Vector2 sizeDelta, Vector2 pivot, int fontSize, TextAnchor alignment)

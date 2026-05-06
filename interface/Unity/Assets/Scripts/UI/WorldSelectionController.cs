@@ -16,6 +16,7 @@ namespace THUAI9.Unity.UI
     {
         public Camera targetCamera;
         public Text selectionText;
+        public InspectorPanelController inspectorPanel;
         public bool enableHover = true;
         public bool enableClickSelection = true;
 
@@ -29,6 +30,12 @@ namespace THUAI9.Unity.UI
         {
             targetCamera ??= Camera.main;
             selectionText ??= FindTextByName("SelectionInfoText");
+            inspectorPanel ??= FindObjectOfType<InspectorPanelController>();
+            if (inspectorPanel == null)
+            {
+                inspectorPanel = new GameObject("InspectorPanelController").AddComponent<InspectorPanelController>();
+            }
+
             hoverHighlight = CreateHighlight("HoverHighlight", new Color(0.18f, 0.88f, 0.96f, 0.22f), 24);
             selectedHighlight = CreateHighlight("SelectionHighlight", new Color(1f, 0.72f, 0.22f, 0.30f), 25);
             SetHighlightVisible(hoverHighlight, false);
@@ -67,7 +74,7 @@ namespace THUAI9.Unity.UI
 
                 if (selectedInfo != null)
                 {
-                    UpdateSelectionText(selectedInfo.BuildDisplayText());
+                    ShowSelectedObject(selectedInfo);
                     if (selectedInfo.TryGetBounds(out Bounds bounds))
                     {
                         PositionHighlight(selectedHighlight, bounds);
@@ -76,13 +83,13 @@ namespace THUAI9.Unity.UI
                 else if (TryGetMapTileAt(mouseWorld, out Vector2Int tile, out string tileText))
                 {
                     selectedTile = tile;
-                    UpdateSelectionText(tileText);
+                    ShowSelectedTile(tile, tileText);
                     Bounds tileBounds = new Bounds(Tool.GridToUnity(tile.x, tile.y), Vector3.one);
                     PositionHighlight(selectedHighlight, tileBounds);
                 }
                 else
                 {
-                    UpdateSelectionText(null);
+                    ClearSelection();
                     SetHighlightVisible(selectedHighlight, false);
                 }
             }
@@ -91,13 +98,13 @@ namespace THUAI9.Unity.UI
             {
                 selectedInfo = null;
                 selectedTile = null;
-                UpdateSelectionText(null);
+                ClearSelection();
                 SetHighlightVisible(selectedHighlight, false);
             }
 
             if (selectedInfo != null)
             {
-                UpdateSelectionText(selectedInfo.BuildDisplayText());
+                ShowSelectedObject(selectedInfo);
                 if (selectedInfo.TryGetBounds(out Bounds bounds))
                 {
                     PositionHighlight(selectedHighlight, bounds);
@@ -105,7 +112,7 @@ namespace THUAI9.Unity.UI
             }
             else if (selectedTile.HasValue && TryGetMapTileAt(Tool.GridToUnity(selectedTile.Value.x, selectedTile.Value.y), out _, out string tileText))
             {
-                UpdateSelectionText(tileText);
+                ShowSelectedTile(selectedTile.Value, tileText);
             }
         }
 
@@ -175,6 +182,24 @@ namespace THUAI9.Unity.UI
             selectionText.text = string.IsNullOrWhiteSpace(value)
                 ? "选中对象\n点击地图上的单位、建筑、资源或地块查看详情\nEsc 清除选择"
                 : value;
+        }
+
+        private void ShowSelectedObject(WorldObjectInfo info)
+        {
+            UpdateSelectionText(info != null ? info.BuildDisplayText() : null);
+            inspectorPanel?.ShowObject(info);
+        }
+
+        private void ShowSelectedTile(Vector2Int tile, string tileText)
+        {
+            UpdateSelectionText(tileText);
+            inspectorPanel?.ShowTile(tile, tileText);
+        }
+
+        private void ClearSelection()
+        {
+            UpdateSelectionText(null);
+            inspectorPanel?.ClearSelection();
         }
 
         private static GameObject CreateHighlight(string name, Color color, int sortingOrder)

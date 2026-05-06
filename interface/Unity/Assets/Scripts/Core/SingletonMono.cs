@@ -44,7 +44,16 @@ namespace THUAI9.Unity.Core
             }
             else
             {
+                instance = this as T;
                 DontDestroyOnLoad(gameObject);
+            }
+        }
+
+        protected void ReleaseSingletonInstance()
+        {
+            if (instance == this)
+            {
+                instance = null;
             }
         }
     }
