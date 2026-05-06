@@ -244,8 +244,7 @@ namespace Proto2THUAI9
                 teamMsg.score(),
                 teamMsg.material(),
                 teamMsg.compute_power(),
-                teamMsg.factory_hp()
-            });
+                teamMsg.factory_hp()});
         }
 
         return gameInfo;
