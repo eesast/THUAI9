@@ -5,6 +5,9 @@ namespace ClientTest2
 {
     public static class Program
     {
+        private const int CellSize = 1000;
+        private const int CellCenterOffset = 500;
+
         private sealed class SharedState
         {
             private readonly object stateLock = new();
@@ -14,6 +17,8 @@ namespace ClientTest2
             private bool hasCharacterPosition;
             private int characterX;
             private int characterY;
+            private int teamMaterial;
+            private bool factoryCanProduce = true;
 
             public Task GameStartTask => gameStartTcs.Task;
             public Task CharacterSeenTask => characterSeenTcs.Task;
@@ -23,6 +28,30 @@ namespace ClientTest2
                 if (frame.GameState == GameState.GameStart || frame.GameState == GameState.GameRunning)
                 {
                     gameStartTcs.TrySetResult(true);
+                }
+
+                if (frame.AllMessage != null)
+                {
+                    int teamIdx = (int)teamId - 1;
+                    if (teamIdx >= 0 && teamIdx < frame.AllMessage.Teams.Count)
+                    {
+                        lock (stateLock)
+                        {
+                            teamMaterial = frame.AllMessage.Teams[teamIdx].Material;
+                        }
+                    }
+                }
+
+                foreach (var obj in frame.ObjMessage)
+                {
+                    var fac = obj.FactoryMessage;
+                    if (fac == null) continue;
+                    if (fac.TeamId != teamId) continue;
+
+                    lock (stateLock)
+                    {
+                        factoryCanProduce = fac.CanProduce;
+                    }
                 }
 
                 foreach (var obj in frame.ObjMessage)
@@ -48,6 +77,22 @@ namespace ClientTest2
                     x = characterX;
                     y = characterY;
                     return hasCharacterPosition;
+                }
+            }
+
+            public int GetTeamMaterial()
+            {
+                lock (stateLock)
+                {
+                    return teamMaterial;
+                }
+            }
+
+            public bool IsFactoryCanProduce()
+            {
+                lock (stateLock)
+                {
+                    return factoryCanProduce;
                 }
             }
         }
@@ -136,30 +181,14 @@ namespace ClientTest2
                 return;
             }
 
-            int startRow = startX / 1000;
-            int startCol = startY / 1000;
-
-            var path = FindPathToNearestResource(map, startRow, startCol);
-            if (path == null || path.Count <= 1)
+            bool reachedResource = await NavigateToNearestResourceAsync(client, state, map, teamId, characterId, cts.Token);
+            if (!reachedResource)
             {
-                Console.WriteLine("No reachable resource found.");
+                Console.WriteLine("Failed to navigate to a harvestable position near resource.");
                 cts.Cancel();
+                try { await streamTask; } catch { }
                 await channel.ShutdownAsync();
                 return;
-            }
-
-            Console.WriteLine($"Path found with {path.Count} cells.");
-
-            foreach (var cell in path.Skip(1))
-            {
-                bool reached = await MoveToCellAsync(client, state, teamId, characterId, cell.r, cell.c, cts.Token);
-                if (!reached)
-                {
-                    Console.WriteLine($"Failed to reach cell ({cell.r}, {cell.c}).");
-                    cts.Cancel();
-                    await channel.ShutdownAsync();
-                    return;
-                }
             }
 
             bool startedHarvest = false;
@@ -183,6 +212,66 @@ namespace ClientTest2
             }
 
             Console.WriteLine(startedHarvest ? "Harvest started." : "Harvest request failed.");
+
+            if (!startedHarvest)
+            {
+                cts.Cancel();
+                try { await streamTask; } catch { }
+                await channel.ShutdownAsync();
+                return;
+            }
+
+            const int requiredMaterial = 54; // (10+5+1+8+3) * 2
+            if (!await WaitUntilMaterialEnoughAsync(state, requiredMaterial, TimeSpan.FromSeconds(40), cts.Token))
+            {
+                Console.WriteLine($"Material not enough in time. current={state.GetTeamMaterial()}, required={requiredMaterial}");
+                cts.Cancel();
+                try { await streamTask; } catch { }
+                await channel.ShutdownAsync();
+                return;
+            }
+
+            var produceTargets = new (GoodsType type, string name)[]
+            {
+                (GoodsType.Semiconductor, "Semiconductor"),
+                (GoodsType.Medicine, "Medicine"),
+                (GoodsType.Toys, "Toys"),
+                (GoodsType.Clothes, "Clothes"),
+                (GoodsType.Food, "Food")
+            };
+
+            foreach (var target in produceTargets)
+            {
+                bool canStart = await WaitUntilFactoryCanProduceAsync(state, TimeSpan.FromSeconds(30), cts.Token);
+                if (!canStart)
+                {
+                    Console.WriteLine($"Factory stayed busy too long before producing {target.name}.");
+                    break;
+                }
+
+                var produceRes = client.Produce(new ProduceGoodsMsg
+                {
+                    TeamId = teamId,
+                    ProductType = target.type,
+                    MaxProduceNum = 2
+                });
+                Console.WriteLine($"Produce {target.name} x2: {(produceRes.ActSuccess ? "OK" : "FAIL")}");
+
+                if (produceRes.ActSuccess)
+                {
+                    bool finished = await WaitUntilFactoryCanProduceAsync(state, TimeSpan.FromSeconds(30), cts.Token);
+                    if (!finished)
+                    {
+                        Console.WriteLine($"Factory busy timeout after producing {target.name}.");
+                        break;
+                    }
+                }
+                else
+                {
+                    await Task.Delay(200, cts.Token);
+                }
+            }
+
             await Task.Delay(3000, cts.Token);
 
             cts.Cancel();
@@ -211,6 +300,30 @@ namespace ClientTest2
             return done == task;
         }
 
+        private static async Task<bool> WaitUntilMaterialEnoughAsync(SharedState state, int required, TimeSpan timeout, CancellationToken ct)
+        {
+            var end = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < end && !ct.IsCancellationRequested)
+            {
+                if (state.GetTeamMaterial() >= required)
+                    return true;
+                await Task.Delay(150, ct);
+            }
+            return state.GetTeamMaterial() >= required;
+        }
+
+        private static async Task<bool> WaitUntilFactoryCanProduceAsync(SharedState state, TimeSpan timeout, CancellationToken ct)
+        {
+            var end = DateTime.UtcNow + timeout;
+            while (DateTime.UtcNow < end && !ct.IsCancellationRequested)
+            {
+                if (state.IsFactoryCanProduce())
+                    return true;
+                await Task.Delay(120, ct);
+            }
+            return state.IsFactoryCanProduce();
+        }
+
         private static bool IsPassable(PlaceType place)
         {
             return place != PlaceType.Barrier
@@ -220,13 +333,50 @@ namespace ClientTest2
                 && place != PlaceType.Resource;
         }
 
+        private static bool IsTraversable(MessageOfMap map, int r, int c, int clearance)
+        {
+            int h = map.Rows.Count;
+            int w = h == 0 ? 0 : map.Rows[0].Cols.Count;
+            if (r < 0 || r >= h || c < 0 || c >= w)
+                return false;
+            if (!IsPassable(map.Rows[r].Cols[c]))
+                return false;
+
+            if (clearance <= 0)
+                return true;
+
+            for (int dr = -clearance; dr <= clearance; dr++)
+            {
+                for (int dc = -clearance; dc <= clearance; dc++)
+                {
+                    int nr = r + dr;
+                    int nc = c + dc;
+                    if (nr < 0 || nr >= h || nc < 0 || nc >= w)
+                        continue;
+                    if (!IsPassable(map.Rows[nr].Cols[nc]))
+                        return false;
+                }
+            }
+            return true;
+        }
+
         private static List<(int r, int c)>? FindPathToNearestResource(MessageOfMap map, int startR, int startC)
+        {
+            var safePath = FindPathToNearestResource(map, startR, startC, clearance: 1);
+            if (safePath != null)
+                return safePath;
+            return FindPathToNearestResource(map, startR, startC, clearance: 0);
+        }
+
+        private static List<(int r, int c)>? FindPathToNearestResource(MessageOfMap map, int startR, int startC, int clearance)
         {
             int h = map.Rows.Count;
             if (h == 0) return null;
             int w = map.Rows[0].Cols.Count;
 
             if (startR < 0 || startR >= h || startC < 0 || startC >= w)
+                return null;
+            if (!IsTraversable(map, startR, startC, 0))
                 return null;
 
             int[,] dist = new int[h, w];
@@ -260,7 +410,7 @@ namespace ClientTest2
                     int nc = cur.c + dc4[k];
                     if (nr < 0 || nr >= h || nc < 0 || nc >= w) continue;
                     if (dist[nr, nc] != -1) continue;
-                    if (!IsPassable(map.Rows[nr].Cols[nc])) continue;
+                    if (!IsTraversable(map, nr, nc, clearance)) continue;
 
                     dist[nr, nc] = dist[cur.r, cur.c] + 1;
                     prevR[nr, nc] = cur.r;
@@ -285,7 +435,7 @@ namespace ClientTest2
                             int tr = rr + dr;
                             int tc = cc + dc;
                             if (tr < 0 || tr >= h || tc < 0 || tc >= w) continue;
-                            if (!IsPassable(map.Rows[tr].Cols[tc])) continue;
+                            if (!IsTraversable(map, tr, tc, clearance)) continue;
                             if (dist[tr, tc] < 0) continue;
 
                             if (dist[tr, tc] < bestDist)
@@ -316,6 +466,46 @@ namespace ClientTest2
             return path;
         }
 
+        private static async Task<bool> NavigateToNearestResourceAsync(
+            AvailableService.AvailableServiceClient client,
+            SharedState state,
+            MessageOfMap map,
+            long teamId,
+            long characterId,
+            CancellationToken ct)
+        {
+            for (int attempt = 0; attempt < 8 && !ct.IsCancellationRequested; attempt++)
+            {
+                if (!state.TryGetCharacterPosition(out int curX, out int curY))
+                {
+                    await Task.Delay(100, ct);
+                    continue;
+                }
+
+                int startRow = curX / CellSize;
+                int startCol = curY / CellSize;
+                var path = FindPathToNearestResource(map, startRow, startCol);
+                if (path == null || path.Count <= 1)
+                    return true;
+
+                bool broken = false;
+                foreach (var cell in path.Skip(1))
+                {
+                    bool reached = await MoveToCellAsync(client, state, teamId, characterId, cell.r, cell.c, ct);
+                    if (!reached)
+                    {
+                        broken = true;
+                        break;
+                    }
+                }
+
+                if (!broken)
+                    return true;
+            }
+
+            return false;
+        }
+
         private static async Task<bool> MoveToCellAsync(
             AvailableService.AvailableServiceClient client,
             SharedState state,
@@ -325,10 +515,12 @@ namespace ClientTest2
             int targetCol,
             CancellationToken ct)
         {
-            int targetX = targetRow * 1000 + 500;
-            int targetY = targetCol * 1000 + 500;
+            int targetX = targetRow * CellSize + CellCenterOffset;
+            int targetY = targetCol * CellSize + CellCenterOffset;
 
-            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(8);
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(12);
+            double lastDistance = double.MaxValue;
+            int stallCount = 0;
 
             while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
             {
@@ -341,10 +533,25 @@ namespace ClientTest2
                 double dx = targetX - curX;
                 double dy = targetY - curY;
                 double dis = Math.Sqrt(dx * dx + dy * dy);
-                if (dis <= 180)
+                if (dis <= 260)
                     return true;
 
                 double angle = Math.Atan2(dy, dx);
+                if (dis >= lastDistance - 20)
+                {
+                    stallCount++;
+                }
+                else
+                {
+                    stallCount = 0;
+                }
+
+                if (stallCount >= 4)
+                {
+                    double offset = ((stallCount / 4) % 2 == 0 ? 0.35 : -0.35);
+                    angle += offset;
+                }
+
                 _ = client.Move(new MoveMsg
                 {
                     TeamId = teamId,
@@ -353,6 +560,7 @@ namespace ClientTest2
                     Angle = angle
                 });
 
+                lastDistance = dis;
                 await Task.Delay(120, ct);
             }
 
