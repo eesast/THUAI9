@@ -1,0 +1,30 @@
+{
+  "generated_from": "Runtime/Units compact model-generated icons",
+  "output": "Runtime/UnitAnimations",
+  "count": 672,
+  "units": [
+    "autocar",
+    "drone",
+    "robot"
+  ],
+  "teams": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "directions": [
+    "e",
+    "n",
+    "w",
+    "s"
+  ],
+  "actions": {
+    "idle": 2,
+    "move": 4,
+    "harvest": 4,
+    "attack": 4
+  },
+  "backup": null,
+  "naming": "unit_{unit}_team_{team}_{action}_{direction}_{frame:00}.png"
+}

@@ -72,13 +72,19 @@ namespace Gaming
                 factory.CanProduce.SetROri(true);
                 factory.CanRecruit.SetROri(true);
 
-                bool existsOnMap = gameMap.GameObjDict[GameObjType.FACTORY]
-                    .Find(obj => obj.ID == factory.ID) != null;
-                if (!existsOnMap)
+                // Map 构造时会按地图数据预置 Factory（无队伍上下文）。
+                // 这里按同格位置移除预置实例，确保地图中只保留 teams 维护的 Factory 对象。
+                var factoryCell = GameData.PosGridToCellXY(factory.Position);
+                gameMap.GameObjDict[GameObjType.FACTORY].RemoveAll(obj =>
                 {
-                    gameMap.Add(factory);
-                }
+                    if (obj is not Factory oldFactory) return false;
+                    var oldCell = GameData.PosGridToCellXY(oldFactory.Position);
+                    return oldCell == factoryCell;
+                });
+                gameMap.Add(factory);
             }
+
+            // 市场由地图预置（Map 构造时会根据 PlaceType.MARKET 创建），无需在此处硬编码创建
 
             if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
             {
@@ -716,6 +722,14 @@ namespace Gaming
                 FactoryCanProduce = canProduce;
                 FactoryCanRecruit = canRecruit;
             }
+        }
+
+        /// <summary>
+        /// 获取某队某角色的实时对象（teamId + playerId）。找不到返回 false。
+        /// </summary>
+        public bool TryGetCharacter(long teamId, long playerId, out Character? character)
+        {
+            return characterManager.TryGetCharacter(teamId, playerId, out character);
         }
 
         /// <summary>

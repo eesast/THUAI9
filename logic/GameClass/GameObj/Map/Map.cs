@@ -271,6 +271,9 @@ namespace GameClass.GameObj.Map
                         case PlaceType.SPACE:
                             Add(new Space(GameData.GetCellCenterPos(i, j)));
                             break;
+                        case PlaceType.MARKET:
+                            Add(new Market(GameData.GetCellCenterPos(i, j), MarketType.MEDIUM_MARKET));
+                            break;
                         case PlaceType.FACTORY:
                             if (i < 25)
                                 Add(new Factory(GameData.GetCellCenterPos(i, j)));
