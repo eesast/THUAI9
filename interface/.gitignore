@@ -1,0 +1,9 @@
+﻿# Interface-local generated state
+AvaloniaUI/temp_build_verify/
+
+# Unity generated state
+Unity/Library/
+Unity/Temp/
+Unity/Logs/
+Unity/UserSettings/
+Unity/.codex/
