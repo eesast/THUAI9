@@ -3,8 +3,13 @@
 # ==========================================
 
 # 地图尺寸
-MAP_WIDTH = 5
-MAP_HEIGHT = 5
+MAP_WIDTH = 7
+MAP_HEIGHT = 7
+
+# 随机场景规模
+MARKET_COUNT = 3
+RESOURCE_COUNT = 2
+OBSTACLE_COUNT = 6
 
 # 地块类型编码 (Grid Types)
 GRID_TYPE_EMPTY = 0    # 空地
@@ -50,6 +55,30 @@ PRODUCT_FOOD = 4
 
 # 买入、卖出时间
 PRODUCT_TRANSACTION_TIME = 0.25  # 秒
+
+# 市场交易价差：买入按 ask = 中间价 * (1 + rate)，卖出按 bid = 中间价 * (1 - rate)
+MARKET_SPREAD_RATE = 0.03
+
+# 禁止把从某个市场买来的产品直接卖回同一个市场，避免原地无风险套利
+BLOCK_SAME_MARKET_RESALE = True
+
+# 每局市场随机价格条件
+MARKET_PERIOD_MIN = 70.0
+MARKET_PERIOD_MAX = 130.0
+MARKET_PRICE_SCALE_MIN = 0.85
+MARKET_PRICE_SCALE_MAX = 1.15
+
+# 市场库存与需求冲击
+MARKET_INITIAL_STOCK_MIN = 3.0
+MARKET_INITIAL_STOCK_MAX = 8.0
+MARKET_MAX_STOCK = 10.0
+MARKET_STOCK_REPLENISH_PER_STEP = 0.015
+MARKET_INITIAL_DEMAND_MIN = 3.0
+MARKET_INITIAL_DEMAND_MAX = 8.0
+MARKET_MAX_DEMAND = 10.0
+MARKET_DEMAND_REPLENISH_PER_STEP = 0.02
+MARKET_SCARCITY_PRICE_IMPACT = 0.15
+MARKET_LOW_DEMAND_DISCOUNT = 0.25
 
 # 产品详细配置表
 # 按规则：| 产品   | 成本 | 价值（基础） | 耗时 |

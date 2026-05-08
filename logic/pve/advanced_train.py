@@ -55,8 +55,8 @@ class TrainingCallback(BaseCallback):
             steps += 1
 
         # Get environment info
-        actual_env = self.eval_env.unwrapped
-        money = actual_env.game.money
+        public_obs = self.eval_env.unwrapped.game.get_public_observation()
+        money = public_obs["money"]
 
         # Print statistics
         print(f"\n[Evaluation at step {self.n_calls}]")
@@ -176,7 +176,7 @@ def test_model(model_path, num_episodes=5):
             done = terminated or truncated
             steps += 1
 
-        final_money = env.game.money
+        final_money = env.game.get_public_observation()["money"]
         episode_rewards.append(total_reward)
         episode_money.append(final_money)
 
