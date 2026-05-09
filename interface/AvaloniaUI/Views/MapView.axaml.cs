@@ -341,7 +341,8 @@ namespace THUAI9_Avalonia.Views
 
                 if (visual.Hp != hp || visual.MaxHp != maxHp)
                 {
-                    visual.HpBar.Width = Math.Max(HpBarUpdateMinWidth, HpBarWidth * ((double)hp / Math.Max(maxHp, 1)));
+                    double ratio = Math.Min(1.0, (double)hp / Math.Max(maxHp, 1));
+                    visual.HpBar.Width = Math.Max(HpBarUpdateMinWidth, HpBarWidth * ratio);
                     visual.Hp = hp;
                     visual.MaxHp = maxHp;
                 }
@@ -380,9 +381,10 @@ namespace THUAI9_Avalonia.Views
                 Background = Brushes.DarkGray,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
             };
+            double initRatio = Math.Min(1.0, (double)hp / Math.Max(maxHp, 1));
             var hpBar = new Border
             {
-                Width = Math.Max(HpBarMinWidth, HpBarWidth * ((double)hp / Math.Max(maxHp, 1))),
+                Width = Math.Max(HpBarMinWidth, HpBarWidth * initRatio),
                 Height = HpBarHeight,
                 Background = Brushes.LimeGreen,
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left

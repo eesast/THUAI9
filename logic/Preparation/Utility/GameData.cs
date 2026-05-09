@@ -23,24 +23,24 @@ namespace Preparation.Utility
         public const int CharacterRadius = 300;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
-        public const int MaxRobust = 10;
-        public const int MaxEfficiency = 2;
-        public const int MaxHP = 10;
+        public const int MaxRobust = 50;
+        public const int MaxEfficiency = 10;
+        public const int MaxHP = 300;
         public const int MaxCost = 2;
-        public const int MaxATKSize = 10;
-        public const int MaxATKPower = 2;
-        public const int MaxLoad = 5;
+        public const int MaxATKSize = 3 * NumOfPosGridPerCell;
+        public const int MaxATKPower = 100;
+        public const int MaxLoad = 30;
         public const int MaxViewRange = 10 * NumOfPosGridPerCell;
-        public const int MaxStorage = 10;
+        public const int MaxStorage = 150;
 
         public const int ResourceHP = 500;              // 资源血量
 
         public const int FactoryScore = 20000;
         public const int FactoryDisableTimeMs = 10_00;
 
-        public const int FactoryHP = 3;
+        public const int FactoryHP = 100;
         public const int FactoryStorage = 5;
-        public const int FactoryRobust = 5;
+        public const int FactoryRobust = 20;
         public const int FactoryEfficiency = 1;
         // initial computing power for newly created factories
         public const int FactoryInitialComputingPower = 100;
@@ -49,32 +49,32 @@ namespace Preparation.Utility
         public const int FactoryInitialSource = 0; // initial source stored in factory
         public const int FactoryInitialScore = 0; // initial score award or baseline
 
-        public const int DroneHP = 3;
+        public const int DroneHP = 100;
         public const int DroneCost = 50;
         public const int DroneATKsize = 1000;
-        public const int DroneATKpower = 1;
+        public const int DroneATKpower = 40;
         public const int DroneLoad = 5;
-        public const int DroneRobust = 5;
+        public const int DroneRobust = 10;
         public const int DroneViewRange = 7 * NumOfPosGridPerCell;
         public const int DroneEfficiency = 1;
         public const int DroneMoveSpeed = BaseCharacterSpeed;
 
-        public const int AutonomouCarHP = 3;
+        public const int AutonomouCarHP = 100;
         public const int AutonomouCarCost = 50;
         public const int AutonomouCarATKsize = 1000;
-        public const int AutonomouCarATKpower = 1;
+        public const int AutonomouCarATKpower = 18;
         public const int AutonomouCarLoad = 5;
-        public const int AutonomouCarRobust = 1;
+        public const int AutonomouCarRobust = 8;
         public const int AutonomouCarViewRange = NumOfPosGridPerCell * 5;
         public const int AutonomouCarEfficiency = 2;
         public const int AutonomouCarMoveSpeed = BaseCharacterSpeed;
 
-        public const int RobotHP = 3;
+        public const int RobotHP = 150;
         public const int RobotCost = 50;
         public const int RobotATKsize = 1000;
-        public const int RobotATKpower = 1;
+        public const int RobotATKpower = 30;
         public const int RobotLoad = 5;
-        public const int RobotRobust = 10;
+        public const int RobotRobust = 15;
         public const int RobotViewRange = NumOfPosGridPerCell * 5;
         public const int RobotEfficiency = 1;
         public const int RobotMoveSpeed = BaseCharacterSpeed;
@@ -83,6 +83,7 @@ namespace Preparation.Utility
 
         // factory compute power production per second
         public const int FactoryComputePowerPerSecond = 1;
+        public const int FactoryComputePowerBonusPerCenterPerSecond = 2;
 
         public const int BasePriceSemiconductor = 80;
         public const int BasePriceMedicine = 50;
@@ -123,7 +124,7 @@ namespace Preparation.Utility
         public const int TechCostDecreaseCost = 50;
 
         public const double TechHpMultiplierPerLevel = 0.2;
-        public const int TechRobustAddPerLevel = 2;
+        public const int TechRobustAddPerLevel = 5;
         public const int TechEfficiencyAddPerLevel = 2;
         public const double TechWarriorAtkMultiplierPerLevel = 0.3;
         public const int TechMoveSpeedAddPerLevel = 200;

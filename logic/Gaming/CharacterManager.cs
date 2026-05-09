@@ -262,6 +262,7 @@ namespace Gaming
                     return;
                 }
                 long subHP = (long)(obj.AttackPower - character.Robust);
+                if (subHP < 0) subHP = 0;
                 game.AddTeamScore((long)obj.TeamID.Get(), subHP * 20);
                 character.HP.SubPositiveV(subHP);
                 if (character.HP == 0)
