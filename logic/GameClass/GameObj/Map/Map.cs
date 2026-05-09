@@ -174,7 +174,7 @@ namespace GameClass.GameObj.Map
                 return false;
             if (del * del > character.ViewRange * character.ViewRange)
                 return false;
-            if (del.x > del.y)
+            if (Math.Abs(del.x) > Math.Abs(del.y))
             {
                 var beginx = GameData.NumOfPosGridPerCell;
                 var endx = Math.Abs(del.x);

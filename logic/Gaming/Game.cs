@@ -105,10 +105,29 @@ namespace Gaming
                             int nowTimeMs = NowTime();
                             TryTriggerPeriodicEvent(nowTimeMs);
 
+                            // Count occupied compute centers per team
+                            int[] occupiedCounts = new int[teams.Count + 1];
+                            if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
+                            {
+                                var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
+                                if (centers != null)
+                                {
+                                    foreach (var cc in centers)
+                                    {
+                                        if (cc.IsOccupied)
+                                        {
+                                            long ownerId = cc.OccupiedByTeamId;
+                                            if (ownerId > 0 && ownerId < occupiedCounts.Length)
+                                                occupiedCounts[ownerId]++;
+                                        }
+                                    }
+                                }
+                            }
                             foreach (var team in teams)
                             {
                                 var fac = team.Value.Factory;
                                 if (fac == null) continue;
+                                fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
                                 fac.TickComputingPower(GameData.CheckInterval);
                             }
 
@@ -205,7 +224,7 @@ namespace Gaming
             }
 
             var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null)
+            if (factory != null && factory.TeamID.Get() != character.TeamID.Get())
             {
                 return actionManager.Attack(character, factory);
             }
