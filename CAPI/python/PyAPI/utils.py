@@ -240,6 +240,7 @@ class Proto2THUAI9:
             score=teamMsg.score,
             material=teamMsg.material,
             computePower=teamMsg.compute_power,
+            techLevels=dict(teamMsg.tech_levels),
         )
 
     @staticmethod
@@ -255,6 +256,7 @@ class Proto2THUAI9:
                     material=teamMsg.material,
                     computePower=teamMsg.compute_power,
                     factoryHP=teamMsg.factory_hp,
+                    techLevels=dict(teamMsg.tech_levels),
                 )
             )
         return THUAI9.GameInfo(gameTime=gameInfoMsg.game_time, teams=teams)

@@ -4,7 +4,6 @@ setlocal
 set "ROOT=%~dp0"
 set "PY_ROOT=%ROOT%CAPI\python"
 set "PY_MAIN=%PY_ROOT%\PyAPI\main.py"
-set "PY_PROTO=%PY_ROOT%\proto\Services_pb2_grpc.py"
 set "SERVER_PROJ=%ROOT%logic\Server\Server.csproj"
 set "UI_PROJ=%ROOT%interface\AvaloniaUI\THUAI9_Avalonia.csproj"
 set "UI_WORKDIR=%ROOT%interface\AvaloniaUI"
@@ -37,17 +36,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "%PY_PROTO%" (
-    echo [THUAI9] Python proto files not found, generating...
-    pushd "%PY_ROOT%"
-    call generate_proto.cmd
-    if errorlevel 1 (
-        popd
-        echo [ERROR] Failed to generate Python proto files.
-        exit /b 1
-    )
+echo [THUAI9] Generating Python proto files...
+pushd "%PY_ROOT%"
+call generate_proto.cmd
+if errorlevel 1 (
     popd
+    echo [ERROR] Failed to generate Python proto files.
+    exit /b 1
 )
+popd
 
 if "%ENABLE_UI%"=="1" (
     if exist "%UI_PROJ%" (

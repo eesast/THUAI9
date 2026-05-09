@@ -198,10 +198,11 @@ class TeamDebugAPI(TeamAPI):
         if team is None:
             return
         self._logger.info(
-            "Team id=%s, score=%s, material=%s, computePower=%s, factoryHP=%s",
+            "Team id=%s, score=%s, material=%s, computePower=%s, factoryHP=%s, techLevels=%s",
             team.teamID,
             team.score,
             team.material,
             team.computePower,
             team.factoryHP,
+            team.techLevels,
         )

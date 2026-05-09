@@ -281,6 +281,7 @@ class Logic(ILogic):
                 material=teamInfo.material,
                 computePower=teamInfo.compute_power,
                 factoryHP=teamInfo.factory_hp,
+                techLevels=dict(teamInfo.tech_levels),
             )
 
     def __LoadBufferCase(self, item) -> None:

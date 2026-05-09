@@ -196,6 +196,7 @@ class Team:
     material: int = 0
     computePower: int = 0
     factoryHP: int = 0
+    techLevels: Dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -267,6 +268,7 @@ class TeamGameInfo:
     material: int = 0
     computePower: int = 0
     factoryHP: int = 0
+    techLevels: Dict[str, int] = field(default_factory=dict)
 
 
 @dataclass

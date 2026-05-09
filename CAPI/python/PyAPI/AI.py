@@ -54,6 +54,7 @@ class AI(IAI):
         # api.GetGameInfo()      获取比赛时间和整体信息
         # api.GetMaterial()      获取工厂原料
         # api.GetScore()         获取当前分数
+        # team_info.techLevels   当前科技等级表，键名如 "Efficiency"、"Robust" 等
         #
         # 常见管理动作：
         # api.BuildCharacter(...)   造单位

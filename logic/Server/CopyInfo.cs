@@ -1,5 +1,6 @@
 using GameClass.GameObj;
 using GameClass.GameObj.Areas;
+using Gaming;
 using Preparation.Utility;
 using Protobuf;
 using Utility = Preparation.Utility;
@@ -41,27 +42,43 @@ namespace Server
             };
             return objMsg;
         }
-        /*
-        private static MessageOfObj? Base(Base player, long time)
+        public static MessageOfAll.Types.TeamInfo TeamInfo(Game.TeamStatus team)
         {
-            MessageOfObj msg = new()
+            var info = new MessageOfAll.Types.TeamInfo
             {
-                TeamMessage = new()
-                {
-                    TeamId = player.TeamID,
-                    PlayerId = player.PlayerID,
-                    Score = player.MoneyPool.Score,
-                    Energy = player.MoneyPool.Money,
-                }
+                Score = (int)team.Score,
+                Material = (int)team.FactorySource,
+                ComputePower = (int)team.FactoryComputingPower,
+                FactoryHp = (int)team.FactoryHP
             };
+
+            foreach (var kv in team.TechLevels)
+            {
+                info.TechLevels[kv.Key] = kv.Value;
+            }
+
+            return info;
+        }
+
+        public static MessageOfTeam TeamMessage(Game.TeamStatus team, long playerId)
+        {
+            var msg = new MessageOfTeam
+            {
+                TeamId = team.TeamId,
+                PlayerId = playerId,
+                Score = (int)team.Score,
+                Material = (int)team.FactorySource,
+                ComputePower = (int)team.FactoryComputingPower
+            };
+
+            foreach (var kv in team.TechLevels)
+            {
+                msg.TechLevels[kv.Key] = kv.Value;
+            }
+
             return msg;
         }
 
-        public static MessageOfObj? Auto(Base @base, long time)
-        {
-            return Base(@base, time);
-        }
-        */
         private static MessageOfObj? CHARACTER(Character player, long time)
         {
             var msg = new MessageOfObj
