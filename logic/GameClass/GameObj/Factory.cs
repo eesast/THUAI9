@@ -112,11 +112,26 @@ public class Factory : Immovable, IFactory
     }
 
 
+    private double _computingAccumulator = 0;
+    private int _occupiedComputeCenters = 0;
+
+    public void SetOccupiedComputeCenters(int count)
+    {
+        _occupiedComputeCenters = count;
+    }
+
     public void TickComputingPower(int elapsedMs)
     {
         if (elapsedMs <= 0) return;
-        long add = (long)(GameData.FactoryComputePowerPerSecond * (elapsedMs / 1000.0));
-        if (add > 0) ComputingPower.AddRNow(add);
+        double perSecond = GameData.FactoryComputePowerPerSecond
+            + _occupiedComputeCenters * GameData.FactoryComputePowerBonusPerCenterPerSecond;
+        _computingAccumulator += perSecond * (elapsedMs / 1000.0);
+        long add = (long)_computingAccumulator;
+        if (add > 0)
+        {
+            ComputingPower.AddRNow(add);
+            _computingAccumulator -= add;
+        }
     }
 
     public void ProduceComputingPowerOneSecond()
