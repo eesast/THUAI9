@@ -38,6 +38,11 @@ namespace Preparation.Utility
         public const int FactoryScore = 20000;
         public const int FactoryDisableTimeMs = 10_00;
 
+        // Score multipliers for combat
+        public const int CharacterDamageScoreMultiplier = 20;
+        public const int CharacterKillScoreMultiplier = 40;
+        public const int FactoryDamageScoreMultiplier = 20;
+
         public const int FactoryHP = 100;
         public const int FactoryStorage = 5;
         public const int FactoryRobust = 20;
@@ -148,6 +153,9 @@ namespace Preparation.Utility
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;
         public const int AskAITimeoutMs = 60_000;
+
+        // Event system
+        public const int MarketEventIntervalMs = 30 * 1000; // 测试用 30 秒，正式应为 3*60*1000
 
         // Efficiency conversion: how much each efficiency unit multiplies task speed
         public const double EfficiencyMultiplierPerLevel = 0.2; // each efficiency point => +20% speed
