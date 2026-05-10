@@ -286,15 +286,18 @@ namespace Gaming
             if (!EnsureGameStarted(nameof(GetCurrentEventStatus)))
                 return null;
 
-            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            // 验证调用者属于该队伍：可以是已注册的工厂端或已创建的角色
+            bool valid = characterManager.TryGetCharacter(teamId, playerId, out var character)
+                         && character != null && !character.IsRemoved;
+            if (!valid)
             {
-                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} not found.");
-                return null;
-            }
-            if (character == null || character.IsRemoved)
-            {
-                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} is null or removed.");
-                return null;
+                // 也允许工厂端 playerId 查询（工厂端可能尚未创建角色）
+                var fac = GetTeamFactory(teamId);
+                if (fac == null)
+                {
+                    LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: team {teamId} not found.");
+                    return null;
+                }
             }
 
             return new EventStatus(marketEvent.Name, marketEvent.Description);

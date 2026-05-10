@@ -34,4 +34,5 @@ service AvailableService
 
     // 智慧大脑
     rpc AskAI(StrategicAIRequest) returns (StrategicAIResponse);      // 客户端请求AI建议
+    rpc GetCurrentEventStatus(EventStatusRequest) returns (EventStatusResponse); // 获取当前事件状态
 }

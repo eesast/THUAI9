@@ -13,7 +13,7 @@ namespace Gaming
 {
     public partial class Game
     {
-        private const int EventIntervalMs = 3 * 60 * 1000;
+        private const int EventIntervalMs = 30 * 1000; // 测试用 30 秒，正式应为 3*60*1000
         private int nextEventTriggerMs = EventIntervalMs;
 
         private sealed class Event
