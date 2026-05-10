@@ -690,11 +690,12 @@ namespace THUAI9_Avalonia.ViewModels
 
         private int GetCharacterMaxHp(CharacterType type)
         {
+            // 须与 logic/Preparation/Utility/GameData.cs 中的 *HP 常量保持一致
             return type switch
             {
-                CharacterType.Drone => 3,
-                CharacterType.Robot => 3,
-                CharacterType.AutonomousCar => 3,
+                CharacterType.Drone => 100,
+                CharacterType.Robot => 150,
+                CharacterType.AutonomousCar => 100,
                 _ => 1
             };
         }

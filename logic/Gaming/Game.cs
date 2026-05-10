@@ -105,10 +105,29 @@ namespace Gaming
                             int nowTimeMs = NowTime();
                             TryTriggerPeriodicEvent(nowTimeMs);
 
+                            // Count occupied compute centers per team
+                            int[] occupiedCounts = new int[teams.Count + 1];
+                            if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
+                            {
+                                var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
+                                if (centers != null)
+                                {
+                                    foreach (var cc in centers)
+                                    {
+                                        if (cc.IsOccupied)
+                                        {
+                                            long ownerId = cc.OccupiedByTeamId;
+                                            if (ownerId > 0 && ownerId < occupiedCounts.Length)
+                                                occupiedCounts[ownerId]++;
+                                        }
+                                    }
+                                }
+                            }
                             foreach (var team in teams)
                             {
                                 var fac = team.Value.Factory;
                                 if (fac == null) continue;
+                                fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
                                 fac.TickComputingPower(GameData.CheckInterval);
                             }
 
@@ -205,7 +224,7 @@ namespace Gaming
             }
 
             var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null)
+            if (factory != null && factory.TeamID.Get() != character.TeamID.Get())
             {
                 return actionManager.Attack(character, factory);
             }
@@ -267,15 +286,18 @@ namespace Gaming
             if (!EnsureGameStarted(nameof(GetCurrentEventStatus)))
                 return null;
 
-            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            // 验证调用者属于该队伍：可以是已注册的工厂端或已创建的角色
+            bool valid = characterManager.TryGetCharacter(teamId, playerId, out var character)
+                         && character != null && !character.IsRemoved;
+            if (!valid)
             {
-                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} not found.");
-                return null;
-            }
-            if (character == null || character.IsRemoved)
-            {
-                LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: Character for team {teamId} player {playerId} is null or removed.");
-                return null;
+                // 也允许工厂端 playerId 查询（工厂端可能尚未创建角色）
+                var fac = GetTeamFactory(teamId);
+                if (fac == null)
+                {
+                    LogicLogging.logger.LogWarning($"GetCurrentEventStatus failed: team {teamId} not found.");
+                    return null;
+                }
             }
 
             return new EventStatus(marketEvent.Name, marketEvent.Description);
