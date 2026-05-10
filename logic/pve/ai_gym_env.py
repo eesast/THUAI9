@@ -1,92 +1,134 @@
+"""Gymnasium adapter for the game-rule layer."""
+
+from __future__ import annotations
+
+import math
+
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-from main import GameEnv
+
 from config.setting import *
+from game_core import GameEnv
+
+
+OBS_VECTOR_SIZE = 52
+
 
 class AI9GymEnv(gym.Env):
+    """RL-facing environment.
+
+    The wrapper only consumes GameEnv's public observation and step-result
+    interface. Algorithms should not depend on game internals.
     """
-    改进后的 AI9 环境：
-    - 状态包含所有市场信息 + 时间
-    - 奖励直接使用 money_diff
-    """
+
     metadata = {"render_modes": ["console"]}
 
-    def __init__(self):
+    def __init__(self, randomize: bool = True, max_steps: int = 1000):
         super().__init__()
-        self.game = GameEnv()
-        
-        # 动作空间
-        self.action_space = spaces.Discrete(7)
-
-        # 观察空间：自身 + 所有市场 + 时间相位
-        # 2 (pos) + 2 (busy, holding) + 1 money + 3*3 (市场dx, dy, price) + 1 时间
-        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(15,), dtype=np.float32)
-        
-        self.max_steps = 1000
-        self.prev_money = 0
+        self.game = GameEnv(randomize=randomize)
+        self.action_space = spaces.Discrete(U_ACT_HARVEST + 1)
+        self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(OBS_VECTOR_SIZE,), dtype=np.float32)
+        self.max_steps = max_steps
         self.current_step = 0
-        self.invest = 0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        obs_dict = self.game.reset()
+        public_obs = self.game.reset(seed=seed)
         self.current_step = 0
-        self.prev_money = self.game.money
-        return self._encode_obs(obs_dict), {}
+        return self._encode_obs(public_obs), {"public_observation": public_obs}
 
     def step(self, action):
-        observation = self.game.step(action)
+        public_obs = self.game.step(int(action))
         self.current_step += 1
-        
-        reward = 0.0
-        # --- reward ---
-        money_diff = self.game.money - self.prev_money
-        if money_diff < 0:
-            self.invest += -money_diff
-        if money_diff > 0:
-            reward += (self.game.money - self.prev_money - self.invest) * 0.1 # 销售奖励
-            self.invest = 0
-        reward -= 0.005       # 小时间惩罚
-        
-        self.prev_money = self.game.money
-        
+
+        last_step = public_obs["last_step"]
+        reward = -0.002
+        if not last_step["valid"]:
+            reward -= 0.01
+        reward += 0.1 * last_step["realized_profit"]
+
         terminated = False
         truncated = self.current_step >= self.max_steps
-        
-        return self._encode_obs(observation), reward, terminated, truncated, {}
+        if truncated:
+            reward += 0.01 * (public_obs["net_worth"] - INITIAL_MONEY)
 
-    def _encode_obs(self, obs_raw):
-        """状态向量：自身 + 所有市场 + 时间"""
-        u = self.game.units[0]
-        features = []
+        info = {
+            "public_observation": public_obs,
+            "net_worth": public_obs["net_worth"],
+            "valid_actions": public_obs["valid_actions"],
+            "transactions": public_obs["transactions"],
+        }
+        return self._encode_obs(public_obs), reward, terminated, truncated, info
 
-        # 1. 自身位置
-        features.append(u.pos.x / MAP_HEIGHT)
-        features.append(u.pos.y / MAP_WIDTH)
-        
-        # 2. 状态
-        features.append(u.busy_ticks / 10.0)
-        item_count = sum(u.inventory.values())
-        features.append(item_count / UNIT_CAPACITY)
-        
-        # 3. 资金 (0~1)
-        money_norm = np.log10(max(1, self.game.money)) / 4.0
-        features.append(money_norm)
-        
-        # 4. 所有市场信息 (dx, dy, price)
-        for m in self.game.markets:
-            dx = (m.pos.x - u.pos.x) / MAP_HEIGHT
-            dy = (m.pos.y - u.pos.y) / MAP_WIDTH
-            price = m.get_price(PRODUCT_SEMICONDUCTOR, self.game.time)
-            norm_price = (price - 40) / (120 - 40)  # 归一化
-            features.extend([dx, dy, norm_price])
-        
-        # 5. 时间相位（归一化）
-        time_phase = (self.game.time % 100) / 100.0
-        features.append(time_phase)
-        
+    def _encode_obs(self, public_obs: dict) -> np.ndarray:
+        unit = public_obs["unit"]
+        ux, uy = unit["pos"]
+        features = [
+            ux / max(1, MAP_HEIGHT - 1),
+            uy / max(1, MAP_WIDTH - 1),
+            min(1.0, unit["busy_ticks"] / 10.0),
+            unit["total_load"] / UNIT_CAPACITY,
+            min(1.0, np.log10(max(1.0, public_obs["money"])) / 5.0),
+            unit["inventory"].get(PRODUCT_SEMICONDUCTOR, 0) / UNIT_CAPACITY,
+            sum(unit["resources"].values()) / UNIT_CAPACITY,
+            math.sin(2 * math.pi * (public_obs["time"] % 100.0) / 100.0),
+            math.cos(2 * math.pi * (public_obs["time"] % 100.0) / 100.0),
+        ]
+
+        for market in public_obs["markets"][:MARKET_COUNT]:
+            mx, my = market["pos"]
+            buy_norm = self._norm_price(market["buy_price"])
+            sell_norm = self._norm_price(market["sell_price"])
+            can_buy = 1.0 if public_obs["valid_actions"][U_ACT_LOAD_0] and market["nearby"] else 0.0
+            can_sell = 1.0 if public_obs["valid_actions"][U_ACT_SELL_ALL] and market["nearby"] else 0.0
+            features.extend(
+                [
+                    (mx - ux) / MAP_HEIGHT,
+                    (my - uy) / MAP_WIDTH,
+                    buy_norm,
+                    sell_norm,
+                    market["origin_inventory"] / UNIT_CAPACITY,
+                    market["stock"] / max(1.0, market["max_stock"]),
+                    market["demand"] / max(1.0, market["max_demand"]),
+                    can_buy,
+                    can_sell,
+                ]
+            )
+
+        while len(features) < 9 + MARKET_COUNT * 9:
+            features.extend([0.0] * 9)
+
+        for resource in public_obs["resources"][:RESOURCE_COUNT]:
+            rx, ry = resource["pos"]
+            features.extend(
+                [
+                    (rx - ux) / MAP_HEIGHT,
+                    (ry - uy) / MAP_WIDTH,
+                    min(1.0, resource["stock"] / max(1.0, resource["max_stock"])),
+                    1.0 if resource["nearby"] and public_obs["valid_actions"][U_ACT_HARVEST] else 0.0,
+                ]
+            )
+
+        while len(features) < 9 + MARKET_COUNT * 9 + RESOURCE_COUNT * 4:
+            features.extend([0.0] * 4)
+
+        features.extend(1.0 if is_valid else 0.0 for is_valid in public_obs["valid_actions"])
+
+        if len(features) != OBS_VECTOR_SIZE:
+            raise RuntimeError(f"Observation size mismatch: {len(features)} != {OBS_VECTOR_SIZE}")
+
         return np.array(features, dtype=np.float32)
 
+    def _norm_price(self, price: float) -> float:
+        base, top = PRODUCTS[PRODUCT_SEMICONDUCTOR]["val_range"]
+        low = base * MARKET_PRICE_SCALE_MIN * (1 - MARKET_SPREAD_RATE)
+        high = top * MARKET_PRICE_SCALE_MAX * (1 + MARKET_SPREAD_RATE)
+        return float(np.clip((price - low) / (high - low), 0.0, 1.0))
+
     def render(self):
-        print(f"Step: {self.current_step}, Money: {self.game.money:.2f}")
+        obs = self.game.get_public_observation()
+        print(
+            f"Step: {self.current_step}, Money: {obs['money']:.2f}, "
+            f"NetWorth: {obs['net_worth']:.2f}, Tx: {obs['transactions']}"
+        )

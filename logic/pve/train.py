@@ -30,8 +30,8 @@ class SimpleTestCallback(BaseCallback):
             
             # 获取环境里的一些具体信息 (需要你的Env支持访问 game 对象)
             # 注意：这里的 eval_env 可能是被 Monitor 包装过的，可能需要 .env 或 .unwrapped
-            actual_env = self.eval_env.unwrapped 
-            print(f"total Reward: {total_reward:.2f}, money: {actual_env.game.money:.2f}")
+            public_obs = self.eval_env.unwrapped.game.get_public_observation()
+            print(f"total Reward: {total_reward:.2f}, money: {public_obs['money']:.2f}")
             print("------------------------------\n")
             
         return True
@@ -76,8 +76,10 @@ def test():
     for i in range(500):
         # deterministic=True 让模型输出最确定的动作，而不是随机探索
         action, _states = model.predict(obs, deterministic=True)
-        print(f"Step {i+1}, Action: {action}, Market:{env.game._find_nearby_market(env.game.units[0])}, Money: {env.game.money:.2f}")
         obs, reward, terminated, truncated, info = env.step(action)
+        public_obs = info["public_observation"]
+        nearby_market = next((m["name"] for m in public_obs["markets"] if m["nearby"]), None)
+        print(f"Step {i+1}, Action: {action}, Market:{nearby_market}, Money: {public_obs['money']:.2f}")
         total_reward += reward
         
         if (i+1) % 50 == 0:
