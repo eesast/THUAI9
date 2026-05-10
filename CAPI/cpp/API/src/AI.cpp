@@ -1,7 +1,11 @@
 #include <array>
 #include <cstdint>
+#include <deque>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "AI.h"
@@ -17,313 +21,367 @@ extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict = {
 
 namespace
 {
-    constexpr int64_t moveTimeMs = 150;
-    constexpr int64_t recoverHp = 1;
-    constexpr int32_t goodsAmount = 1;
-    constexpr double moveAngle = 0.7853981633974483;
+    constexpr int64_t moveTimeMs = 120;
+    constexpr THUAI9::GoodsType goodsToProduce = THUAI9::GoodsType::Food;
+    constexpr int32_t goodsPerProduce = 1;
+    constexpr int64_t foodCost = 3;
 
-    constexpr std::array<THUAI9::GoodsType, 5> goodsToTest = {
-        THUAI9::GoodsType::Food,
-        THUAI9::GoodsType::Medicine,
-        THUAI9::GoodsType::Clothes,
-        THUAI9::GoodsType::Toys,
-        THUAI9::GoodsType::Semiconductor,
-    };
-
-    constexpr std::array<THUAI9::TechType, 4> techToTest = {
-        THUAI9::TechType::IncreaseMoveSpeed,
-        THUAI9::TechType::IncreaseCarryCapacity,
-        THUAI9::TechType::IncreaseEfficiency,
-        THUAI9::TechType::DecreaseCost,
-    };
-
-    [[nodiscard]] std::string BoolText(bool value)
+    enum class CharacterMission
     {
-        return value ? "true" : "false";
+        ToResource,
+        Harvesting,
+        ToFactory,
+    };
+
+    [[nodiscard]] bool IsWalkable(THUAI9::PlaceType place)
+    {
+        return place != THUAI9::PlaceType::Barrier && place != THUAI9::PlaceType::NullPlaceType;
+    }
+
+    [[nodiscard]] int32_t CellX(const THUAI9::Character& self)
+    {
+        return IAPI::GridToCell(self.x);
+    }
+
+    [[nodiscard]] int32_t CellY(const THUAI9::Character& self)
+    {
+        return IAPI::GridToCell(self.y);
+    }
+
+    [[nodiscard]] bool AtCell(const THUAI9::Character& self, const THUAI9::cellxy_t& cell)
+    {
+        return CellX(self) == cell.first && CellY(self) == cell.second;
+    }
+
+    [[nodiscard]] int64_t DistanceSquared(const THUAI9::cellxy_t& a, const THUAI9::cellxy_t& b)
+    {
+        const int64_t dx = static_cast<int64_t>(a.first) - b.first;
+        const int64_t dy = static_cast<int64_t>(a.second) - b.second;
+        return dx * dx + dy * dy;
     }
 
     template<class TAPI>
-    void DrainMessages(TAPI& api, const std::string& who)
+    [[nodiscard]] std::optional<THUAI9::cellxy_t> FindTeamFactoryCell(TAPI& api, int64_t teamID)
     {
-        while (api.HaveMessage())
-        {
-            auto [fromID, message] = api.GetMessage();
-            api.Print(who + " recv from " + std::to_string(fromID) + ": " + message);
-        }
-    }
-
-    template<class TAPI>
-    void PrintCommonSnapshot(TAPI& api, const std::string& who)
-    {
-        auto map = api.GetFullMap();
-        auto characters = api.GetCharacters();
-        auto enemies = api.GetEnemyCharacters();
-        auto guids = api.GetPlayerGUIDs();
-        auto gameInfo = api.GetGameInfo();
-
-        std::string summary =
-            who +
-            " frame=" + std::to_string(api.GetFrameCount()) +
-            " map=" + std::to_string(map.size()) + "x" + std::to_string(map.empty() ? 0 : map.front().size()) +
-            " allyChars=" + std::to_string(characters.size()) +
-            " enemyChars=" + std::to_string(enemies.size()) +
-            " guids=" + std::to_string(guids.size()) +
-            " material=" + std::to_string(api.GetMaterial()) +
-            " compute=" + std::to_string(api.GetComputingPower()) +
-            " score=" + std::to_string(api.GetScore());
-
-        if (gameInfo)
-        {
-            summary +=
-                " gameTime=" + std::to_string(gameInfo->gameTime) +
-                " teamCount=" + std::to_string(gameInfo->teams.size());
-        }
-
-        api.Print(summary);
-    }
-
-    void PrintCellSnapshot(ICharacterAPI& api, const THUAI9::Character& self)
-    {
-        auto map = api.GetFullMap();
+        const auto map = api.GetFullMap();
         if (map.empty() || map.front().empty())
-            return;
+            return std::nullopt;
 
-        const int32_t cellX = IAPI::GridToCell(self.x);
-        const int32_t cellY = IAPI::GridToCell(self.y);
-        api.Print("self cell=(" + std::to_string(cellX) + ", " + std::to_string(cellY) + "), place=" + std::to_string(static_cast<int>(api.GetPlaceType(cellX, cellY))));
-
-        api.Print("resource here: " + BoolText(api.GetResourceState(cellX, cellY).has_value()));
-        api.Print("compute center here: " + BoolText(api.GetComputeCenterState(cellX, cellY).has_value()));
-        api.Print("market here: " + BoolText(api.GetMarketState(cellX, cellY).has_value()));
-        api.Print("factory here: " + BoolText(api.GetFactoryState(cellX, cellY).has_value()));
-
-        const int32_t targetCellX = cellX + 1 < static_cast<int32_t>(map.size()) ? cellX + 1 : cellX;
-        const int32_t targetCellY = cellY + 1 < static_cast<int32_t>(map.front().size()) ? cellY + 1 : cellY;
-        const int32_t targetGridX = IAPI::CellToGrid(targetCellX);
-        const int32_t targetGridY = IAPI::CellToGrid(targetCellY);
-        const bool haveView = api.HaveView(self.x, self.y, targetGridX, targetGridY, self.viewRange, map);
-        api.Print("HaveView to nearby cell: " + BoolText(haveView));
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map[x].size()); ++y)
+            {
+                auto factory = api.GetFactoryState(x, y);
+                if (factory.has_value() && factory->teamID == teamID)
+                    return THUAI9::cellxy_t{x, y};
+            }
+        }
+        return std::nullopt;
     }
 
-    [[nodiscard]] int64_t FirstEnemyPlayerID(const std::vector<std::shared_ptr<const THUAI9::Character>>& enemies)
+    template<class TAPI>
+    [[nodiscard]] std::optional<THUAI9::Factory> FindTeamFactoryState(TAPI& api, int64_t teamID)
     {
-        for (const auto& enemy : enemies)
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
         {
-            if (enemy)
-                return enemy->playerID;
+            for (int32_t y = 0; y < static_cast<int32_t>(map[x].size()); ++y)
+            {
+                auto factory = api.GetFactoryState(x, y);
+                if (factory.has_value() && factory->teamID == teamID)
+                    return factory;
+            }
         }
-        return -1;
+        return std::nullopt;
     }
 
-    void Patrol(ICharacterAPI& api, int32_t playerID)
+    template<class TAPI>
+    [[nodiscard]] std::optional<THUAI9::cellxy_t> FindNearestHarvestableResource(
+        TAPI& api,
+        const THUAI9::cellxy_t& from
+    )
     {
-        switch ((api.GetFrameCount() + playerID) % 4)
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+
+        std::optional<THUAI9::cellxy_t> bestCell;
+        int64_t bestDistance = std::numeric_limits<int64_t>::max();
+
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
         {
-            case 0:
-                (void)api.MoveRight(moveTimeMs).get();
-                break;
-            case 1:
-                (void)api.MoveDown(moveTimeMs).get();
-                break;
-            case 2:
-                (void)api.MoveLeft(moveTimeMs).get();
-                break;
-            default:
-                (void)api.MoveUp(moveTimeMs).get();
-                break;
+            for (int32_t y = 0; y < static_cast<int32_t>(map[x].size()); ++y)
+            {
+                auto resource = api.GetResourceState(x, y);
+                if (!resource.has_value())
+                    continue;
+                if (resource->state != THUAI9::ResourceState::Harvestable)
+                    continue;
+
+                const THUAI9::cellxy_t current{x, y};
+                const int64_t distance = DistanceSquared(from, current);
+                if (!bestCell.has_value() || distance < bestDistance)
+                {
+                    bestCell = current;
+                    bestDistance = distance;
+                }
+            }
         }
+
+        return bestCell;
+    }
+
+    [[nodiscard]] std::optional<THUAI9::cellxy_t> FindNextStep(
+        const std::vector<std::vector<THUAI9::PlaceType>>& map,
+        const THUAI9::cellxy_t& start,
+        const THUAI9::cellxy_t& goal
+    )
+    {
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+        if (start == goal)
+            return goal;
+
+        const int32_t rows = static_cast<int32_t>(map.size());
+        const int32_t cols = static_cast<int32_t>(map.front().size());
+        const std::array<THUAI9::cellxy_t, 4> dirs = {
+            THUAI9::cellxy_t{1, 0},
+            THUAI9::cellxy_t{-1, 0},
+            THUAI9::cellxy_t{0, 1},
+            THUAI9::cellxy_t{0, -1},
+        };
+
+        std::vector<std::vector<bool>> visited(rows, std::vector<bool>(cols, false));
+        std::vector<std::vector<THUAI9::cellxy_t>> parent(
+            rows,
+            std::vector<THUAI9::cellxy_t>(cols, THUAI9::cellxy_t{-1, -1})
+        );
+
+        std::deque<THUAI9::cellxy_t> queue;
+        queue.push_back(start);
+        visited[start.first][start.second] = true;
+
+        while (!queue.empty())
+        {
+            const auto current = queue.front();
+            queue.pop_front();
+
+            for (const auto& dir : dirs)
+            {
+                const int32_t nx = current.first + dir.first;
+                const int32_t ny = current.second + dir.second;
+                if (nx < 0 || ny < 0 || nx >= rows || ny >= cols)
+                    continue;
+                if (visited[nx][ny] || !IsWalkable(map[nx][ny]))
+                    continue;
+
+                visited[nx][ny] = true;
+                parent[nx][ny] = current;
+                if (THUAI9::cellxy_t{nx, ny} == goal)
+                {
+                    THUAI9::cellxy_t step = goal;
+                    while (parent[step.first][step.second] != start)
+                    {
+                        step = parent[step.first][step.second];
+                        if (step.first < 0 || step.second < 0)
+                            return std::nullopt;
+                    }
+                    return step;
+                }
+
+                queue.push_back({nx, ny});
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    void MoveOneStep(ICharacterAPI& api, const THUAI9::cellxy_t& from, const THUAI9::cellxy_t& to)
+    {
+        if (to.first > from.first)
+            (void)api.MoveDown(moveTimeMs).get();
+        else if (to.first < from.first)
+            (void)api.MoveUp(moveTimeMs).get();
+        else if (to.second > from.second)
+            (void)api.MoveRight(moveTimeMs).get();
+        else if (to.second < from.second)
+            (void)api.MoveLeft(moveTimeMs).get();
     }
 }  // namespace
 
-std::shared_ptr<const THUAI9::Character> selfinfo;
-std::vector<std::vector<THUAI9::PlaceType>> mapinfo;
-
 void AI::play(ICharacterAPI& api)
 {
-    selfinfo = api.GetSelfInfo();
-    mapinfo = api.GetFullMap();
-    if (!selfinfo)
+    auto self = api.GetSelfInfo();
+    if (!self)
         return;
 
-    static bool printedSnapshot = false;
-    static int32_t testStep = 0;
+    static bool printedInit = false;
+    static CharacterMission mission = CharacterMission::ToResource;
+    static std::optional<THUAI9::cellxy_t> homeFactory;
+    static std::optional<THUAI9::cellxy_t> targetResource;
 
-    const std::string who = "character " + std::to_string(playerID);
+    const auto map = api.GetFullMap();
+    if (map.empty() || map.front().empty())
+        return;
 
-    DrainMessages(api, who);
+    if (!homeFactory.has_value())
+        homeFactory = FindTeamFactoryCell(api, self->teamID);
 
-    if (!printedSnapshot)
+    const THUAI9::cellxy_t selfCell{CellX(*self), CellY(*self)};
+
+    if (!printedInit)
     {
-        PrintCommonSnapshot(api, who);
-        api.PrintSelfInfo();
-        api.PrintCharacter();
-        PrintCellSnapshot(api, *selfinfo);
-        printedSnapshot = true;
+        api.Print(
+            "character " + std::to_string(playerID) +
+            " start at (" + std::to_string(selfCell.first) + ", " + std::to_string(selfCell.second) + ")"
+        );
+        if (homeFactory.has_value())
+        {
+            api.Print(
+                "home factory at (" +
+                std::to_string(homeFactory->first) + ", " +
+                std::to_string(homeFactory->second) + ")"
+            );
+        }
+        printedInit = true;
     }
 
-    switch (testStep)
+    if (mission == CharacterMission::Harvesting)
     {
-        case 0:
-            api.Print("test SendTextMessage");
-            api.Print("SendTextMessage -> " + BoolText(api.SendTextMessage(0, "hello from character " + std::to_string(playerID)).get()));
-            ++testStep;
-            break;
-        case 1:
-            api.Print("test SendBinaryMessage");
-            api.Print("SendBinaryMessage -> " + BoolText(api.SendBinaryMessage(0, "bin-char-" + std::to_string(playerID)).get()));
-            ++testStep;
-            break;
-        case 2:
-            api.Print("test Move(angle)");
-            api.Print("Move(angle) -> " + BoolText(api.Move(moveTimeMs, moveAngle).get()));
-            ++testStep;
-            break;
-        case 3:
-            api.Print("test MoveRight");
-            api.Print("MoveRight -> " + BoolText(api.MoveRight(moveTimeMs).get()));
-            ++testStep;
-            break;
-        case 4:
-            api.Print("test MoveDown");
-            api.Print("MoveDown -> " + BoolText(api.MoveDown(moveTimeMs).get()));
-            ++testStep;
-            break;
-        case 5:
-            api.Print("test MoveLeft");
-            api.Print("MoveLeft -> " + BoolText(api.MoveLeft(moveTimeMs).get()));
-            ++testStep;
-            break;
-        case 6:
-            api.Print("test MoveUp");
-            api.Print("MoveUp -> " + BoolText(api.MoveUp(moveTimeMs).get()));
-            ++testStep;
-            break;
-        case 7:
-            api.Print("test Recover");
-            api.Print("Recover -> " + BoolText(api.Recover(recoverHp).get()));
-            ++testStep;
-            break;
-        case 8:
-            api.Print("test Harvest");
-            api.Print("Harvest -> " + BoolText(api.Harvest().get()));
-            ++testStep;
-            break;
-        case 9:
-            api.Print("test Occupy");
-            api.Print("Occupy -> " + BoolText(api.Occupy().get()));
-            ++testStep;
-            break;
-        case 10:
-            api.Print("test Load");
-            api.Print("Load -> " + BoolText(api.Load(THUAI9::GoodsType::Food, goodsAmount).get()));
-            ++testStep;
-            break;
-        case 11:
-            api.Print("test Buy");
-            api.Print("Buy -> " + BoolText(api.Buy(THUAI9::GoodsType::Food, goodsAmount).get()));
-            ++testStep;
-            break;
-        case 12:
-            api.Print("test Sell");
-            api.Print("Sell -> " + BoolText(api.Sell(THUAI9::GoodsType::Food, goodsAmount).get()));
-            ++testStep;
-            break;
-        case 13:
+        if (!targetResource.has_value())
+        {
+            mission = CharacterMission::ToFactory;
+        }
+        else
+        {
+            auto resource = api.GetResourceState(targetResource->first, targetResource->second);
+            if (!resource.has_value() || resource->state == THUAI9::ResourceState::Harvested)
             {
-                api.Print("test Common_Attack");
-                const int64_t target = FirstEnemyPlayerID(api.GetEnemyCharacters());
-                if (target < 0)
-                {
-                    api.Print("Common_Attack skipped: no visible enemy");
-                }
-                else
-                {
-                    api.Print("Common_Attack -> " + BoolText(api.Common_Attack(target).get()));
-                }
-                ++testStep;
-                break;
+                api.Print("resource depleted, return to factory");
+                targetResource.reset();
+                mission = CharacterMission::ToFactory;
             }
-        case 14:
-            api.Print("test EndAllAction");
-            api.Print("EndAllAction -> " + BoolText(api.EndAllAction().get()));
-            ++testStep;
-            break;
-        default:
-            Patrol(api, playerID);
-            if (api.GetFrameCount() % 20 == 0)
-                PrintCellSnapshot(api, *selfinfo);
-            break;
+            else
+            {
+                return;
+            }
+        }
     }
+
+    if (mission == CharacterMission::ToResource)
+    {
+        if (!targetResource.has_value())
+        {
+            targetResource = FindNearestHarvestableResource(api, selfCell);
+            if (targetResource.has_value())
+            {
+                api.Print(
+                    "target resource at (" +
+                    std::to_string(targetResource->first) + ", " +
+                    std::to_string(targetResource->second) + ")"
+                );
+            }
+        }
+
+        if (!targetResource.has_value())
+        {
+            if (homeFactory.has_value() && !AtCell(*self, *homeFactory))
+            {
+                const auto nextStep = FindNextStep(map, selfCell, *homeFactory);
+                if (nextStep.has_value())
+                    MoveOneStep(api, selfCell, *nextStep);
+            }
+            return;
+        }
+
+        auto resource = api.GetResourceState(targetResource->first, targetResource->second);
+        if (!resource.has_value() || resource->state == THUAI9::ResourceState::Harvested)
+        {
+            targetResource.reset();
+            return;
+        }
+
+        if (AtCell(*self, *targetResource))
+        {
+            const bool ok = api.Harvest().get();
+            api.Print("Harvest -> " + std::string(ok ? "true" : "false"));
+            if (ok)
+                mission = CharacterMission::Harvesting;
+            else
+                targetResource.reset();
+            return;
+        }
+
+        const auto nextStep = FindNextStep(map, selfCell, *targetResource);
+        if (nextStep.has_value())
+            MoveOneStep(api, selfCell, *nextStep);
+        return;
+    }
+
+    if (!homeFactory.has_value())
+    {
+        mission = CharacterMission::ToResource;
+        return;
+    }
+
+    if (AtCell(*self, *homeFactory))
+    {
+        api.Print("arrived at factory, prepare next harvest");
+        mission = CharacterMission::ToResource;
+        targetResource.reset();
+        return;
+    }
+
+    const auto nextStep = FindNextStep(map, selfCell, *homeFactory);
+    if (nextStep.has_value())
+        MoveOneStep(api, selfCell, *nextStep);
 }
 
 void AI::play(ITeamAPI& api)
 {
-    static bool printedSnapshot = false;
-    static std::array<bool, 3> teamCharacterBuilt{};
-    static std::size_t nextGoodsIndex = 0;
-    static std::size_t nextTechIndex = 0;
-    static bool sentMessages = false;
-
     auto team = api.GetSelfInfo();
     if (!team)
         return;
 
-    const std::string who = "team " + std::to_string(team->teamID);
+    static bool printedInit = false;
+    static std::array<bool, 3> built{};
 
-    DrainMessages(api, who);
-
-    if (!printedSnapshot)
+    if (!printedInit)
     {
-        PrintCommonSnapshot(api, who);
-        api.PrintSelfInfo();
-        printedSnapshot = true;
+        api.Print("team " + std::to_string(team->teamID) + " start");
+        printedInit = true;
     }
 
-    for (int32_t i = 1; i <= 3; ++i)
+    for (int32_t i = 0; i < 3; ++i)
     {
-        if (teamCharacterBuilt[i - 1])
+        if (built[i])
             continue;
 
-        api.Print("test BuildCharacter for player " + std::to_string(i));
-        const bool ok = api.BuildCharacter(CharacterTypeDict[i - 1], i).get();
-        api.Print("BuildCharacter -> " + BoolText(ok));
+        const bool ok = api.BuildCharacter(CharacterTypeDict[i], i + 1).get();
+        api.Print(
+            "BuildCharacter player " + std::to_string(i + 1) +
+            " -> " + std::string(ok ? "true" : "false")
+        );
         if (ok)
-            teamCharacterBuilt[i - 1] = true;
+            built[i] = true;
         break;
     }
 
-    const bool allCharactersBuilt = teamCharacterBuilt[0] && teamCharacterBuilt[1] && teamCharacterBuilt[2];
+    const auto factory = FindTeamFactoryState(api, team->teamID);
+    if (!factory.has_value())
+        return;
 
-    if (allCharactersBuilt && !sentMessages)
+    if (factory->source >= foodCost)
     {
-        for (int32_t toID = 1; toID <= 3; ++toID)
+        const bool ok = api.ProduceGoods(goodsToProduce, goodsPerProduce).get();
+        if (ok)
         {
-            api.Print("test team SendTextMessage to player " + std::to_string(toID));
-            api.Print("SendTextMessage -> " + BoolText(api.SendTextMessage(toID, "hello from team " + std::to_string(team->teamID)).get()));
-            api.Print("test team SendBinaryMessage to player " + std::to_string(toID));
-            api.Print("SendBinaryMessage -> " + BoolText(api.SendBinaryMessage(toID, "bin-team-" + std::to_string(team->teamID)).get()));
+            api.Print(
+                "ProduceGoods Food -> true, source=" + std::to_string(factory->source)
+            );
         }
-        sentMessages = true;
     }
-
-    if (nextGoodsIndex < goodsToTest.size() && api.GetFrameCount() % 15 == 0)
-    {
-        api.Print("test ProduceGoods");
-        const bool ok = api.ProduceGoods(goodsToTest[nextGoodsIndex], goodsAmount).get();
-        api.Print("ProduceGoods -> " + BoolText(ok));
-        if (ok)
-            ++nextGoodsIndex;
-    }
-
-    if (nextTechIndex < techToTest.size() && api.GetFrameCount() % 20 == 0)
-    {
-        api.Print("test UplevelTech");
-        const bool ok = api.UplevelTech(techToTest[nextTechIndex]).get();
-        api.Print("UplevelTech -> " + BoolText(ok));
-        if (ok)
-            ++nextTechIndex;
-    }
-
-    if (api.GetFrameCount() % 30 == 0)
-        PrintCommonSnapshot(api, who);
 }

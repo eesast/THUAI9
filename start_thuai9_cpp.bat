@@ -41,7 +41,7 @@ if errorlevel 1 (
 start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run"
 timeout /t 2 /nobreak >nul
 
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port 8888 --teamCount 4"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Waiting for server to listen on 127.0.0.1:8888...
@@ -52,7 +52,10 @@ if errorlevel 1 (
 )
 
 for /L %%i in (1,1,4) do (
-    start "THUAI9 CAPI %%i" cmd /k "cd /d ""%CAPI_BUILD_DIR%"" && capi.exe -t %%i -p 0 -I 127.0.0.1 -P 8888"
+    start "THUAI9 CAPI %%i-0" cmd /k "cd /d ""%CAPI_BUILD_DIR%"" && capi.exe -t %%i -p 0 -I 127.0.0.1 -P 8888 -d -o"
+    for /L %%j in (1,1,3) do (
+        start "THUAI9 CAPI %%i-%%j" cmd /k "cd /d ""%CAPI_BUILD_DIR%"" && capi.exe -t %%i -p %%j -I 127.0.0.1 -P 8888 -d -o"
+    )
 )
 
 echo [THUAI9] All processes launched.
