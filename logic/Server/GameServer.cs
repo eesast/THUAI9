@@ -427,15 +427,7 @@ namespace Server
 
             foreach (var t in teams.OrderBy(t => t.TeamId))
             {
-                var teamInfo = new MessageOfAll.Types.TeamInfo
-                {
-                    Score = (int)t.Score,
-                    Material = (int)t.FactorySource,
-                    ComputePower = (int)t.FactoryComputingPower,
-                    FactoryHp = (int)t.FactoryHP
-                };
-
-                msg.Teams.Add(teamInfo);
+                msg.Teams.Add(CopyInfo.TeamInfo(t));
             }
 
             return msg;
