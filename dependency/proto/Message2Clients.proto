@@ -68,6 +68,7 @@ message MessageOfTeam
     int32 score = 3;
     int32 material = 4;
     int32 compute_power = 5;
+    map<string, int32> tech_levels = 6; // 例如：Efficiency、Robust、Warrior 等
 }
 
 message MessageOfFactory
@@ -206,6 +207,7 @@ message MessageOfAll
             int32 material = 2;
             int32 compute_power = 3;
             int32 factory_hp = 4;
+            map<string, int32> tech_levels = 5; // 与服务端内部科技名一致
         }
 
         repeated TeamInfo teams = 2; // teams[0] 对应 team1，teams[1] 对应 team2 ...

@@ -13,6 +13,13 @@ namespace Server
         /// 通过网站 http://www.network-science.de/ascii/ 使用字体"standard"生成
         /// </summary>
         private const string WelcomeMessage = """
+                
+        ______________ ___  ____ ___  _____  .___ ________ 
+        \__    ___/   |   \|    |   \/  _  \ |   /   __   \
+          |    | /    ~    \    |   /  /_\  \|   \____    /
+          |    | \    Y    /    |  /    |    \   |  /    / 
+          |____|  \___|_  /|______/\____|__  /___| /____/  
+                        \/                 \/              
 
         """;
 
