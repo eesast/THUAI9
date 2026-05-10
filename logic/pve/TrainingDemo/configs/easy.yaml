@@ -1,0 +1,12 @@
+# Easy difficulty: small map, high initial resources, low price volatility
+map_width: 5
+map_height: 5
+num_markets: 3
+num_resource_points: 2
+num_compute_centers: 1
+initial_money: 200.0
+initial_compute: 60.0
+price_volatility: 0.3
+resource_regen_rate: 2.0
+initial_resource_stock: 200
+max_game_time: 300.0

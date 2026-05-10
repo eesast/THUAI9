@@ -1,0 +1,12 @@
+# Hard difficulty: large map, scarce resources, high price volatility
+map_width: 15
+map_height: 15
+num_markets: 4
+num_resource_points: 4
+num_compute_centers: 3
+initial_money: 30.0
+initial_compute: 20.0
+price_volatility: 2.0
+resource_regen_rate: 0.5
+initial_resource_stock: 50
+max_game_time: 500.0
