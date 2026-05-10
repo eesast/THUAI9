@@ -20,8 +20,8 @@ public class Factory : Immovable, IFactory
     public InVariableRange<long> Storage { get; }
     public InVariableRange<long> Efficiency { get; }
 
-    public AtomicLong Source { get; } = new(0);
-    public AtomicLong ComputingPower { get; } = new(0);
+    public AtomicLong Source { get; } = new(GameData.FactoryInitialSource);
+    public AtomicLong ComputingPower { get; } = new(GameData.FactoryInitialComputingPower);
 
     public AtomicBool CanProduce { get; } = new(true);
     public AtomicBool CanRecruit { get; } = new(true);
@@ -81,7 +81,6 @@ public class Factory : Immovable, IFactory
         Efficiency = new(efficiency);
         Efficiency.SetMaxV(efficiencyMax > 0 ? efficiencyMax : GameData.FactoryEfficiencyMax);
         Source.SetROri(source);
-        Efficiency = new(efficiencyMax);
         ComputingPower.SetROri(computingPower);
         if (goodsMap != null)
             foreach (var (type, quantity) in goodsMap)
@@ -89,7 +88,7 @@ public class Factory : Immovable, IFactory
     }
 
     public Factory(XY initPos)
-        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency, computingPower: GameData.FactoryInitialComputingPower) { }
+        : this(initPos, hpMax: GameData.FactoryHP, robustMax: GameData.FactoryRobust, storageMax: GameData.FactoryStorage, efficiency: GameData.FactoryEfficiency, computingPower: GameData.FactoryInitialComputingPower, source: GameData.FactoryInitialSource, score: GameData.FactoryInitialScore) { }
 
     public Factory() : this(GameData.PosNotInGame) { }
     public override bool IsRigid(bool args = false) => true;
