@@ -1,0 +1,12 @@
+# Medium difficulty: standard 10×10 map, balanced parameters
+map_width: 10
+map_height: 10
+num_markets: 3
+num_resource_points: 2
+num_compute_centers: 2
+initial_money: 50.0
+initial_compute: 30.0
+price_volatility: 1.0
+resource_regen_rate: 1.0
+initial_resource_stock: 100
+max_game_time: 300.0
