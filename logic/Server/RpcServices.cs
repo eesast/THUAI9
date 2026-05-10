@@ -495,5 +495,26 @@ namespace Server
             GameServerLogging.logger.LogDebug("END AskAI");
             return Task.FromResult(response);
         }
+
+        public override Task<EventStatusResponse> GetCurrentEventStatus(EventStatusRequest request, ServerCallContext context)
+        {
+            GameServerLogging.logger.LogDebug($"TRY GetCurrentEventStatus: Team {request.TeamId}, Player {request.PlayerId}");
+            var response = new EventStatusResponse();
+            var status = game.GetCurrentEventStatus(request.TeamId, request.PlayerId);
+            if (status.HasValue)
+            {
+                response.ActSuccess = true;
+                response.EventName = status.Value.Name;
+                response.EventDescription = status.Value.Description;
+            }
+            else
+            {
+                response.ActSuccess = false;
+                response.EventName = "";
+                response.EventDescription = "Failed to get event status";
+            }
+            GameServerLogging.logger.LogDebug($"END GetCurrentEventStatus: {response.ActSuccess}, name={response.EventName}");
+            return Task.FromResult(response);
+        }
     }
 }
