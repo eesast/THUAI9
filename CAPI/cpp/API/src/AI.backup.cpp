@@ -163,10 +163,14 @@ namespace
             api.Print(label + ": not found");
         };
 
-        findAndPrint("resource", [&](int32_t x, int32_t y) { return api.GetResourceState(x, y); });
-        findAndPrint("compute center", [&](int32_t x, int32_t y) { return api.GetComputeCenterState(x, y); });
-        findAndPrint("market", [&](int32_t x, int32_t y) { return api.GetMarketState(x, y); });
-        findAndPrint("factory", [&](int32_t x, int32_t y) { return api.GetFactoryState(x, y); });
+        findAndPrint("resource", [&](int32_t x, int32_t y)
+                     { return api.GetResourceState(x, y); });
+        findAndPrint("compute center", [&](int32_t x, int32_t y)
+                     { return api.GetComputeCenterState(x, y); });
+        findAndPrint("market", [&](int32_t x, int32_t y)
+                     { return api.GetMarketState(x, y); });
+        findAndPrint("factory", [&](int32_t x, int32_t y)
+                     { return api.GetFactoryState(x, y); });
     }
 
     [[nodiscard]] int64_t FirstEnemyPlayerID(const std::vector<std::shared_ptr<const THUAI9::Character>>& enemies)
