@@ -1,14 +1,19 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 
 namespace Playback;
 
 public static class Constants
 {
-    public const int Version = 7;
+    public const int Version = 9;
+    public const int LegacyVersion = 7;
     public static readonly string FileExtension = ".thuaipb";
     public static readonly byte[] FileHeader = [(byte)'P', (byte)'B', Version, 0];
+
+    public static bool IsSupportedVersion(byte version)
+    {
+        return version == Version || version == LegacyVersion;
+    }
 }
 
 public class FileFormatNotLegalException(string fileName) : Exception
@@ -38,7 +43,12 @@ public static class Utils
     public static (uint teamCount, uint playerCount) ReadHeader(this FileStream fs)
     {
         BinaryReader br = new(fs);
-        if (!br.ReadBytes(Constants.FileHeader.Length).SequenceEqual(Constants.FileHeader))
+        byte[] header = br.ReadBytes(Constants.FileHeader.Length);
+        if (header.Length != Constants.FileHeader.Length
+            || header[0] != Constants.FileHeader[0]
+            || header[1] != Constants.FileHeader[1]
+            || header[3] != Constants.FileHeader[3]
+            || !Constants.IsSupportedVersion(header[2]))
         {
             throw new FileFormatNotLegalException(fs.Name);
         }
