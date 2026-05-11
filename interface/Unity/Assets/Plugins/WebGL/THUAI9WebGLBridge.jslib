@@ -2,6 +2,35 @@
   THUAI9_SelectPlaybackFile: function (gameObjectNamePtr, callbackNamePtr) {
     const gameObjectName = UTF8ToString(gameObjectNamePtr);
     const callbackName = UTF8ToString(callbackNamePtr);
+    const sendMessage = function (methodName, payload) {
+      if (typeof window !== 'undefined' && typeof window.THUAI9SendMessage === 'function') {
+        window.THUAI9SendMessage(gameObjectName, methodName, payload || '');
+        return true;
+      }
+
+      if (typeof SendMessage === 'function') {
+        SendMessage(gameObjectName, methodName, payload || '');
+        return true;
+      }
+
+      if (typeof Module !== 'undefined' && Module && typeof Module.SendMessage === 'function') {
+        Module.SendMessage(gameObjectName, methodName, payload || '');
+        return true;
+      }
+
+      const unityInstance =
+        (window.THUAI9Unity && window.THUAI9Unity.unityInstance) ||
+        window.unityInstance ||
+        window.THUAIGameInstance ||
+        window.gameInstance;
+      if (unityInstance && typeof unityInstance.SendMessage === 'function') {
+        unityInstance.SendMessage(gameObjectName, methodName, payload || '');
+        return true;
+      }
+
+      console.error('[THUAI9] Unity SendMessage is not available', { gameObjectName, methodName });
+      return false;
+    };
 
     const input = document.createElement('input');
     input.type = 'file';
@@ -22,7 +51,7 @@
         size: file.size || 0
       });
 
-      THUAI9SendMessage(gameObjectName, callbackName, payload);
+      sendMessage(callbackName, payload);
       window.dispatchEvent(new CustomEvent('thuai9-playback-file-selected', {
         detail: { url: url, name: file.name, size: file.size }
       }));
@@ -35,28 +64,68 @@
 
   THUAI9_NotifyUnityReady: function (gameObjectNamePtr) {
     const gameObjectName = UTF8ToString(gameObjectNamePtr);
+    window.THUAI9SendMessage = function (targetGameObjectName, methodName, payload) {
+      const target = targetGameObjectName || gameObjectName;
+      if (typeof SendMessage === 'function') {
+        SendMessage(target, methodName, payload || '');
+        return true;
+      }
+
+      if (typeof Module !== 'undefined' && Module && typeof Module.SendMessage === 'function') {
+        Module.SendMessage(target, methodName, payload || '');
+        return true;
+      }
+
+      const unityInstance =
+        (window.THUAI9Unity && window.THUAI9Unity.unityInstance) ||
+        window.unityInstance ||
+        window.THUAIGameInstance ||
+        window.gameInstance;
+      if (unityInstance && typeof unityInstance.SendMessage === 'function') {
+        unityInstance.SendMessage(target, methodName, payload || '');
+        return true;
+      }
+
+      console.error('[THUAI9] Unity SendMessage is not available', { gameObjectName: target, methodName });
+      return false;
+    };
+    const sendMessage = function (methodName, payload) {
+      return window.THUAI9SendMessage(gameObjectName, methodName, payload || '');
+    };
+    window.THUAI9ArrayBufferToBase64 = function (arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const chunkSize = 0x8000;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    };
+    const arrayBufferToBase64 = window.THUAI9ArrayBufferToBase64;
+
     window.THUAI9Unity = window.THUAI9Unity || {};
     window.THUAI9Unity.gameObjectName = gameObjectName;
+    window.THUAI9Unity.unityInstance = window.THUAI9Unity.unityInstance || window.unityInstance || window.THUAIGameInstance || window.gameInstance;
     window.THUAI9Unity.sendMessage = function (methodName, payload) {
-      THUAI9SendMessage(gameObjectName, methodName, payload || '');
+      sendMessage(methodName, payload || '');
     };
     window.THUAI9Unity.setPlaybackFile = function (url, name) {
-      THUAI9SendMessage(gameObjectName, 'SetPlaybackFile', JSON.stringify({ url: url, name: name || url }));
+      sendMessage('SetPlaybackFile', JSON.stringify({ url: url, name: name || url }));
     };
     window.THUAI9Unity.loadPlaybackBase64 = function (base64, name) {
-      THUAI9SendMessage(gameObjectName, 'LoadPlaybackBase64', JSON.stringify({ data: base64, name: name || 'playback.thuaipb' }));
+      sendMessage('LoadPlaybackBase64', JSON.stringify({ data: base64, name: name || 'playback.thuaipb' }));
     };
     window.THUAI9Unity.startWebLive = function (sourceName) {
-      THUAI9SendMessage(gameObjectName, 'StartWebLive', sourceName || 'WebGL Live');
+      sendMessage('StartWebLive', sourceName || 'WebGL Live');
     };
     window.THUAI9Unity.stopWebLive = function () {
-      THUAI9SendMessage(gameObjectName, 'StopWebLive', '');
+      sendMessage('StopWebLive', '');
     };
     window.THUAI9Unity.submitLiveFrameBase64 = function (base64) {
-      THUAI9SendMessage(gameObjectName, 'SubmitLiveFrameBase64', base64 || '');
+      sendMessage('SubmitLiveFrameBase64', base64 || '');
     };
     window.THUAI9Unity.submitLiveFrameJson = function (json) {
-      THUAI9SendMessage(gameObjectName, 'SubmitLiveFrameJson', typeof json === 'string' ? json : JSON.stringify(json));
+      sendMessage('SubmitLiveFrameJson', typeof json === 'string' ? json : JSON.stringify(json));
     };
     window.THUAI9Unity.connectLiveWebSocket = function (webSocketUrl) {
       if (!webSocketUrl) {
@@ -72,17 +141,17 @@
       window.THUAI9Unity.liveSocket = socket;
       socket.binaryType = 'arraybuffer';
       socket.onopen = function () {
-        THUAI9SendMessage(gameObjectName, 'StartWebLive', 'WebSocket ' + webSocketUrl);
+        sendMessage('StartWebLive', 'WebSocket ' + webSocketUrl);
         window.dispatchEvent(new CustomEvent('thuai9-live-socket-open', { detail: webSocketUrl }));
       };
       socket.onmessage = function (event) {
         if (typeof event.data === 'string') {
           const payload = event.data.trim();
-          THUAI9SendMessage(gameObjectName, payload.startsWith('{') ? 'SubmitLiveFrameJson' : 'SubmitLiveFrameBase64', payload);
+          sendMessage(payload.startsWith('{') ? 'SubmitLiveFrameJson' : 'SubmitLiveFrameBase64', payload);
           return;
         }
 
-        THUAI9SendMessage(gameObjectName, 'SubmitLiveFrameBase64', THUAI9ArrayBufferToBase64(event.data));
+        sendMessage('SubmitLiveFrameBase64', arrayBufferToBase64(event.data));
       };
       socket.onerror = function () {
         window.dispatchEvent(new CustomEvent('thuai9-live-socket-error', { detail: webSocketUrl }));
@@ -96,7 +165,19 @@
         window.THUAI9Unity.liveSocket.close();
         window.THUAI9Unity.liveSocket = null;
       }
-      THUAI9SendMessage(gameObjectName, 'StopWebLive', '');
+      sendMessage('StopWebLive', '');
+    };
+    window.THUAI9Unity.onPlayerAction = function (handler) {
+      if (typeof handler !== 'function') {
+        return function () {};
+      }
+      const listener = function (event) {
+        handler(event.detail);
+      };
+      window.addEventListener('thuai9-player-action', listener);
+      return function () {
+        window.removeEventListener('thuai9-player-action', listener);
+      };
     };
     window.dispatchEvent(new CustomEvent('thuai9-unity-ready', { detail: { gameObjectName: gameObjectName } }));
   },
@@ -112,28 +193,3 @@
     }));
   }
 });
-
-function THUAI9SendMessage(gameObjectName, methodName, payload) {
-  if (typeof SendMessage === 'function') {
-    SendMessage(gameObjectName, methodName, payload);
-    return;
-  }
-
-  const unityInstance = window.unityInstance || window.THUAIGameInstance || window.gameInstance;
-  if (unityInstance && typeof unityInstance.SendMessage === 'function') {
-    unityInstance.SendMessage(gameObjectName, methodName, payload);
-    return;
-  }
-
-  console.error('[THUAI9] Unity SendMessage is not available', { gameObjectName, methodName });
-}
-
-function THUAI9ArrayBufferToBase64(arrayBuffer) {
-  const bytes = new Uint8Array(arrayBuffer);
-  const chunkSize = 0x8000;
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-  }
-  return btoa(binary);
-}

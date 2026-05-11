@@ -113,38 +113,70 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 9c06b9f8d8666bd4198bc29e0a4b8f6e, type: 3}
   - key: Buildings/Resource/building_resource_small_half
     sprite: {fileID: 21300000, guid: 9c06b9f8d8666bd4198bc29e0a4b8f6e, type: 3}
-  - key: tile_barrier_industrial_01
-    sprite: {fileID: 21300000, guid: 282c4e2e0a2e429e8015272fd12dd357, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_01
-    sprite: {fileID: 21300000, guid: 282c4e2e0a2e429e8015272fd12dd357, type: 3}
-  - key: tile_barrier_industrial_02
-    sprite: {fileID: 21300000, guid: d70240643c274409ba9b7414f88cc535, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_02
-    sprite: {fileID: 21300000, guid: d70240643c274409ba9b7414f88cc535, type: 3}
-  - key: tile_barrier_industrial_03
-    sprite: {fileID: 21300000, guid: ea90a943b77f48fca1521c966d3ab366, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_03
-    sprite: {fileID: 21300000, guid: ea90a943b77f48fca1521c966d3ab366, type: 3}
-  - key: tile_barrier_industrial_04
-    sprite: {fileID: 21300000, guid: 2e0c991ac359486aa7350b43b8173f7b, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_04
-    sprite: {fileID: 21300000, guid: 2e0c991ac359486aa7350b43b8173f7b, type: 3}
-  - key: tile_barrier_industrial_05
-    sprite: {fileID: 21300000, guid: a01dfabc6ff34fcfbedd340dce94361d, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_05
-    sprite: {fileID: 21300000, guid: a01dfabc6ff34fcfbedd340dce94361d, type: 3}
-  - key: tile_barrier_industrial_06
-    sprite: {fileID: 21300000, guid: f5b23cf196d344b0834f40b164aa4bfa, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_06
-    sprite: {fileID: 21300000, guid: f5b23cf196d344b0834f40b164aa4bfa, type: 3}
-  - key: tile_barrier_industrial_07
-    sprite: {fileID: 21300000, guid: 3768b288312c4f3489062946465e28da, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_07
-    sprite: {fileID: 21300000, guid: 3768b288312c4f3489062946465e28da, type: 3}
-  - key: tile_barrier_industrial_08
-    sprite: {fileID: 21300000, guid: a8824804b12940ec924aede3c3f0dc14, type: 3}
-  - key: Tiles/Barrier/tile_barrier_industrial_08
-    sprite: {fileID: 21300000, guid: a8824804b12940ec924aede3c3f0dc14, type: 3}
+  - key: tile_barrier_connected_00
+    sprite: {fileID: 21300000, guid: 2fba11ec8c57564419daec709dc2e835, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_00
+    sprite: {fileID: 21300000, guid: 2fba11ec8c57564419daec709dc2e835, type: 3}
+  - key: tile_barrier_connected_01
+    sprite: {fileID: 21300000, guid: b0f89f924e0eed94d8b69adf6ea6f6a7, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_01
+    sprite: {fileID: 21300000, guid: b0f89f924e0eed94d8b69adf6ea6f6a7, type: 3}
+  - key: tile_barrier_connected_02
+    sprite: {fileID: 21300000, guid: abc3697a51e89ad43ad42bc1a21ceef5, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_02
+    sprite: {fileID: 21300000, guid: abc3697a51e89ad43ad42bc1a21ceef5, type: 3}
+  - key: tile_barrier_connected_03
+    sprite: {fileID: 21300000, guid: 1d852aa60078b5149809cdf96e4ddb98, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_03
+    sprite: {fileID: 21300000, guid: 1d852aa60078b5149809cdf96e4ddb98, type: 3}
+  - key: tile_barrier_connected_04
+    sprite: {fileID: 21300000, guid: 3971d5ac0f69e6d4184a1d6350a3905d, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_04
+    sprite: {fileID: 21300000, guid: 3971d5ac0f69e6d4184a1d6350a3905d, type: 3}
+  - key: tile_barrier_connected_05
+    sprite: {fileID: 21300000, guid: a2c81073435675e4f95ec592c95f99e6, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_05
+    sprite: {fileID: 21300000, guid: a2c81073435675e4f95ec592c95f99e6, type: 3}
+  - key: tile_barrier_connected_06
+    sprite: {fileID: 21300000, guid: ff56334aa9225bb4e9fa60fddcc6aaed, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_06
+    sprite: {fileID: 21300000, guid: ff56334aa9225bb4e9fa60fddcc6aaed, type: 3}
+  - key: tile_barrier_connected_07
+    sprite: {fileID: 21300000, guid: a3cba0c35e8e9e84cbda4504fd8d0f23, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_07
+    sprite: {fileID: 21300000, guid: a3cba0c35e8e9e84cbda4504fd8d0f23, type: 3}
+  - key: tile_barrier_connected_08
+    sprite: {fileID: 21300000, guid: 21c9ef1490ba1b44f855611f15ef5658, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_08
+    sprite: {fileID: 21300000, guid: 21c9ef1490ba1b44f855611f15ef5658, type: 3}
+  - key: tile_barrier_connected_09
+    sprite: {fileID: 21300000, guid: f52c9f595e8a49946b8bfba0061856b3, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_09
+    sprite: {fileID: 21300000, guid: f52c9f595e8a49946b8bfba0061856b3, type: 3}
+  - key: tile_barrier_connected_10
+    sprite: {fileID: 21300000, guid: 4d30f2aafc5118b468a1b6f22acf8bac, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_10
+    sprite: {fileID: 21300000, guid: 4d30f2aafc5118b468a1b6f22acf8bac, type: 3}
+  - key: tile_barrier_connected_11
+    sprite: {fileID: 21300000, guid: 0dec9d5ce79e0f840a63117e61af472f, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_11
+    sprite: {fileID: 21300000, guid: 0dec9d5ce79e0f840a63117e61af472f, type: 3}
+  - key: tile_barrier_connected_12
+    sprite: {fileID: 21300000, guid: e5185518cd37e3349b9d489e07983a6a, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_12
+    sprite: {fileID: 21300000, guid: e5185518cd37e3349b9d489e07983a6a, type: 3}
+  - key: tile_barrier_connected_13
+    sprite: {fileID: 21300000, guid: b33f317f2cc786b47bf2d0859bd74493, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_13
+    sprite: {fileID: 21300000, guid: b33f317f2cc786b47bf2d0859bd74493, type: 3}
+  - key: tile_barrier_connected_14
+    sprite: {fileID: 21300000, guid: 7a72594095b5755438b216ea6600f584, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_14
+    sprite: {fileID: 21300000, guid: 7a72594095b5755438b216ea6600f584, type: 3}
+  - key: tile_barrier_connected_15
+    sprite: {fileID: 21300000, guid: b36e772fed00bb348b660f96c2f53f9a, type: 3}
+  - key: Tiles/Barrier/tile_barrier_connected_15
+    sprite: {fileID: 21300000, guid: b36e772fed00bb348b660f96c2f53f9a, type: 3}
   - key: tile_bush_signal_01
     sprite: {fileID: 21300000, guid: 6f7fb7970df1c644abfa6bcfb0c653fb, type: 3}
   - key: Tiles/BushSignal/tile_bush_signal_01
@@ -393,3 +425,4 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: e9eebf90f62cda543b5217a9ad1656d1, type: 3}
   - key: VFX/TradeUpload/trade_upload_frame_06
     sprite: {fileID: 21300000, guid: e9eebf90f62cda543b5217a9ad1656d1, type: 3}
+  prefabs: []
