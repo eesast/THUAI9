@@ -25,7 +25,7 @@ namespace Protobuf {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Cg5TZXJ2aWNlcy5wcm90bxIIcHJvdG9idWYaFU1lc3NhZ2UyQ2xpZW50cy5w",
-            "cm90bxoUTWVzc2FnZTJTZXJ2ZXIucHJvdG8y2QcKEEF2YWlsYWJsZVNlcnZp",
+            "cm90bxoUTWVzc2FnZTJTZXJ2ZXIucHJvdG8yrwgKEEF2YWlsYWJsZVNlcnZp",
             "Y2USMwoNVHJ5Q29ubmVjdGlvbhIPLnByb3RvYnVmLklETXNnGhEucHJvdG9i",
             "dWYuQm9vbFJlcxJMCg9SZWdpc3RlckZhY3RvcnkSHC5wcm90b2J1Zi5SZWdp",
             "c3RlckZhY3RvcnlNc2caGS5wcm90b2J1Zi5NZXNzYWdlVG9DbGllbnQwARI3",
@@ -47,7 +47,9 @@ namespace Protobuf {
             "YnVmLlVwbGV2ZWxUZWNoTXNnGhEucHJvdG9idWYuQm9vbFJlcxIyCgxFbmRB",
             "bGxBY3Rpb24SDy5wcm90b2J1Zi5JRE1zZxoRLnByb3RvYnVmLkJvb2xSZXMS",
             "RAoFQXNrQUkSHC5wcm90b2J1Zi5TdHJhdGVnaWNBSVJlcXVlc3QaHS5wcm90",
-            "b2J1Zi5TdHJhdGVnaWNBSVJlc3BvbnNlYgZwcm90bzM="));
+            "b2J1Zi5TdHJhdGVnaWNBSVJlc3BvbnNlElQKFUdldEN1cnJlbnRFdmVudFN0",
+            "YXR1cxIcLnByb3RvYnVmLkV2ZW50U3RhdHVzUmVxdWVzdBodLnByb3RvYnVm",
+            "LkV2ZW50U3RhdHVzUmVzcG9uc2ViBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Protobuf.Message2ClientsReflection.Descriptor, global::Protobuf.Message2ServerReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, null));

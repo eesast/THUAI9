@@ -9,7 +9,7 @@
         public const float MILLISECONDS_PER_FRAME = 1000f / FRAME_PER_SECOND;
         public const float DEFAULT_PLAY_SPEED = 1.0f;
         public const float MIN_PLAY_SPEED = 0.25f;
-        public const float MAX_PLAY_SPEED = 8.0f;
+        public const float MAX_PLAY_SPEED = 4.0f;
         public const float SPEED_STEP = 0.25f;
         public const string MAGIC_NUMBER = "PB";
         public const int FILE_VERSION = 7;

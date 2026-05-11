@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -23,8 +23,7 @@
 #include <openssl/ssl.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*
@@ -142,14 +141,14 @@ extern "C"
 #define SSL3_HM_HEADER_LENGTH 4
 
 #ifndef SSL3_ALIGN_PAYLOAD
-    /*
-     * Some will argue that this increases memory footprint, but it's not
-     * actually true. Point is that malloc has to return at least 64-bit aligned
-     * pointers, meaning that allocating 5 bytes wastes 3 bytes in either case.
-     * Suggested pre-gaping simply moves these wasted bytes from the end of
-     * allocated region to its front, but makes data payload aligned, which
-     * improves performance:-)
-     */
+/*
+ * Some will argue that this increases memory footprint, but it's not
+ * actually true. Point is that malloc has to return at least 64-bit aligned
+ * pointers, meaning that allocating 5 bytes wastes 3 bytes in either case.
+ * Suggested pre-gaping simply moves these wasted bytes from the end of
+ * allocated region to its front, but makes data payload aligned, which
+ * improves performance:-)
+ */
 #define SSL3_ALIGN_PAYLOAD 8
 #else
 #if (SSL3_ALIGN_PAYLOAD & (SSL3_ALIGN_PAYLOAD - 1)) != 0
@@ -158,17 +157,17 @@ extern "C"
 #endif
 #endif
 
-    /*
-     * This is the maximum MAC (digest) size used by the SSL library. Currently
-     * maximum of 20 is used by SHA1, but we reserve for future extension for
-     * 512-bit hashes.
-     */
+/*
+ * This is the maximum MAC (digest) size used by the SSL library. Currently
+ * maximum of 20 is used by SHA1, but we reserve for future extension for
+ * 512-bit hashes.
+ */
 
 #define SSL3_RT_MAX_MD_SIZE 64
 
-    /*
-     * Maximum block size used in all ciphersuites. Currently 16 for AES.
-     */
+/*
+ * Maximum block size used in all ciphersuites. Currently 16 for AES.
+ */
 
 #define SSL_RT_MAX_CIPHER_BLOCK_SIZE 16
 
@@ -187,15 +186,15 @@ extern "C"
 #define SSL3_RT_MAX_ENCRYPTED_OVERHEAD (256 + SSL3_RT_MAX_MD_SIZE)
 #define SSL3_RT_MAX_TLS13_ENCRYPTED_OVERHEAD 256
 
-    /*
-     * OpenSSL currently only uses a padding length of at most one block so the
-     * send overhead is smaller.
-     */
+/*
+ * OpenSSL currently only uses a padding length of at most one block so the
+ * send overhead is smaller.
+ */
 
 #define SSL3_RT_SEND_MAX_ENCRYPTED_OVERHEAD \
     (SSL_RT_MAX_CIPHER_BLOCK_SIZE + SSL3_RT_MAX_MD_SIZE)
 
-    /* If compression isn't used don't include the compression overhead */
+/* If compression isn't used don't include the compression overhead */
 
 #ifdef OPENSSL_NO_COMP
 #define SSL3_RT_MAX_COMPRESSED_LENGTH SSL3_RT_MAX_PLAIN_LENGTH
@@ -251,10 +250,10 @@ extern "C"
 #define SSL3_AL_FATAL 2
 
 #define SSL3_AD_CLOSE_NOTIFY 0
-#define SSL3_AD_UNEXPECTED_MESSAGE 10    /* fatal */
-#define SSL3_AD_BAD_RECORD_MAC 20        /* fatal */
+#define SSL3_AD_UNEXPECTED_MESSAGE 10 /* fatal */
+#define SSL3_AD_BAD_RECORD_MAC 20 /* fatal */
 #define SSL3_AD_DECOMPRESSION_FAILURE 30 /* fatal */
-#define SSL3_AD_HANDSHAKE_FAILURE 40     /* fatal */
+#define SSL3_AD_HANDSHAKE_FAILURE 40 /* fatal */
 #define SSL3_AD_NO_CERTIFICATE 41
 #define SSL3_AD_BAD_CERTIFICATE 42
 #define SSL3_AD_UNSUPPORTED_CERTIFICATE 43
@@ -307,7 +306,8 @@ extern "C"
 /* Set if extended master secret extension required on renegotiation */
 #define TLS1_FLAGS_REQUIRED_EXTMS 0x1000
 
-    /* 0x2000 is reserved for TLS1_FLAGS_QUIC (internal) */
+/* 0x2000 is reserved for TLS1_FLAGS_QUIC (internal) */
+/* 0x4000 is reserved for TLS1_FLAGS_QUIC_INTERNAL (internal) */
 
 #define SSL3_MT_HELLO_REQUEST 0
 #define SSL3_MT_CLIENT_HELLO 1

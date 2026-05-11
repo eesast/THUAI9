@@ -21,21 +21,22 @@
 #ifndef OPENSSL_NO_RC4
 #include <stddef.h>
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-    typedef struct rc4_key_st
-    {
-        RC4_INT x, y;
-        RC4_INT data[256];
-    } RC4_KEY;
+typedef struct rc4_key_st {
+    RC4_INT x, y;
+    RC4_INT data[256];
+} RC4_KEY;
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-    OSSL_DEPRECATEDIN_3_0 const char* RC4_options(void);
-    OSSL_DEPRECATEDIN_3_0 void RC4_set_key(RC4_KEY* key, int len, const unsigned char* data);
-    OSSL_DEPRECATEDIN_3_0 void RC4(RC4_KEY* key, size_t len, const unsigned char* indata, unsigned char* outdata);
+OSSL_DEPRECATEDIN_3_0 const char *RC4_options(void);
+OSSL_DEPRECATEDIN_3_0 void RC4_set_key(RC4_KEY *key, int len,
+    const unsigned char *data);
+OSSL_DEPRECATEDIN_3_0 void RC4(RC4_KEY *key, size_t len,
+    const unsigned char *indata,
+    unsigned char *outdata);
 #endif
 
 #ifdef __cplusplus
