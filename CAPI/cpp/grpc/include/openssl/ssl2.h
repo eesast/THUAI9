@@ -17,8 +17,7 @@
 #endif
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define SSL2_VERSION 0x0002
