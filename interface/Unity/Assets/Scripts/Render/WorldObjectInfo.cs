@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Protobuf;
 using THUAI9.Unity.Core;
 using UnityEngine;
 
@@ -19,8 +20,14 @@ namespace THUAI9.Unity.Render
         [TextArea(3, 12)] public string detail;
         public long guid;
         public long teamId;
+        public long playerId;
+        public CharacterType characterType = CharacterType.NullCharacterType;
         public int gridX = -1;
         public int gridY = -1;
+        public int gameX;
+        public int gameY;
+        public int hp;
+        public int attackRange;
         public int observedMaxHp;
         public int lastSeenFrame;
         public float lastSeenRealtime;
@@ -45,10 +52,31 @@ namespace THUAI9.Unity.Render
             detail = objectDetail;
             guid = objectGuid;
             teamId = ownerTeamId;
+            playerId = 0;
+            characterType = CharacterType.NullCharacterType;
             gridX = row;
             gridY = col;
+            gameX = -1;
+            gameY = -1;
+            hp = 0;
+            attackRange = 0;
             lastSeenFrame = CoreParam.frameCount;
             lastSeenRealtime = Time.realtimeSinceStartup;
+        }
+
+        public void SetCharacterInfo(MessageOfCharacter character)
+        {
+            if (character == null)
+            {
+                return;
+            }
+
+            playerId = character.PlayerId;
+            characterType = character.CharacterType;
+            gameX = character.X;
+            gameY = character.Y;
+            hp = character.Hp;
+            attackRange = character.CommonAttackRange;
         }
 
         public string BuildDisplayText()

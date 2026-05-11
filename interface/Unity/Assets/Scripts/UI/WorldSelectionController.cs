@@ -1,22 +1,18 @@
-using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Render;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 namespace THUAI9.Unity.UI
 {
     /// <summary>
-    /// Click/hover inspector for THUAI9 world objects.
+    /// Click/hover selection for THUAI9 world objects.
     /// It intentionally depends on WorldObjectInfo metadata and current map tiles,
     /// not on any THUAI7/THUAI8 protocol concepts.
     /// </summary>
     public class WorldSelectionController : MonoBehaviour
     {
         public Camera targetCamera;
-        public Text selectionText;
-        public InspectorPanelController inspectorPanel;
         public bool enableHover = true;
         public bool enableClickSelection = true;
 
@@ -26,21 +22,17 @@ namespace THUAI9.Unity.UI
         private GameObject hoverHighlight;
         private GameObject selectedHighlight;
 
+        public WorldObjectInfo HoveredInfo => hoveredInfo;
+        public WorldObjectInfo SelectedInfo => selectedInfo;
+        public Vector2Int? SelectedTile => selectedTile;
+
         private void Awake()
         {
             targetCamera ??= Camera.main;
-            selectionText ??= FindTextByName("SelectionInfoText");
-            inspectorPanel ??= FindObjectOfType<InspectorPanelController>();
-            if (inspectorPanel == null)
-            {
-                inspectorPanel = new GameObject("InspectorPanelController").AddComponent<InspectorPanelController>();
-            }
-
             hoverHighlight = CreateHighlight("HoverHighlight", new Color(0.18f, 0.88f, 0.96f, 0.22f), 24);
             selectedHighlight = CreateHighlight("SelectionHighlight", new Color(1f, 0.72f, 0.22f, 0.30f), 25);
             SetHighlightVisible(hoverHighlight, false);
             SetHighlightVisible(selectedHighlight, false);
-            UpdateSelectionText(null);
         }
 
         private void Update()
@@ -57,9 +49,9 @@ namespace THUAI9.Unity.UI
             if (enableHover)
             {
                 hoveredInfo = FindWorldInfoAt(mouseWorld);
-                if (hoveredInfo != null && hoveredInfo.TryGetBounds(out Bounds bounds))
+                if (hoveredInfo != null && hoveredInfo.TryGetBounds(out Bounds hoverBounds))
                 {
-                    PositionHighlight(hoverHighlight, bounds);
+                    PositionHighlight(hoverHighlight, hoverBounds);
                 }
                 else
                 {
@@ -74,16 +66,14 @@ namespace THUAI9.Unity.UI
 
                 if (selectedInfo != null)
                 {
-                    ShowSelectedObject(selectedInfo);
-                    if (selectedInfo.TryGetBounds(out Bounds bounds))
+                    if (selectedInfo.TryGetBounds(out Bounds selectedBounds))
                     {
-                        PositionHighlight(selectedHighlight, bounds);
+                        PositionHighlight(selectedHighlight, selectedBounds);
                     }
                 }
-                else if (TryGetMapTileAt(mouseWorld, out Vector2Int tile, out string tileText))
+                else if (TryGetMapTileAt(mouseWorld, out Vector2Int tile))
                 {
                     selectedTile = tile;
-                    ShowSelectedTile(tile, tileText);
                     Bounds tileBounds = new Bounds(Tool.GridToUnity(tile.x, tile.y), Vector3.one);
                     PositionHighlight(selectedHighlight, tileBounds);
                 }
@@ -102,17 +92,14 @@ namespace THUAI9.Unity.UI
                 SetHighlightVisible(selectedHighlight, false);
             }
 
-            if (selectedInfo != null)
+            if (selectedInfo != null && selectedInfo.TryGetBounds(out Bounds currentBounds))
             {
-                ShowSelectedObject(selectedInfo);
-                if (selectedInfo.TryGetBounds(out Bounds bounds))
-                {
-                    PositionHighlight(selectedHighlight, bounds);
-                }
+                PositionHighlight(selectedHighlight, currentBounds);
             }
-            else if (selectedTile.HasValue && TryGetMapTileAt(Tool.GridToUnity(selectedTile.Value.x, selectedTile.Value.y), out _, out string tileText))
+            else if (selectedTile.HasValue && !TryGetMapTileAt(Tool.GridToUnity(selectedTile.Value.x, selectedTile.Value.y), out _))
             {
-                ShowSelectedTile(selectedTile.Value, tileText);
+                ClearSelection();
+                SetHighlightVisible(selectedHighlight, false);
             }
         }
 
@@ -150,12 +137,11 @@ namespace THUAI9.Unity.UI
             return best;
         }
 
-        private static bool TryGetMapTileAt(Vector3 worldPosition, out Vector2Int tile, out string displayText)
+        private static bool TryGetMapTileAt(Vector3 worldPosition, out Vector2Int tile)
         {
             int row = Mathf.FloorToInt(Tool.GetMapRows() - worldPosition.y);
             int col = Mathf.FloorToInt(worldPosition.x);
             tile = new Vector2Int(row, col);
-            displayText = string.Empty;
 
             if (CoreParam.map == null || row < 0 || col < 0 || row >= CoreParam.map.Height || col >= CoreParam.map.Width)
             {
@@ -167,39 +153,13 @@ namespace THUAI9.Unity.UI
                 return false;
             }
 
-            PlaceType placeType = CoreParam.map.Rows[row].Cols[col];
-            displayText = $"地图格\n坐标：({row}, {col})\n地形：{TranslatePlaceType(placeType)}";
             return true;
-        }
-
-        private void UpdateSelectionText(string value)
-        {
-            if (selectionText == null)
-            {
-                return;
-            }
-
-            selectionText.text = string.IsNullOrWhiteSpace(value)
-                ? "选中对象\n点击地图上的单位、建筑、资源或地块查看详情\nEsc 清除选择"
-                : value;
-        }
-
-        private void ShowSelectedObject(WorldObjectInfo info)
-        {
-            UpdateSelectionText(info != null ? info.BuildDisplayText() : null);
-            inspectorPanel?.ShowObject(info);
-        }
-
-        private void ShowSelectedTile(Vector2Int tile, string tileText)
-        {
-            UpdateSelectionText(tileText);
-            inspectorPanel?.ShowTile(tile, tileText);
         }
 
         private void ClearSelection()
         {
-            UpdateSelectionText(null);
-            inspectorPanel?.ClearSelection();
+            selectedInfo = null;
+            selectedTile = null;
         }
 
         private static GameObject CreateHighlight(string name, Color color, int sortingOrder)
@@ -231,27 +191,6 @@ namespace THUAI9.Unity.UI
             {
                 highlight.SetActive(visible);
             }
-        }
-
-        private static Text FindTextByName(string objectName)
-        {
-            GameObject go = GameObject.Find(objectName);
-            return go != null ? go.GetComponent<Text>() : null;
-        }
-
-        private static string TranslatePlaceType(PlaceType placeType)
-        {
-            return placeType switch
-            {
-                PlaceType.Factory => "工厂出生点",
-                PlaceType.Space => "空地",
-                PlaceType.Barrier => "障碍",
-                PlaceType.Bush => "草丛",
-                PlaceType.Resource => "资源区",
-                PlaceType.ComputeCenter => "算力中心",
-                PlaceType.Market => "市场",
-                _ => "未知"
-            };
         }
 
         private static Sprite pixelSprite;
