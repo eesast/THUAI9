@@ -87,12 +87,14 @@ namespace
     [[nodiscard]] double CalcAngle(int32_t fromX, int32_t fromY, int32_t toX, int32_t toY)
     {
         // 坐标系: 竖直向下 = x 轴(角度0), 水平向右 = y 轴(角度 π/2)
-        return std::atan2(toX - fromX, toY - fromY);
+        // 服务端 XY(angle,length): x=cos(angle)*l, y=sin(angle)*l
+        // 所以 angle = atan2(deltaY, deltaX)
+        return std::atan2(toY - fromY, toX - fromX);
     }
 
     [[nodiscard]] bool IsPassable(THUAI9::PlaceType pt)
     {
-        return pt != THUAI9::PlaceType::Barrier && pt != THUAI9::PlaceType::Factory;
+        return pt == THUAI9::PlaceType::Space || pt == THUAI9::PlaceType::Bush;
     }
 
     template<class TAPI>
@@ -151,6 +153,7 @@ namespace
     using CellPath = std::vector<std::pair<int32_t, int32_t>>;
 
     // 返回从 (sx,sy) 到最近 targetType 格子的路径（含起点和终点）
+    // sx = cellX (column in map), sy = cellY (row in map)
     [[nodiscard]] CellPath BfsToNearest(
         const std::vector<std::vector<THUAI9::PlaceType>>& map,
         int32_t sx,
@@ -160,20 +163,42 @@ namespace
     {
         if (map.empty() || map.front().empty())
             return {};
-        const int32_t cols = static_cast<int32_t>(map.size());
-        const int32_t rows = static_cast<int32_t>(map.front().size());
+        const int32_t numRows = static_cast<int32_t>(map.size());
+        const int32_t numCols = static_cast<int32_t>(map.front().size());
 
-        if (sx < 0 || sy < 0 || sx >= cols || sy >= rows)
-            return {};
-        if (!IsPassable(map[sx][sy]))
+        if (sx < 0 || sy < 0 || sx >= numCols || sy >= numRows)
             return {};
 
         CellSet visited;
         CellMap prev;
         CellQueue q;
 
-        visited.insert({sx, sy});
-        q.push({sx, sy});
+        // map[row][col] = map[sy][sx]
+        // 起点不可通行时，从相邻可通行格播种 (C# 参考)
+        if (!IsPassable(map[sy][sx]))
+        {
+            for (auto [dx, dy] : kDirs)
+            {
+                int32_t nx = sx + dx;
+                int32_t ny = sy + dy;
+                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
+                    continue;
+                if (!IsPassable(map[ny][nx]))
+                    continue;
+                if (visited.count({nx, ny}))
+                    continue;
+                visited.insert({nx, ny});
+                prev[{nx, ny}] = {sx, sy};
+                q.push({nx, ny});
+            }
+            if (q.empty())
+                return {};
+        }
+        else
+        {
+            visited.insert({sx, sy});
+            q.push({sx, sy});
+        }
 
         std::pair<int32_t, int32_t> target = {-1, -1};
 
@@ -182,7 +207,7 @@ namespace
             auto [cx, cy] = q.front();
             q.pop();
 
-            if (map[cx][cy] == targetType)
+            if (map[cy][cx] == targetType)
             {
                 target = {cx, cy};
                 break;
@@ -192,9 +217,9 @@ namespace
             {
                 int32_t nx = cx + dx;
                 int32_t ny = cy + dy;
-                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows)
+                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
                     continue;
-                if (!IsPassable(map[nx][ny]) && map[nx][ny] != targetType)
+                if (!IsPassable(map[ny][nx]) && map[ny][nx] != targetType)
                     continue;
                 if (visited.count({nx, ny}))
                     continue;
@@ -210,10 +235,14 @@ namespace
 
         CellPath path;
         auto cur = target;
-        while (cur != std::pair<int32_t, int32_t>{sx, sy})
+        std::pair<int32_t, int32_t> start{sx, sy};
+        while (cur != start)
         {
             path.push_back(cur);
-            cur = prev[cur];
+            auto it = prev.find(cur);
+            if (it == prev.end())
+                return {};
+            cur = it->second;
         }
         path.push_back({sx, sy});
         std::reverse(path.begin(), path.end());
@@ -221,6 +250,7 @@ namespace
     }
 
     // 返回从 (sx,sy) 到 (tx,ty) 的路径
+    // sx,tx = cellX (column in map), sy,ty = cellY (row in map)
     [[nodiscard]] CellPath BfsTo(
         const std::vector<std::vector<THUAI9::PlaceType>>& map,
         int32_t sx,
@@ -231,22 +261,46 @@ namespace
     {
         if (map.empty() || map.front().empty())
             return {};
-        const int32_t cols = static_cast<int32_t>(map.size());
-        const int32_t rows = static_cast<int32_t>(map.front().size());
+        const int32_t numRows = static_cast<int32_t>(map.size());
+        const int32_t numCols = static_cast<int32_t>(map.front().size());
 
-        if (sx < 0 || sy < 0 || sx >= cols || sy >= rows)
+        if (sx < 0 || sy < 0 || sx >= numCols || sy >= numRows)
             return {};
-        if (tx < 0 || ty < 0 || tx >= cols || ty >= rows)
-            return {};
-        if (!IsPassable(map[sx][sy]))
+        if (tx < 0 || ty < 0 || tx >= numCols || ty >= numRows)
             return {};
 
         CellSet visited;
         CellMap prev;
         CellQueue q;
 
-        visited.insert({sx, sy});
-        q.push({sx, sy});
+        // map[row][col] = map[sy][sx]
+        // 起点不可通行时，从相邻可通行格播种
+        if (!IsPassable(map[sy][sx]))
+        {
+            for (auto [dx, dy] : kDirs)
+            {
+                int32_t nx = sx + dx;
+                int32_t ny = sy + dy;
+                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
+                    continue;
+                if (!IsPassable(map[ny][nx]))
+                    continue;
+                if (visited.count({nx, ny}))
+                    continue;
+                visited.insert({nx, ny});
+                prev[{nx, ny}] = {sx, sy};
+                q.push({nx, ny});
+            }
+            if (q.empty())
+                return {};
+        }
+        else
+        {
+            visited.insert({sx, sy});
+            q.push({sx, sy});
+        }
+
+        std::pair<int32_t, int32_t> target = {tx, ty};
         bool found = false;
 
         while (!q.empty())
@@ -264,9 +318,9 @@ namespace
             {
                 int32_t nx = cx + dx;
                 int32_t ny = cy + dy;
-                if (nx < 0 || ny < 0 || nx >= cols || ny >= rows)
+                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
                     continue;
-                if (!IsPassable(map[nx][ny]) && !(nx == tx && ny == ty))
+                if (!IsPassable(map[ny][nx]) && !(nx == tx && ny == ty))
                     continue;
                 if (visited.count({nx, ny}))
                     continue;
@@ -281,11 +335,15 @@ namespace
             return {};
 
         CellPath path;
-        auto cur = std::make_pair(tx, ty);
-        while (cur != std::pair<int32_t, int32_t>{sx, sy})
+        auto cur = target;
+        std::pair<int32_t, int32_t> start{sx, sy};
+        while (cur != start)
         {
             path.push_back(cur);
-            cur = prev[cur];
+            auto it = prev.find(cur);
+            if (it == prev.end())
+                return {};
+            cur = it->second;
         }
         path.push_back({sx, sy});
         std::reverse(path.begin(), path.end());
@@ -313,8 +371,8 @@ namespace
         size_t pathIdx = 0;
         int32_t targetCellX = -1;
         int32_t targetCellY = -1;
-        int32_t prevCellX = -1;
-        int32_t prevCellY = -1;
+        int32_t prevGridX = -1;
+        int32_t prevGridY = -1;
         int32_t stuckFrames = 0;
         int32_t actionCooldown = 0;
         bool snapshotPrinted = false;
@@ -346,48 +404,39 @@ namespace
         if (!self || s.path.empty())
             return true;
 
-        int32_t cx = GridToCell(self->x);
-        int32_t cy = GridToCell(self->y);
-
-        // 到达路径终点？
         if (s.pathIdx >= s.path.size())
             return true;
 
         auto [tx, ty] = s.path[s.pathIdx];
+        int32_t targetGx = CellToGrid(tx);
+        int32_t targetGy = CellToGrid(ty);
 
-        // 已到达当前路径点所在 cell → 前进
-        if (cx == tx && cy == ty)
+        // 距离检测到达 (C# ArrivalRadius = 300)
+        int64_t dx = static_cast<int64_t>(targetGx) - self->x;
+        int64_t dy = static_cast<int64_t>(targetGy) - self->y;
+        if (dx * dx + dy * dy <= 300 * 300)
         {
             ++s.pathIdx;
             if (s.pathIdx >= s.path.size())
-                return true;  // 到达终点
-            tx = s.path[s.pathIdx].first;
-            ty = s.path[s.pathIdx].second;
-        }
-
-        // 检测卡死
-        if (cx == s.prevCellX && cy == s.prevCellY)
-        {
-            ++s.stuckFrames;
-            if (s.stuckFrames > 15)
-            {
-                // 反卡死：EndAllAction
-                api.EndAllAction();
-                s.stuckFrames = 0;
-                return false;
-            }
-        }
-        else
-        {
+                return true;
             s.stuckFrames = 0;
         }
-        s.prevCellX = cx;
-        s.prevCellY = cy;
 
-        // 朝目标 cell 中心移动
-        int32_t targetGx = CellToGrid(tx);
-        int32_t targetGy = CellToGrid(ty);
+        // 网格级卡死检测
+        int32_t gx = self->x;
+        int32_t gy = self->y;
+        if (std::abs(gx - s.prevGridX) < 40 && std::abs(gy - s.prevGridY) < 40)
+            ++s.stuckFrames;
+        else
+            s.stuckFrames = 0;
+        s.prevGridX = gx;
+        s.prevGridY = gy;
+
         double angle = CalcAngle(self->x, self->y, targetGx, targetGy);
+        // 卡死扰动 (C#: stall >= 4 时 ±0.35)
+        if (s.stuckFrames >= 4)
+            angle += (s.stuckFrames / 4) % 2 == 0 ? 0.35 : -0.35;
+
         api.Move(kMoveTimeMs, angle);
         return false;
     }
@@ -537,24 +586,21 @@ namespace
             case CharTask::PATROLLING:
             default:
                 {
-                    // 简单巡逻：每 60 帧换个方向
                     int32_t fc = api.GetFrameCount();
+                    if (fc > 0 && fc % 60 == 0)
+                    {
+                        s.path.clear();
+                        s.pathIdx = 0;
+                        s.task = CharTask::IDLE;
+                        break;
+                    }
                     switch ((fc / 60) % 4)
                     {
-                        case 0:
-                            api.MoveRight(kMoveTimeMs);
-                            break;
-                        case 1:
-                            api.MoveDown(kMoveTimeMs);
-                            break;
-                        case 2:
-                            api.MoveLeft(kMoveTimeMs);
-                            break;
-                        case 3:
-                            api.MoveUp(kMoveTimeMs);
-                            break;
+                        case 0: api.MoveRight(kMoveTimeMs); break;
+                        case 1: api.MoveDown(kMoveTimeMs); break;
+                        case 2: api.MoveLeft(kMoveTimeMs); break;
+                        case 3: api.MoveUp(kMoveTimeMs); break;
                     }
-
                     if (fc % 180 == 0)
                         PrintCommonSnapshot(api, who);
                     break;
@@ -583,46 +629,46 @@ namespace
                     if (map.empty() || map.front().empty())
                         break;
 
-                    int32_t cols = static_cast<int32_t>(map.size());
-                    int32_t rows = static_cast<int32_t>(map.front().size());
+                    int32_t numRows = static_cast<int32_t>(map.size());
+                    int32_t numCols = static_cast<int32_t>(map.front().size());
                     int64_t bestDist2 = std::numeric_limits<int64_t>::max();
-                    int32_t bestX = -1, bestY = -1;
+                    int32_t bestCellX = -1, bestCellY = -1;
 
-                    for (int32_t x = 0; x < cols; ++x)
+                    for (int32_t row = 0; row < numRows; ++row)
                     {
-                        for (int32_t y = 0; y < rows; ++y)
+                        for (int32_t col = 0; col < numCols; ++col)
                         {
-                            if (map[x][y] != THUAI9::PlaceType::Factory)
+                            if (map[row][col] != THUAI9::PlaceType::Factory)
                                 continue;
-                            auto facOpt = api.GetFactoryState(x, y);
+                            auto facOpt = api.GetFactoryState(col, row);
                             if (!facOpt.has_value())
                                 continue;
                             if (facOpt->teamID == self->teamID)
                                 continue;  // 跳过己方
 
-                            int64_t dx = static_cast<int64_t>(CellToGrid(x)) - self->x;
-                            int64_t dy = static_cast<int64_t>(CellToGrid(y)) - self->y;
+                            int64_t dx = static_cast<int64_t>(CellToGrid(col)) - self->x;
+                            int64_t dy = static_cast<int64_t>(CellToGrid(row)) - self->y;
                             int64_t d2 = dx * dx + dy * dy;
                             if (d2 < bestDist2)
                             {
                                 bestDist2 = d2;
-                                bestX = x;
-                                bestY = y;
+                                bestCellX = col;
+                                bestCellY = row;
                             }
                         }
                     }
 
-                    if (bestX < 0)
+                    if (bestCellX < 0)
                     {
                         api.Print(who + ": no enemy factory found, patrolling.");
                         s.task = CharTask::PATROLLING;
                         break;
                     }
 
-                    api.Print(who + ": targeting enemy factory at (" + std::to_string(bestX) + "," + std::to_string(bestY) + ")");
+                    api.Print(who + ": targeting enemy factory at (" + std::to_string(bestCellX) + "," + std::to_string(bestCellY) + ")");
 
                     auto map2 = api.GetFullMap();
-                    if (!StartNavigate(map2, self, s, bestX, bestY))
+                    if (!StartNavigate(map2, self, s, bestCellX, bestCellY))
                     {
                         api.Print(who + ": path to enemy factory blocked.");
                         s.task = CharTask::PATROLLING;
@@ -672,20 +718,19 @@ namespace
             default:
                 {
                     int32_t fc = api.GetFrameCount();
+                    if (fc > 0 && fc % 60 == 0)
+                    {
+                        s.path.clear();
+                        s.pathIdx = 0;
+                        s.task = CharTask::IDLE;
+                        break;
+                    }
                     switch ((fc / 60) % 4)
                     {
-                        case 0:
-                            api.MoveRight(kMoveTimeMs);
-                            break;
-                        case 1:
-                            api.MoveDown(kMoveTimeMs);
-                            break;
-                        case 2:
-                            api.MoveLeft(kMoveTimeMs);
-                            break;
-                        case 3:
-                            api.MoveUp(kMoveTimeMs);
-                            break;
+                        case 0: api.MoveRight(kMoveTimeMs); break;
+                        case 1: api.MoveDown(kMoveTimeMs); break;
+                        case 2: api.MoveLeft(kMoveTimeMs); break;
+                        case 3: api.MoveUp(kMoveTimeMs); break;
                     }
                     if (fc % 180 == 0)
                         PrintCommonSnapshot(api, who);
@@ -756,20 +801,19 @@ namespace
             default:
                 {
                     int32_t fc = api.GetFrameCount();
+                    if (fc > 0 && fc % 60 == 0)
+                    {
+                        s.path.clear();
+                        s.pathIdx = 0;
+                        s.task = CharTask::IDLE;
+                        break;
+                    }
                     switch ((fc / 60) % 4)
                     {
-                        case 0:
-                            api.MoveRight(kMoveTimeMs);
-                            break;
-                        case 1:
-                            api.MoveDown(kMoveTimeMs);
-                            break;
-                        case 2:
-                            api.MoveLeft(kMoveTimeMs);
-                            break;
-                        case 3:
-                            api.MoveUp(kMoveTimeMs);
-                            break;
+                        case 0: api.MoveRight(kMoveTimeMs); break;
+                        case 1: api.MoveDown(kMoveTimeMs); break;
+                        case 2: api.MoveLeft(kMoveTimeMs); break;
+                        case 3: api.MoveUp(kMoveTimeMs); break;
                     }
                     break;
                 }
