@@ -42,80 +42,85 @@ namespace Protobuf {
             "IAEoBSKBAQoMTWVzc2FnZU9mTWFwEg4KBmhlaWdodBgBIAEoDRINCgV3aWR0",
             "aBgCIAEoDRIoCgRyb3dzGAMgAygLMhoucHJvdG9idWYuTWVzc2FnZU9mTWFw",
             "LlJvdxooCgNSb3cSIQoEY29scxgBIAMoDjITLnByb3RvYnVmLlBsYWNlVHlw",
-            "ZSJrCg1NZXNzYWdlT2ZUZWFtEg8KB3RlYW1faWQYASABKAMSEQoJcGxheWVy",
-            "X2lkGAIgASgDEg0KBXNjb3JlGAMgASgFEhAKCG1hdGVyaWFsGAQgASgFEhUK",
-            "DWNvbXB1dGVfcG93ZXIYBSABKAUi7gIKEE1lc3NhZ2VPZkZhY3RvcnkSEgoK",
-            "ZmFjdG9yeV9pZBgBIAEoAxIPCgd0ZWFtX2lkGAIgASgDEgkKAXgYAyABKAUS",
-            "CQoBeRgEIAEoBRIKCgJocBgFIAEoBRIOCgZyb2J1c3QYBiABKAUSDwoHc3Rv",
-            "cmFnZRgHIAEoBRISCgplZmZpY2llbmN5GAggASgFEg4KBnNvdXJjZRgJIAEo",
-            "AxIXCg9jb21wdXRpbmdfcG93ZXIYCiABKAMSEwoLY2FuX3Byb2R1Y2UYCyAB",
-            "KAgSEwoLY2FuX3JlY3J1aXQYDCABKAgSQAoRcHJvZHVjdF9pbnZlbnRvcnkY",
-            "DSADKAsyJS5wcm90b2J1Zi5NZXNzYWdlT2ZGYWN0b3J5Lkdvb2RzU3RhY2sa",
-            "SQoKR29vZHNTdGFjaxIpCgxwcm9kdWN0X3R5cGUYASABKA4yEy5wcm90b2J1",
-            "Zi5Hb29kc1R5cGUSEAoIcXVhbnRpdHkYAiABKAUi/gEKD01lc3NhZ2VPZk1h",
-            "cmtldBIRCgltYXJrZXRfaWQYASABKAMSCQoBeBgCIAEoBRIJCgF5GAMgASgF",
-            "EikKC21hcmtldF90eXBlGAQgASgOMhQucHJvdG9idWYuTWFya2V0VHlwZRI4",
-            "CgpwcmljZV9saXN0GAUgAygLMiQucHJvdG9idWYuTWVzc2FnZU9mTWFya2V0",
-            "LlByaWNlRW50cnkaXQoKUHJpY2VFbnRyeRInCgpnb29kc190eXBlGAEgASgO",
-            "MhMucHJvdG9idWYuR29vZHNUeXBlEg0KBXByaWNlGAIgASgFEhcKD3RyYWRl",
-            "ZF9xdWFudGl0eRgDIAEoBSJxChZNZXNzYWdlT2ZDb21wdXRlQ2VudGVyEhEK",
-            "CWNlbnRlcl9pZBgBIAEoAxIJCgF4GAIgASgFEgkKAXkYAyABKAUSFQoNb3du",
-            "ZXJfdGVhbV9pZBgEIAEoAxIXCg9vY2N1cHlfcHJvZ3Jlc3MYBSABKAUiPAoQ",
-            "TWVzc2FnZU9mQmFycmllchISCgpiYXJyaWVyX2lkGAEgASgDEgkKAXgYAiAB",
-            "KAUSCQoBeRgDIAEoBSJGCg1NZXNzYWdlT2ZCdXNoEg8KB2J1c2hfaWQYASAB",
-            "KAMSCQoBeBgCIAEoBRIJCgF5GAMgASgFEg4KBnJhZGl1cxgEIAEoBSKLAQoN",
-            "R2xvYmFsQUlFdmVudBIQCghldmVudF9pZBgBIAEoAxIXCg90cmlnZ2VyX3Rp",
-            "bWVfbXMYAiABKAMSKwoIY2F0ZWdvcnkYAyABKA4yGS5wcm90b2J1Zi5BSUV2",
-            "ZW50Q2F0ZWdvcnkSDQoFdGl0bGUYBCABKAkSEwoLZGVzY3JpcHRpb24YBSAB",
-            "KAki5gEKDUFJV29ybGRFZmZlY3QSEAoIZXZlbnRfaWQYASABKAMSEwoLZHVy",
-            "YXRpb25fbXMYAiABKAMSNwoPcHJpY2VfbW9kaWZpZXJzGAMgAygLMh4ucHJv",
-            "dG9idWYuUHJvZHVjdFByaWNlTW9kaWZpZXISQQoTY2hhcmFjdGVyX21vZGlm",
-            "aWVycxgEIAMoCzIkLnByb3RvYnVmLkNoYXJhY3RlckF0dHJpYnV0ZU1vZGlm",
-            "aWVyEjIKDnRhc2tfbW9kaWZpZXJzGAUgAygLMhoucHJvdG9idWYuVGFza1Rp",
-            "bWVNb2RpZmllciJTChRQcm9kdWN0UHJpY2VNb2RpZmllchInCgpnb29kc190",
-            "eXBlGAEgASgOMhMucHJvdG9idWYuR29vZHNUeXBlEhIKCm11bHRpcGxpZXIY",
-            "AiABKAEimQEKGkNoYXJhY3RlckF0dHJpYnV0ZU1vZGlmaWVyEi8KDmNoYXJh",
-            "Y3Rlcl90eXBlGAEgASgOMhcucHJvdG9idWYuQ2hhcmFjdGVyVHlwZRIYChBz",
-            "cGVlZF9tdWx0aXBsaWVyGAIgASgBEhkKEWRhbWFnZV9tdWx0aXBsaWVyGAMg",
-            "ASgBEhUKDWhwX211bHRpcGxpZXIYBCABKAEiUgoQVGFza1RpbWVNb2RpZmll",
-            "chIlCgl0YXNrX3R5cGUYASABKA4yEi5wcm90b2J1Zi5UYXNrVHlwZRIXCg90",
-            "aW1lX211bHRpcGxpZXIYAiABKAEivQQKDE1lc3NhZ2VPZk9iahI1Cg9mYWN0",
-            "b3J5X21lc3NhZ2UYASABKAsyGi5wcm90b2J1Zi5NZXNzYWdlT2ZGYWN0b3J5",
-            "SAASOQoRY2hhcmFjdGVyX21lc3NhZ2UYAiABKAsyHC5wcm90b2J1Zi5NZXNz",
-            "YWdlT2ZDaGFyYWN0ZXJIABI3ChByZXNvdXJjZV9tZXNzYWdlGAMgASgLMhsu",
-            "cHJvdG9idWYuTWVzc2FnZU9mUmVzb3VyY2VIABIzCg5tYXJrZXRfbWVzc2Fn",
-            "ZRgEIAEoCzIZLnByb3RvYnVmLk1lc3NhZ2VPZk1hcmtldEgAEkIKFmNvbXB1",
-            "dGVfY2VudGVyX21lc3NhZ2UYBSABKAsyIC5wcm90b2J1Zi5NZXNzYWdlT2ZD",
-            "b21wdXRlQ2VudGVySAASLQoLbWFwX21lc3NhZ2UYBiABKAsyFi5wcm90b2J1",
-            "Zi5NZXNzYWdlT2ZNYXBIABIvCgxuZXdzX21lc3NhZ2UYByABKAsyFy5wcm90",
-            "b2J1Zi5NZXNzYWdlT2ZOZXdzSAASLwoMdGVhbV9tZXNzYWdlGAggASgLMhcu",
-            "cHJvdG9idWYuTWVzc2FnZU9mVGVhbUgAEjUKD2JhcnJpZXJfbWVzc2FnZRgJ",
-            "IAEoCzIaLnByb3RvYnVmLk1lc3NhZ2VPZkJhcnJpZXJIABIvCgxidXNoX21l",
-            "c3NhZ2UYCiABKAsyFy5wcm90b2J1Zi5NZXNzYWdlT2ZCdXNoSABCEAoObWVz",
-            "c2FnZV9vZl9vYmoiqQEKDE1lc3NhZ2VPZkFsbBIRCglnYW1lX3RpbWUYASAB",
-            "KAUSLgoFdGVhbXMYAiADKAsyHy5wcm90b2J1Zi5NZXNzYWdlT2ZBbGwuVGVh",
-            "bUluZm8aVgoIVGVhbUluZm8SDQoFc2NvcmUYASABKAUSEAoIbWF0ZXJpYWwY",
-            "AiABKAUSFQoNY29tcHV0ZV9wb3dlchgDIAEoBRISCgpmYWN0b3J5X2hwGAQg",
-            "ASgFIpQBCg9NZXNzYWdlVG9DbGllbnQSKwoLb2JqX21lc3NhZ2UYASADKAsy",
-            "Fi5wcm90b2J1Zi5NZXNzYWdlT2ZPYmoSJwoKZ2FtZV9zdGF0ZRgCIAEoDjIT",
-            "LnByb3RvYnVmLkdhbWVTdGF0ZRIrCgthbGxfbWVzc2FnZRgDIAEoCzIWLnBy",
-            "b3RvYnVmLk1lc3NhZ2VPZkFsbCJKCgdNb3ZlUmVzEhQKDGFjdHVhbF9zcGVl",
-            "ZBgBIAEoAxIUCgxhY3R1YWxfYW5nbGUYAiABKAESEwoLYWN0X3N1Y2Nlc3MY",
-            "AyABKAgiOwoRQ3JlYXRDaGFyYWN0ZXJSZXMSEwoLYWN0X3N1Y2Nlc3MYASAB",
-            "KAgSEQoJcGxheWVyX2lkGAIgASgDIh4KB0Jvb2xSZXMSEwoLYWN0X3N1Y2Nl",
-            "c3MYASABKAgiSAoQQ2hhcmFjdGVySW5mb1JlcxI0Cg5DaGFyYWN0ZXJfaW5m",
-            "bxgBIAMoCzIcLnByb3RvYnVmLk1lc3NhZ2VPZkNoYXJhY3RlciIZCgZFY29S",
-            "ZXMSDwoHZWNvbm9teRgBIAEoAyJ6Cg1NZXNzYWdlT2ZOZXdzEhYKDHRleHRf",
-            "bWVzc2FnZRgBIAEoCUgAEhgKDmJpbmFyeV9tZXNzYWdlGAIgASgMSAASDwoH",
-            "ZnJvbV9pZBgDIAEoAxINCgV0b19pZBgEIAEoAxIPCgd0ZWFtX2lkGAUgASgD",
-            "QgYKBG5ld3NiBnByb3RvMw=="));
+            "ZSLcAQoNTWVzc2FnZU9mVGVhbRIPCgd0ZWFtX2lkGAEgASgDEhEKCXBsYXll",
+            "cl9pZBgCIAEoAxINCgVzY29yZRgDIAEoBRIQCghtYXRlcmlhbBgEIAEoBRIV",
+            "Cg1jb21wdXRlX3Bvd2VyGAUgASgFEjwKC3RlY2hfbGV2ZWxzGAYgAygLMicu",
+            "cHJvdG9idWYuTWVzc2FnZU9mVGVhbS5UZWNoTGV2ZWxzRW50cnkaMQoPVGVj",
+            "aExldmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoBToCOAEi",
+            "7gIKEE1lc3NhZ2VPZkZhY3RvcnkSEgoKZmFjdG9yeV9pZBgBIAEoAxIPCgd0",
+            "ZWFtX2lkGAIgASgDEgkKAXgYAyABKAUSCQoBeRgEIAEoBRIKCgJocBgFIAEo",
+            "BRIOCgZyb2J1c3QYBiABKAUSDwoHc3RvcmFnZRgHIAEoBRISCgplZmZpY2ll",
+            "bmN5GAggASgFEg4KBnNvdXJjZRgJIAEoAxIXCg9jb21wdXRpbmdfcG93ZXIY",
+            "CiABKAMSEwoLY2FuX3Byb2R1Y2UYCyABKAgSEwoLY2FuX3JlY3J1aXQYDCAB",
+            "KAgSQAoRcHJvZHVjdF9pbnZlbnRvcnkYDSADKAsyJS5wcm90b2J1Zi5NZXNz",
+            "YWdlT2ZGYWN0b3J5Lkdvb2RzU3RhY2saSQoKR29vZHNTdGFjaxIpCgxwcm9k",
+            "dWN0X3R5cGUYASABKA4yEy5wcm90b2J1Zi5Hb29kc1R5cGUSEAoIcXVhbnRp",
+            "dHkYAiABKAUi/gEKD01lc3NhZ2VPZk1hcmtldBIRCgltYXJrZXRfaWQYASAB",
+            "KAMSCQoBeBgCIAEoBRIJCgF5GAMgASgFEikKC21hcmtldF90eXBlGAQgASgO",
+            "MhQucHJvdG9idWYuTWFya2V0VHlwZRI4CgpwcmljZV9saXN0GAUgAygLMiQu",
+            "cHJvdG9idWYuTWVzc2FnZU9mTWFya2V0LlByaWNlRW50cnkaXQoKUHJpY2VF",
+            "bnRyeRInCgpnb29kc190eXBlGAEgASgOMhMucHJvdG9idWYuR29vZHNUeXBl",
+            "Eg0KBXByaWNlGAIgASgFEhcKD3RyYWRlZF9xdWFudGl0eRgDIAEoBSJxChZN",
+            "ZXNzYWdlT2ZDb21wdXRlQ2VudGVyEhEKCWNlbnRlcl9pZBgBIAEoAxIJCgF4",
+            "GAIgASgFEgkKAXkYAyABKAUSFQoNb3duZXJfdGVhbV9pZBgEIAEoAxIXCg9v",
+            "Y2N1cHlfcHJvZ3Jlc3MYBSABKAUiPAoQTWVzc2FnZU9mQmFycmllchISCgpi",
+            "YXJyaWVyX2lkGAEgASgDEgkKAXgYAiABKAUSCQoBeRgDIAEoBSJGCg1NZXNz",
+            "YWdlT2ZCdXNoEg8KB2J1c2hfaWQYASABKAMSCQoBeBgCIAEoBRIJCgF5GAMg",
+            "ASgFEg4KBnJhZGl1cxgEIAEoBSKLAQoNR2xvYmFsQUlFdmVudBIQCghldmVu",
+            "dF9pZBgBIAEoAxIXCg90cmlnZ2VyX3RpbWVfbXMYAiABKAMSKwoIY2F0ZWdv",
+            "cnkYAyABKA4yGS5wcm90b2J1Zi5BSUV2ZW50Q2F0ZWdvcnkSDQoFdGl0bGUY",
+            "BCABKAkSEwoLZGVzY3JpcHRpb24YBSABKAki5gEKDUFJV29ybGRFZmZlY3QS",
+            "EAoIZXZlbnRfaWQYASABKAMSEwoLZHVyYXRpb25fbXMYAiABKAMSNwoPcHJp",
+            "Y2VfbW9kaWZpZXJzGAMgAygLMh4ucHJvdG9idWYuUHJvZHVjdFByaWNlTW9k",
+            "aWZpZXISQQoTY2hhcmFjdGVyX21vZGlmaWVycxgEIAMoCzIkLnByb3RvYnVm",
+            "LkNoYXJhY3RlckF0dHJpYnV0ZU1vZGlmaWVyEjIKDnRhc2tfbW9kaWZpZXJz",
+            "GAUgAygLMhoucHJvdG9idWYuVGFza1RpbWVNb2RpZmllciJTChRQcm9kdWN0",
+            "UHJpY2VNb2RpZmllchInCgpnb29kc190eXBlGAEgASgOMhMucHJvdG9idWYu",
+            "R29vZHNUeXBlEhIKCm11bHRpcGxpZXIYAiABKAEimQEKGkNoYXJhY3RlckF0",
+            "dHJpYnV0ZU1vZGlmaWVyEi8KDmNoYXJhY3Rlcl90eXBlGAEgASgOMhcucHJv",
+            "dG9idWYuQ2hhcmFjdGVyVHlwZRIYChBzcGVlZF9tdWx0aXBsaWVyGAIgASgB",
+            "EhkKEWRhbWFnZV9tdWx0aXBsaWVyGAMgASgBEhUKDWhwX211bHRpcGxpZXIY",
+            "BCABKAEiUgoQVGFza1RpbWVNb2RpZmllchIlCgl0YXNrX3R5cGUYASABKA4y",
+            "Ei5wcm90b2J1Zi5UYXNrVHlwZRIXCg90aW1lX211bHRpcGxpZXIYAiABKAEi",
+            "vQQKDE1lc3NhZ2VPZk9iahI1Cg9mYWN0b3J5X21lc3NhZ2UYASABKAsyGi5w",
+            "cm90b2J1Zi5NZXNzYWdlT2ZGYWN0b3J5SAASOQoRY2hhcmFjdGVyX21lc3Nh",
+            "Z2UYAiABKAsyHC5wcm90b2J1Zi5NZXNzYWdlT2ZDaGFyYWN0ZXJIABI3ChBy",
+            "ZXNvdXJjZV9tZXNzYWdlGAMgASgLMhsucHJvdG9idWYuTWVzc2FnZU9mUmVz",
+            "b3VyY2VIABIzCg5tYXJrZXRfbWVzc2FnZRgEIAEoCzIZLnByb3RvYnVmLk1l",
+            "c3NhZ2VPZk1hcmtldEgAEkIKFmNvbXB1dGVfY2VudGVyX21lc3NhZ2UYBSAB",
+            "KAsyIC5wcm90b2J1Zi5NZXNzYWdlT2ZDb21wdXRlQ2VudGVySAASLQoLbWFw",
+            "X21lc3NhZ2UYBiABKAsyFi5wcm90b2J1Zi5NZXNzYWdlT2ZNYXBIABIvCgxu",
+            "ZXdzX21lc3NhZ2UYByABKAsyFy5wcm90b2J1Zi5NZXNzYWdlT2ZOZXdzSAAS",
+            "LwoMdGVhbV9tZXNzYWdlGAggASgLMhcucHJvdG9idWYuTWVzc2FnZU9mVGVh",
+            "bUgAEjUKD2JhcnJpZXJfbWVzc2FnZRgJIAEoCzIaLnByb3RvYnVmLk1lc3Nh",
+            "Z2VPZkJhcnJpZXJIABIvCgxidXNoX21lc3NhZ2UYCiABKAsyFy5wcm90b2J1",
+            "Zi5NZXNzYWdlT2ZCdXNoSABCEAoObWVzc2FnZV9vZl9vYmoiowIKDE1lc3Nh",
+            "Z2VPZkFsbBIRCglnYW1lX3RpbWUYASABKAUSLgoFdGVhbXMYAiADKAsyHy5w",
+            "cm90b2J1Zi5NZXNzYWdlT2ZBbGwuVGVhbUluZm8azwEKCFRlYW1JbmZvEg0K",
+            "BXNjb3JlGAEgASgFEhAKCG1hdGVyaWFsGAIgASgFEhUKDWNvbXB1dGVfcG93",
+            "ZXIYAyABKAUSEgoKZmFjdG9yeV9ocBgEIAEoBRJECgt0ZWNoX2xldmVscxgF",
+            "IAMoCzIvLnByb3RvYnVmLk1lc3NhZ2VPZkFsbC5UZWFtSW5mby5UZWNoTGV2",
+            "ZWxzRW50cnkaMQoPVGVjaExldmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2",
+            "YWx1ZRgCIAEoBToCOAEilAEKD01lc3NhZ2VUb0NsaWVudBIrCgtvYmpfbWVz",
+            "c2FnZRgBIAMoCzIWLnByb3RvYnVmLk1lc3NhZ2VPZk9iahInCgpnYW1lX3N0",
+            "YXRlGAIgASgOMhMucHJvdG9idWYuR2FtZVN0YXRlEisKC2FsbF9tZXNzYWdl",
+            "GAMgASgLMhYucHJvdG9idWYuTWVzc2FnZU9mQWxsIkoKB01vdmVSZXMSFAoM",
+            "YWN0dWFsX3NwZWVkGAEgASgDEhQKDGFjdHVhbF9hbmdsZRgCIAEoARITCgth",
+            "Y3Rfc3VjY2VzcxgDIAEoCCI7ChFDcmVhdENoYXJhY3RlclJlcxITCgthY3Rf",
+            "c3VjY2VzcxgBIAEoCBIRCglwbGF5ZXJfaWQYAiABKAMiHgoHQm9vbFJlcxIT",
+            "CgthY3Rfc3VjY2VzcxgBIAEoCCJIChBDaGFyYWN0ZXJJbmZvUmVzEjQKDkNo",
+            "YXJhY3Rlcl9pbmZvGAEgAygLMhwucHJvdG9idWYuTWVzc2FnZU9mQ2hhcmFj",
+            "dGVyIhkKBkVjb1JlcxIPCgdlY29ub215GAEgASgDInoKDU1lc3NhZ2VPZk5l",
+            "d3MSFgoMdGV4dF9tZXNzYWdlGAEgASgJSAASGAoOYmluYXJ5X21lc3NhZ2UY",
+            "AiABKAxIABIPCgdmcm9tX2lkGAMgASgDEg0KBXRvX2lkGAQgASgDEg8KB3Rl",
+            "YW1faWQYBSABKANCBgoEbmV3c2IGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { global::Protobuf.MessageTypeReflection.Descriptor, },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfCharacter), global::Protobuf.MessageOfCharacter.Parser, new[]{ "Guid", "TeamId", "PlayerId", "CharacterType", "CharacterActiveState", "X", "Y", "FacingDirection", "Speed", "ViewRange", "CommonAttack", "CommonAttackCd", "CommonAttackRange", "Hp", "CarryCapacity", "CurrentLoad", "HarvestRatePerSec" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfResource), global::Protobuf.MessageOfResource.Parser, new[]{ "ResourceType", "ResourceState", "X", "Y", "RemainingAmount", "Id", "MaxAmount" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfMap), global::Protobuf.MessageOfMap.Parser, new[]{ "Height", "Width", "Rows" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfMap.Types.Row), global::Protobuf.MessageOfMap.Types.Row.Parser, new[]{ "Cols" }, null, null, null, null)}),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfTeam), global::Protobuf.MessageOfTeam.Parser, new[]{ "TeamId", "PlayerId", "Score", "Material", "ComputePower" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfTeam), global::Protobuf.MessageOfTeam.Parser, new[]{ "TeamId", "PlayerId", "Score", "Material", "ComputePower", "TechLevels" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, }),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfFactory), global::Protobuf.MessageOfFactory.Parser, new[]{ "FactoryId", "TeamId", "X", "Y", "Hp", "Robust", "Storage", "Efficiency", "Source", "ComputingPower", "CanProduce", "CanRecruit", "ProductInventory" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfFactory.Types.GoodsStack), global::Protobuf.MessageOfFactory.Types.GoodsStack.Parser, new[]{ "ProductType", "Quantity" }, null, null, null, null)}),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfMarket), global::Protobuf.MessageOfMarket.Parser, new[]{ "MarketId", "X", "Y", "MarketType", "PriceList" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfMarket.Types.PriceEntry), global::Protobuf.MessageOfMarket.Types.PriceEntry.Parser, new[]{ "GoodsType", "Price", "TradedQuantity" }, null, null, null, null)}),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfComputeCenter), global::Protobuf.MessageOfComputeCenter.Parser, new[]{ "CenterId", "X", "Y", "OwnerTeamId", "OccupyProgress" }, null, null, null, null),
@@ -127,7 +132,7 @@ namespace Protobuf {
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.CharacterAttributeModifier), global::Protobuf.CharacterAttributeModifier.Parser, new[]{ "CharacterType", "SpeedMultiplier", "DamageMultiplier", "HpMultiplier" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.TaskTimeModifier), global::Protobuf.TaskTimeModifier.Parser, new[]{ "TaskType", "TimeMultiplier" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfObj), global::Protobuf.MessageOfObj.Parser, new[]{ "FactoryMessage", "CharacterMessage", "ResourceMessage", "MarketMessage", "ComputeCenterMessage", "MapMessage", "NewsMessage", "TeamMessage", "BarrierMessage", "BushMessage" }, new[]{ "MessageOfObj" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll), global::Protobuf.MessageOfAll.Parser, new[]{ "GameTime", "Teams" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll.Types.TeamInfo), global::Protobuf.MessageOfAll.Types.TeamInfo.Parser, new[]{ "Score", "Material", "ComputePower", "FactoryHp" }, null, null, null, null)}),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll), global::Protobuf.MessageOfAll.Parser, new[]{ "GameTime", "Teams" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageOfAll.Types.TeamInfo), global::Protobuf.MessageOfAll.Types.TeamInfo.Parser, new[]{ "Score", "Material", "ComputePower", "FactoryHp", "TechLevels" }, null, null, null, new pbr::GeneratedClrTypeInfo[] { null, })}),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MessageToClient), global::Protobuf.MessageToClient.Parser, new[]{ "ObjMessage", "GameState", "AllMessage" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.MoveRes), global::Protobuf.MoveRes.Parser, new[]{ "ActualSpeed", "ActualAngle", "ActSuccess" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Protobuf.CreatCharacterRes), global::Protobuf.CreatCharacterRes.Parser, new[]{ "ActSuccess", "PlayerId" }, null, null, null, null),
@@ -1867,6 +1872,7 @@ namespace Protobuf {
       score_ = other.score_;
       material_ = other.material_;
       computePower_ = other.computePower_;
+      techLevels_ = other.techLevels_.Clone();
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1936,6 +1942,20 @@ namespace Protobuf {
       }
     }
 
+    /// <summary>Field number for the "tech_levels" field.</summary>
+    public const int TechLevelsFieldNumber = 6;
+    private static readonly pbc::MapField<string, int>.Codec _map_techLevels_codec
+        = new pbc::MapField<string, int>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForInt32(16, 0), 50);
+    private readonly pbc::MapField<string, int> techLevels_ = new pbc::MapField<string, int>();
+    /// <summary>
+    /// 例如：Efficiency、Robust、Warrior 等
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pbc::MapField<string, int> TechLevels {
+      get { return techLevels_; }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1956,6 +1976,7 @@ namespace Protobuf {
       if (Score != other.Score) return false;
       if (Material != other.Material) return false;
       if (ComputePower != other.ComputePower) return false;
+      if (!TechLevels.Equals(other.TechLevels)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1968,6 +1989,7 @@ namespace Protobuf {
       if (Score != 0) hash ^= Score.GetHashCode();
       if (Material != 0) hash ^= Material.GetHashCode();
       if (ComputePower != 0) hash ^= ComputePower.GetHashCode();
+      hash ^= TechLevels.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2006,6 +2028,7 @@ namespace Protobuf {
         output.WriteRawTag(40);
         output.WriteInt32(ComputePower);
       }
+      techLevels_.WriteTo(output, _map_techLevels_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -2036,6 +2059,7 @@ namespace Protobuf {
         output.WriteRawTag(40);
         output.WriteInt32(ComputePower);
       }
+      techLevels_.WriteTo(ref output, _map_techLevels_codec);
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -2061,6 +2085,7 @@ namespace Protobuf {
       if (ComputePower != 0) {
         size += 1 + pb::CodedOutputStream.ComputeInt32Size(ComputePower);
       }
+      size += techLevels_.CalculateSize(_map_techLevels_codec);
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
       }
@@ -2088,6 +2113,7 @@ namespace Protobuf {
       if (other.ComputePower != 0) {
         ComputePower = other.ComputePower;
       }
+      techLevels_.MergeFrom(other.techLevels_);
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
 
@@ -2127,6 +2153,10 @@ namespace Protobuf {
             ComputePower = input.ReadInt32();
             break;
           }
+          case 50: {
+            techLevels_.AddEntriesFrom(input, _map_techLevels_codec);
+            break;
+          }
         }
       }
     #endif
@@ -2164,6 +2194,10 @@ namespace Protobuf {
           }
           case 40: {
             ComputePower = input.ReadInt32();
+            break;
+          }
+          case 50: {
+            techLevels_.AddEntriesFrom(ref input, _map_techLevels_codec);
             break;
           }
         }
@@ -7026,6 +7060,7 @@ namespace Protobuf {
           material_ = other.material_;
           computePower_ = other.computePower_;
           factoryHp_ = other.factoryHp_;
+          techLevels_ = other.techLevels_.Clone();
           _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
         }
 
@@ -7083,6 +7118,20 @@ namespace Protobuf {
           }
         }
 
+        /// <summary>Field number for the "tech_levels" field.</summary>
+        public const int TechLevelsFieldNumber = 5;
+        private static readonly pbc::MapField<string, int>.Codec _map_techLevels_codec
+            = new pbc::MapField<string, int>.Codec(pb::FieldCodec.ForString(10, ""), pb::FieldCodec.ForInt32(16, 0), 42);
+        private readonly pbc::MapField<string, int> techLevels_ = new pbc::MapField<string, int>();
+        /// <summary>
+        /// 与服务端内部科技名一致
+        /// </summary>
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+        [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+        public pbc::MapField<string, int> TechLevels {
+          get { return techLevels_; }
+        }
+
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
         [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
         public override bool Equals(object other) {
@@ -7102,6 +7151,7 @@ namespace Protobuf {
           if (Material != other.Material) return false;
           if (ComputePower != other.ComputePower) return false;
           if (FactoryHp != other.FactoryHp) return false;
+          if (!TechLevels.Equals(other.TechLevels)) return false;
           return Equals(_unknownFields, other._unknownFields);
         }
 
@@ -7113,6 +7163,7 @@ namespace Protobuf {
           if (Material != 0) hash ^= Material.GetHashCode();
           if (ComputePower != 0) hash ^= ComputePower.GetHashCode();
           if (FactoryHp != 0) hash ^= FactoryHp.GetHashCode();
+          hash ^= TechLevels.GetHashCode();
           if (_unknownFields != null) {
             hash ^= _unknownFields.GetHashCode();
           }
@@ -7147,6 +7198,7 @@ namespace Protobuf {
             output.WriteRawTag(32);
             output.WriteInt32(FactoryHp);
           }
+          techLevels_.WriteTo(output, _map_techLevels_codec);
           if (_unknownFields != null) {
             _unknownFields.WriteTo(output);
           }
@@ -7173,6 +7225,7 @@ namespace Protobuf {
             output.WriteRawTag(32);
             output.WriteInt32(FactoryHp);
           }
+          techLevels_.WriteTo(ref output, _map_techLevels_codec);
           if (_unknownFields != null) {
             _unknownFields.WriteTo(ref output);
           }
@@ -7195,6 +7248,7 @@ namespace Protobuf {
           if (FactoryHp != 0) {
             size += 1 + pb::CodedOutputStream.ComputeInt32Size(FactoryHp);
           }
+          size += techLevels_.CalculateSize(_map_techLevels_codec);
           if (_unknownFields != null) {
             size += _unknownFields.CalculateSize();
           }
@@ -7219,6 +7273,7 @@ namespace Protobuf {
           if (other.FactoryHp != 0) {
             FactoryHp = other.FactoryHp;
           }
+          techLevels_.MergeFrom(other.techLevels_);
           _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
         }
 
@@ -7254,6 +7309,10 @@ namespace Protobuf {
                 FactoryHp = input.ReadInt32();
                 break;
               }
+              case 42: {
+                techLevels_.AddEntriesFrom(input, _map_techLevels_codec);
+                break;
+              }
             }
           }
         #endif
@@ -7287,6 +7346,10 @@ namespace Protobuf {
               }
               case 32: {
                 FactoryHp = input.ReadInt32();
+                break;
+              }
+              case 42: {
+                techLevels_.AddEntriesFrom(ref input, _map_techLevels_codec);
                 break;
               }
             }

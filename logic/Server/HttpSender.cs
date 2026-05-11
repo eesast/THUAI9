@@ -26,18 +26,20 @@ namespace Server
         // {
         //     this.SendHttpRequest(new()).Wait();
         // }
-        public async Task SendHttpRequest(int[] scores, string state, string[][] player_role)
+        public async Task SendHttpRequest(int[] ladderScores, string state, string[][] player_role)
         {
             try
             {
                 var request = new HttpClient();
                 request.DefaultRequestHeaders.Authorization = new("Bearer", token);
+                // FINISH_URL expects ladder deltas in mode 2, not raw match scores.
                 using var response = await request.PostAsync(url, JsonContent.Create(new
                 {
                     status = state,
-                    scores = new int[] { scores[0], scores[1], scores[2], scores[3] },
+                    ladderScores = new int[] { ladderScores[0], ladderScores[1], ladderScores[2], ladderScores[3] },
                     player_roles = player_role
                 }));
+                response.EnsureSuccessStatusCode();
                 GameServerLogging.logger.LogInfo("Send to web successfully!");
                 GameServerLogging.logger.LogInfo($"Web response: {await response.Content.ReadAsStringAsync()}");
             }
@@ -48,19 +50,23 @@ namespace Server
             }
         }
 
-        public async Task<double[]> GetLadderScore(double[] scores)
+        public async Task<double[]> GetLadderScore()
         {
             try
             {
                 var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = new("Bearer", token);
+                // SCORE_URL returns the current absolute ladder scores for the four teams.
                 var response = await httpClient.PostAsync(url, null);
+                response.EnsureSuccessStatusCode();
 
                 // 读取响应内容为字符串
                 var jsonString = await response.Content.ReadAsStringAsync();
 
                 // 解析 JSON 字符串
                 var result = JsonConvert.DeserializeObject<ContestResult>(jsonString);
+                if (result?.scores == null)
+                    return new double[0];
                 return result.scores.Select(score => (double)score).ToArray();
             }
             catch (Exception e)

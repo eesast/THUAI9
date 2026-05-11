@@ -24,18 +24,18 @@ namespace THUAI9.Unity.UI
         [Header("比分文本")]
         [Range(20, 220)] public float scorePanelX = 54f;
         [Range(20, 220)] public float scorePanelY = 156f;
-        [Range(160, 480)] public float scorePanelWidth = 310f;
-        [Range(18, 60)] public float scoreItemHeight = 34f;
-        [Range(6, 22)] public float scoreItemSpacing = 10f;
+        [Range(160, 480)] public float scorePanelWidth = 376f;
+        [Range(18, 100)] public float scoreItemHeight = 82f;
+        [Range(6, 22)] public float scoreItemSpacing = 8f;
 
         [Header("底部回放按钮")]
-        [Range(20, 120)] public float buttonY = 32f;
+        [Range(20, 120)] public float buttonY = 42f;
         [Range(56, 120)] public float buttonWidth = 64f;
         [Range(28, 60)] public float buttonHeight = 36f;
         [Range(6, 28)] public float buttonSpacing = 10f;
 
         [Header("可选调试控件位置")]
-        [Range(20, 160)] public float debugPanelY = 96f;
+        [Range(20, 160)] public float debugPanelY = 108f;
         [Range(220, 720)] public float debugPanelWidth = 520f;
         [Range(30, 160)] public float debugPanelHeight = 120f;
 
@@ -49,7 +49,6 @@ namespace THUAI9.Unity.UI
         public RectTransform progressSlider;
         public RectTransform previousFrameButton;
         public RectTransform nextFrameButton;
-        public RectTransform frameInfoText;
         public RectTransform statusText;
 
         private void OnEnable()
@@ -76,7 +75,6 @@ namespace THUAI9.Unity.UI
             progressSlider ??= FindRect("ReplayProgressSlider") ?? FindRect("ProgressSlider");
             previousFrameButton ??= FindRect("PreviousFrameButton");
             nextFrameButton ??= FindRect("NextFrameButton");
-            frameInfoText ??= FindRect("FrameInfoText");
             statusText ??= FindRect("StatusText");
 
             if (teamScoreTexts == null || teamScoreTexts.Length != 4)
@@ -140,12 +138,12 @@ namespace THUAI9.Unity.UI
                 if (text != null)
                 {
                     text.alignment = TextAnchor.MiddleLeft;
-                    text.fontSize = 16;
+                    text.fontSize = 14;
                     text.fontStyle = FontStyle.Bold;
                     text.color = new Color(0.92f, 0.97f, 1f, 1f);
                     text.resizeTextForBestFit = false;
                     text.horizontalOverflow = HorizontalWrapMode.Wrap;
-                    text.verticalOverflow = VerticalWrapMode.Truncate;
+                    text.verticalOverflow = VerticalWrapMode.Overflow;
                     text.lineSpacing = 1f;
                 }
             }
@@ -192,8 +190,8 @@ namespace THUAI9.Unity.UI
                 speedDropdown.anchorMin = new Vector2(0.5f, 0f);
                 speedDropdown.anchorMax = new Vector2(0.5f, 0f);
                 speedDropdown.pivot = new Vector2(0.5f, 0f);
-                speedDropdown.anchoredPosition = new Vector2(0f, buttonY + buttonHeight + 8f);
-                speedDropdown.sizeDelta = new Vector2(120f, buttonHeight);
+                speedDropdown.anchoredPosition = new Vector2(totalWidth * 0.5f + 82f, buttonY);
+                speedDropdown.sizeDelta = new Vector2(138f, buttonHeight + 6f);
             }
         }
 
@@ -208,15 +206,6 @@ namespace THUAI9.Unity.UI
                 progressSlider.sizeDelta = new Vector2(debugPanelWidth, 24f);
             }
 
-            if (frameInfoText != null)
-            {
-                frameInfoText.anchorMin = new Vector2(0.5f, 0f);
-                frameInfoText.anchorMax = new Vector2(0.5f, 0f);
-                frameInfoText.pivot = new Vector2(0.5f, 0f);
-                frameInfoText.anchoredPosition = new Vector2(0f, debugPanelY + 28f);
-                frameInfoText.sizeDelta = new Vector2(debugPanelWidth * 0.45f, 24f);
-            }
-
             if (statusText != null)
             {
                 statusText.anchorMin = new Vector2(0f, 1f);
@@ -228,20 +217,31 @@ namespace THUAI9.Unity.UI
 
             if (previousFrameButton != null)
             {
-                previousFrameButton.anchorMin = new Vector2(0.5f, 0f);
-                previousFrameButton.anchorMax = new Vector2(0.5f, 0f);
-                previousFrameButton.pivot = new Vector2(0.5f, 0f);
-                previousFrameButton.anchoredPosition = new Vector2(-debugPanelWidth * 0.25f, debugPanelY - 34f);
-                previousFrameButton.sizeDelta = new Vector2(100f, 32f);
+                DestroyLegacyFrameButton(previousFrameButton);
+                previousFrameButton = null;
             }
 
             if (nextFrameButton != null)
             {
-                nextFrameButton.anchorMin = new Vector2(0.5f, 0f);
-                nextFrameButton.anchorMax = new Vector2(0.5f, 0f);
-                nextFrameButton.pivot = new Vector2(0.5f, 0f);
-                nextFrameButton.anchoredPosition = new Vector2(debugPanelWidth * 0.25f, debugPanelY - 34f);
-                nextFrameButton.sizeDelta = new Vector2(100f, 32f);
+                DestroyLegacyFrameButton(nextFrameButton);
+                nextFrameButton = null;
+            }
+        }
+
+        private static void DestroyLegacyFrameButton(RectTransform button)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(button.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(button.gameObject);
             }
         }
 

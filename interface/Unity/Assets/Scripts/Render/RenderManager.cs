@@ -371,7 +371,7 @@ namespace THUAI9.Unity.Render
                 int totalMilliseconds = CoreParam.playbackCurrentFrameIndex >= 0
                     ? CoreParam.playbackElapsedMilliseconds
                     : (CoreParam.allMessage != null ? Mathf.Max(CoreParam.allMessage.GameTime, 0) : 0);
-                gameTimeText.text = $"时间：{FormatPlaybackTime(totalMilliseconds)}";
+                gameTimeText.text = FormatPlaybackTime(totalMilliseconds);
             }
 
             // Team status text is owned by UIController.  Keeping this renderer-side
@@ -637,7 +637,8 @@ namespace THUAI9.Unity.Render
             }
 
             WorldObjectInfo info = EnsureWorldObjectInfo(go);
-            info.observedMaxHp = Mathf.Max(info.observedMaxHp, msg.Hp);
+            int baselineMaxHp = GetBaselineCharacterMaxHp(msg.CharacterType);
+            info.observedMaxHp = Mathf.Max(Mathf.Max(info.observedMaxHp, msg.Hp), baselineMaxHp);
             int observedMaxHp = Mathf.Max(info.observedMaxHp, 1);
             string characterTitle = $"单位：{TranslateCharacterType(msg.CharacterType)} P{msg.PlayerId}";
             string characterDetail =
@@ -648,6 +649,7 @@ namespace THUAI9.Unity.Render
                 $"攻击：{msg.CommonAttack}  范围：{msg.CommonAttackRange}\n" +
                 $"采集速率：{msg.HarvestRatePerSec}/s";
             info.SetInfo("Character", characterTitle, characterDetail, guid, msg.TeamId, Tool.GameToGrid(msg.X, msg.Y).x, Tool.GameToGrid(msg.X, msg.Y).y);
+            info.SetCharacterInfo(msg);
             UpdateStatusBar(go, "HPStatusBar", (float)msg.Hp / observedMaxHp, GetTeamColor(msg.TeamId), new Vector2(0f, 0.54f), new Vector2(0.82f, 0.06f), 44);
             if (msg.CarryCapacity > 0)
             {
@@ -751,7 +753,8 @@ namespace THUAI9.Unity.Render
         {
             UpdateStaticObject(go, pos, GetTeamColor(msg.TeamId), new Vector3(0.95f, 0.95f, 0.95f), $"Factory\nHP {msg.Hp}", GetFactorySpriteKey(msg));
             WorldObjectInfo info = EnsureWorldObjectInfo(go);
-            info.observedMaxHp = Mathf.Max(info.observedMaxHp, msg.Hp);
+            int baselineMaxHp = GetBaselineFactoryMaxHp();
+            info.observedMaxHp = Mathf.Max(Mathf.Max(info.observedMaxHp, msg.Hp), baselineMaxHp);
             int observedMaxHp = Mathf.Max(info.observedMaxHp, 1);
             info.SetInfo(
                 "Factory",
@@ -1096,18 +1099,32 @@ namespace THUAI9.Unity.Render
 
         private static string GetBarrierTileSpriteKey(int row, int col)
         {
-            return IsOuterWallCell(row, col)
-                ? $"tile_barrier_industrial_{DeterministicVariant(row, col, 2):00}"
-                : $"tile_barrier_industrial_{DeterministicVariant(row, col, 4):00}";
+            return $"tile_barrier_connected_{GetMapBarrierNeighborMask(row, col):00}";
         }
 
-        private static bool IsOuterWallCell(int row, int col)
+        private static int GetMapBarrierNeighborMask(int row, int col)
         {
-            return CoreParam.map != null
-                && (row == 0
-                    || col == 0
-                    || row == CoreParam.map.Height - 1
-                    || col == CoreParam.map.Width - 1);
+            int mask = 0;
+            if (IsMapBarrierAt(row - 1, col)) mask |= 1;
+            if (IsMapBarrierAt(row, col + 1)) mask |= 2;
+            if (IsMapBarrierAt(row + 1, col)) mask |= 4;
+            if (IsMapBarrierAt(row, col - 1)) mask |= 8;
+            return mask;
+        }
+
+        private static bool IsMapBarrierAt(int row, int col)
+        {
+            if (CoreParam.map == null || row < 0 || col < 0 || row >= CoreParam.map.Rows.Count)
+            {
+                return false;
+            }
+
+            if (col >= CoreParam.map.Rows[row].Cols.Count)
+            {
+                return false;
+            }
+
+            return CoreParam.map.Rows[row].Cols[col] == PlaceType.Barrier;
         }
 
         private static string GetFactorySpriteKey(MessageOfFactory msg)
@@ -1172,7 +1189,19 @@ namespace THUAI9.Unity.Render
 
         private static string GetBarrierSpriteKey(Tuple<int, int> pos)
         {
-            return $"tile_barrier_industrial_{DeterministicVariant(pos.Item1, pos.Item2, 4):00}";
+            return $"tile_barrier_connected_{GetRuntimeBarrierNeighborMask(pos):00}";
+        }
+
+        private static int GetRuntimeBarrierNeighborMask(Tuple<int, int> pos)
+        {
+            int row = pos.Item1;
+            int col = pos.Item2;
+            int mask = 0;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row - 1, col))) mask |= 1;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row, col + 1))) mask |= 2;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row + 1, col))) mask |= 4;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row, col - 1))) mask |= 8;
+            return mask;
         }
 
         private static string GetBushSpriteKey(Tuple<int, int> pos)
@@ -1351,8 +1380,7 @@ namespace THUAI9.Unity.Render
             totalMilliseconds = Mathf.Max(totalMilliseconds, 0);
             int minutes = totalMilliseconds / 60000;
             int seconds = totalMilliseconds / 1000 % 60;
-            int milliseconds = totalMilliseconds % 1000;
-            return $"{minutes:D2}:{seconds:D2}.{milliseconds:D3}";
+            return $"{minutes:D2}:{seconds:D2}";
         }
 
         private static bool IsCompactRuntimeUnit(GameObject go)
@@ -1422,6 +1450,22 @@ namespace THUAI9.Unity.Render
             };
             float scale = Mathf.Max(baseScale * (0.65f + fillRatio * 0.35f), 0.35f);
             return new Vector3(scale, scale, scale);
+        }
+
+        private static int GetBaselineCharacterMaxHp(CharacterType type)
+        {
+            return type switch
+            {
+                CharacterType.Drone => 100,
+                CharacterType.Robot => 150,
+                CharacterType.AutonomousCar => 100,
+                _ => 1
+            };
+        }
+
+        private static int GetBaselineFactoryMaxHp()
+        {
+            return 100;
         }
 
         private static string GetCharacterTypeShortName(CharacterType type)

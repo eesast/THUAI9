@@ -10,7 +10,7 @@ namespace THUAI9.Unity.Playback
 {
     public class PlaybackController : MonoBehaviour
     {
-        private const string DefaultPlaybackRelativePath = "Assets/Playback/test/official_bot_match.thuaipb";
+        private const string DefaultPlaybackRelativePath = "";
 
         [Header("回放文件")]
         public string playbackFilePath = DefaultPlaybackRelativePath;
@@ -28,7 +28,7 @@ namespace THUAI9.Unity.Playback
         private Coroutine playCoroutine;
         private bool playbackLoaded;
         private string playbackSourceDisplayName;
-        private string statusText = "状态：未加载回放文件";
+        private string statusText = "状态：等待回放 / 预览模式";
         private int currentFrameIndex = -1;
         private int firstFrameGameTimeMs = -1;
         private int currentPlaybackTimeMs;
@@ -347,7 +347,7 @@ namespace THUAI9.Unity.Playback
             messageReader?.Reset();
             currentFrameIndex = -1;
             currentPlaybackTimeMs = 0;
-            statusText = playbackLoaded ? "状态：已停止" : "状态：未加载回放文件";
+            statusText = playbackLoaded ? "状态：已停止" : "状态：等待回放 / 预览模式";
             FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.None, "未选择", statusText);
         }
 
@@ -686,7 +686,9 @@ namespace THUAI9.Unity.Playback
 
             string normalized = filePath.Replace('\\', '/');
             return normalized.EndsWith("/test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.Equals("test_replay.thuaipb", StringComparison.OrdinalIgnoreCase);
+                || normalized.Equals("test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
+                || normalized.EndsWith("/official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
