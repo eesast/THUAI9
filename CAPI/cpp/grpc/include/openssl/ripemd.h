@@ -25,7 +25,8 @@
 #define RIPEMD160_DIGEST_LENGTH 20
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 #if !defined(OPENSSL_NO_DEPRECATED_3_0)
 
@@ -34,22 +35,20 @@ extern "C" {
 #define RIPEMD160_CBLOCK 64
 #define RIPEMD160_LBLOCK (RIPEMD160_CBLOCK / 4)
 
-typedef struct RIPEMD160state_st {
-    RIPEMD160_LONG A, B, C, D, E;
-    RIPEMD160_LONG Nl, Nh;
-    RIPEMD160_LONG data[RIPEMD160_LBLOCK];
-    unsigned int num;
-} RIPEMD160_CTX;
+    typedef struct RIPEMD160state_st
+    {
+        RIPEMD160_LONG A, B, C, D, E;
+        RIPEMD160_LONG Nl, Nh;
+        RIPEMD160_LONG data[RIPEMD160_LBLOCK];
+        unsigned int num;
+    } RIPEMD160_CTX;
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Init(RIPEMD160_CTX *c);
-OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Update(RIPEMD160_CTX *c, const void *data,
-    size_t len);
-OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Final(unsigned char *md, RIPEMD160_CTX *c);
-OSSL_DEPRECATEDIN_3_0 unsigned char *RIPEMD160(const unsigned char *d, size_t n,
-    unsigned char *md);
-OSSL_DEPRECATEDIN_3_0 void RIPEMD160_Transform(RIPEMD160_CTX *c,
-    const unsigned char *b);
+    OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Init(RIPEMD160_CTX* c);
+    OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Update(RIPEMD160_CTX* c, const void* data, size_t len);
+    OSSL_DEPRECATEDIN_3_0 int RIPEMD160_Final(unsigned char* md, RIPEMD160_CTX* c);
+    OSSL_DEPRECATEDIN_3_0 unsigned char* RIPEMD160(const unsigned char* d, size_t n, unsigned char* md);
+    OSSL_DEPRECATEDIN_3_0 void RIPEMD160_Transform(RIPEMD160_CTX* c, const unsigned char* b);
 #endif
 
 #ifdef __cplusplus

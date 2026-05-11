@@ -33,12 +33,6 @@ namespace THUAI9.Unity.Live
         public bool autoReconnect = true;
         [Min(0.5f)] public float reconnectIntervalSeconds = 2f;
 
-        [Header("Event Status")]
-        [Tooltip("GetCurrentEventStatus needs an existing team; spectator polls Team 1 by default for the global event.")]
-        public long eventStatusTeamId = 1;
-        public long eventStatusPlayerId = 0;
-        [Min(1f)] public float eventStatusPollIntervalSeconds = 5f;
-
 #if !UNITY_WEBGL || UNITY_EDITOR
         private Channel channel;
         private AvailableService.AvailableServiceClient client;
@@ -56,11 +50,6 @@ namespace THUAI9.Unity.Live
         private DateTime nextConnectUtc = DateTime.MinValue;
         private string externalLiveSourceName = "WebGL Live";
         private string statusText = "实时：未连接";
-        private string currentEventName = string.Empty;
-        private string currentEventDescription = string.Empty;
-        private bool hasCurrentEventStatus;
-        private bool eventStatusPollInFlight;
-        private float nextEventStatusPollTime;
         private int receivedFrameCount;
         private int lastReceivedObjectCount;
         private int lastReceivedTeamCount;
@@ -79,9 +68,6 @@ namespace THUAI9.Unity.Live
         public bool IsConnected => isConnected || externalLiveMode;
         public string StatusText => statusText;
         public string ServerAddress => serverAddress;
-        public bool HasCurrentEventStatus => hasCurrentEventStatus;
-        public string CurrentEventName => currentEventName;
-        public string CurrentEventDescription => currentEventDescription;
         public int ReceivedFrameCount => receivedFrameCount;
         public int LastReceivedObjectCount => lastReceivedObjectCount;
         public int LastReceivedTeamCount => lastReceivedTeamCount;
@@ -111,7 +97,6 @@ namespace THUAI9.Unity.Live
         private void Update()
         {
             PumpQueuedLiveFrames();
-            MaybePollCurrentEventStatus();
 
             if (!liveRequested || externalLiveMode || liveEndedCleanly || isConnected || isConnecting)
             {
@@ -372,55 +357,6 @@ namespace THUAI9.Unity.Live
         }
 #endif
 
-#if !UNITY_WEBGL || UNITY_EDITOR
-        private void MaybePollCurrentEventStatus()
-        {
-            if (!isConnected || externalLiveMode || client == null || eventStatusPollInFlight)
-            {
-                return;
-            }
-
-            if (Time.unscaledTime < nextEventStatusPollTime)
-            {
-                return;
-            }
-
-            AvailableService.AvailableServiceClient rpcClient = client;
-            long queryTeamId = Math.Max(1, eventStatusTeamId);
-            long queryPlayerId = Math.Max(0, eventStatusPlayerId);
-            nextEventStatusPollTime = Time.unscaledTime + Mathf.Max(1f, eventStatusPollIntervalSeconds);
-            eventStatusPollInFlight = true;
-
-            _ = Task.Run(() =>
-            {
-                try
-                {
-                    EventStatusResponse response = rpcClient.GetCurrentEventStatus(
-                        new EventStatusRequest { TeamId = queryTeamId, PlayerId = queryPlayerId },
-                        deadline: DateTime.UtcNow.AddSeconds(1.5));
-
-                    hasCurrentEventStatus = response != null && response.ActSuccess;
-                    currentEventName = response?.EventName ?? string.Empty;
-                    currentEventDescription = response?.EventDescription ?? string.Empty;
-                }
-                catch (Exception ex)
-                {
-                    hasCurrentEventStatus = false;
-                    currentEventName = string.Empty;
-                    currentEventDescription = ShortError(ex);
-                }
-                finally
-                {
-                    eventStatusPollInFlight = false;
-                }
-            });
-        }
-#else
-        private void MaybePollCurrentEventStatus()
-        {
-        }
-#endif
-
         private string BuildLiveSourceName()
         {
             if (externalLiveMode)
@@ -441,16 +377,6 @@ namespace THUAI9.Unity.Live
             lastReceivedResourceCount = 0;
             lastReceivedMapMessageCount = 0;
             maxReceivedCharacterCount = 0;
-            ResetEventStatus();
-        }
-
-        private void ResetEventStatus()
-        {
-            hasCurrentEventStatus = false;
-            currentEventName = string.Empty;
-            currentEventDescription = string.Empty;
-            nextEventStatusPollTime = 0f;
-            eventStatusPollInFlight = false;
         }
 
         private void UpdateReceiveCounters(MessageToClient message)
@@ -547,7 +473,7 @@ namespace THUAI9.Unity.Live
         private static extern IntPtr LoadLibrary(string lpFileName);
 #endif
 
-        public static void EnsureNativeGrpcSearchPath()
+        private static void EnsureNativeGrpcSearchPath()
         {
             if (nativeGrpcSearchPathConfigured)
             {

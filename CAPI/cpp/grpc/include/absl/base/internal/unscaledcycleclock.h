@@ -47,65 +47,54 @@
 
 #if ABSL_USE_UNSCALED_CYCLECLOCK
 
-namespace absl {
-ABSL_NAMESPACE_BEGIN
-namespace time_internal {
-class UnscaledCycleClockWrapperForGetCurrentTime;
-}  // namespace time_internal
+namespace absl
+{
+    ABSL_NAMESPACE_BEGIN
+    namespace time_internal
+    {
+        class UnscaledCycleClockWrapperForGetCurrentTime;
+    }  // namespace time_internal
 
-namespace base_internal {
-class CycleClock;
-class UnscaledCycleClockWrapperForInitializeFrequency;
+    namespace base_internal
+    {
+        class CycleClock;
+        class UnscaledCycleClockWrapperForInitializeFrequency;
 
-class UnscaledCycleClock {
- private:
-  UnscaledCycleClock() = delete;
+        class UnscaledCycleClock
+        {
+        private:
+            UnscaledCycleClock() = delete;
 
-  // Return the value of a cycle counter that counts at a rate that is
-  // approximately constant.
-  static int64_t Now();
+            // Return the value of a cycle counter that counts at a rate that is
+            // approximately constant.
+            static int64_t Now();
 
-  // Return the how much UnscaledCycleClock::Now() increases per second.
-  // This is not necessarily the core CPU clock frequency.
-  // It may be the nominal value report by the kernel, rather than a measured
-  // value.
-  static double Frequency();
+            // Return the how much UnscaledCycleClock::Now() increases per second.
+            // This is not necessarily the core CPU clock frequency.
+            // It may be the nominal value report by the kernel, rather than a measured
+            // value.
+            static double Frequency();
 
-  // Allowed users
-  friend class base_internal::CycleClock;
-  friend class time_internal::UnscaledCycleClockWrapperForGetCurrentTime;
-  friend class base_internal::UnscaledCycleClockWrapperForInitializeFrequency;
-};
+            // Allowed users
+            friend class base_internal::CycleClock;
+            friend class time_internal::UnscaledCycleClockWrapperForGetCurrentTime;
+            friend class base_internal::UnscaledCycleClockWrapperForInitializeFrequency;
+        };
 
 #if defined(__x86_64__)
 
-inline int64_t UnscaledCycleClock::Now() {
-  uint64_t low, high;
-  __asm__ volatile("rdtsc" : "=a"(low), "=d"(high));
-  return static_cast<int64_t>((high << 32) | low);
-}
-
-#elif defined(__aarch64__)
-
-// System timer of ARMv8 runs at a different frequency than the CPU's.
-//
-// Frequency is fixed. From Armv8.6-A and Armv9.1-A on, the frequency is 1GHz.
-// Pre-Armv8.6-A, the frequency was a system design choice, typically in the
-// range of 1MHz to 50MHz. See also:
-// https://developer.arm.com/documentation/102379/0101/What-is-the-Generic-Timer-
-//
-// It can be read at CNTFRQ special register.  We assume the OS has set up the
-// virtual timer properly.
-inline int64_t UnscaledCycleClock::Now() {
-  int64_t virtual_timer_value;
-  asm volatile("mrs %0, cntvct_el0" : "=r"(virtual_timer_value));
-  return virtual_timer_value;
-}
+        inline int64_t UnscaledCycleClock::Now()
+        {
+            uint64_t low, high;
+            __asm__ volatile("rdtsc"
+                             : "=a"(low), "=d"(high));
+            return static_cast<int64_t>((high << 32) | low);
+        }
 
 #endif
 
-}  // namespace base_internal
-ABSL_NAMESPACE_END
+    }  // namespace base_internal
+    ABSL_NAMESPACE_END
 }  // namespace absl
 
 #endif  // ABSL_USE_UNSCALED_CYCLECLOCK

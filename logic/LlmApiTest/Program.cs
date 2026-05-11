@@ -46,9 +46,9 @@ internal static class Program
 
     public static async Task Main()
     {
-        if (string.IsNullOrWhiteSpace(GameData.LLM_api_token) ||
-            string.IsNullOrWhiteSpace(GameData.LLM_api_url) ||
-            string.IsNullOrWhiteSpace(GameData.LLM_model))
+        if (string.IsNullOrWhiteSpace(GameData.API_key) ||
+            string.IsNullOrWhiteSpace(GameData.API_url) ||
+            string.IsNullOrWhiteSpace(GameData.ModelName))
         {
             Console.WriteLine("GameData API config is missing.");
             return;
@@ -81,11 +81,11 @@ internal static class Program
     private static async Task<GeneratedEvent?> RequestEventFromLLMAsync(CancellationToken cancellationToken)
     {
         using var http = new HttpClient();
-        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.LLM_api_token);
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
 
         var req = new ChatRequest
         {
-            Model = GameData.LLM_model,
+            Model = GameData.ModelName,
             Messages =
             [
                 new ChatMessage
@@ -103,7 +103,7 @@ internal static class Program
 
         var payload = JsonSerializer.Serialize(req);
         using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-        using var resp = await http.PostAsync(GameData.LLM_api_url, content, cancellationToken);
+        using var resp = await http.PostAsync(GameData.API_url, content, cancellationToken);
 
         Console.WriteLine($"HTTP {(int)resp.StatusCode} {resp.StatusCode}");
         if (!resp.IsSuccessStatusCode)

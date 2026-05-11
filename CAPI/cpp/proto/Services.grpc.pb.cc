@@ -19,7 +19,6 @@
 #include <grpcpp/server_context.h>
 #include <grpcpp/impl/service_type.h>
 #include <grpcpp/support/sync_stream.h>
-#include <grpcpp/ports_def.inc>
 namespace protobuf {
 
 static const char* AvailableService_method_names[] = {
@@ -40,7 +39,6 @@ static const char* AvailableService_method_names[] = {
   "/protobuf.AvailableService/UplevelTech",
   "/protobuf.AvailableService/EndAllAction",
   "/protobuf.AvailableService/AskAI",
-  "/protobuf.AvailableService/GetCurrentEventStatus",
 };
 
 std::unique_ptr< AvailableService::Stub> AvailableService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -67,7 +65,6 @@ AvailableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& c
   , rpcmethod_UplevelTech_(AvailableService_method_names[14], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_EndAllAction_(AvailableService_method_names[15], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_AskAI_(AvailableService_method_names[16], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetCurrentEventStatus_(AvailableService_method_names[17], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status AvailableService::Stub::TryConnection(::grpc::ClientContext* context, const ::protobuf::IDMsg& request, ::protobuf::BoolRes* response) {
@@ -454,29 +451,6 @@ void AvailableService::Stub::async::AskAI(::grpc::ClientContext* context, const 
   return result;
 }
 
-::grpc::Status AvailableService::Stub::GetCurrentEventStatus(::grpc::ClientContext* context, const ::protobuf::EventStatusRequest& request, ::protobuf::EventStatusResponse* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::protobuf::EventStatusRequest, ::protobuf::EventStatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetCurrentEventStatus_, context, request, response);
-}
-
-void AvailableService::Stub::async::GetCurrentEventStatus(::grpc::ClientContext* context, const ::protobuf::EventStatusRequest* request, ::protobuf::EventStatusResponse* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::protobuf::EventStatusRequest, ::protobuf::EventStatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetCurrentEventStatus_, context, request, response, std::move(f));
-}
-
-void AvailableService::Stub::async::GetCurrentEventStatus(::grpc::ClientContext* context, const ::protobuf::EventStatusRequest* request, ::protobuf::EventStatusResponse* response, ::grpc::ClientUnaryReactor* reactor) {
-  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetCurrentEventStatus_, context, request, response, reactor);
-}
-
-::grpc::ClientAsyncResponseReader< ::protobuf::EventStatusResponse>* AvailableService::Stub::PrepareAsyncGetCurrentEventStatusRaw(::grpc::ClientContext* context, const ::protobuf::EventStatusRequest& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::protobuf::EventStatusResponse, ::protobuf::EventStatusRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetCurrentEventStatus_, context, request);
-}
-
-::grpc::ClientAsyncResponseReader< ::protobuf::EventStatusResponse>* AvailableService::Stub::AsyncGetCurrentEventStatusRaw(::grpc::ClientContext* context, const ::protobuf::EventStatusRequest& request, ::grpc::CompletionQueue* cq) {
-  auto* result =
-    this->PrepareAsyncGetCurrentEventStatusRaw(context, request, cq);
-  result->StartCall();
-  return result;
-}
-
 AvailableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       AvailableService_method_names[0],
@@ -648,16 +622,6 @@ AvailableService::Service::Service() {
              ::protobuf::StrategicAIResponse* resp) {
                return service->AskAI(ctx, req, resp);
              }, this)));
-  AddMethod(new ::grpc::internal::RpcServiceMethod(
-      AvailableService_method_names[17],
-      ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< AvailableService::Service, ::protobuf::EventStatusRequest, ::protobuf::EventStatusResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
-          [](AvailableService::Service* service,
-             ::grpc::ServerContext* ctx,
-             const ::protobuf::EventStatusRequest* req,
-             ::protobuf::EventStatusResponse* resp) {
-               return service->GetCurrentEventStatus(ctx, req, resp);
-             }, this)));
 }
 
 AvailableService::Service::~Service() {
@@ -782,14 +746,6 @@ AvailableService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status AvailableService::Service::GetCurrentEventStatus(::grpc::ServerContext* context, const ::protobuf::EventStatusRequest* request, ::protobuf::EventStatusResponse* response) {
-  (void) context;
-  (void) request;
-  (void) response;
-  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-}
-
 
 }  // namespace protobuf
-#include <grpcpp/ports_undef.inc>
 
