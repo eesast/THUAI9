@@ -75,7 +75,7 @@ namespace THUAI9.Unity.Generated
 
         public PixelAssetRegistry pixelAssets;
         public PlaybackController playbackController;
-        public bool showWhenPlaybackMissing = true;
+        public bool showWhenPlaybackMissing = false;
         public int columns = 50;
         public int rows = 50;
 

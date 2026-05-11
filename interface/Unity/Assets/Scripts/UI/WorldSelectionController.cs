@@ -26,6 +26,10 @@ namespace THUAI9.Unity.UI
         private GameObject hoverHighlight;
         private GameObject selectedHighlight;
 
+        public WorldObjectInfo HoveredInfo => hoveredInfo;
+        public WorldObjectInfo SelectedInfo => selectedInfo;
+        public Vector2Int? SelectedTile => selectedTile;
+
         private void Awake()
         {
             targetCamera ??= Camera.main;

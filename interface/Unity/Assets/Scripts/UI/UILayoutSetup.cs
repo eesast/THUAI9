@@ -24,9 +24,9 @@ namespace THUAI9.Unity.UI
         [Header("比分文本")]
         [Range(20, 220)] public float scorePanelX = 54f;
         [Range(20, 220)] public float scorePanelY = 156f;
-        [Range(160, 480)] public float scorePanelWidth = 310f;
-        [Range(18, 60)] public float scoreItemHeight = 34f;
-        [Range(6, 22)] public float scoreItemSpacing = 10f;
+        [Range(160, 480)] public float scorePanelWidth = 376f;
+        [Range(18, 100)] public float scoreItemHeight = 82f;
+        [Range(6, 22)] public float scoreItemSpacing = 8f;
 
         [Header("底部回放按钮")]
         [Range(20, 120)] public float buttonY = 32f;
@@ -140,12 +140,12 @@ namespace THUAI9.Unity.UI
                 if (text != null)
                 {
                     text.alignment = TextAnchor.MiddleLeft;
-                    text.fontSize = 16;
+                    text.fontSize = 14;
                     text.fontStyle = FontStyle.Bold;
                     text.color = new Color(0.92f, 0.97f, 1f, 1f);
                     text.resizeTextForBestFit = false;
                     text.horizontalOverflow = HorizontalWrapMode.Wrap;
-                    text.verticalOverflow = VerticalWrapMode.Truncate;
+                    text.verticalOverflow = VerticalWrapMode.Overflow;
                     text.lineSpacing = 1f;
                 }
             }

@@ -21,8 +21,10 @@ namespace THUAI9.Unity.UI
         public Text statusText;
         public bool autoCreatePanel = true;
         public bool reflowBoundTexts = true;
+        public bool hideWhenNothingSelected = true;
         public float statusRefreshInterval = 0.15f;
 
+        private GameObject panelObject;
         private WorldObjectInfo selectedObject;
         private Vector2Int? selectedTile;
         private string selectedTileText;
@@ -50,9 +52,16 @@ namespace THUAI9.Unity.UI
 
         public void ShowObject(WorldObjectInfo info)
         {
+            if (info == null)
+            {
+                ClearSelection();
+                return;
+            }
+
             selectedObject = info;
             selectedTile = null;
             selectedTileText = null;
+            SetPanelVisible(true);
             RefreshSelectionBody();
         }
 
@@ -61,6 +70,7 @@ namespace THUAI9.Unity.UI
             selectedObject = null;
             selectedTile = tile;
             selectedTileText = tileText;
+            SetPanelVisible(true);
             RefreshSelectionBody();
         }
 
@@ -72,15 +82,19 @@ namespace THUAI9.Unity.UI
 
             if (titleText != null)
             {
-                titleText.text = "Inspector / 选中检查";
+                titleText.text = "对象详情";
             }
 
             if (bodyText != null)
             {
-                bodyText.text = "未选中对象\n点击地图上的单位、建筑、资源或地块查看详情。\nEsc 清除选择。";
+                bodyText.text = "点击地图上的单位、建筑、资源或地块查看详情。\nEsc 清除选择。";
             }
 
             RefreshStatus();
+            if (hideWhenNothingSelected)
+            {
+                SetPanelVisible(false);
+            }
         }
 
         private void RefreshSelectionBody()
@@ -93,7 +107,7 @@ namespace THUAI9.Unity.UI
             if (selectedObject != null)
             {
                 titleText.text = string.IsNullOrWhiteSpace(selectedObject.title)
-                    ? "Inspector / 世界对象"
+                    ? "对象详情"
                     : selectedObject.title;
                 bodyText.text = $"{selectedObject.BuildDisplayText()}\n\n{BuildObjectCheck(selectedObject)}";
                 return;
@@ -101,7 +115,7 @@ namespace THUAI9.Unity.UI
 
             if (selectedTile.HasValue)
             {
-                titleText.text = $"Inspector / 地块 ({selectedTile.Value.x}, {selectedTile.Value.y})";
+                titleText.text = $"地块详情 ({selectedTile.Value.x}, {selectedTile.Value.y})";
                 bodyText.text = $"{selectedTileText}\n\n{BuildTileCheck(selectedTile.Value)}";
                 return;
             }
@@ -113,27 +127,27 @@ namespace THUAI9.Unity.UI
         {
             if (info == null)
             {
-                return "选中检查：对象已销毁或不在当前帧。";
+                return "对象状态：对象已销毁或不在当前帧。";
             }
 
             string bounds = info.TryGetBounds(out Bounds objectBounds)
-                ? $"Bounds center=({objectBounds.center.x:0.##}, {objectBounds.center.y:0.##}) size=({objectBounds.size.x:0.##}, {objectBounds.size.y:0.##})"
-                : "Bounds 不可用";
-            string active = info.isActiveAndEnabled ? "Active" : "Inactive";
-            return $"选中检查：{active}，最后更新帧 {info.lastSeenFrame}\n{bounds}";
+                ? $"显示范围：中心 ({objectBounds.center.x:0.##}, {objectBounds.center.y:0.##})，大小 ({objectBounds.size.x:0.##}, {objectBounds.size.y:0.##})"
+                : "显示范围：暂无";
+            string active = info.isActiveAndEnabled ? "正在显示" : "当前隐藏";
+            return $"显示状态：{active}，最后更新帧 {info.lastSeenFrame}\n{bounds}";
         }
 
         private static string BuildTileCheck(Vector2Int tile)
         {
             if (CoreParam.map == null)
             {
-                return "选中检查：当前帧没有地图。";
+                return "地块状态：当前帧没有地图。";
             }
 
             bool inBounds = tile.x >= 0 && tile.y >= 0 && tile.x < CoreParam.map.Height && tile.y < CoreParam.map.Width;
             return inBounds
-                ? $"选中检查：地块仍在地图范围内，地图 {CoreParam.map.Height}x{CoreParam.map.Width}"
-                : $"选中检查：地块越界，地图 {CoreParam.map.Height}x{CoreParam.map.Width}";
+                ? $"地块状态：仍在地图范围内，地图 {CoreParam.map.Height}x{CoreParam.map.Width}"
+                : $"地块状态：越界，地图 {CoreParam.map.Height}x{CoreParam.map.Width}";
         }
 
         private void RefreshStatus()
@@ -158,29 +172,34 @@ namespace THUAI9.Unity.UI
         {
             titleText ??= FindTextByName("HUD_InspectorTitle") ?? FindTextByName("InspectorTitleText");
             bodyText ??= FindTextByName("SelectionInfoText") ?? FindTextByName("InspectorBodyText");
-            statusText ??= FindTextByName("InspectorStatusText") ?? FindTextByName("StatusPanelText");
+            statusText ??= FindTextByName("InspectorStatusText");
 
             Transform panel = FindPanelTransform();
             if (panel == null && autoCreatePanel)
             {
                 panel = CreatePanel();
             }
+            panelObject = panel != null ? panel.gameObject : null;
 
             Font font = GetBuiltInUIFont();
             if (titleText == null && panel != null)
             {
-                titleText = CreateText(panel, "HUD_InspectorTitle", "Inspector / 选中检查", font, 16, FontStyle.Bold, TextAnchor.UpperLeft);
+                titleText = CreateText(panel, "HUD_InspectorTitle", "对象详情", font, 22, FontStyle.Bold, TextAnchor.UpperLeft);
             }
 
             if (bodyText == null && panel != null)
             {
-                bodyText = CreateText(panel, "SelectionInfoText", string.Empty, font, 14, FontStyle.Normal, TextAnchor.UpperLeft);
+                bodyText = CreateText(panel, "SelectionInfoText", string.Empty, font, 17, FontStyle.Normal, TextAnchor.UpperLeft);
             }
 
             if (statusText == null && panel != null)
             {
-                statusText = CreateText(panel, "InspectorStatusText", string.Empty, font, 12, FontStyle.Normal, TextAnchor.UpperLeft);
+                statusText = CreateText(panel, "InspectorStatusText", string.Empty, font, 15, FontStyle.Normal, TextAnchor.UpperLeft);
             }
+
+            ReparentText(titleText, panel);
+            ReparentText(bodyText, panel);
+            ReparentText(statusText, panel);
 
             ConfigureText(titleText, new Color(0.98f, 0.94f, 0.72f, 1f));
             ConfigureText(bodyText, new Color(0.88f, 0.94f, 0.98f, 1f));
@@ -232,11 +251,11 @@ namespace THUAI9.Unity.UI
             GameObject panelObject = new GameObject("InspectorSidebarPanel", typeof(RectTransform), typeof(Image));
             panelObject.transform.SetParent(canvas.transform, false);
             RectTransform rect = panelObject.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(1f, 0.5f);
-            rect.anchorMax = new Vector2(1f, 0.5f);
-            rect.pivot = new Vector2(1f, 0.5f);
-            rect.anchoredPosition = new Vector2(-16f, -10f);
-            rect.sizeDelta = new Vector2(380f, 360f);
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-24f, -466f);
+            rect.sizeDelta = new Vector2(460f, 230f);
 
             Image image = panelObject.GetComponent<Image>();
             image.color = new Color(0.055f, 0.085f, 0.115f, 0.86f);
@@ -259,25 +278,50 @@ namespace THUAI9.Unity.UI
         private void ReflowPanelTexts()
         {
             RectTransform panelRect = FindPanelTransform() as RectTransform;
-            if (panelRect != null && panelRect.rect.height < 320f)
+            if (panelRect != null)
             {
-                panelRect.sizeDelta = new Vector2(panelRect.sizeDelta.x, 360f);
+                panelRect.anchorMin = new Vector2(1f, 1f);
+                panelRect.anchorMax = new Vector2(1f, 1f);
+                panelRect.pivot = new Vector2(1f, 1f);
+                panelRect.anchoredPosition = new Vector2(-24f, -466f);
+                panelRect.sizeDelta = new Vector2(460f, 230f);
             }
 
             if (titleText != null)
             {
-                PlaceTopStretch(titleText.rectTransform, 18f, 12f, 18f, 30f);
+                titleText.fontSize = Mathf.Max(titleText.fontSize, 22);
+                PlaceTopStretch(titleText.rectTransform, 18f, 14f, 18f, 38f);
             }
 
             if (bodyText != null)
             {
-                PlaceTopStretch(bodyText.rectTransform, 18f, 48f, 18f, 120f);
+                bodyText.fontSize = Mathf.Max(bodyText.fontSize, 17);
+                PlaceTopStretch(bodyText.rectTransform, 18f, 64f, 18f, 74f);
             }
 
             if (statusText != null)
             {
-                PlaceTopStretch(statusText.rectTransform, 18f, 178f, 18f, 164f);
+                statusText.fontSize = Mathf.Max(statusText.fontSize, 15);
+                PlaceTopStretch(statusText.rectTransform, 18f, 150f, 18f, 56f);
             }
+        }
+
+        private void SetPanelVisible(bool visible)
+        {
+            if (panelObject != null && panelObject.activeSelf != visible)
+            {
+                panelObject.SetActive(visible);
+            }
+        }
+
+        private static void ReparentText(Text text, Transform panel)
+        {
+            if (text == null || panel == null || text.transform.parent == panel)
+            {
+                return;
+            }
+
+            text.transform.SetParent(panel, false);
         }
 
         private static Text CreateText(Transform parent, string name, string value, Font font, int fontSize, FontStyle style, TextAnchor anchor)
@@ -292,7 +336,9 @@ namespace THUAI9.Unity.UI
             text.alignment = anchor;
             text.raycastTarget = false;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = false;
+            text.lineSpacing = 1.05f;
             return text;
         }
 
@@ -311,7 +357,9 @@ namespace THUAI9.Unity.UI
             text.color = color;
             text.raycastTarget = false;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = false;
+            text.lineSpacing = 1.05f;
         }
 
         private static void PlaceTopStretch(RectTransform rect, float left, float top, float right, float height)
