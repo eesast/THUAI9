@@ -1,29 +1,34 @@
 # 开发者文档
 
-本文档面向维护游戏规则、评测接口和基线算法的开发者。
+本文档面向维护游戏规则、评测接口和训练脚本的开发者。
 
 ## 目录结构
 
-当前核心文件：
-
 ```text
-.
-├── game_core.py              # 游戏规则层
-├── ai_gym_env.py             # Gymnasium 适配层
-├── compare_algorithms.py     # PPO / DQN / A2C / Random 对比训练
-├── heuristic_baseline.py     # 公开接口脚本化基线
-├── visualize_policy.py       # 单模型轨迹可视化
-├── train.py                  # 简单 PPO 训练脚本
-├── advanced_train.py         # 多模式 PPO 训练脚本
-├── config/
-│   └── setting.py            # 游戏规则常量
+logic/pve/
+├── GameLogic/               # 游戏规则层（算法不可直接依赖内部实现）
+│   ├── config.py            # 全局配置（GameConfig、PRODUCT_DEFS、TECH_TREE）
+│   ├── board.py             # 地图、ResourcePoint、ComputeCenter
+│   ├── character.py         # 单位（HP、背包、状态机）
+│   ├── market.py            # 市场动态价格函数
+│   ├── action_space.py      # Action 枚举、动作掩码
+│   ├── reward_calculator.py # RewardConfig / RewardCalculator
+│   └── game_env.py          # GameEnvironment（Gymnasium 接口）、Factory
+├── RLInterfaces/            # RL 算法接口层
+│   ├── base_agent.py        # 抽象基类（强制接口隔离）
+│   ├── ppo_agent.py         # PPO 实现（支持 MaskablePPO）
+│   └── training_loop.py     # 手动训练循环（含突破回调）
+├── TrainingDemo/            # 训练与评测脚本
+│   ├── train_basic.py       # 基础训练入口
+│   ├── evaluate.py          # 多 seed 评测
+│   ├── visualization.py     # ASCII 渲染 + 奖励曲线
+│   └── configs/             # easy / medium / hard YAML 配置
+├── tests/                   # 单元测试
 ├── docs/
-│   ├── CONTESTANT_GUIDE.md   # 选手介绍文档
-│   └── DEVELOPER_GUIDE.md    # 本文档
-├── ITERATION_LOG.md          # 迭代记录
-├── README.md
-├── pyproject.toml
-└── uv.lock
+│   ├── CONTESTANT_GUIDE.md  # 选手介绍文档
+│   └── DEVELOPER_GUIDE.md   # 本文档
+├── requirements.txt
+└── README.md
 ```
 
 生成物不应提交：
@@ -32,8 +37,6 @@
 - `__pycache__/`
 - `models/`
 - `plots/`
-- `plots_*/`
-- `*.zip`
 
 这些已写入 `.gitignore`。
 
@@ -41,268 +44,271 @@
 
 项目分为两层：
 
-1. 游戏规则层：`game_core.py`
-2. 强化学习/算法层：`ai_gym_env.py`、训练脚本、可视化脚本
+1. **游戏规则层**：`GameLogic/` 包内所有模块。
+2. **算法层**：`RLInterfaces/`、`TrainingDemo/`、选手提交的 agent。
 
 开发时必须保持这个边界：
 
-- 游戏规则只在 `game_core.py` 和 `config/setting.py` 中定义。
-- RL 代码只能通过公开接口读取游戏状态。
-- 不要让算法脚本读取 `Unit`、`Market`、`ResourcePoint` 等内部对象。
+- 游戏规则只在 `GameLogic/` 中定义。
+- 算法代码只能通过 Gymnasium 标准接口（`reset`、`step`、`action_masks`）读取游戏状态。
+- 不要让算法脚本读取 `Unit`、`Market`、`Factory` 等内部对象字段。
 
-这可以让未来评测机只暴露公开接口，从而避免选手使用私有状态作弊。
+这保证了未来评测机只暴露公开接口，防止选手使用私有状态。
 
 ## 游戏规则层
 
-`game_core.GameEnv` 是核心模拟器。
+### GameEnvironment（`GameLogic/game_env.py`）
 
-主要公开接口：
+主环境，继承 `gymnasium.Env`。
+
+公开接口：
 
 ```python
-reset(seed: Optional[int]) -> dict
-step(action: int) -> dict
-get_public_observation() -> dict
-get_valid_actions() -> list[bool]
-get_net_worth() -> float
+env.reset(seed: int | None, options: dict | None) -> (obs, info)
+env.step(action: int)  -> (obs, reward, terminated, truncated, info)
+env.action_masks()     -> np.ndarray[bool, (8,)]
+env.render()           -> str   # ANSI 单行状态摘要
 ```
 
-内部对象：
-
-- `Point`
-- `Market`
-- `ResourcePoint`
-- `Unit`
-- `Factory`
-
-这些对象可以在规则层内部自由使用，但不应作为选手算法依赖的接口。
-
-## 公开 Observation 契约
-
-`get_public_observation()` 返回字典。
-
-顶层字段：
+`step()` 返回的 `info` 字典：
 
 | 字段 | 类型 | 含义 |
 | --- | --- | --- |
-| `time` | `float` | 当前时间 |
+| `step` | `int` | 当前步数 |
+| `time` | `float` | 游戏时间（秒） |
 | `money` | `float` | 当前现金 |
-| `net_worth` | `float` | 估算净资产 |
-| `map_width` | `int` | 地图宽度 |
-| `map_height` | `int` | 地图高度 |
-| `map_grid` | `list[list[int]]` | 地图网格 |
-| `unit` | `dict` | 单位状态 |
-| `markets` | `list[dict]` | 市场状态 |
-| `resources` | `list[dict]` | 资源点状态 |
-| `valid_actions` | `list[bool]` | 动作是否合法 |
-| `transactions` | `int` | 已完成交易次数 |
-| `last_step` | `dict` | 上一步结果 |
+| `score` | `float` | 当前累计得分（卖出收入 × score_factor） |
+| `compute` | `float` | 当前算力点 |
+| `action_valid` | `bool` | 上一步是否有效 |
 
-`last_step` 字段：
+终止条件：
 
-| 字段 | 含义 |
-| --- | --- |
-| `valid` | 上一步动作是否合法 |
-| `action` | 上一步动作编号 |
-| `money_delta` | 上一步现金变化 |
-| `realized_profit` | 上一步实现利润 |
-| `net_worth` | 上一步后的净资产 |
-| `transactions` | 当前交易次数 |
+- `terminated = True`：`money < 0`（破产）
+- `truncated = True`：`step >= cfg.max_steps`（时间耗尽）
 
-如果修改公开 observation，必须同步更新：
+得分计算：每次 SELL 成功后 `score += revenue × cfg.score_factor`（默认 × 10）。
 
-- `ai_gym_env.py`
-- `docs/CONTESTANT_GUIDE.md`
-- `docs/DEVELOPER_GUIDE.md`
-- 必要时更新 `ITERATION_LOG.md`
+### 内部对象
 
-## Gymnasium 适配层
+以下对象可在规则层内部自由使用，但不应作为选手算法依赖的接口：
 
-`AI9GymEnv` 位于 `ai_gym_env.py`。
+| 对象 | 来源文件 | 职责 |
+| --- | --- | --- |
+| `Unit` | `character.py` | 单位背包、HP、busy 状态机 |
+| `Market` | `market.py` | 正弦价格函数，per-product per-market |
+| `ResourcePoint` | `board.py` | 资源库存与再生速率 |
+| `ComputeCenter` | `board.py` | 算力中心占领进度 |
+| `Board` | `board.py` | 地图网格、实体查询（nearest_market 等） |
+| `Factory` | `game_env.py` | 仓库（raw_stock + products）、生产队列 |
 
-职责：
+### 商品定义（`GameLogic/config.py`）
 
-- 将公开 observation 编码为固定长度向量。
-- 定义 `action_space` 和 `observation_space`。
-- 将游戏规则层的 step result 转换为 RL reward。
-- 在 `info["public_observation"]` 中透传公开状态。
+`PRODUCT_DEFS` 中定义 5 类商品：
 
-当前向量 observation 长度：
+| ID | 名称 | 购买成本 | 市场价格范围 | 生产时间 |
+| ---: | --- | ---: | --- | ---: |
+| 0 | 半导体 | 10 | 40–120 | 5.0 s |
+| 1 | 药品 | 5 | 20–60 | 4.0 s |
+| 2 | 小商品 | 1 | 4–12 | 2.0 s |
+| 3 | 服饰 | 8 | 32–96 | 6.0 s |
+| 4 | 食品 | 3 | 12–24 | 1.0 s |
+
+### 市场价格（`GameLogic/market.py`）
+
+每个市场对每种商品维护独立的正弦参数：
+
+```
+price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
+```
+
+- `base`：`val_range[0]`
+- `amplitude`：`(val_range[1] - val_range[0]) × price_volatility`
+- `phase`：每市场随机偏移，防止各市场同步
+- `period`：`market_period × random(0.7, 1.5)`
+
+BUY 动作执行时购买"当前成本最低的可负担商品"（见 `_cheapest_buyable`），不是利润最高的商品。
+
+如果修改价格范围或新增商品，需同步更新 `game_env.py` 顶部的归一化常量：
 
 ```python
-OBS_VECTOR_SIZE = 52
+_PRICE_MIN, _PRICE_MAX = 4.0, 120.0
 ```
 
-如果增加市场数量、资源数量或 observation 特征，需要检查该值。
+### 动作空间（`GameLogic/action_space.py`）
 
-当前 reward 结构：
+动作由 `Action` 枚举定义：
 
-- 每步时间惩罚：`-0.002`
-- 无效动作惩罚：`-0.01`
-- 已实现交易利润奖励：`0.1 * realized_profit`
-- episode 结束净资产奖励：`0.01 * (net_worth - INITIAL_MONEY)`
+```python
+class Action(IntEnum):
+    WAIT       = 0
+    MOVE_UP    = 1
+    MOVE_DOWN  = 2
+    MOVE_LEFT  = 3
+    MOVE_RIGHT = 4
+    BUY        = 5
+    SELL       = 6
+    HARVEST    = 7
+```
 
-reward 是训练辅助信号，不一定等同最终比赛排名指标。评测更建议使用多 seed 下的最终资金或净资产。
+动作掩码由 `compute_action_mask(env)` 生成，关键规则：
 
-## 规则参数
+- BUY / SELL：需 Manhattan 距离 ≤ 1 的市场
+- HARVEST：需 Manhattan 距离 ≤ 2 的未耗尽资源点
+- 移动 / BUY / SELL / HARVEST：unit.busy_ticks 必须为 0
 
-主要配置在 `config/setting.py`。
+## 观测向量契约
 
-地图和随机场景：
+当前维度 `OBS_DIM = 32`，由 `_encode_obs()` 生成：
 
-- `MAP_WIDTH`
-- `MAP_HEIGHT`
-- `MARKET_COUNT`
-- `RESOURCE_COUNT`
-- `OBSTACLE_COUNT`
+| 索引 | 含义 | 归一化 |
+| ---: | --- | --- |
+| 0–1 | 单位位置 (x, y) | / (H, W) |
+| 2 | 单位 HP | / max_hp |
+| 3 | 原材料背包 | raw_inv / capacity |
+| 4 | 成品背包 | prod_inv / capacity |
+| 5 | busy_ticks | / 10，截断到 1 |
+| 6 | money | log10(money+1) / 5 |
+| 7 | compute | / 100，截断到 2 |
+| 8 | time | / max_game_time |
+| 9–10 | 价格相位 | sin / cos（用于识别周期） |
+| 11 | 工厂原材料库存 | / storage_cap |
+| 12 | 工厂成品库存 | / storage_cap |
+| 13 | 生产队列长度 | / 10，截断到 1 |
+| 14–16 | 资源点 0 | dx/H, dy/W, stock ratio |
+| 17–19 | 资源点 1 | 同上 |
+| 20–22 | 算力中心 0 | dx/H, dy/W, is_open |
+| 23–25 | 算力中心 1 | 同上 |
+| 26–28 | 市场 0 | dx/H, dy/W, best_price（归一化） |
+| 29–31 | 市场 1 | 同上 |
 
-市场价格：
+当前只编码前 2 个市场和前 2 个资源点。如果修改观测结构，必须同步更新：
 
-- `MARKET_SPREAD_RATE`
-- `MARKET_PERIOD_MIN`
-- `MARKET_PERIOD_MAX`
-- `MARKET_PRICE_SCALE_MIN`
-- `MARKET_PRICE_SCALE_MAX`
+- `GameEnvironment.OBS_DIM`
+- `observation_space` 定义
+- `docs/CONTESTANT_GUIDE.md`
 
-市场库存和需求：
+## 奖励计算（`GameLogic/reward_calculator.py`）
 
-- `MARKET_INITIAL_STOCK_MIN`
-- `MARKET_INITIAL_STOCK_MAX`
-- `MARKET_MAX_STOCK`
-- `MARKET_STOCK_REPLENISH_PER_STEP`
-- `MARKET_INITIAL_DEMAND_MIN`
-- `MARKET_INITIAL_DEMAND_MAX`
-- `MARKET_MAX_DEMAND`
-- `MARKET_DEMAND_REPLENISH_PER_STEP`
-- `MARKET_SCARCITY_PRICE_IMPACT`
-- `MARKET_LOW_DEMAND_DISCOUNT`
+奖励由 `RewardCalculator` 按 `RewardConfig` 权重计算：
 
-动作定义：
+| 来源 | 默认参数 | 默认值 |
+| --- | --- | --- |
+| 现金变化 `Δmoney` | `money_scale = 0.01` | `Δmoney × 0.01` |
+| 得分变化 `Δscore` | `money_scale = 0.01` | `Δscore × 0.01` |
+| 时间惩罚（每步） | `time_penalty` | `−0.002` |
+| 采集奖励（每单位） | `harvest_bonus_per_unit` | `+0.001` |
+| 算力中心解锁（一次性） | `compute_center_bonus` | `+0.5` |
+| 无效动作 | `invalid_action_penalty` | `−0.05` |
+| 破产（终止时） | `bankruptcy_penalty` | `−10.0` |
 
-- `U_ACT_WAIT`
-- `U_ACT_MOVE_UP`
-- `U_ACT_MOVE_DOWN`
-- `U_ACT_MOVE_LEFT`
-- `U_ACT_MOVE_RIGHT`
-- `U_ACT_LOAD_0`
-- `U_ACT_SELL_ALL`
-- `U_ACT_HARVEST`
+奖励是训练辅助信号，比赛排名以 `score` 为准。调整 `RewardConfig` 权重时不影响 `score` 的计算。
 
-## 基线脚本
+## 难度配置（`GameLogic/config.py`）
 
-### `compare_algorithms.py`
+所有规则参数集中在 `GameConfig` dataclass：
 
-用于训练和比较基础 RL 算法。
+| 参数 | easy | medium（默认） | hard |
+| --- | ---: | ---: | ---: |
+| `map_width / map_height` | 5 / 5 | 10 / 10 | 15 / 15 |
+| `num_markets` | 3 | 3 | 4 |
+| `num_resource_points` | 2 | 2 | 4 |
+| `num_compute_centers` | 1 | 2 | 3 |
+| `initial_money` | 200 | 50 | 30 |
+| `initial_compute` | 60 | 30 | 20 |
+| `price_volatility` | 0.3 | 1.0 | 2.0 |
+| `resource_regen_rate` | 2.0 | 1.0 | 0.5 |
+| `initial_resource_stock` | 200 | 100 | 50 |
+| `max_game_time (s)` | 300 | 300 | 500 |
 
-支持：
+通过 YAML 自定义参数：
 
-- PPO
-- DQN
-- A2C
-- Random baseline
+```yaml
+# TrainingDemo/configs/custom.yaml
+map_width: 8
+map_height: 8
+num_markets: 4
+initial_money: 100.0
+price_volatility: 1.5
+```
 
-示例：
+加载方式：
+
+```python
+GameConfig.from_dict(yaml.safe_load(open("custom.yaml")))
+```
+
+## RL 接口层（`RLInterfaces/`）
+
+### BaseAgent（`base_agent.py`）
+
+所有算法必须继承此类，只能通过 `BaseAgent.step()` 包装器与环境交互。子类实现 `get_action` 和 `train` 两个抽象方法。
+
+### PPOAgent（`ppo_agent.py`）
+
+封装 SB3 的 MaskablePPO（若 `sb3-contrib` 可用）或标准 PPO。自动检测并启用动作掩码。训练完成后在 `models/` 目录保存最佳权重。
+
+### TrainingLoop（`training_loop.py`）
+
+手动 episode 训练循环，支持突破回调（可用于触发难度升级）。SB3 封装的算法建议直接调用 `agent.train()`，而非 TrainingLoop。
+
+## 训练脚本（`TrainingDemo/`）
+
+### `train_basic.py`
+
+基础训练入口，支持内置难度预设或 YAML 路径：
 
 ```bash
-env UV_CACHE_DIR=/private/tmp/uv-cache UV_PYTHON_INSTALL_DIR=/private/tmp/uv-python MPLCONFIGDIR=/private/tmp/matplotlib \
-  uv run python compare_algorithms.py --timesteps 100000 --episodes 10 --random-episodes 30 --algorithms ppo dqn a2c --eval-episodes 5 --model-dir models/competition_compare_100k --out-dir plots_competition_compare_100k --force
+python TrainingDemo/train_basic.py --config easy --timesteps 100000 --seed 42
+python TrainingDemo/train_basic.py --config TrainingDemo/configs/hard.yaml --timesteps 500000
 ```
 
-输出：
+### `evaluate.py`
 
-- `algorithm_summary.csv`
-- `evaluation_traces.csv`
-- `algorithm_money_reward_curves.png`
-- `algorithm_action_distribution.png`
-- `algorithm_final_bars.png`
-
-### `heuristic_baseline.py`
-
-使用公开接口实现的脚本化交易策略。
-
-该脚本用于验证环境不是无解，而不是官方最强 baseline。
-
-示例：
+多 seed 评测，输出平均得分和方差：
 
 ```bash
-env UV_CACHE_DIR=/private/tmp/uv-cache UV_PYTHON_INSTALL_DIR=/private/tmp/uv-python MPLCONFIGDIR=/private/tmp/matplotlib \
-  uv run python heuristic_baseline.py --episodes 50 --out plots_competition_ready/heuristic_after_market_impact.csv
+python TrainingDemo/evaluate.py --model models/ppo_thuai9_best --config medium --episodes 50
 ```
 
-### `visualize_policy.py`
+### `visualization.py`
 
-用于对已训练的 SB3 模型生成轨迹图。
-
-注意：该脚本默认加载 PPO 模型。如果要可视化 DQN/A2C，需要扩展模型加载逻辑。
+ASCII 渲染轨迹和奖励曲线，用于调试策略行为。
 
 ## 推荐开发流程
 
-1. 修改规则或算法。
-2. 运行语法检查。
-3. 运行 `check_env`。
-4. 跑脚本化基线，确认规则没有变成无解。
-5. 跑基础 RL baseline，确认规则没有被 vanilla 算法轻松解决。
-6. 更新文档和迭代记录。
+1. 修改 `GameLogic/` 中的规则或 `RewardConfig`。
+2. 运行单元测试：
 
-语法检查：
+   ```bash
+   python -m pytest tests/ -v
+   ```
 
-```bash
-env UV_CACHE_DIR=/private/tmp/uv-cache UV_PYTHON_INSTALL_DIR=/private/tmp/uv-python MPLCONFIGDIR=/private/tmp/matplotlib \
-  uv run python -m py_compile game_core.py ai_gym_env.py compare_algorithms.py heuristic_baseline.py visualize_policy.py train.py advanced_train.py config/setting.py
-```
+3. 用 easy 配置快速验证环境可解：
 
-Gym 检查：
+   ```bash
+   python TrainingDemo/train_basic.py --config easy --timesteps 50000
+   ```
 
-```bash
-env UV_CACHE_DIR=/private/tmp/uv-cache UV_PYTHON_INSTALL_DIR=/private/tmp/uv-python MPLCONFIGDIR=/private/tmp/matplotlib \
-  uv run python -c "from stable_baselines3.common.env_checker import check_env; from ai_gym_env import AI9GymEnv; check_env(AI9GymEnv()); print('ok')"
-```
+4. 确认规则没有变成无解（简单规则策略仍能盈利）。
+5. 确认规则没有被 vanilla PPO 轻松解决。
+6. 更新本文档和 `docs/CONTESTANT_GUIDE.md`。
 
 ## 调整规则时的判断标准
 
 一个适合比赛的规则版本应满足：
 
 - 随机策略平均表现较差。
-- vanilla PPO / DQN / A2C 不会在较小预算下轻松解决。
-- 一个合理的脚本策略或规划策略可以稳定盈利。
-- 不依赖固定地图路线。
-- 不依赖私有状态。
-- 多 seed 表现比单 seed 表现更重要。
-
-当前停止点满足这些条件：
-
-| 策略/算法 | 平均最终资金 | 说明 |
-| --- | ---: | --- |
-| Random | 903.58 | 平均亏损 |
-| PPO 100k | 1000.00 | 基本不交易 |
-| DQN 100k | 1000.00 | 基本不交易 |
-| A2C 100k | 1000.00 | 基本不交易 |
-| DQN 200k | 924.64 | 略好于随机但未解决 |
-| Heuristic baseline | 2187.63 | 可解性验证 |
-
-## 后续可扩展方向
-
-规则方向：
-
-- 引入更多商品。
-- 增加生产链和工厂订单。
-- 加入市场之间的商品偏好。
-- 增加突发事件，如市场停摆或价格冲击。
-- 增加燃料或移动成本。
-- 引入多单位调度。
-
-算法方向：
-
-- Action mask PPO / DQN。
-- 路径规划加交易决策。
-- 模型预测控制。
-- Recurrent policy。
-- 离线规划加在线微调。
-- 多阶段 curriculum。
+- vanilla PPO 在较短训练内无法轻松达到高分。
+- 合理的规则策略或规划策略可以稳定盈利。
+- 不依赖固定地图路线（支持 random_map 或多 seed）。
+- 不依赖私有状态即可实现合理策略。
+- 多 seed 下的方差小于单 seed 表现差异。
 
 ## 注意事项
 
-- 不要把训练产物提交到仓库。
-- 不要让算法依赖 `game_core` 内部私有方法。
-- 修改规则后必须重新跑 heuristic baseline。
-- 修改 observation 后必须同步更新 `OBS_VECTOR_SIZE`。
-- 比赛评测应使用固定的一组隐藏 seeds，而不是训练时使用的 seeds。
+- 不要把训练产物（`models/`、`plots/`）提交到仓库。
+- 不要让算法依赖 `GameLogic` 内部私有方法或对象字段。
+- 修改 `num_markets` 或 `num_resource_points` 后，检查 `game_env.py` 中观测向量编码是否需要扩展（当前硬编码只编码前 2 个市场和前 2 个资源点）。
+- 修改观测结构后必须同步更新 `GameEnvironment.OBS_DIM`。
+- 比赛评测应使用固定隐藏 seeds，不同于训练时使用的 seeds。
+- 科技树（`TECH_TREE`）和多单位调度为 Phase 2 功能，当前未在评测中启用。

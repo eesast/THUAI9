@@ -13,8 +13,7 @@ namespace Gaming
 {
     public partial class Game
     {
-        private const int EventIntervalMs = 30 * 1000; // 测试用 30 秒，正式应为 3*60*1000
-        private int nextEventTriggerMs = EventIntervalMs;
+        private int nextEventTriggerMs = GameData.MarketEventIntervalMs;
 
         private sealed class Event
         {
@@ -394,7 +393,7 @@ namespace Gaming
         internal void ResetEventSchedule()
         {
             marketEvent.InitDefault();
-            nextEventTriggerMs = EventIntervalMs;
+            nextEventTriggerMs = GameData.MarketEventIntervalMs;
         }
 
         internal void TryTriggerPeriodicEvent(int nowTimeMs)
@@ -402,10 +401,10 @@ namespace Gaming
             if (nowTimeMs < nextEventTriggerMs) return;
 
             while (nextEventTriggerMs <= nowTimeMs)
-                nextEventTriggerMs += EventIntervalMs;
+                nextEventTriggerMs += GameData.MarketEventIntervalMs;
 
             int startMs = nowTimeMs;
-            int endMs = (int)Math.Min((long)int.MaxValue, (long)startMs + EventIntervalMs);
+            int endMs = (int)Math.Min((long)int.MaxValue, (long)startMs + GameData.MarketEventIntervalMs);
             _ = Task.Run(() => RefreshEventFromLLM(startMs, endMs));
         }
     }

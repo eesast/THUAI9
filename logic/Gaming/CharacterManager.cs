@@ -183,16 +183,16 @@ namespace Gaming
                 if (robustLevel > 0)
                 {
                     long baseHp = ch.Occupation.MaxHp;
-                    long newMaxHp = (long)(baseHp * (1.0 + 0.2 * robustLevel));
+                    long newMaxHp = (long)(baseHp * (1.0 + GameData.TechHpMultiplierPerLevel * robustLevel));
                     ch.HP.SetMaxV(newMaxHp);
                     ch.HP.SetVToMaxV();
-                    ch.Robust.AddPositiveV(robustLevel * 2);
+                    ch.Robust.AddPositiveV(robustLevel * GameData.TechRobustAddPerLevel);
                 }
 
                 if (warriorLevel > 0)
                 {
                     long baseAtk = ch.Occupation.AttackPower;
-                    long extra = (long)(baseAtk * 0.3 * warriorLevel);
+                    long extra = (long)(baseAtk * GameData.TechWarriorAtkMultiplierPerLevel * warriorLevel);
                     if (extra > 0)
                     {
                         ch.AttackPower.AddPositiveV(extra);
@@ -263,7 +263,7 @@ namespace Gaming
                 }
                 long subHP = (long)(obj.AttackPower - character.Robust);
                 if (subHP < 0) subHP = 0;
-                game.AddTeamScore((long)obj.TeamID.Get(), subHP * 20);
+                game.AddTeamScore((long)obj.TeamID.Get(), subHP * GameData.CharacterDamageScoreMultiplier);
                 character.HP.SubPositiveV(subHP);
                 if (character.HP == 0)
                 {
@@ -271,13 +271,13 @@ namespace Gaming
                     switch (character.CharacterType)
                     {
                         case CharacterType.DRONE:
-                            score = GameData.DroneCost * 40;
+                            score = GameData.DroneCost * GameData.CharacterKillScoreMultiplier;
                             break;
                         case CharacterType.ROBOT:
-                            score = GameData.RobotCost * 40;
+                            score = GameData.RobotCost * GameData.CharacterKillScoreMultiplier;
                             break;
                         case CharacterType.AUTONOMOUS_CAR:
-                            score = GameData.AutonomouCarCost * 40;
+                            score = GameData.AutonomouCarCost * GameData.CharacterKillScoreMultiplier;
                             break;
                     }
                     game.AddTeamScore((long)obj.TeamID.Get(), score);

@@ -16,7 +16,7 @@ namespace Gaming
         private sealed class TeamState
         {
             public long TeamId { get; }
-            public AtomicLong Score { get; } = new(0);
+            public AtomicLong Score { get; } = new(GameData.FactoryInitialScore);
             public Factory Factory { get; }
             public ConcurrentDictionary<string, AtomicLong> Tech { get; } = new();
 
