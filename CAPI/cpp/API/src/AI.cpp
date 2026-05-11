@@ -2,12 +2,12 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <string>
-#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "AI.h"
@@ -21,312 +21,171 @@ extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict = {
     THUAI9::CharacterType::AutonomousCar,
 };
 
-// ============================================================================
-// 选手 AI —— 集成验证程序
-//
-// 从选手视角测试 C++ API 的核心功能:
-//   Team:  召唤角色 → 生产商品 → 升级科技
-//   Robot (playerID=1):    占领最近算力中心 → 搬运售卖
-//   Drone (playerID=2):    攻击最近敌方工厂
-//   AutonomousCar (playerID=3): 采集最近资源
-//
-// 所有角色使用 BFS 寻路，遇到敌人时优先战斗。
-// 运行方式: ./capi -t <teamID 1-4> -p <playerID 0-3> [-d] [-o]
-// ============================================================================
-
 namespace
 {
+    constexpr int32_t kGridPerCell = 1000;
+    constexpr int32_t kCellCenter = 500;
     constexpr int64_t kMoveTimeMs = 200;
-    constexpr int64_t kAttackCdMs = 1050;
-    constexpr int32_t kGoodsAmount = 1;
-    constexpr int32_t kCellSize = 1000;
-    constexpr int32_t kCellCenter = kCellSize / 2;  // 500
-    constexpr int32_t kMapRows = 50;
-    constexpr int32_t kMapCols = 50;
-    constexpr int32_t kAttackRangeCells = 1;
+    constexpr int32_t kBuilderPlayerId = 1;
+    constexpr THUAI9::GoodsType kProduceGoods = THUAI9::GoodsType::Food;
+    constexpr int32_t kProduceCost = 3;
+    constexpr int32_t kCenterTolerance = 80;
+    using Cell = std::pair<int32_t, int32_t>;
 
-    constexpr std::array<THUAI9::GoodsType, 5> kGoodsToTest = {
-        THUAI9::GoodsType::Food,
-        THUAI9::GoodsType::Medicine,
-        THUAI9::GoodsType::Clothes,
-        THUAI9::GoodsType::Toys,
-        THUAI9::GoodsType::Semiconductor,
-    };
-
-    constexpr std::array<THUAI9::TechType, 4> kTechToTest = {
-        THUAI9::TechType::IncreaseMoveSpeed,
-        THUAI9::TechType::IncreaseCarryCapacity,
-        THUAI9::TechType::IncreaseEfficiency,
-        THUAI9::TechType::DecreaseCost,
-    };
-
-    constexpr std::array<std::pair<int32_t, int32_t>, 4> kDirs = {{
-        {0, -1},  // 上
-        {0, 1},   // 下
-        {-1, 0},  // 左
-        {1, 0},   // 右
+    constexpr std::array<Cell, 4> kDirs = {{
+        {1, 0},
+        {-1, 0},
+        {0, 1},
+        {0, -1},
     }};
 
-    // ── 小工具 ──────────────────────────────────────────────────────────
-
-    [[nodiscard]] std::string BoolText(bool value)
+    enum class Phase
     {
-        return value ? "true" : "false";
-    }
+        SeekResource,
+        ToResource,
+        ToFactory,
+    };
+
+    struct PathTarget
+    {
+        Cell object{-1, -1};
+        Cell approach{-1, -1};
+        std::vector<Cell> path;
+    };
+
+    struct CharState
+    {
+        Phase phase = Phase::SeekResource;
+        PathTarget target{};
+        size_t pathIndex = 1;
+    };
+
+    struct TeamState
+    {
+        bool builderBuilt = false;
+        int32_t lastProduceFrame = -1000;
+    };
+
+    std::map<int64_t, CharState> g_charStates;
+    std::map<int64_t, TeamState> g_teamStates;
 
     [[nodiscard]] int32_t CellToGrid(int32_t cell) noexcept
     {
-        return cell * kCellSize + kCellCenter;
+        return cell * kGridPerCell + kCellCenter;
     }
 
     [[nodiscard]] int32_t GridToCell(int32_t grid) noexcept
     {
-        return grid / kCellSize;
+        return grid / kGridPerCell;
     }
 
-    [[nodiscard]] double CalcAngle(int32_t fromX, int32_t fromY, int32_t toX, int32_t toY)
+    [[nodiscard]] std::string CellText(Cell c)
     {
-        // 坐标系: 竖直向下 = x 轴(角度0), 水平向右 = y 轴(角度 π/2)
-        // 服务端 XY(angle,length): x=cos(angle)*l, y=sin(angle)*l
-        // 所以 angle = atan2(deltaY, deltaX)
-        return std::atan2(toY - fromY, toX - fromX);
+        return "(" + std::to_string(c.first) + "," + std::to_string(c.second) + ")";
     }
 
-    [[nodiscard]] bool IsPassable(THUAI9::PlaceType pt)
+    [[nodiscard]] bool InBounds(const std::vector<std::vector<THUAI9::PlaceType>>& map, int32_t x, int32_t y)
+    {
+        return !map.empty() && !map.front().empty() &&
+               x >= 0 && y >= 0 &&
+               x < static_cast<int32_t>(map.size()) &&
+               y < static_cast<int32_t>(map.front().size());
+    }
+
+    [[nodiscard]] bool Walkable(THUAI9::PlaceType pt)
     {
         return pt == THUAI9::PlaceType::Space || pt == THUAI9::PlaceType::Bush;
     }
 
-    template<class TAPI>
-    void DrainMessages(TAPI& api, const std::string& who)
+    [[nodiscard]] bool InInteractRange(Cell a, Cell b)
     {
-        while (api.HaveMessage())
-        {
-            auto [fromID, message] = api.GetMessage();
-            api.Print(who + " recv from " + std::to_string(fromID) + ": " + message);
-        }
+        return std::abs(a.first - b.first) <= 1 && std::abs(a.second - b.second) <= 1;
     }
 
-    template<class TAPI>
-    void PrintCommonSnapshot(TAPI& api, const std::string& who)
+    [[nodiscard]] bool NearCellCenter(const THUAI9::Character& self)
     {
-        auto map = api.GetFullMap();
-        auto characters = api.GetCharacters();
-        auto enemies = api.GetEnemyCharacters();
-        auto guids = api.GetPlayerGUIDs();
-        auto gameInfo = api.GetGameInfo();
-
-        std::string summary =
-            who +
-            " frame=" + std::to_string(api.GetFrameCount()) +
-            " map=" + std::to_string(map.size()) + "x" + std::to_string(map.empty() ? 0 : map.front().size()) +
-            " allyChars=" + std::to_string(characters.size()) +
-            " enemyChars=" + std::to_string(enemies.size()) +
-            " guids=" + std::to_string(guids.size()) +
-            " material=" + std::to_string(api.GetMaterial()) +
-            " compute=" + std::to_string(api.GetComputingPower()) +
-            " score=" + std::to_string(api.GetScore());
-
-        if (gameInfo)
-        {
-            summary +=
-                " gameTime=" + std::to_string(gameInfo->gameTime) +
-                " teamCount=" + std::to_string(gameInfo->teams.size());
-        }
-
-        api.Print(summary);
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+        return std::abs(self.x - CellToGrid(cur.first)) <= kCenterTolerance &&
+               std::abs(self.y - CellToGrid(cur.second)) <= kCenterTolerance;
     }
 
-    // ── BFS 寻路 ────────────────────────────────────────────────────────
-
-    struct CellPairHash
+    bool MoveToCellCenter(ICharacterAPI& api, const THUAI9::Character& self)
     {
-        size_t operator()(const std::pair<int32_t, int32_t>& p) const noexcept
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+        const int32_t centerX = CellToGrid(cur.first);
+        const int32_t centerY = CellToGrid(cur.second);
+
+        if (std::abs(self.x - centerX) <= kCenterTolerance && std::abs(self.y - centerY) <= kCenterTolerance)
+            return true;
+
+        const int32_t dx = centerX - self.x;
+        const int32_t dy = centerY - self.y;
+        const int64_t moveMs = std::max<int64_t>(1, (std::max(std::abs(dx), std::abs(dy)) + 4) / 5);
+
+        if (std::abs(dx) >= std::abs(dy))
         {
-            return static_cast<size_t>(p.first) * 10007 + static_cast<size_t>(p.second);
-        }
-    };
-
-    using CellSet = std::unordered_set<std::pair<int32_t, int32_t>, CellPairHash>;
-    using CellMap = std::map<std::pair<int32_t, int32_t>, std::pair<int32_t, int32_t>>;
-    using CellQueue = std::queue<std::pair<int32_t, int32_t>>;
-    using CellPath = std::vector<std::pair<int32_t, int32_t>>;
-
-    // 返回从 (sx,sy) 到最近 targetType 格子的路径（含起点和终点）
-    // sx = cellX (column in map), sy = cellY (row in map)
-    [[nodiscard]] CellPath BfsToNearest(
-        const std::vector<std::vector<THUAI9::PlaceType>>& map,
-        int32_t sx,
-        int32_t sy,
-        THUAI9::PlaceType targetType
-    )
-    {
-        if (map.empty() || map.front().empty())
-            return {};
-        const int32_t numRows = static_cast<int32_t>(map.size());
-        const int32_t numCols = static_cast<int32_t>(map.front().size());
-
-        if (sx < 0 || sy < 0 || sx >= numCols || sy >= numRows)
-            return {};
-
-        CellSet visited;
-        CellMap prev;
-        CellQueue q;
-
-        // map[row][col] = map[sy][sx]
-        // 起点不可通行时，从相邻可通行格播种 (C# 参考)
-        if (!IsPassable(map[sy][sx]))
-        {
-            for (auto [dx, dy] : kDirs)
-            {
-                int32_t nx = sx + dx;
-                int32_t ny = sy + dy;
-                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
-                    continue;
-                if (!IsPassable(map[ny][nx]))
-                    continue;
-                if (visited.count({nx, ny}))
-                    continue;
-                visited.insert({nx, ny});
-                prev[{nx, ny}] = {sx, sy};
-                q.push({nx, ny});
-            }
-            if (q.empty())
-                return {};
+            if (dx > 0)
+                (void)api.MoveDown(moveMs).get();
+            else
+                (void)api.MoveUp(moveMs).get();
         }
         else
         {
-            visited.insert({sx, sy});
-            q.push({sx, sy});
+            if (dy > 0)
+                (void)api.MoveRight(moveMs).get();
+            else
+                (void)api.MoveLeft(moveMs).get();
         }
-
-        std::pair<int32_t, int32_t> target = {-1, -1};
-
-        while (!q.empty())
-        {
-            auto [cx, cy] = q.front();
-            q.pop();
-
-            if (map[cy][cx] == targetType)
-            {
-                target = {cx, cy};
-                break;
-            }
-
-            for (auto [dx, dy] : kDirs)
-            {
-                int32_t nx = cx + dx;
-                int32_t ny = cy + dy;
-                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
-                    continue;
-                if (!IsPassable(map[ny][nx]) && map[ny][nx] != targetType)
-                    continue;
-                if (visited.count({nx, ny}))
-                    continue;
-
-                visited.insert({nx, ny});
-                prev[{nx, ny}] = {cx, cy};
-                q.push({nx, ny});
-            }
-        }
-
-        if (target.first < 0)
-            return {};
-
-        CellPath path;
-        auto cur = target;
-        std::pair<int32_t, int32_t> start{sx, sy};
-        while (cur != start)
-        {
-            path.push_back(cur);
-            auto it = prev.find(cur);
-            if (it == prev.end())
-                return {};
-            cur = it->second;
-        }
-        path.push_back({sx, sy});
-        std::reverse(path.begin(), path.end());
-        return path;
+        return false;
     }
 
-    // 返回从 (sx,sy) 到 (tx,ty) 的路径
-    // sx,tx = cellX (column in map), sy,ty = cellY (row in map)
-    [[nodiscard]] CellPath BfsTo(
+    [[nodiscard]] std::vector<Cell> Bfs(
         const std::vector<std::vector<THUAI9::PlaceType>>& map,
-        int32_t sx,
-        int32_t sy,
-        int32_t tx,
-        int32_t ty
+        Cell start,
+        Cell target
     )
     {
-        if (map.empty() || map.front().empty())
+        if (!InBounds(map, start.first, start.second) || !InBounds(map, target.first, target.second))
             return {};
-        const int32_t numRows = static_cast<int32_t>(map.size());
-        const int32_t numCols = static_cast<int32_t>(map.front().size());
-
-        if (sx < 0 || sy < 0 || sx >= numCols || sy >= numRows)
+        if (!Walkable(map[start.first][start.second]))
             return {};
-        if (tx < 0 || ty < 0 || tx >= numCols || ty >= numRows)
-            return {};
+        if (start == target)
+            return {start};
 
-        CellSet visited;
-        CellMap prev;
-        CellQueue q;
+        const int32_t cols = static_cast<int32_t>(map.size());
+        const int32_t rows = static_cast<int32_t>(map.front().size());
+        std::vector<std::vector<char>> vis(cols, std::vector<char>(rows, 0));
+        std::vector<std::vector<Cell>> pre(cols, std::vector<Cell>(rows, Cell{-1, -1}));
+        std::queue<Cell> q;
 
-        // map[row][col] = map[sy][sx]
-        // 起点不可通行时，从相邻可通行格播种
-        if (!IsPassable(map[sy][sx]))
-        {
-            for (auto [dx, dy] : kDirs)
-            {
-                int32_t nx = sx + dx;
-                int32_t ny = sy + dy;
-                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
-                    continue;
-                if (!IsPassable(map[ny][nx]))
-                    continue;
-                if (visited.count({nx, ny}))
-                    continue;
-                visited.insert({nx, ny});
-                prev[{nx, ny}] = {sx, sy};
-                q.push({nx, ny});
-            }
-            if (q.empty())
-                return {};
-        }
-        else
-        {
-            visited.insert({sx, sy});
-            q.push({sx, sy});
-        }
+        vis[start.first][start.second] = 1;
+        q.push(start);
 
-        std::pair<int32_t, int32_t> target = {tx, ty};
         bool found = false;
-
         while (!q.empty())
         {
-            auto [cx, cy] = q.front();
+            auto [x, y] = q.front();
             q.pop();
 
-            if (cx == tx && cy == ty)
+            if (x == target.first && y == target.second)
             {
                 found = true;
                 break;
             }
 
-            for (auto [dx, dy] : kDirs)
+            for (const auto& [dx, dy] : kDirs)
             {
-                int32_t nx = cx + dx;
-                int32_t ny = cy + dy;
-                if (nx < 0 || ny < 0 || nx >= numCols || ny >= numRows)
+                const int32_t nx = x + dx;
+                const int32_t ny = y + dy;
+                if (!InBounds(map, nx, ny))
                     continue;
-                if (!IsPassable(map[ny][nx]) && !(nx == tx && ny == ty))
+                if (!Walkable(map[nx][ny]) && !(nx == target.first && ny == target.second))
                     continue;
-                if (visited.count({nx, ny}))
+                if (vis[nx][ny])
                     continue;
 
-                visited.insert({nx, ny});
-                prev[{nx, ny}] = {cx, cy};
+                vis[nx][ny] = 1;
+                pre[nx][ny] = {x, y};
                 q.push({nx, ny});
             }
         }
@@ -334,527 +193,305 @@ namespace
         if (!found)
             return {};
 
-        CellPath path;
-        auto cur = target;
-        std::pair<int32_t, int32_t> start{sx, sy};
-        while (cur != start)
-        {
+        std::vector<Cell> path;
+        for (Cell cur = target; cur != start; cur = pre[cur.first][cur.second])
             path.push_back(cur);
-            auto it = prev.find(cur);
-            if (it == prev.end())
-                return {};
-            cur = it->second;
-        }
-        path.push_back({sx, sy});
+        path.push_back(start);
         std::reverse(path.begin(), path.end());
         return path;
     }
 
-    // ── 角色状态 ────────────────────────────────────────────────────────
-
-    enum class CharTask : int32_t
+    template<class TAPI>
+    [[nodiscard]] std::optional<Cell> FindTeamFactoryCell(TAPI& api, int64_t teamID)
     {
-        IDLE = 0,
-        NAVIGATING,  // 正在寻路到目标
-        OCCUPYING,   // 占领算力中心
-        HARVESTING,  // 采集资源
-        ATTACKING,   // 攻击敌方
-        LOADING,     // 从工厂装载
-        SELLING,     // 在市场售卖
-        PATROLLING,  // 巡逻
-    };
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
 
-    struct CharState
-    {
-        CharTask task = CharTask::IDLE;
-        std::vector<std::pair<int32_t, int32_t>> path;
-        size_t pathIdx = 0;
-        int32_t targetCellX = -1;
-        int32_t targetCellY = -1;
-        int32_t prevGridX = -1;
-        int32_t prevGridY = -1;
-        int32_t stuckFrames = 0;
-        int32_t actionCooldown = 0;
-        bool snapshotPrinted = false;
-    };
-
-    std::map<int32_t, CharState> g_charStates;
-    CharState& GetCharState(int32_t playerID)
-    {
-        return g_charStates[playerID];
-    }
-
-    // ── 队伍状态 ────────────────────────────────────────────────────────
-
-    struct TeamState
-    {
-        bool snapshotPrinted = false;
-        std::array<bool, 3> charsBuilt{};  // Robot, Drone, Car
-        int32_t goodsProduced = 0;
-        int32_t techsUpgraded = 0;
-        bool messagesSent = false;
-    };
-    TeamState g_teamState;
-
-    // ── 导航子程序 ──────────────────────────────────────────────────────
-
-    // 每帧调用：沿 path 移动一步。到达返回 true
-    bool NavigateStep(ICharacterAPI& api, const std::shared_ptr<const THUAI9::Character>& self, CharState& s)
-    {
-        if (!self || s.path.empty())
-            return true;
-
-        if (s.pathIdx >= s.path.size())
-            return true;
-
-        auto [tx, ty] = s.path[s.pathIdx];
-        int32_t targetGx = CellToGrid(tx);
-        int32_t targetGy = CellToGrid(ty);
-
-        // 距离检测到达 (C# ArrivalRadius = 300)
-        int64_t dx = static_cast<int64_t>(targetGx) - self->x;
-        int64_t dy = static_cast<int64_t>(targetGy) - self->y;
-        if (dx * dx + dy * dy <= 300 * 300)
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
         {
-            ++s.pathIdx;
-            if (s.pathIdx >= s.path.size())
-                return true;
-            s.stuckFrames = 0;
-        }
-
-        // 网格级卡死检测
-        int32_t gx = self->x;
-        int32_t gy = self->y;
-        if (std::abs(gx - s.prevGridX) < 40 && std::abs(gy - s.prevGridY) < 40)
-            ++s.stuckFrames;
-        else
-            s.stuckFrames = 0;
-        s.prevGridX = gx;
-        s.prevGridY = gy;
-
-        double angle = CalcAngle(self->x, self->y, targetGx, targetGy);
-        // 卡死扰动 (C#: stall >= 4 时 ±0.35)
-        if (s.stuckFrames >= 4)
-            angle += (s.stuckFrames / 4) % 2 == 0 ? 0.35 : -0.35;
-
-        api.Move(kMoveTimeMs, angle);
-        return false;
-    }
-
-    // 启动导航到指定 cell
-    bool StartNavigate(const std::vector<std::vector<THUAI9::PlaceType>>& map, const std::shared_ptr<const THUAI9::Character>& self, CharState& s, int32_t tx, int32_t ty)
-    {
-        if (!self)
-            return false;
-        int32_t cx = GridToCell(self->x);
-        int32_t cy = GridToCell(self->y);
-        auto path = BfsTo(map, cx, cy, tx, ty);
-        if (path.empty())
-            return false;
-        s.path = std::move(path);
-        s.pathIdx = 1;  // 跳过起点
-        s.task = CharTask::NAVIGATING;
-        s.targetCellX = tx;
-        s.targetCellY = ty;
-        return true;
-    }
-
-    // 启动导航到最近的目标类型 cell
-    bool StartNavigateToNearest(const std::vector<std::vector<THUAI9::PlaceType>>& map, const std::shared_ptr<const THUAI9::Character>& self, CharState& s, THUAI9::PlaceType targetType)
-    {
-        if (!self)
-            return false;
-        int32_t cx = GridToCell(self->x);
-        int32_t cy = GridToCell(self->y);
-        auto path = BfsToNearest(map, cx, cy, targetType);
-        if (path.empty())
-            return false;
-        s.path = std::move(path);
-        s.pathIdx = 1;
-        s.task = CharTask::NAVIGATING;
-        s.targetCellX = s.path.back().first;
-        s.targetCellY = s.path.back().second;
-        return true;
-    }
-
-    // ── 战斗检测 ────────────────────────────────────────────────────────
-
-    // 视野内最近敌人→ attack；返回 true = 本帧在处理战斗
-    bool CombatCheck(ICharacterAPI& api, const std::shared_ptr<const THUAI9::Character>& self)
-    {
-        if (!self)
-            return false;
-
-        auto enemies = api.GetEnemyCharacters();
-        if (enemies.empty())
-            return false;
-
-        // 找最近敌人
-        int64_t bestDist2 = std::numeric_limits<int64_t>::max();
-        const THUAI9::Character* bestEnemy = nullptr;
-        for (auto& e : enemies)
-        {
-            if (!e)
-                continue;
-            int64_t dx = static_cast<int64_t>(e->x) - self->x;
-            int64_t dy = static_cast<int64_t>(e->y) - self->y;
-            int64_t d2 = dx * dx + dy * dy;
-            if (d2 < bestDist2)
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
             {
-                bestDist2 = d2;
-                bestEnemy = e.get();
+                auto fac = api.GetFactoryState(x, y);
+                if (fac.has_value() && fac->teamID == teamID)
+                    return Cell{x, y};
             }
         }
-        if (!bestEnemy)
+        return std::nullopt;
+    }
+
+    [[nodiscard]] std::optional<PathTarget> FindNearestResource(ICharacterAPI& api, const THUAI9::Character& self)
+    {
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+
+        const Cell start{GridToCell(self.x), GridToCell(self.y)};
+        std::optional<PathTarget> best;
+
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::Resource)
+                    continue;
+                auto res = api.GetResourceState(x, y);
+                if (!res.has_value() || res->state == THUAI9::ResourceState::Harvested)
+                    continue;
+
+                for (const auto& [dx, dy] : kDirs)
+                {
+                    const int32_t nx = x + dx;
+                    const int32_t ny = y + dy;
+                    if (!InBounds(map, nx, ny))
+                        continue;
+                    if (!Walkable(map[nx][ny]))
+                        continue;
+
+                    auto path = Bfs(map, start, {nx, ny});
+                    if (path.empty())
+                        continue;
+                    if (!best.has_value() || path.size() < best->path.size())
+                        best = PathTarget{{x, y}, {nx, ny}, std::move(path)};
+                }
+            }
+        }
+        return best;
+    }
+
+    [[nodiscard]] std::optional<PathTarget> FindHomePath(ICharacterAPI& api, const THUAI9::Character& self)
+    {
+        const auto map = api.GetFullMap();
+        auto fac = FindTeamFactoryCell(api, self.teamID);
+        if (!fac.has_value())
+            return std::nullopt;
+
+        const Cell start{GridToCell(self.x), GridToCell(self.y)};
+        std::optional<PathTarget> best;
+
+        for (const auto& [dx, dy] : kDirs)
+        {
+            const int32_t nx = fac->first + dx;
+            const int32_t ny = fac->second + dy;
+            if (!InBounds(map, nx, ny))
+                continue;
+            if (!Walkable(map[nx][ny]))
+                continue;
+
+            auto path = Bfs(map, start, {nx, ny});
+            if (path.empty())
+                continue;
+            if (!best.has_value() || path.size() < best->path.size())
+                best = PathTarget{{fac->first, fac->second}, {nx, ny}, std::move(path)};
+        }
+        return best;
+    }
+
+    [[nodiscard]] bool MoveAlongPath(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.target.path.empty() || s.pathIndex >= s.target.path.size())
+            return true;
+
+        if (self.characterActiveState == THUAI9::CharacterState::Moving ||
+            self.characterActiveState == THUAI9::CharacterState::KnockedBack ||
+            self.characterActiveState == THUAI9::CharacterState::Trading ||
+            self.characterActiveState == THUAI9::CharacterState::Attacking ||
+            self.characterActiveState == THUAI9::CharacterState::Harvesting ||
+            self.characterActiveState == THUAI9::CharacterState::Ocuppying)
+        {
             return false;
-
-        int32_t atkRange = self->commonAttackRange > 0 ? self->commonAttackRange : 1000;
-        int64_t atkRangeSq = static_cast<int64_t>(atkRange) * atkRange;
-
-        if (bestDist2 <= atkRangeSq)
-        {
-            api.EndAllAction();
-            api.Common_Attack(bestEnemy->playerID);
-            api.Print("⚔ Attacking enemy " + std::to_string(bestEnemy->playerID));
-            return true;
         }
 
-        // 若敌人在视野内但超出攻击范围，靠近
-        int32_t viewRange = self->viewRange > 0 ? self->viewRange : 5000;
-        int64_t viewRangeSq = static_cast<int64_t>(viewRange) * viewRange;
-        if (bestDist2 <= viewRangeSq)
-        {
-            double angle = CalcAngle(self->x, self->y, bestEnemy->x, bestEnemy->y);
-            api.Move(kMoveTimeMs, angle);
+        if (!NearCellCenter(self))
+            return MoveToCellCenter(api, self);
+
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+        while (s.pathIndex < s.target.path.size() && s.target.path[s.pathIndex] == cur)
+            ++s.pathIndex;
+        if (s.pathIndex >= s.target.path.size())
             return true;
+
+        const auto [dx, dy] = Cell{
+            s.target.path[s.pathIndex].first - cur.first,
+            s.target.path[s.pathIndex].second - cur.second,
+        };
+        if (std::abs(dx) + std::abs(dy) != 1)
+        {
+            s.phase = Phase::SeekResource;
+            s.target = {};
+            return false;
         }
 
+        size_t runLen = 1;
+        while (s.pathIndex + runLen < s.target.path.size())
+        {
+            const auto next = s.target.path[s.pathIndex + runLen];
+            const auto prev = s.target.path[s.pathIndex + runLen - 1];
+            if (next.first - prev.first != dx || next.second - prev.second != dy)
+                break;
+            ++runLen;
+        }
+
+        const int64_t moveMs = static_cast<int64_t>(runLen) * kMoveTimeMs;
+        const auto [tx, ty] = s.target.path[s.pathIndex + runLen - 1];
+        api.Print("move " + CellText({tx, ty}) + " steps=" + std::to_string(runLen));
+        if (dx == 1)
+            (void)api.MoveDown(moveMs).get();
+        else if (dx == -1)
+            (void)api.MoveUp(moveMs).get();
+        else if (dy == 1)
+            (void)api.MoveRight(moveMs).get();
+        else if (dy == -1)
+            (void)api.MoveLeft(moveMs).get();
+        s.pathIndex += runLen;
         return false;
     }
 
-    // ── 角色 AI ─────────────────────────────────────────────────────────
-
-    void RobotAI(ICharacterAPI& api, const std::shared_ptr<const THUAI9::Character>& self, CharState& s)
+    void CharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
     {
-        const std::string who = "Robot(" + std::to_string(self->playerID) + ")";
+        if (self.playerID != 1)
+            return;
 
-        // 首次打印快照
-        if (!s.snapshotPrinted)
+        const Cell selfCell{GridToCell(self.x), GridToCell(self.y)};
+        api.Print(
+            "char frame=" + std::to_string(api.GetFrameCount()) +
+            " phase=" + std::to_string(static_cast<int>(s.phase)) +
+            " cell=" + CellText(selfCell)
+        );
+
+        if (s.phase == Phase::SeekResource)
         {
-            PrintCommonSnapshot(api, who);
-            api.PrintSelfInfo();
-            s.snapshotPrinted = true;
+            auto target = FindNearestResource(api, self);
+            if (!target.has_value())
+            {
+                api.Print("no resource");
+                return;
+            }
+            s.target = std::move(*target);
+            s.pathIndex = 1;
+            s.phase = Phase::ToResource;
+            api.Print("resource " + CellText(s.target.object) + " -> " + CellText(s.target.approach));
+            return;
         }
 
-        switch (s.task)
+        if (s.phase == Phase::ToResource)
         {
-            case CharTask::IDLE:
-                {
-                    api.Print(who + ": searching for ComputeCenter...");
-                    auto map = api.GetFullMap();
-                    if (!StartNavigateToNearest(map, self, s, THUAI9::PlaceType::ComputeCenter))
-                    {
-                        api.Print(who + ": no ComputeCenter found, patrolling.");
-                        s.task = CharTask::PATROLLING;
-                    }
-                    break;
-                }
+            auto res = api.GetResourceState(s.target.object.first, s.target.object.second);
+            if (!res.has_value() || res->state == THUAI9::ResourceState::Harvested)
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                return;
+            }
 
-            case CharTask::NAVIGATING:
-                {
-                    if (NavigateStep(api, self, s))
-                    {
-                        api.Print(who + ": reached target cell (" + std::to_string(s.targetCellX) + "," + std::to_string(s.targetCellY) + ")");
-                        s.task = CharTask::OCCUPYING;
-                    }
-                    break;
-                }
+            if (!MoveAlongPath(api, self, s))
+                return;
 
-            case CharTask::OCCUPYING:
-                {
-                    api.EndAllAction();
-                    bool ok = api.Occupy().get();
-                    api.Print(who + ": Occupy -> " + BoolText(ok));
-                    if (ok)
-                    {
-                        api.Print(who + ": CC occupied, switching to patrol.");
-                        s.task = CharTask::PATROLLING;
-                    }
-                    break;
-                }
+            if (!InInteractRange(selfCell, s.target.object))
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                return;
+            }
 
-            case CharTask::PATROLLING:
-            default:
+            api.Print("harvest");
+            if (api.Harvest().get())
+            {
+                auto home = FindHomePath(api, self);
+                if (!home.has_value())
                 {
-                    int32_t fc = api.GetFrameCount();
-                    if (fc > 0 && fc % 60 == 0)
-                    {
-                        s.path.clear();
-                        s.pathIdx = 0;
-                        s.task = CharTask::IDLE;
-                        break;
-                    }
-                    switch ((fc / 60) % 4)
-                    {
-                        case 0: api.MoveRight(kMoveTimeMs); break;
-                        case 1: api.MoveDown(kMoveTimeMs); break;
-                        case 2: api.MoveLeft(kMoveTimeMs); break;
-                        case 3: api.MoveUp(kMoveTimeMs); break;
-                    }
-                    if (fc % 180 == 0)
-                        PrintCommonSnapshot(api, who);
-                    break;
+                    s.phase = Phase::SeekResource;
+                    s.target = {};
+                    return;
                 }
+                s.target = std::move(*home);
+                s.pathIndex = 1;
+                s.phase = Phase::ToFactory;
+            }
+            else
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+            }
+            return;
+        }
+
+        if (s.phase == Phase::ToFactory)
+        {
+            auto fac = FindTeamFactoryCell(api, self.teamID);
+            if (!fac.has_value())
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                return;
+            }
+
+            if (InInteractRange(selfCell, *fac))
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                return;
+            }
+
+            if (!MoveAlongPath(api, self, s))
+                return;
+
+            auto home = FindHomePath(api, self);
+            if (home.has_value())
+            {
+                s.target = std::move(*home);
+                s.pathIndex = 1;
+            }
+            else
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+            }
         }
     }
 
-    void DroneAI(ICharacterAPI& api, const std::shared_ptr<const THUAI9::Character>& self, CharState& s)
+    void TeamAI(ITeamAPI& api, const THUAI9::Team& team, TeamState& s)
     {
-        const std::string who = "Drone(" + std::to_string(self->playerID) + ")";
+        api.Print(
+            "team frame=" + std::to_string(api.GetFrameCount()) +
+            " built=" + std::string(s.builderBuilt ? "true" : "false") +
+            " material=" + std::to_string(team.material) +
+            " compute=" + std::to_string(team.computePower)
+        );
 
-        if (!s.snapshotPrinted)
+        if (!s.builderBuilt)
         {
-            PrintCommonSnapshot(api, who);
-            api.PrintSelfInfo();
-            s.snapshotPrinted = true;
+            api.Print("build AutonomousCar 1");
+            if (api.BuildCharacter(THUAI9::CharacterType::AutonomousCar, kBuilderPlayerId).get())
+                s.builderBuilt = true;
+            return;
         }
 
-        switch (s.task)
+        auto fac = FindTeamFactoryCell(api, team.teamID);
+        if (!fac.has_value())
+            return;
+
+        auto factory = api.GetFactoryState(fac->first, fac->second);
+        if (!factory.has_value())
+            return;
+
+        const int32_t frame = api.GetFrameCount();
+        if (factory->source >= kProduceCost && frame - s.lastProduceFrame >= 20)
         {
-            case CharTask::IDLE:
-                {
-                    // 扫描地图找最近的敌方工厂
-                    api.Print(who + ": scanning for enemy factories...");
-                    auto map = api.GetFullMap();
-                    if (map.empty() || map.front().empty())
-                        break;
-
-                    int32_t numRows = static_cast<int32_t>(map.size());
-                    int32_t numCols = static_cast<int32_t>(map.front().size());
-                    int64_t bestDist2 = std::numeric_limits<int64_t>::max();
-                    int32_t bestCellX = -1, bestCellY = -1;
-
-                    for (int32_t row = 0; row < numRows; ++row)
-                    {
-                        for (int32_t col = 0; col < numCols; ++col)
-                        {
-                            if (map[row][col] != THUAI9::PlaceType::Factory)
-                                continue;
-                            auto facOpt = api.GetFactoryState(col, row);
-                            if (!facOpt.has_value())
-                                continue;
-                            if (facOpt->teamID == self->teamID)
-                                continue;  // 跳过己方
-
-                            int64_t dx = static_cast<int64_t>(CellToGrid(col)) - self->x;
-                            int64_t dy = static_cast<int64_t>(CellToGrid(row)) - self->y;
-                            int64_t d2 = dx * dx + dy * dy;
-                            if (d2 < bestDist2)
-                            {
-                                bestDist2 = d2;
-                                bestCellX = col;
-                                bestCellY = row;
-                            }
-                        }
-                    }
-
-                    if (bestCellX < 0)
-                    {
-                        api.Print(who + ": no enemy factory found, patrolling.");
-                        s.task = CharTask::PATROLLING;
-                        break;
-                    }
-
-                    api.Print(who + ": targeting enemy factory at (" + std::to_string(bestCellX) + "," + std::to_string(bestCellY) + ")");
-
-                    auto map2 = api.GetFullMap();
-                    if (!StartNavigate(map2, self, s, bestCellX, bestCellY))
-                    {
-                        api.Print(who + ": path to enemy factory blocked.");
-                        s.task = CharTask::PATROLLING;
-                    }
-                    break;
-                }
-
-            case CharTask::NAVIGATING:
-                {
-                    if (NavigateStep(api, self, s))
-                    {
-                        api.Print(who + ": reached enemy factory cell.");
-                        s.task = CharTask::ATTACKING;
-                        s.actionCooldown = 0;
-                    }
-                    break;
-                }
-
-            case CharTask::ATTACKING:
-                {
-                    // 确认目标工厂还在
-                    auto facOpt = api.GetFactoryState(s.targetCellX, s.targetCellY);
-                    if (!facOpt.has_value() || facOpt->teamID == self->teamID || facOpt->hp <= 0)
-                    {
-                        api.Print(who + ": target factory destroyed or lost, searching new target.");
-                        s.task = CharTask::IDLE;
-                        s.path.clear();
-                        s.pathIdx = 0;
-                        break;
-                    }
-
-                    if (s.actionCooldown > 0)
-                    {
-                        --s.actionCooldown;
-                        break;
-                    }
-
-                    api.EndAllAction();
-                    // Attack 需要 attackedPlayerID；敌方工厂没有 playerID，传 0 服务端自动锁定最近
-                    bool ok = api.Common_Attack(0).get();
-                    api.Print(who + ": Attack factory at (" + std::to_string(s.targetCellX) + "," + std::to_string(s.targetCellY) + ") -> " + BoolText(ok));
-                    s.actionCooldown = 20;  // ~1s cooldown at 50ms/frame
-                    break;
-                }
-
-            case CharTask::PATROLLING:
-            default:
-                {
-                    int32_t fc = api.GetFrameCount();
-                    if (fc > 0 && fc % 60 == 0)
-                    {
-                        s.path.clear();
-                        s.pathIdx = 0;
-                        s.task = CharTask::IDLE;
-                        break;
-                    }
-                    switch ((fc / 60) % 4)
-                    {
-                        case 0: api.MoveRight(kMoveTimeMs); break;
-                        case 1: api.MoveDown(kMoveTimeMs); break;
-                        case 2: api.MoveLeft(kMoveTimeMs); break;
-                        case 3: api.MoveUp(kMoveTimeMs); break;
-                    }
-                    if (fc % 180 == 0)
-                        PrintCommonSnapshot(api, who);
-                    break;
-                }
+            api.Print("produce Food");
+            if (api.ProduceGoods(kProduceGoods, 1).get())
+                s.lastProduceFrame = frame;
         }
     }
-
-    void CarAI(ICharacterAPI& api, const std::shared_ptr<const THUAI9::Character>& self, CharState& s)
-    {
-        const std::string who = "Car(" + std::to_string(self->playerID) + ")";
-
-        if (!s.snapshotPrinted)
-        {
-            PrintCommonSnapshot(api, who);
-            api.PrintSelfInfo();
-            s.snapshotPrinted = true;
-        }
-
-        switch (s.task)
-        {
-            case CharTask::IDLE:
-                {
-                    api.Print(who + ": searching for nearest Resource...");
-                    auto map = api.GetFullMap();
-                    if (!StartNavigateToNearest(map, self, s, THUAI9::PlaceType::Resource))
-                    {
-                        api.Print(who + ": no Resource found, patrolling.");
-                        s.task = CharTask::PATROLLING;
-                    }
-                    break;
-                }
-
-            case CharTask::NAVIGATING:
-                {
-                    if (NavigateStep(api, self, s))
-                    {
-                        api.Print(who + ": reached resource at (" + std::to_string(s.targetCellX) + "," + std::to_string(s.targetCellY) + ")");
-                        s.task = CharTask::HARVESTING;
-                    }
-                    break;
-                }
-
-            case CharTask::HARVESTING:
-                {
-                    // 检查资源是否还存在
-                    auto resOpt = api.GetResourceState(s.targetCellX, s.targetCellY);
-                    if (!resOpt.has_value() ||
-                        resOpt->state == THUAI9::ResourceState::Harvested)
-                    {
-                        api.Print(who + ": resource depleted, searching new one.");
-                        s.task = CharTask::IDLE;
-                        s.path.clear();
-                        s.pathIdx = 0;
-                        break;
-                    }
-
-                    api.EndAllAction();
-                    bool ok = api.Harvest().get();
-                    api.Print(who + ": Harvest -> " + BoolText(ok));
-
-                    if (api.GetFrameCount() % 90 == 0)  // 每 ~4.5s 报告
-                        PrintCommonSnapshot(api, who);
-                    break;
-                }
-
-            case CharTask::PATROLLING:
-            default:
-                {
-                    int32_t fc = api.GetFrameCount();
-                    if (fc > 0 && fc % 60 == 0)
-                    {
-                        s.path.clear();
-                        s.pathIdx = 0;
-                        s.task = CharTask::IDLE;
-                        break;
-                    }
-                    switch ((fc / 60) % 4)
-                    {
-                        case 0: api.MoveRight(kMoveTimeMs); break;
-                        case 1: api.MoveDown(kMoveTimeMs); break;
-                        case 2: api.MoveLeft(kMoveTimeMs); break;
-                        case 3: api.MoveUp(kMoveTimeMs); break;
-                    }
-                    break;
-                }
-        }
-    }
-
 }  // namespace
-
-// ════════════════════════════════════════════════════════════════════════
-// IAI 接口实现
-// ════════════════════════════════════════════════════════════════════════
 
 void AI::play(ICharacterAPI& api)
 {
     auto self = api.GetSelfInfo();
     if (!self)
-        return;  // 角色尚未被召唤
-
-    DrainMessages(api, "char " + std::to_string(playerID));
-
-    // 战斗中断优先
-    if (CombatCheck(api, self))
         return;
-
-    auto& s = GetCharState(playerID);
-
-    // 根据角色类型分派
-    switch (self->characterType)
-    {
-        case THUAI9::CharacterType::Robot:
-            RobotAI(api, self, s);
-            break;
-        case THUAI9::CharacterType::Drone:
-            DroneAI(api, self, s);
-            break;
-        case THUAI9::CharacterType::AutonomousCar:
-            CarAI(api, self, s);
-            break;
-        default:
-            break;
-    }
+    auto& s = g_charStates[self->playerID];
+    CharAI(api, *self, s);
 }
 
 void AI::play(ITeamAPI& api)
@@ -862,69 +499,6 @@ void AI::play(ITeamAPI& api)
     auto team = api.GetSelfInfo();
     if (!team)
         return;
-
-    const std::string who = "Team " + std::to_string(team->teamID);
-    DrainMessages(api, who);
-
-    if (!g_teamState.snapshotPrinted)
-    {
-        PrintCommonSnapshot(api, who);
-        api.PrintSelfInfo();
-        g_teamState.snapshotPrinted = true;
-    }
-
-    // ── 召唤角色 ────────────────────────────────────────────────────
-    for (int32_t i = 0; i < 3; ++i)
-    {
-        if (g_teamState.charsBuilt[i])
-            continue;
-
-        int32_t charId = i + 1;
-        bool ok = api.BuildCharacter(CharacterTypeDict[i], charId).get();
-        api.Print(who + ": BuildCharacter(" + std::to_string(charId) + ") -> " + BoolText(ok));
-        if (ok)
-        {
-            g_teamState.charsBuilt[i] = true;
-            api.Print(who + ": character " + std::to_string(charId) + " built successfully.");
-        }
-        break;  // 每帧只尝试召唤一个
-    }
-
-    // ── 角色全召唤完后发送消息 ──────────────────────────────────────
-    bool allBuilt = g_teamState.charsBuilt[0] && g_teamState.charsBuilt[1] && g_teamState.charsBuilt[2];
-    if (allBuilt && !g_teamState.messagesSent)
-    {
-        for (int32_t toID = 1; toID <= 3; ++toID)
-        {
-            api.SendTextMessage(toID, "Hello from Team " + std::to_string(team->teamID));
-            api.SendBinaryMessage(toID, "bin-data-team" + std::to_string(team->teamID));
-        }
-        g_teamState.messagesSent = true;
-        api.Print(who + ": messages sent to all characters.");
-    }
-
-    // ── 生产商品 ────────────────────────────────────────────────────
-    int32_t fc = api.GetFrameCount();
-    if (allBuilt && g_teamState.goodsProduced < static_cast<int32_t>(kGoodsToTest.size()) && fc % 30 == 0)
-    {
-        auto gt = kGoodsToTest[g_teamState.goodsProduced];
-        bool ok = api.ProduceGoods(gt, kGoodsAmount).get();
-        api.Print(who + ": ProduceGoods(" + std::to_string(static_cast<int>(gt)) + ") -> " + BoolText(ok));
-        if (ok)
-            ++g_teamState.goodsProduced;
-    }
-
-    // ── 升级科技 ────────────────────────────────────────────────────
-    if (allBuilt && g_teamState.techsUpgraded < static_cast<int32_t>(kTechToTest.size()) && fc % 50 == 0)
-    {
-        auto tt = kTechToTest[g_teamState.techsUpgraded];
-        bool ok = api.UplevelTech(tt).get();
-        api.Print(who + ": UplevelTech(" + std::to_string(static_cast<int>(tt)) + ") -> " + BoolText(ok));
-        if (ok)
-            ++g_teamState.techsUpgraded;
-    }
-
-    // 定期快照
-    if (fc % 240 == 0)
-        PrintCommonSnapshot(api, who);
+    auto& s = g_teamStates[team->teamID];
+    TeamAI(api, *team, s);
 }

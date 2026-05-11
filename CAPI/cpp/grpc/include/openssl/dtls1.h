@@ -19,7 +19,8 @@
 #include <openssl/prov_ssl.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <openssl/opensslconf.h>
@@ -34,7 +35,7 @@ extern "C" {
 /* Special value for method supporting multiple versions */
 #define DTLS_ANY_VERSION 0x1FFFF
 
-/* lengths of messages */
+    /* lengths of messages */
 
 #define DTLS1_COOKIE_LENGTH 255
 

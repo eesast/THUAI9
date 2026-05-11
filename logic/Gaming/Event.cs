@@ -182,20 +182,20 @@ namespace Gaming
 
             private static async Task<GeneratedEvent?> RequestEventFromLLMAsync(CancellationToken cancellationToken)
             {
-                if (string.IsNullOrWhiteSpace(GameData.LLM_api_token) ||
-                    string.IsNullOrWhiteSpace(GameData.LLM_api_url) ||
-                    string.IsNullOrWhiteSpace(GameData.LLM_model))
+                if (string.IsNullOrWhiteSpace(GameData.API_key) ||
+                    string.IsNullOrWhiteSpace(GameData.API_url) ||
+                    string.IsNullOrWhiteSpace(GameData.ModelName))
                 {
                     LogicLogging.logger.LogError("Event LLM config missing in GameData.");
                     return null;
                 }
 
                 if (httpClient.DefaultRequestHeaders.Authorization == null)
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.LLM_api_token);
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
 
                 var req = new ChatRequest
                 {
-                    Model = GameData.LLM_model,
+                    Model = GameData.ModelName,
                     Messages =
                     [
                         new ChatMessage
@@ -213,7 +213,7 @@ namespace Gaming
 
                 var json = JsonSerializer.Serialize(req);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await httpClient.PostAsync(GameData.LLM_api_url, content, cancellationToken);
+                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"Event LLM HTTP failed: {(int)resp.StatusCode}");
@@ -239,20 +239,20 @@ namespace Gaming
 
             private static async Task<string?> RequestTextFromLLMAsync(string prompt, CancellationToken cancellationToken)
             {
-                if (string.IsNullOrWhiteSpace(GameData.LLM_api_token) ||
-                    string.IsNullOrWhiteSpace(GameData.LLM_api_url) ||
-                    string.IsNullOrWhiteSpace(GameData.LLM_model))
+                if (string.IsNullOrWhiteSpace(GameData.API_key) ||
+                    string.IsNullOrWhiteSpace(GameData.API_url) ||
+                    string.IsNullOrWhiteSpace(GameData.ModelName))
                 {
                     LogicLogging.logger.LogError("AskAI config missing in GameData.");
                     return null;
                 }
 
                 if (httpClient.DefaultRequestHeaders.Authorization == null)
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.LLM_api_token);
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
 
                 var req = new ChatRequest
                 {
-                    Model = GameData.LLM_model,
+                    Model = GameData.ModelName,
                     MaxTokens = 512,
                     Messages =
                     [
@@ -271,7 +271,7 @@ namespace Gaming
 
                 var json = JsonSerializer.Serialize(req);
                 using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await httpClient.PostAsync(GameData.LLM_api_url, content, cancellationToken);
+                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"AskAI HTTP failed: {(int)resp.StatusCode}");

@@ -93,6 +93,48 @@ namespace Server
             }
         }
 
+        private MessageToClient BuildGameFrame(GameState gameState, bool includeMap, bool consumeNews)
+        {
+            var snapshot = game.GetSnapshot();
+            var gameObjList = snapshot.Objects;
+            var gameInfo = new MessageToClient();
+
+            if (includeMap)
+                gameInfo.ObjMessage.Add(currentMapMsg);
+
+            long time = Environment.TickCount64;
+            foreach (GameObj gameObj in gameObjList.Cast<GameObj>())
+            {
+                MessageOfObj? msg = CopyInfo.Auto(gameObj, time);
+                if (msg != null) gameInfo.ObjMessage.Add(msg);
+            }
+
+            if (consumeNews)
+            {
+                lock (newsLock)
+                {
+                    foreach (var news in currentNews)
+                    {
+                        MessageOfObj? msg = CopyInfo.Auto(news);
+                        if (msg != null) gameInfo.ObjMessage.Add(msg);
+                    }
+                    currentNews.Clear();
+                }
+            }
+
+            gameInfo.GameState = gameState;
+            gameInfo.AllMessage = GetMessageOfAll(game.GameMap.Timer.NowTime());
+            return gameInfo;
+        }
+
+        private MessageToClient BuildLateJoinStartFrame()
+        {
+            lock (messageToAllClientsLock)
+            {
+                return BuildGameFrame(GameState.GameStart, includeMap: true, consumeNews: false);
+            }
+        }
+
         public override void WaitForEnd()
         {
             endGameSem.Wait();
@@ -284,9 +326,6 @@ namespace Server
 
         public void ReportGame(GameState gameState, bool requiredGaming = true)
         {
-            var snapshot = game.GetSnapshot();
-            var gameObjList = snapshot.Objects;
-            currentGameInfo = new();
             lock (messageToAllClientsLock)
             {
                 switch (gameState)
@@ -294,28 +333,8 @@ namespace Server
                     case GameState.GameRunning:
                     case GameState.GameEnd:
                     case GameState.GameStart:
-                        if (gameState == GameState.GameStart || IsSpectatorJoin)
-                        {
-                            currentGameInfo.ObjMessage.Add(currentMapMsg);
-                            IsSpectatorJoin = false;
-                        }
-                        long time = Environment.TickCount64;
-                        foreach (GameObj gameObj in gameObjList.Cast<GameObj>())
-                        {
-                            MessageOfObj? msg = CopyInfo.Auto(gameObj, time);
-                            if (msg != null) currentGameInfo.ObjMessage.Add(msg);
-                        }
-                        lock (newsLock)
-                        {
-                            foreach (var news in currentNews)
-                            {
-                                MessageOfObj? msg = CopyInfo.Auto(news);
-                                if (msg != null) currentGameInfo.ObjMessage.Add(msg);
-                            }
-                            currentNews.Clear();
-                        }
-                        currentGameInfo.GameState = gameState;
-                        currentGameInfo.AllMessage = GetMessageOfAll(game.GameMap.Timer.NowTime());
+                        currentGameInfo = BuildGameFrame(gameState, gameState == GameState.GameStart || IsSpectatorJoin, consumeNews: true);
+                        IsSpectatorJoin = false;
                         mwr?.WriteOne(currentGameInfo);
                         break;
                     default:

@@ -48,7 +48,7 @@ namespace Preparation.Utility
         public const int FactoryRobust = 20;
         public const int FactoryEfficiency = 1;
         // initial computing power for newly created factories
-        public const int FactoryInitialComputingPower = 100;
+        public const int FactoryInitialComputingPower = 1000;
 
         public const int FactoryEfficiencyMax = 2; // maximum efficiency for factory
         public const int FactoryInitialSource = 0; // initial source stored in factory
@@ -147,10 +147,9 @@ namespace Preparation.Utility
         public const int SpaceRadius = NumOfPosGridPerCell / 2;
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
-        // LLM API configuration (eesast proxy)
-        public const string LLM_api_url = "http://eesast.com/llm/chat";
-        public const string LLM_api_token = "Mzg2MDU0MmEtNjcxZS00NjVkLTkxY2QtYTI3NzdjY2NhODU4";
-        public const string LLM_model = "deepseek-v4-pro";
+        public const string API_key = "sk-3775f695d231424ead3a1ef2138f0af5";
+        public const string API_url = "https://api.deepseek.com/v1/chat/completions";
+        public const string ModelName = "deepseek-chat";
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;
         public const int AskAITimeoutMs = 60_000;

@@ -73,11 +73,17 @@ constexpr int128::int128(unsigned long long v) : v_{v} {}
 
 constexpr int128::int128(unsigned __int128 v) : v_{static_cast<__int128>(v)} {}
 
-constexpr int128::int128(float v) : v_{static_cast<__int128>(v)} {}
+inline int128::int128(float v) {
+  v_ = static_cast<__int128>(v);
+}
 
-constexpr int128::int128(double v) : v_{static_cast<__int128>(v)} {}
+inline int128::int128(double v) {
+  v_ = static_cast<__int128>(v);
+}
 
-constexpr int128::int128(long double v) : v_{static_cast<__int128>(v)} {}
+inline int128::int128(long double v) {
+  v_ = static_cast<__int128>(v);
+}
 
 constexpr int128::int128(uint128 v) : v_{static_cast<__int128>(v)} {}
 
@@ -113,7 +119,9 @@ constexpr int128::operator unsigned short() const {  // NOLINT(runtime/int)
   return static_cast<unsigned short>(v_);            // NOLINT(runtime/int)
 }
 
-constexpr int128::operator int() const { return static_cast<int>(v_); }
+constexpr int128::operator int() const {
+  return static_cast<int>(v_);
+}
 
 constexpr int128::operator unsigned int() const {
   return static_cast<unsigned int>(v_);
@@ -145,46 +153,44 @@ constexpr int128::operator unsigned __int128() const {
 // conversions. In that case, we do the conversion with a similar implementation
 // to the conversion operators in int128_no_intrinsic.inc.
 #if defined(__clang__) && !defined(__ppc64__)
-constexpr int128::operator float() const { return static_cast<float>(v_); }
+inline int128::operator float() const { return static_cast<float>(v_); }
 
-constexpr int128::operator double() const { return static_cast<double>(v_); }
+inline int128::operator double() const { return static_cast<double>(v_); }
 
-constexpr int128::operator long double() const {
+inline int128::operator long double() const {
   return static_cast<long double>(v_);
 }
 
-#else   // Clang on PowerPC
+#else  // Clang on PowerPC
 
-constexpr int128::operator float() const {
+inline int128::operator float() const {
   // We must convert the absolute value and then negate as needed, because
   // floating point types are typically sign-magnitude. Otherwise, the
   // difference between the high and low 64 bits when interpreted as two's
   // complement overwhelms the precision of the mantissa.
   //
   // Also check to make sure we don't negate Int128Min()
-  constexpr float pow_2_64 = 18446744073709551616.0f;
   return v_ < 0 && *this != Int128Min()
              ? -static_cast<float>(-*this)
              : static_cast<float>(Int128Low64(*this)) +
-                   static_cast<float>(Int128High64(*this)) * pow_2_64;
+                   std::ldexp(static_cast<float>(Int128High64(*this)), 64);
 }
 
-constexpr int128::operator double() const {
+inline int128::operator double() const {
   // See comment in int128::operator float() above.
-  constexpr double pow_2_64 = 18446744073709551616.0;
   return v_ < 0 && *this != Int128Min()
              ? -static_cast<double>(-*this)
              : static_cast<double>(Int128Low64(*this)) +
-                   static_cast<double>(Int128High64(*this)) * pow_2_64;
+                   std::ldexp(static_cast<double>(Int128High64(*this)), 64);
 }
 
-constexpr int128::operator long double() const {
+inline int128::operator long double() const {
   // See comment in int128::operator float() above.
-  constexpr long double pow_2_64 = 18446744073709551616.0L;
   return v_ < 0 && *this != Int128Min()
              ? -static_cast<long double>(-*this)
              : static_cast<long double>(Int128Low64(*this)) +
-                   static_cast<long double>(Int128High64(*this)) * pow_2_64;
+                   std::ldexp(static_cast<long double>(Int128High64(*this)),
+                              64);
 }
 #endif  // Clang on PowerPC
 
@@ -214,20 +220,6 @@ constexpr bool operator>=(int128 lhs, int128 rhs) {
   return static_cast<__int128>(lhs) >= static_cast<__int128>(rhs);
 }
 
-#ifdef __cpp_impl_three_way_comparison
-constexpr absl::strong_ordering operator<=>(int128 lhs, int128 rhs) {
-  if (auto lhs_128 = static_cast<__int128>(lhs),
-      rhs_128 = static_cast<__int128>(rhs);
-      lhs_128 < rhs_128) {
-    return absl::strong_ordering::less;
-  } else if (lhs_128 > rhs_128) {
-    return absl::strong_ordering::greater;
-  } else {
-    return absl::strong_ordering::equal;
-  }
-}
-#endif
-
 // Unary operators.
 
 constexpr int128 operator-(int128 v) { return -static_cast<__int128>(v); }
@@ -246,19 +238,17 @@ constexpr int128 operator-(int128 lhs, int128 rhs) {
   return static_cast<__int128>(lhs) - static_cast<__int128>(rhs);
 }
 
-#if defined(ABSL_HAVE_INTRINSIC_INT128)
-constexpr int128 operator*(int128 lhs, int128 rhs) {
+inline int128 operator*(int128 lhs, int128 rhs) {
   return static_cast<__int128>(lhs) * static_cast<__int128>(rhs);
 }
 
-constexpr int128 operator/(int128 lhs, int128 rhs) {
+inline int128 operator/(int128 lhs, int128 rhs) {
   return static_cast<__int128>(lhs) / static_cast<__int128>(rhs);
 }
 
-constexpr int128 operator%(int128 lhs, int128 rhs) {
+inline int128 operator%(int128 lhs, int128 rhs) {
   return static_cast<__int128>(lhs) % static_cast<__int128>(rhs);
 }
-#endif  // ABSL_HAVE_INTRINSIC_INT128
 
 inline int128 int128::operator++(int) {
   int128 tmp(*this);

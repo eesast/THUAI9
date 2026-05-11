@@ -23,7 +23,8 @@
 #include <openssl/buffererr.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <stddef.h>
@@ -38,21 +39,22 @@ extern "C" {
 #define BUF_strnlen(str, maxlen) OPENSSL_strnlen(str, maxlen)
 #endif
 
-struct buf_mem_st {
-    size_t length; /* current number of bytes */
-    char *data;
-    size_t max; /* size of buffer */
-    unsigned long flags;
-};
+    struct buf_mem_st
+    {
+        size_t length; /* current number of bytes */
+        char* data;
+        size_t max; /* size of buffer */
+        unsigned long flags;
+    };
 
 #define BUF_MEM_FLAG_SECURE 0x01
 
-BUF_MEM *BUF_MEM_new(void);
-BUF_MEM *BUF_MEM_new_ex(unsigned long flags);
-void BUF_MEM_free(BUF_MEM *a);
-size_t BUF_MEM_grow(BUF_MEM *str, size_t len);
-size_t BUF_MEM_grow_clean(BUF_MEM *str, size_t len);
-void BUF_reverse(unsigned char *out, const unsigned char *in, size_t siz);
+    BUF_MEM* BUF_MEM_new(void);
+    BUF_MEM* BUF_MEM_new_ex(unsigned long flags);
+    void BUF_MEM_free(BUF_MEM* a);
+    size_t BUF_MEM_grow(BUF_MEM* str, size_t len);
+    size_t BUF_MEM_grow_clean(BUF_MEM* str, size_t len);
+    void BUF_reverse(unsigned char* out, const unsigned char* in, size_t siz);
 
 #ifdef __cplusplus
 }
