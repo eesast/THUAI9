@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build *)"
+      "Bash(dotnet build *)",
+      "Bash(where vcpkg *)",
+      "Bash(dir \"C:\\\\vcpkg\")",
+      "Bash(dir \"C:\\\\Users\\\\lenovo\\\\vcpkg\")",
+      "Bash(dir \"C:\\\\Users\\\\lenovo\\\\OneDrive\\\\桌面\\\\THUthu\\\\THUAI9\\\\CAPI\\\\cpp\\\\API.sln\")",
+      "Bash(\"C:\\\\Users\\\\lenovo\\\\vcpkg\\\\vcpkg.exe\" list *)",
+      "Bash(C:\\\\Users\\\\lenovo\\\\vcpkg\\\\vcpkg.exe install *)",
+      "Bash(tasklist /FI \"IMAGENAME eq vcpkg.exe\")",
+      "Bash(tasklist /FI \"IMAGENAME eq cl.exe\")",
+      "Bash(wc -l \"C:\\\\\\\\Users\\\\\\\\lenovo\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-lenovo-OneDrive----THUthu-THUAI9\\\\\\\\32befac3-b452-475d-896c-bffd5595dca8\\\\\\\\tasks\\\\\\\\b9jtlmr12.output\")",
+      "Bash(tail -5 \"C:\\\\\\\\Users\\\\\\\\lenovo\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-lenovo-OneDrive----THUthu-THUAI9\\\\\\\\32befac3-b452-475d-896c-bffd5595dca8\\\\\\\\tasks\\\\\\\\b9jtlmr12.output\")",
+      "Bash(tail *)",
+      "Bash(D:/vcpkg/vcpkg.exe install *)",
+      "Bash(\"D:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" D:/THUthu/THUAI9/CAPI/cpp/API.sln /p:Configuration=Debug /p:Platform=x64 /t:Build /m /verbosity:minimal)",
+      "Bash(\"D:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" \"D:/THUthu/THUAI9/CAPI/cpp/API.sln\" /p:Configuration=Debug /p:Platform=x64 /t:Build /m /verbosity:minimal)",
+      "Bash(\"D:/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" \"D:/THUthu/THUAI9/CAPI/cpp/API.sln\" -p:Configuration=Debug -p:Platform=x64 -t:Build -m -verbosity:minimal)",
+      "Bash(D:/THUthu/THUAI9/CAPI/cpp/vcpkg_installed/x64-windows/tools/protobuf/protoc.exe --proto_path=D:/THUthu/THUAI9/dependency/proto --cpp_out=D:/THUthu/THUAI9/CAPI/cpp/proto --grpc_out=D:/THUthu/THUAI9/CAPI/cpp/proto --plugin=protoc-gen-grpc=D:/THUthu/THUAI9/CAPI/cpp/vcpkg_installed/x64-windows/tools/grpc/grpc_cpp_plugin.exe D:/THUthu/THUAI9/dependency/proto/MessageType.proto D:/THUthu/THUAI9/dependency/proto/Message2Clients.proto D:/THUthu/THUAI9/dependency/proto/Message2Server.proto D:/THUthu/THUAI9/dependency/proto/Services.proto)"
     ]
   }
 }

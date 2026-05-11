@@ -17,13 +17,12 @@
 #include <openssl/types.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-    uint32_t OSSL_get_thread_support_flags(void);
-    int OSSL_set_max_threads(OSSL_LIB_CTX* ctx, uint64_t max_threads);
-    uint64_t OSSL_get_max_threads(OSSL_LIB_CTX* ctx);
+uint32_t OSSL_get_thread_support_flags(void);
+int OSSL_set_max_threads(OSSL_LIB_CTX *ctx, uint64_t max_threads);
+uint64_t OSSL_get_max_threads(OSSL_LIB_CTX *ctx);
 
 #ifdef __cplusplus
 }

@@ -22,8 +22,7 @@
 #include <openssl/e_os2.h>
 #include <stddef.h>
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define WHIRLPOOL_DIGEST_LENGTH (512 / 8)
@@ -33,25 +32,26 @@ extern "C"
 #define WHIRLPOOL_BBLOCK 512
 #define WHIRLPOOL_COUNTER (256 / 8)
 
-    typedef struct
-    {
-        union
-        {
-            unsigned char c[WHIRLPOOL_DIGEST_LENGTH];
-            /* double q is here to ensure 64-bit alignment */
-            double q[WHIRLPOOL_DIGEST_LENGTH / sizeof(double)];
-        } H;
-        unsigned char data[WHIRLPOOL_BBLOCK / 8];
-        unsigned int bitoff;
-        size_t bitlen[WHIRLPOOL_COUNTER / sizeof(size_t)];
-    } WHIRLPOOL_CTX;
+typedef struct {
+    union {
+        unsigned char c[WHIRLPOOL_DIGEST_LENGTH];
+        /* double q is here to ensure 64-bit alignment */
+        double q[WHIRLPOOL_DIGEST_LENGTH / sizeof(double)];
+    } H;
+    unsigned char data[WHIRLPOOL_BBLOCK / 8];
+    unsigned int bitoff;
+    size_t bitlen[WHIRLPOOL_COUNTER / sizeof(size_t)];
+} WHIRLPOOL_CTX;
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-    OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Init(WHIRLPOOL_CTX* c);
-    OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Update(WHIRLPOOL_CTX* c, const void* inp, size_t bytes);
-    OSSL_DEPRECATEDIN_3_0 void WHIRLPOOL_BitUpdate(WHIRLPOOL_CTX* c, const void* inp, size_t bits);
-    OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Final(unsigned char* md, WHIRLPOOL_CTX* c);
-    OSSL_DEPRECATEDIN_3_0 unsigned char* WHIRLPOOL(const void* inp, size_t bytes, unsigned char* md);
+OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Init(WHIRLPOOL_CTX *c);
+OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Update(WHIRLPOOL_CTX *c,
+    const void *inp, size_t bytes);
+OSSL_DEPRECATEDIN_3_0 void WHIRLPOOL_BitUpdate(WHIRLPOOL_CTX *c,
+    const void *inp, size_t bits);
+OSSL_DEPRECATEDIN_3_0 int WHIRLPOOL_Final(unsigned char *md, WHIRLPOOL_CTX *c);
+OSSL_DEPRECATEDIN_3_0 unsigned char *WHIRLPOOL(const void *inp, size_t bytes,
+    unsigned char *md);
 #endif
 
 #ifdef __cplusplus

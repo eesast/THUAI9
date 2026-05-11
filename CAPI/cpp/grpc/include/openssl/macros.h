@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2026 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,7 +22,7 @@
  * Sometimes OPENSSL_NO_xxx ends up with an empty file and some compilers
  * don't like that.  This will hopefully silence them.
  */
-#define NON_EMPTY_TRANSLATION_UNIT static void* dummy = &dummy;
+#define NON_EMPTY_TRANSLATION_UNIT static void *dummy = &dummy;
 
 /*
  * Generic deprecation macro
@@ -114,8 +114,10 @@
 #if OPENSSL_API_COMPAT < 0x900000L
 #define OPENSSL_API_LEVEL (OPENSSL_API_COMPAT)
 #else
-#define OPENSSL_API_LEVEL \
-    (((OPENSSL_API_COMPAT >> 28) & 0xF) * 10000 + ((OPENSSL_API_COMPAT >> 20) & 0xFF) * 100 + ((OPENSSL_API_COMPAT >> 12) & 0xFF))
+#define OPENSSL_API_LEVEL                           \
+    (((OPENSSL_API_COMPAT >> 28) & 0xF) * 10000     \
+        + ((OPENSSL_API_COMPAT >> 20) & 0xFF) * 100 \
+        + ((OPENSSL_API_COMPAT >> 12) & 0xFF))
 #endif
 #endif
 
@@ -166,6 +168,9 @@
  * 'no-deprecated'.
  */
 
+#undef OPENSSL_NO_DEPRECATED_3_6
+#undef OPENSSL_NO_DEPRECATED_3_5
+#undef OPENSSL_NO_DEPRECATED_3_4
 #undef OPENSSL_NO_DEPRECATED_3_1
 #undef OPENSSL_NO_DEPRECATED_3_0
 #undef OPENSSL_NO_DEPRECATED_1_1_1
@@ -175,6 +180,39 @@
 #undef OPENSSL_NO_DEPRECATED_1_0_0
 #undef OPENSSL_NO_DEPRECATED_0_9_8
 
+#if OPENSSL_API_LEVEL >= 30600
+#ifndef OPENSSL_NO_DEPRECATED
+#define OSSL_DEPRECATEDIN_3_6 OSSL_DEPRECATED(3.6)
+#define OSSL_DEPRECATEDIN_3_6_FOR(msg) OSSL_DEPRECATED_FOR(3.6, msg)
+#else
+#define OPENSSL_NO_DEPRECATED_3_6
+#endif
+#else
+#define OSSL_DEPRECATEDIN_3_6
+#define OSSL_DEPRECATEDIN_3_6_FOR(msg)
+#endif
+#if OPENSSL_API_LEVEL >= 30500
+#ifndef OPENSSL_NO_DEPRECATED
+#define OSSL_DEPRECATEDIN_3_5 OSSL_DEPRECATED(3.5)
+#define OSSL_DEPRECATEDIN_3_5_FOR(msg) OSSL_DEPRECATED_FOR(3.5, msg)
+#else
+#define OPENSSL_NO_DEPRECATED_3_5
+#endif
+#else
+#define OSSL_DEPRECATEDIN_3_5
+#define OSSL_DEPRECATEDIN_3_5_FOR(msg)
+#endif
+#if OPENSSL_API_LEVEL >= 30400
+#ifndef OPENSSL_NO_DEPRECATED
+#define OSSL_DEPRECATEDIN_3_4 OSSL_DEPRECATED(3.4)
+#define OSSL_DEPRECATEDIN_3_4_FOR(msg) OSSL_DEPRECATED_FOR(3.4, msg)
+#else
+#define OPENSSL_NO_DEPRECATED_3_4
+#endif
+#else
+#define OSSL_DEPRECATEDIN_3_4
+#define OSSL_DEPRECATEDIN_3_4_FOR(msg)
+#endif
 #if OPENSSL_API_LEVEL >= 30100
 #ifndef OPENSSL_NO_DEPRECATED
 #define OSSL_DEPRECATEDIN_3_1 OSSL_DEPRECATED(3.1)

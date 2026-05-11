@@ -19,8 +19,7 @@
 #include <stdlib.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Avoid name clashes with other applications */
@@ -29,10 +28,10 @@ extern "C"
 #define ebcdic2ascii _openssl_ebcdic2ascii
 #define ascii2ebcdic _openssl_ascii2ebcdic
 
-    extern const unsigned char os_toascii[256];
-    extern const unsigned char os_toebcdic[256];
-    void* ebcdic2ascii(void* dest, const void* srce, size_t count);
-    void* ascii2ebcdic(void* dest, const void* srce, size_t count);
+extern const unsigned char os_toascii[256];
+extern const unsigned char os_toebcdic[256];
+void *ebcdic2ascii(void *dest, const void *srce, size_t count);
+void *ascii2ebcdic(void *dest, const void *srce, size_t count);
 
 #ifdef __cplusplus
 }
