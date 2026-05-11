@@ -1099,18 +1099,32 @@ namespace THUAI9.Unity.Render
 
         private static string GetBarrierTileSpriteKey(int row, int col)
         {
-            return IsOuterWallCell(row, col)
-                ? $"tile_barrier_industrial_{DeterministicVariant(row, col, 2):00}"
-                : $"tile_barrier_industrial_{DeterministicVariant(row, col, 4):00}";
+            return $"tile_barrier_connected_{GetMapBarrierNeighborMask(row, col):00}";
         }
 
-        private static bool IsOuterWallCell(int row, int col)
+        private static int GetMapBarrierNeighborMask(int row, int col)
         {
-            return CoreParam.map != null
-                && (row == 0
-                    || col == 0
-                    || row == CoreParam.map.Height - 1
-                    || col == CoreParam.map.Width - 1);
+            int mask = 0;
+            if (IsMapBarrierAt(row - 1, col)) mask |= 1;
+            if (IsMapBarrierAt(row, col + 1)) mask |= 2;
+            if (IsMapBarrierAt(row + 1, col)) mask |= 4;
+            if (IsMapBarrierAt(row, col - 1)) mask |= 8;
+            return mask;
+        }
+
+        private static bool IsMapBarrierAt(int row, int col)
+        {
+            if (CoreParam.map == null || row < 0 || col < 0 || row >= CoreParam.map.Rows.Count)
+            {
+                return false;
+            }
+
+            if (col >= CoreParam.map.Rows[row].Cols.Count)
+            {
+                return false;
+            }
+
+            return CoreParam.map.Rows[row].Cols[col] == PlaceType.Barrier;
         }
 
         private static string GetFactorySpriteKey(MessageOfFactory msg)
@@ -1175,7 +1189,19 @@ namespace THUAI9.Unity.Render
 
         private static string GetBarrierSpriteKey(Tuple<int, int> pos)
         {
-            return $"tile_barrier_industrial_{DeterministicVariant(pos.Item1, pos.Item2, 4):00}";
+            return $"tile_barrier_connected_{GetRuntimeBarrierNeighborMask(pos):00}";
+        }
+
+        private static int GetRuntimeBarrierNeighborMask(Tuple<int, int> pos)
+        {
+            int row = pos.Item1;
+            int col = pos.Item2;
+            int mask = 0;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row - 1, col))) mask |= 1;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row, col + 1))) mask |= 2;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row + 1, col))) mask |= 4;
+            if (CoreParam.barriers.ContainsKey(new Tuple<int, int>(row, col - 1))) mask |= 8;
+            return mask;
         }
 
         private static string GetBushSpriteKey(Tuple<int, int> pos)

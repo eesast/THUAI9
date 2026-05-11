@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using THUAI9.Unity.CameraControlNS;
 using THUAI9.Unity.Generated;
@@ -39,6 +40,13 @@ public static class MainGameUILayoutBuilder
         ConfigureCanvas(canvas);
         RectTransform canvasRt = canvas.GetComponent<RectTransform>();
         DeleteChildIfExists(canvasRt, "HUD_StatsPanel");
+        DeleteChildIfExists(canvasRt, "HUD_InspectorPanel");
+        DeleteChildIfExists(canvasRt, "InspectorSidebarPanel");
+        DeleteChildIfExists(canvasRt, "InspectorPanel");
+        DeleteObjectIfExists("FrameInfoText");
+        DeleteObjectIfExists("PreviousFrameButton");
+        DeleteObjectIfExists("NextFrameButton");
+        RemoveLegacyInspectorComponents(canvas);
 
         RectTransform topBar = EnsurePanel(canvasRt, "HUD_TopBar", PanelColor);
         SetStretchTop(topBar, 86f, 0f);
@@ -49,11 +57,9 @@ public static class MainGameUILayoutBuilder
         RectTransform eventPanel = EnsurePanel(canvasRt, "HUD_EventPanel", PanelSoftColor);
         SetChildRect(eventPanel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -108f), new Vector2(430f, 178f), new Vector2(0f, 1f));
 
-        RectTransform inspectorPanel = EnsurePanel(canvasRt, "HUD_InspectorPanel", PanelSoftColor);
-        SetTopRight(inspectorPanel, new Vector2(-24f, -552f), new Vector2(460f, 230f));
 
         RectTransform controlPanel = EnsurePanel(canvasRt, "HUD_ControlPanel", PanelColor);
-        SetBottomCenter(controlPanel, new Vector2(0f, 18f), new Vector2(860f, 120f));
+        SetBottomCenter(controlPanel, new Vector2(0f, 44f), new Vector2(860f, 120f));
 
         RectTransform sourcePanel = EnsurePanel(canvasRt, "HUD_SourcePanel", PanelColor);
         SetBottomCenter(sourcePanel, new Vector2(0f, 146f), new Vector2(740f, 98f));
@@ -64,7 +70,6 @@ public static class MainGameUILayoutBuilder
         controlPanel.SetAsFirstSibling();
         sourcePanel.SetAsFirstSibling();
         playerToggle.transform.SetAsFirstSibling();
-        inspectorPanel.SetAsFirstSibling();
         eventPanel.SetAsFirstSibling();
         scorePanel.SetAsFirstSibling();
         topBar.SetAsFirstSibling();
@@ -105,18 +110,12 @@ public static class MainGameUILayoutBuilder
         Text aiEffectText = EnsureText(eventPanel, "AIEffectText", "世界修正：暂无", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
         SetChildRect(aiEffectText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -124f), new Vector2(-36f, 46f), new Vector2(0f, 1f));
 
-        Text inspectorTitle = EnsureText(inspectorPanel, "HUD_InspectorTitle", "对象详情", 20, FontStyle.Bold, Gold, TextAnchor.MiddleLeft);
-        SetChildRect(inspectorTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -14f), new Vector2(-36f, 34f), new Vector2(0f, 1f));
-        Text selectionInfo = EnsureText(inspectorPanel, "SelectionInfoText", "选中对象\n点击地图上的单位、建筑、资源或地块查看详情\nEsc 清除选择", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
-        SetChildRect(selectionInfo.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 0f), new Vector2(18f, -64f), new Vector2(-36f, 64f), new Vector2(0f, 1f));
-
         LayoutControls(canvasRt);
         LayoutSourceControls(sourcePanel);
-        WireRuntimeControllers(canvas, gameStateText, aiEventText, aiEffectText, selectionInfo);
-        inspectorPanel.gameObject.SetActive(false);
+        WireRuntimeControllers(canvas, gameStateText, aiEventText, aiEffectText);
         ConfigureCamera();
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
-        Debug.Log("[UI] Rebuilt MainGame HUD layout with replay controls, event panel and object inspector.");
+        Debug.Log("[UI] Rebuilt MainGame HUD layout with replay controls and event panel.");
     }
 
     private static void ConfigureCanvas(Canvas canvas)
@@ -134,21 +133,18 @@ public static class MainGameUILayoutBuilder
         RectTransform slider = MoveRect("ReplayProgressSlider", panel, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(760f, 22f), new Vector2(0.5f, 1f));
         if (slider != null) StyleSlider(slider);
 
-        Text frameInfo = MoveText("FrameInfoText", panel, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -46f), new Vector2(420f, 24f), new Vector2(0.5f, 1f), 15, TextAnchor.MiddleCenter);
-        if (frameInfo != null) frameInfo.text = string.Empty;
+        DeleteObjectIfExists("FrameInfoText");
 
-        RectTransform prev = MoveRect("PreviousFrameButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-330f, 22f), new Vector2(110f, 38f), new Vector2(0.5f, 0f));
-        RectTransform play = MoveRect("PlayButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-175f, 22f), new Vector2(104f, 42f), new Vector2(0.5f, 0f));
-        RectTransform pause = MoveRect("PauseButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-48f, 22f), new Vector2(104f, 42f), new Vector2(0.5f, 0f));
-        RectTransform stop = MoveRect("StopButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(79f, 22f), new Vector2(104f, 42f), new Vector2(0.5f, 0f));
-        RectTransform next = MoveRect("NextFrameButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(330f, 22f), new Vector2(110f, 38f), new Vector2(0.5f, 0f));
-        RectTransform speed = MoveRect("SpeedDropdown", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(210f, 22f), new Vector2(120f, 38f), new Vector2(0.5f, 0f));
+        DeleteObjectIfExists("PreviousFrameButton");
+        DeleteObjectIfExists("NextFrameButton");
+        RectTransform play = MoveRect("PlayButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-170f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
+        RectTransform pause = MoveRect("PauseButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-43f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
+        RectTransform stop = MoveRect("StopButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(84f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
+        RectTransform speed = MoveRect("SpeedDropdown", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(222f, 68f), new Vector2(138f, 42f), new Vector2(0.5f, 0f));
 
-        StyleButton(prev, "上一帧", new Color(0.20f, 0.27f, 0.34f, 1f));
         StyleButton(play, "播放", new Color(0.18f, 0.72f, 0.28f, 1f));
         StyleButton(pause, "暂停", new Color(0.88f, 0.72f, 0.18f, 1f));
         StyleButton(stop, "停止", new Color(0.82f, 0.18f, 0.18f, 1f));
-        StyleButton(next, "下一帧", new Color(0.20f, 0.27f, 0.34f, 1f));
         StyleDropdown(speed);
     }
 
@@ -199,14 +195,13 @@ public static class MainGameUILayoutBuilder
         camera.orthographicSize = 27.5f;
     }
 
-    private static void WireRuntimeControllers(Canvas canvas, Text gameStateText, Text aiEventText, Text aiEffectText, Text selectionInfo)
+    private static void WireRuntimeControllers(Canvas canvas, Text gameStateText, Text aiEventText, Text aiEffectText)
     {
         UIController ui = canvas.GetComponent<UIController>() ?? canvas.gameObject.AddComponent<UIController>();
         ui.autoBindSceneReferences = true;
         ui.gameStateText = gameStateText;
         ui.aiEventText = aiEventText;
         ui.aiEffectText = aiEffectText;
-        ui.selectionInfoText = selectionInfo;
         ui.playbackPathInput = GameObject.Find("ReplayPathInput")?.GetComponent<InputField>();
         ui.browsePlaybackButton = GameObject.Find("BrowseReplayButton")?.GetComponent<Button>();
         ui.loadPlaybackButton = GameObject.Find("LoadReplayButton")?.GetComponent<Button>();
@@ -217,13 +212,7 @@ public static class MainGameUILayoutBuilder
         ui.disconnectLiveButton = GameObject.Find("DisconnectLiveButton")?.GetComponent<Button>();
 
         WorldSelectionController selectionController = canvas.GetComponent<WorldSelectionController>() ?? canvas.gameObject.AddComponent<WorldSelectionController>();
-        selectionController.selectionText = selectionInfo;
         selectionController.targetCamera = Camera.main;
-        InspectorPanelController inspectorController = canvas.GetComponent<InspectorPanelController>() ?? canvas.gameObject.AddComponent<InspectorPanelController>();
-        inspectorController.bodyText = selectionInfo;
-        inspectorController.hideWhenNothingSelected = true;
-        selectionController.inspectorPanel = inspectorController;
-
         PlaybackController playback = Object.FindObjectOfType<PlaybackController>();
         LiveSpectatorClient liveClient = Object.FindObjectOfType<LiveSpectatorClient>();
         if (liveClient == null)
@@ -247,6 +236,18 @@ public static class MainGameUILayoutBuilder
         }
     }
 
+    private static void RemoveLegacyInspectorComponents(Canvas canvas)
+    {
+        GameObjectUtility.RemoveMonoBehavioursWithMissingScript(canvas.gameObject);
+        foreach (MonoBehaviour component in canvas.GetComponents<MonoBehaviour>())
+        {
+            if (component != null && component.GetType().Name == "InspectorPanelController")
+            {
+                Object.DestroyImmediate(component);
+            }
+        }
+    }
+
     private static RectTransform EnsurePanel(RectTransform parent, string name, Color color)
     {
         Transform existing = parent.Find(name);
@@ -264,6 +265,15 @@ public static class MainGameUILayoutBuilder
         if (existing != null)
         {
             Object.DestroyImmediate(existing.gameObject);
+        }
+    }
+
+    private static void DeleteObjectIfExists(string name)
+    {
+        GameObject existing = GameObject.Find(name);
+        if (existing != null)
+        {
+            Object.DestroyImmediate(existing);
         }
     }
 
@@ -419,10 +429,42 @@ public static class MainGameUILayoutBuilder
     private static void StyleDropdown(RectTransform rt)
     {
         if (rt == null) return;
+        Dropdown dropdown = rt.GetComponent<Dropdown>();
+        if (dropdown != null)
+        {
+            dropdown.ClearOptions();
+            dropdown.AddOptions(new List<string> { "0.5x", "1x", "2x", "4x" });
+            dropdown.SetValueWithoutNotify(1);
+            dropdown.interactable = true;
+            dropdown.RefreshShownValue();
+        }
+
         Image image = rt.GetComponent<Image>() ?? rt.gameObject.AddComponent<Image>();
-        image.color = new Color(0.90f, 0.94f, 0.96f, 1f);
+        image.color = new Color(0.075f, 0.105f, 0.145f, 0.98f);
         Text label = rt.Find("Label")?.GetComponent<Text>();
-        if (label != null) ApplyTextStyle(label, 16, TextAnchor.MiddleCenter, Color.black, FontStyle.Normal);
+        if (label != null)
+        {
+            ApplyTextStyle(label, 18, TextAnchor.MiddleCenter, TextColor, FontStyle.Bold);
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+
+        RectTransform template = rt.Find("Template") as RectTransform;
+        if (template != null)
+        {
+            template.sizeDelta = new Vector2(rt.sizeDelta.x, 232f);
+            Image templateImage = template.GetComponent<Image>();
+            if (templateImage != null) templateImage.color = new Color(0.035f, 0.052f, 0.075f, 0.98f);
+        }
+
+        Text itemLabel = rt.Find("Template/Viewport/Content/Item/Item Label")?.GetComponent<Text>();
+        if (itemLabel != null)
+        {
+            ApplyTextStyle(itemLabel, 18, TextAnchor.MiddleLeft, TextColor, FontStyle.Bold);
+            itemLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+        }
+
+        RectTransform item = rt.Find("Template/Viewport/Content/Item") as RectTransform;
+        if (item != null) item.sizeDelta = new Vector2(0f, 36f);
     }
 
     private static void StyleSlider(RectTransform rt)

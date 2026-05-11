@@ -23,6 +23,8 @@ namespace THUAI9.Unity.UI
         private const int MaxRecentReplayCount = 8;
         private const int MaxReplayDiscoveryScanCount = 128;
         private const string CjkFontResourcePath = "Fonts/NotoSansCJKsc-Regular";
+        private static readonly float[] PlaybackSpeedValues = { 0.5f, 1f, 2f, 4f };
+        private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x" };
         private static Font cachedUiFont;
 
         [Header("对局时间")]
@@ -54,12 +56,10 @@ namespace THUAI9.Unity.UI
 
         [Header("可选调试文本")]
         public Text pauseButtonText;
-        public Text frameInfoText;
         public Text statusText;
         public Text gameStateText;
         public Text aiEventText;
         public Text aiEffectText;
-        public Text selectionInfoText;
 
         [Header("自动按名称补全引用")]
         public bool autoBindSceneReferences = true;
@@ -82,6 +82,7 @@ namespace THUAI9.Unity.UI
 
             if (autoBindSceneReferences)
             {
+                DestroyNamedGameObjectIfExists("FrameInfoText");
                 EnsureRuntimeSourceControls();
                 AutoBindIfNeeded();
                 ConfigureHudVisualStyle();
@@ -110,8 +111,9 @@ namespace THUAI9.Unity.UI
 
             if (speedDropdown != null)
             {
+                ConfigureSpeedDropdown();
                 speedDropdown.onValueChanged.AddListener(OnSpeedChanged);
-                speedDropdown.value = 1;
+                OnSpeedChanged(speedDropdown.value);
             }
 
             if (loadPlaybackButton != null)
@@ -191,12 +193,10 @@ namespace THUAI9.Unity.UI
             progressSlider ??= FindSliderByName("ReplayProgressSlider") ?? FindSliderByName("ProgressSlider");
             previousFrameButton ??= FindButtonByName("PreviousFrameButton");
             nextFrameButton ??= FindButtonByName("NextFrameButton");
-            frameInfoText ??= FindTextByName("FrameInfoText");
             statusText ??= FindTextByName("StatusText");
             gameStateText ??= FindTextByName("GameStateText");
             aiEventText ??= FindTextByName("AIEventText");
             aiEffectText ??= FindTextByName("AIEffectText");
-            selectionInfoText ??= FindTextByName("SelectionInfoText");
             pauseButtonText ??= FindTextByName("PauseButtonText") ?? pauseButton?.GetComponentInChildren<Text>(true);
             browsePlaybackButton ??= FindButtonByName("BrowseReplayButton");
             recentReplayDropdown ??= FindDropdownByName("RecentReplayDropdown");
@@ -208,13 +208,41 @@ namespace THUAI9.Unity.UI
             }
         }
 
-        private void UpdateStaticTextFallbacks()
+        private void ConfigureSpeedDropdown()
         {
-            if (frameInfoText != null && string.IsNullOrEmpty(frameInfoText.text))
+            if (speedDropdown == null)
             {
-                frameInfoText.text = string.Empty;
+                return;
             }
 
+            int selectedIndex = GetNearestSpeedIndex(playbackController != null ? playbackController.playSpeed : 1f);
+            speedDropdown.ClearOptions();
+            speedDropdown.AddOptions(new List<string>(PlaybackSpeedLabels));
+            speedDropdown.interactable = true;
+            StyleDropdown(speedDropdown, GetBuiltInUIFont(), 18);
+            speedDropdown.SetValueWithoutNotify(selectedIndex);
+            speedDropdown.RefreshShownValue();
+        }
+
+        private static int GetNearestSpeedIndex(float speed)
+        {
+            int bestIndex = 1;
+            float bestDelta = float.MaxValue;
+            for (int i = 0; i < PlaybackSpeedValues.Length; i++)
+            {
+                float delta = Mathf.Abs(PlaybackSpeedValues[i] - speed);
+                if (delta < bestDelta)
+                {
+                    bestDelta = delta;
+                    bestIndex = i;
+                }
+            }
+
+            return bestIndex;
+        }
+
+        private void UpdateStaticTextFallbacks()
+        {
             if (statusText != null && string.IsNullOrEmpty(statusText.text))
             {
                 statusText.text = playbackController != null ? playbackController.StatusText : "状态：未找到 PlaybackController";
@@ -233,11 +261,6 @@ namespace THUAI9.Unity.UI
             if (aiEffectText != null && string.IsNullOrEmpty(aiEffectText.text))
             {
                 aiEffectText.text = "世界修正：暂无";
-            }
-
-            if (selectionInfoText != null && string.IsNullOrEmpty(selectionInfoText.text))
-            {
-                selectionInfoText.text = "选中对象\n点击地图对象查看详情";
             }
 
             if (replayHintText != null && IsDefaultReplayHint(replayHintText.text))
@@ -353,29 +376,6 @@ namespace THUAI9.Unity.UI
 
             bool liveMode = FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Live ||
                             (liveClient != null && liveClient.IsLiveMode);
-
-            if (frameInfoText != null)
-            {
-                if (liveMode)
-                {
-                    bool liveHasStarted = FrameSourceHub.SubmittedFrameCount > 0 ||
-                                          FrameSourceHub.RenderedFrameCount > 0 ||
-                                          (liveClient != null && liveClient.ReceivedFrameCount > 0);
-                    frameInfoText.text = liveHasStarted
-                        ? $"实时观战：已渲染 {FrameSourceHub.RenderedFrameCount} 帧 / 待处理 {FrameSourceHub.QueueSize} 帧"
-                        : string.Empty;
-                }
-                else if (playbackController.PlaybackLoaded)
-                {
-                    int total = playbackController.TotalFrameCount;
-                    int current = playbackController.CurrentFrameIndex >= 0 ? playbackController.CurrentFrameIndex + 1 : 0;
-                    frameInfoText.text = $"回放帧：{current}/{total}";
-                }
-                else
-                {
-                    frameInfoText.text = string.Empty;
-                }
-            }
 
             if (statusText != null)
             {
@@ -684,14 +684,8 @@ namespace THUAI9.Unity.UI
 
         private void OnSpeedChanged(int index)
         {
-            float speed = index switch
-            {
-                0 => 0.5f,
-                1 => 1.0f,
-                2 => 2.0f,
-                3 => 4.0f,
-                _ => 1.0f
-            };
+            int safeIndex = Mathf.Clamp(index, 0, PlaybackSpeedValues.Length - 1);
+            float speed = PlaybackSpeedValues[safeIndex];
 
             playbackController?.SetSpeed(speed);
         }
@@ -1021,42 +1015,19 @@ namespace THUAI9.Unity.UI
             StylePanel("HUD_TopBar", new Color(0.020f, 0.032f, 0.050f, 0.95f));
             StylePanel("HUD_ScorePanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_EventPanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
-            StylePanel("HUD_InspectorPanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_ControlPanel", new Color(0.020f, 0.032f, 0.050f, 0.94f));
             StylePanel("HUD_SourcePanel", new Color(0.026f, 0.043f, 0.065f, 0.94f));
-            LayoutFrameInfoText();
             StyleText("HUD_ScoreTitle", 22, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
             StyleText("HUD_EventTitle", 20, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
-            StyleText("HUD_InspectorTitle", 20, FontStyle.Bold, new Color(1.00f, 0.76f, 0.30f, 1f), TextAnchor.MiddleLeft);
             StyleText("HUD_TitleText", 30, FontStyle.Bold, new Color(1.00f, 0.78f, 0.34f, 1f), TextAnchor.MiddleLeft);
             StyleText("GameStateText", 18, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.MiddleRight);
             StyleText("AIEventText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
             StyleText("AIEffectText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
-            StyleText("SelectionInfoText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
         }
 
         private static void LayoutRightInfoPanels()
         {
             LayoutTopRightPanel("HUD_ScorePanel", new Vector2(-24f, -108f), new Vector2(460f, 420f));
-            LayoutTopRightPanel("HUD_InspectorPanel", new Vector2(-24f, -552f), new Vector2(460f, 230f));
-        }
-
-        private static void LayoutFrameInfoText()
-        {
-            Text text = FindTextByName("FrameInfoText");
-            if (text == null)
-            {
-                return;
-            }
-
-            RectTransform rect = text.rectTransform;
-            rect.anchorMin = new Vector2(0.5f, 1f);
-            rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -46f);
-            rect.sizeDelta = new Vector2(420f, 24f);
-            text.fontSize = 15;
-            text.alignment = TextAnchor.MiddleCenter;
         }
 
         private static void LayoutTopRightPanel(string objectName, Vector2 anchoredPosition, Vector2 size)
@@ -1407,6 +1378,24 @@ namespace THUAI9.Unity.UI
             }
         }
 
+        private static void DestroyNamedGameObjectIfExists(string objectName)
+        {
+            GameObject go = GameObject.Find(objectName);
+            if (go == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(go);
+            }
+            else
+            {
+                DestroyImmediate(go);
+            }
+        }
+
 
         private static Font GetBuiltInUIFont()
         {
@@ -1700,7 +1689,7 @@ namespace THUAI9.Unity.UI
             }
         }
 
-        private static void StyleDropdown(Dropdown dropdown, Font font)
+        private static void StyleDropdown(Dropdown dropdown, Font font, int fontSize = 15)
         {
             if (dropdown == null)
             {
@@ -1716,17 +1705,70 @@ namespace THUAI9.Unity.UI
             if (dropdown.captionText != null)
             {
                 dropdown.captionText.font = font;
-                dropdown.captionText.fontSize = 15;
-                dropdown.captionText.alignment = TextAnchor.MiddleLeft;
+                dropdown.captionText.fontSize = fontSize;
+                dropdown.captionText.fontStyle = FontStyle.Bold;
+                dropdown.captionText.alignment = TextAnchor.MiddleCenter;
                 dropdown.captionText.color = new Color(0.92f, 0.97f, 1f, 1f);
                 dropdown.captionText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                dropdown.captionText.verticalOverflow = VerticalWrapMode.Overflow;
             }
 
             if (dropdown.itemText != null)
             {
                 dropdown.itemText.font = font;
-                dropdown.itemText.fontSize = 15;
-                dropdown.itemText.color = new Color(0.08f, 0.10f, 0.13f, 1f);
+                dropdown.itemText.fontSize = fontSize;
+                dropdown.itemText.fontStyle = FontStyle.Bold;
+                dropdown.itemText.alignment = TextAnchor.MiddleLeft;
+                dropdown.itemText.color = new Color(0.92f, 0.97f, 1f, 1f);
+                dropdown.itemText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                dropdown.itemText.verticalOverflow = VerticalWrapMode.Overflow;
+            }
+
+            RectTransform template = dropdown.template;
+            if (template != null)
+            {
+                template.sizeDelta = new Vector2(Mathf.Max(template.sizeDelta.x, 132f), 232f);
+                Image templateImage = template.GetComponent<Image>();
+                if (templateImage != null)
+                {
+                    templateImage.color = new Color(0.035f, 0.052f, 0.075f, 0.98f);
+                }
+
+                Transform viewport = template.Find("Viewport");
+                Image viewportImage = viewport != null ? viewport.GetComponent<Image>() : null;
+                if (viewportImage != null)
+                {
+                    viewportImage.color = new Color(0.035f, 0.052f, 0.075f, 0.98f);
+                }
+
+                RectTransform itemRect = template.Find("Viewport/Content/Item") as RectTransform;
+                if (itemRect != null)
+                {
+                    itemRect.sizeDelta = new Vector2(itemRect.sizeDelta.x, 36f);
+                }
+
+                Text itemLabel = template.Find("Viewport/Content/Item/Item Label")?.GetComponent<Text>();
+                if (itemLabel != null)
+                {
+                    itemLabel.font = font;
+                    itemLabel.fontSize = fontSize;
+                    itemLabel.fontStyle = FontStyle.Bold;
+                    itemLabel.alignment = TextAnchor.MiddleLeft;
+                    itemLabel.color = new Color(0.92f, 0.97f, 1f, 1f);
+                    itemLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    itemLabel.verticalOverflow = VerticalWrapMode.Overflow;
+                }
+
+                Toggle itemToggle = template.Find("Viewport/Content/Item")?.GetComponent<Toggle>();
+                if (itemToggle != null)
+                {
+                    ColorBlock colors = itemToggle.colors;
+                    colors.normalColor = new Color(0.055f, 0.082f, 0.112f, 0.98f);
+                    colors.highlightedColor = new Color(0.14f, 0.24f, 0.34f, 1f);
+                    colors.pressedColor = new Color(0.10f, 0.18f, 0.28f, 1f);
+                    colors.selectedColor = colors.highlightedColor;
+                    itemToggle.colors = colors;
+                }
             }
         }
 

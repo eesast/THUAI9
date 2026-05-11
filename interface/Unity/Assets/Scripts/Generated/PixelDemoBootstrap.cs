@@ -218,10 +218,26 @@ namespace THUAI9.Unity.Generated
 
         private static string GetBarrierTileKey(int row, int col)
         {
-            bool isOuterWall = row == 0 || col == 0 || row == 49 || col == 49;
-            return isOuterWall
-                ? $"tile_barrier_industrial_{Variant(row, col, 2):00}"
-                : $"tile_barrier_industrial_{Variant(row, col, 4):00}";
+            return $"tile_barrier_connected_{GetBarrierNeighborMask(row, col):00}";
+        }
+
+        private static int GetBarrierNeighborMask(int row, int col)
+        {
+            int mask = 0;
+            if (IsDefaultBarrierAt(row - 1, col)) mask |= 1;
+            if (IsDefaultBarrierAt(row, col + 1)) mask |= 2;
+            if (IsDefaultBarrierAt(row + 1, col)) mask |= 4;
+            if (IsDefaultBarrierAt(row, col - 1)) mask |= 8;
+            return mask;
+        }
+
+        private static bool IsDefaultBarrierAt(int row, int col)
+        {
+            return row >= 0
+                && col >= 0
+                && row < DefaultFirstFrameMap.GetLength(0)
+                && col < DefaultFirstFrameMap.GetLength(1)
+                && DefaultFirstFrameMap[row, col] == PlaceBarrier;
         }
 
         private static int FactoryTeamByQuadrant(int row, int col)
