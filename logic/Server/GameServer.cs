@@ -193,7 +193,7 @@ namespace Server
              *   https://github.com/eesast/THUAI5/discussions/86
              * 中的讨论
              */
-             
+
             // 当前网站接口固定返回四支队伍的原始天梯分，因此这里只处理四人对战。
             if (oriScores.Length != 4 || competitionScores.Length != 4)
                 return [];
