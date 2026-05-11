@@ -60,7 +60,7 @@ python generate_proto.sh
 在 `CAPI/python` 目录运行：
 
 ```bash
-python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 1
+python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 0
 ```
 
 参数说明：
@@ -68,30 +68,27 @@ python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 1
 - `-I/--serverIP`：服务器地址，默认 `127.0.0.1`
 - `-P/--serverPort`：服务器端口，默认 `8888`
 - `-t/--teamID`：队伍编号
-- `-p/--playerID`：玩家编号
-  - `0` 表示队伍控制端，执行 `TeamPlay`
-  - `1~3` 表示单位控制端，执行 `CharacterPlay`
+- `-p/--playerID`：队内单位编号
 - `-d/--debug`：将接口日志保存到 `CAPI/python/logs`
 - `-o/--output`：将接口日志输出到控制台
 - `-w/--warning`：控制台仅显示 warning 及以上日志
 - `-s/--side`：注册时的侧边标记，通常不需要手动指定
 - `--aiModule`：AI 模块路径，默认 `PyAPI.AI`
 
-### 3. 角色类型与 `playerID`
+### 3. `playerID` 的作用
 
-默认情况下，`main.py` 会按照下面的方式推断角色类型：
 
-- `playerID = 1`：`Robot`
-- `playerID = 2`：`Drone`
-- `playerID = 3`：`AutonomousCar`
+- `playerID` 只用于区分队伍控制端与单位控制端，以及区分同队的不同单位
+- 单位的真实类型由队伍控制端在创建时显式指定
+- 角色进程如果需要判断自身类型，应以 `api.GetSelfInfo().characterType` 为准
 
-但这只是客户端本地默认映射。真正造出什么单位，仍然由队伍控制端调用：
+创建单位时，由队伍控制端调用：
 
 ```python
 api.BuildCharacter(characterType, playerID)
 ```
 
-来决定。
+来决定新单位的类型与编号。
 
 ### 4. 编写 AI 的位置
 
@@ -104,6 +101,50 @@ api.BuildCharacter(characterType, playerID)
 - 在 `__init__` 中保存阶段变量、路径缓存、目标点等状态
 - 在 `TeamPlay` / `CharacterPlay` 中写按帧推进的状态机
 - 每帧只执行少量动作，而不是在回调函数里写死循环
+
+### 5. 使用脚本调试单队 Python AI
+
+在 Windows 上调试 Python AI 时，推荐直接运行仓库根目录的：
+
+- `start_thuai9_python_single_team.bat`
+
+例如，在仓库根目录执行：
+
+```bat
+start_thuai9_python_single_team.bat
+```
+
+该脚本会自动完成以下工作：
+
+- 生成 Python proto 代码
+- 启动游戏服务器
+- 在启用 UI 时编译并启动 Avalonia 调试界面
+- 启动一个活跃队伍进程，默认是 `team 1, player 0`，AI 模块为 `PyAPI.AI`
+- 启动一个空转占位队伍进程，默认是 `team 2, player 0`，AI 模块为 `PyAPI.IdleAI`
+
+这个脚本适合调试单队的 `TeamPlay` 逻辑，不需要再手动分别启动 Server、UI 和多个 Python 进程。
+
+如果需要自定义仓库根目录、Python 解释器或 AI 模块，可以先设置环境变量，再运行脚本：
+
+```bat
+set THUAI9_ROOT=D:\YourPath\THUAI9
+set PYTHON_EXE=python
+set ACTIVE_AI_MODULE=PyAPI.AI
+set DUMMY_AI_MODULE=PyAPI.IdleAI
+start_thuai9_python_single_team.bat
+```
+
+常用可选环境变量：
+
+- `THUAI9_ROOT`：仓库根目录；如果直接运行仓库中的脚本，通常不需要手动设置
+- `PYTHON_EXE`：Python 解释器命令或路径
+- `ACTIVE_TEAM`：活跃队伍编号
+- `DUMMY_TEAM`：占位队伍编号
+- `SERVER_IP`、`SERVER_PORT`：服务器地址与端口
+- `ACTIVE_AI_MODULE`：活跃队伍使用的 AI 模块
+- `DUMMY_AI_MODULE`：占位队伍使用的 AI 模块
+- `ENABLE_UI`：是否启动 UI，`1` 表示启动，`0` 表示不启动
+- `PY_FLAGS`：传给 Python 客户端的额外参数，默认 `-o -d`
 
 ---
 
@@ -138,7 +179,7 @@ class Character:
 
 - `guid`：全局唯一编号
 - `teamID`：所属队伍编号
-- `playerID`：队内玩家编号
+- `playerID`：队内编号
 - `characterType`：角色类型，见 `CharacterType`
 - `characterActiveState`：角色当前动作状态，见 `CharacterState`
 - `x`, `y`：当前位置，单位是地图内部坐标，不是格子坐标
@@ -917,7 +958,7 @@ def TeamPlay(self, api: ITeamAPI) -> None
 
 ## IGameTimer 接口
 
-该接口由框架内部使用，普通参赛者一般不需要直接调用。
+该接口由框架内部使用，参赛者一般不需要直接调用。
 
 ```python
 StartTimer(self) -> None
@@ -978,4 +1019,4 @@ class AI(IAI):
 4. `CAPI/python/PyAPI/main.py`
 5. `CAPI/python/PyAPI/DebugAPI.py`
 
-这样通常就足够开始编写一个基础可运行的 Python 选手。
+这样通常就足够开始编写一个基础可运行的 Python 程序。

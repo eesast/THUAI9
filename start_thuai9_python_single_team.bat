@@ -1,7 +1,13 @@
 @echo off
 setlocal
 
-set "ROOT=%~dp0"
+if defined THUAI9_ROOT (
+    set "ROOT=%THUAI9_ROOT%"
+) else (
+    set "ROOT=%~dp0"
+)
+for %%I in ("%ROOT%") do set "ROOT=%%~fI\"
+
 set "PY_ROOT=%ROOT%CAPI\python"
 set "PY_MAIN=%PY_ROOT%\PyAPI\main.py"
 set "SERVER_PROJ=%ROOT%logic\Server\Server.csproj"
@@ -16,6 +22,8 @@ if not defined ACTIVE_TEAM set "ACTIVE_TEAM=1"
 if not defined DUMMY_TEAM set "DUMMY_TEAM=2"
 if not defined GAME_TIME set "GAME_TIME=120"
 if not defined ENABLE_UI set "ENABLE_UI=1"
+if not defined ACTIVE_AI_MODULE set "ACTIVE_AI_MODULE=PyAPI.AI"
+if not defined DUMMY_AI_MODULE set "DUMMY_AI_MODULE=PyAPI.IdleAI"
 if not defined PY_FLAGS set "PY_FLAGS=-o -d"
 
 echo [THUAI9] Launching single active team Python test...
@@ -81,18 +89,14 @@ if errorlevel 1 (
 )
 
 echo [THUAI9] Launch active team controller: team %ACTIVE_TEAM%, player 0
-start "THUAI9 Team %ACTIVE_TEAM% P0" /D "%PY_ROOT%" cmd /k ""%PYTHON_EXE%" -m PyAPI.main -I %SERVER_IP% -P %SERVER_PORT% -t %ACTIVE_TEAM% -p 0 %PY_FLAGS%"
-timeout /t 1 /nobreak >nul
-
-echo [THUAI9] Launch active team worker: team %ACTIVE_TEAM%, player 1
-start "THUAI9 Team %ACTIVE_TEAM% P1" /D "%PY_ROOT%" cmd /k ""%PYTHON_EXE%" -m PyAPI.main -I %SERVER_IP% -P %SERVER_PORT% -t %ACTIVE_TEAM% -p 1 %PY_FLAGS%"
+start "THUAI9 Team %ACTIVE_TEAM%" /D "%PY_ROOT%" cmd /k ""%PYTHON_EXE%" -m PyAPI.main -I %SERVER_IP% -P %SERVER_PORT% -t %ACTIVE_TEAM% -p 0 --aiModule %ACTIVE_AI_MODULE% %PY_FLAGS%"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Launch dummy team placeholder: team %DUMMY_TEAM%, player 0, IdleAI
-start "THUAI9 Team %DUMMY_TEAM% Idle" /D "%PY_ROOT%" cmd /k ""%PYTHON_EXE%" -m PyAPI.main -I %SERVER_IP% -P %SERVER_PORT% -t %DUMMY_TEAM% -p 0 --aiModule PyAPI.IdleAI %PY_FLAGS%"
+start "THUAI9 Team %DUMMY_TEAM% Idle" /D "%PY_ROOT%" cmd /k ""%PYTHON_EXE%" -m PyAPI.main -I %SERVER_IP% -P %SERVER_PORT% -t %DUMMY_TEAM% -p 0 --aiModule %DUMMY_AI_MODULE% %PY_FLAGS%"
 
 echo [THUAI9] All processes launched.
-echo [THUAI9] Active team: %ACTIVE_TEAM% (player 0 + player 1)
+echo [THUAI9] Active team: %ACTIVE_TEAM% (player 0 only)
 echo [THUAI9] Dummy team : %DUMMY_TEAM% (player 0 only, no actions)
 
 endlocal

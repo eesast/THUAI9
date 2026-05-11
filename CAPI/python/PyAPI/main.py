@@ -34,14 +34,6 @@ ______________ ___  ____ ___  _____  .___ ________
     print(welcomeString)
 
 
-def _infer_character_type(playerID: int) -> THUAI9.CharacterType:
-    return {
-        1: THUAI9.CharacterType.Robot,
-        2: THUAI9.CharacterType.Drone,
-        3: THUAI9.CharacterType.AutonomousCar,
-    }.get(playerID, THUAI9.CharacterType.NullCharacterType)
-
-
 def _build_ai_builder(ai_module_name: str) -> Callable[[int], IAI]:
     module = importlib.import_module(ai_module_name)
     ai_class = getattr(module, "AI", None)
@@ -105,11 +97,7 @@ def THUAI9Main(argv: List[str], AIBuilder: Callable[[int], IAI]) -> None:
         if args.playerID == 0
         else THUAI9.PlayerType.Character
     )
-    characterType = (
-        THUAI9.CharacterType.NullCharacterType
-        if playerType == THUAI9.PlayerType.Team
-        else _infer_character_type(args.playerID)
-    )
+    characterType = THUAI9.CharacterType.NullCharacterType
 
     if platform.system().lower() == "windows":
         PrintWelcomeString()
