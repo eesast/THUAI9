@@ -369,11 +369,20 @@ public static class PixelAssetUnityBinder
         EditorUtility.SetDirty(renderManager);
 
         PlaybackController playbackController = UnityEngine.Object.FindObjectOfType<PlaybackController>();
+        const string defaultReplayRelativePath = "Assets/Playback/test/official_bot_match.thuaipb";
+        string defaultReplayPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", defaultReplayRelativePath));
         if (playbackController != null)
         {
-            Undo.RecordObject(playbackController, "Clear playback preview path");
+            Undo.RecordObject(playbackController, "Wire playback preview path");
             playbackController.autoPlayOnLoad = false;
-            playbackController.playbackFilePath = string.Empty;
+            if (File.Exists(defaultReplayPath))
+            {
+                playbackController.playbackFilePath = defaultReplayRelativePath;
+            }
+            else
+            {
+                playbackController.playbackFilePath = string.Empty;
+            }
             EditorUtility.SetDirty(playbackController);
         }
 
@@ -386,7 +395,7 @@ public static class PixelAssetUnityBinder
         Undo.RecordObject(demoBootstrap, "Wire pixel demo bootstrap");
         demoBootstrap.pixelAssets = registry;
         demoBootstrap.playbackController = playbackController;
-        demoBootstrap.showWhenPlaybackMissing = false;
+        demoBootstrap.showWhenPlaybackMissing = true;
         demoBootstrap.columns = 50;
         demoBootstrap.rows = 50;
         EditorUtility.SetDirty(demoBootstrap);

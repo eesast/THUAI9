@@ -1,9 +1,0 @@
-{
-  "name": "thuai9-capi",
-  "version": "9.0.0",
-  "description": "THUAI9 C++ contestant API — gRPC client with BFS navigation and AI state machines",
-  "dependencies": [
-    "grpc",
-    "protobuf"
-  ]
-}

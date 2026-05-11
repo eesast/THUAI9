@@ -7,10 +7,6 @@
  * https://www.openssl.org/source/license.html
  */
 
-/* clang-format off */
-
-/* clang-format on */
-
 #ifndef OPENSSL_ERR_H
 #define OPENSSL_ERR_H
 #pragma once
@@ -33,7 +29,8 @@
 #include <openssl/cryptoerr_legacy.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #ifndef OPENSSL_NO_DEPRECATED_3_0
@@ -55,18 +52,19 @@ extern "C" {
 #define ERR_FLAG_CLEAR 0x02
 
 #define ERR_NUM_ERRORS 16
-struct err_state_st {
-    int err_flags[ERR_NUM_ERRORS];
-    int err_marks[ERR_NUM_ERRORS];
-    unsigned long err_buffer[ERR_NUM_ERRORS];
-    char *err_data[ERR_NUM_ERRORS];
-    size_t err_data_size[ERR_NUM_ERRORS];
-    int err_data_flags[ERR_NUM_ERRORS];
-    char *err_file[ERR_NUM_ERRORS];
-    int err_line[ERR_NUM_ERRORS];
-    char *err_func[ERR_NUM_ERRORS];
-    int top, bottom;
-};
+    struct err_state_st
+    {
+        int err_flags[ERR_NUM_ERRORS];
+        int err_marks[ERR_NUM_ERRORS];
+        unsigned long err_buffer[ERR_NUM_ERRORS];
+        char* err_data[ERR_NUM_ERRORS];
+        size_t err_data_size[ERR_NUM_ERRORS];
+        int err_data_flags[ERR_NUM_ERRORS];
+        char* err_file[ERR_NUM_ERRORS];
+        int err_line[ERR_NUM_ERRORS];
+        char* err_func[ERR_NUM_ERRORS];
+        int top, bottom;
+    };
 #endif
 
 /* library */
@@ -238,38 +236,38 @@ struct err_state_st {
 #define ERR_RFLAG_FATAL (0x1 << ERR_RFLAGS_OFFSET)
 #define ERR_RFLAG_COMMON (0x2 << ERR_RFLAGS_OFFSET)
 
-#define ERR_SYSTEM_ERROR(errcode) (((errcode) & ERR_SYSTEM_FLAG) != 0)
+#define ERR_SYSTEM_ERROR(errcode) (((errcode)&ERR_SYSTEM_FLAG) != 0)
 
-static ossl_unused ossl_inline int ERR_GET_LIB(unsigned long errcode)
-{
-    if (ERR_SYSTEM_ERROR(errcode))
-        return ERR_LIB_SYS;
-    return (errcode >> ERR_LIB_OFFSET) & ERR_LIB_MASK;
-}
+    static ossl_unused ossl_inline int ERR_GET_LIB(unsigned long errcode)
+    {
+        if (ERR_SYSTEM_ERROR(errcode))
+            return ERR_LIB_SYS;
+        return (errcode >> ERR_LIB_OFFSET) & ERR_LIB_MASK;
+    }
 
-static ossl_unused ossl_inline int ERR_GET_RFLAGS(unsigned long errcode)
-{
-    if (ERR_SYSTEM_ERROR(errcode))
-        return 0;
-    return errcode & (ERR_RFLAGS_MASK << ERR_RFLAGS_OFFSET);
-}
+    static ossl_unused ossl_inline int ERR_GET_RFLAGS(unsigned long errcode)
+    {
+        if (ERR_SYSTEM_ERROR(errcode))
+            return 0;
+        return errcode & (ERR_RFLAGS_MASK << ERR_RFLAGS_OFFSET);
+    }
 
-static ossl_unused ossl_inline int ERR_GET_REASON(unsigned long errcode)
-{
-    if (ERR_SYSTEM_ERROR(errcode))
-        return errcode & ERR_SYSTEM_MASK;
-    return errcode & ERR_REASON_MASK;
-}
+    static ossl_unused ossl_inline int ERR_GET_REASON(unsigned long errcode)
+    {
+        if (ERR_SYSTEM_ERROR(errcode))
+            return errcode & ERR_SYSTEM_MASK;
+        return errcode & ERR_REASON_MASK;
+    }
 
-static ossl_unused ossl_inline int ERR_FATAL_ERROR(unsigned long errcode)
-{
-    return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_FATAL) != 0;
-}
+    static ossl_unused ossl_inline int ERR_FATAL_ERROR(unsigned long errcode)
+    {
+        return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_FATAL) != 0;
+    }
 
-static ossl_unused ossl_inline int ERR_COMMON_ERROR(unsigned long errcode)
-{
-    return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_COMMON) != 0;
-}
+    static ossl_unused ossl_inline int ERR_COMMON_ERROR(unsigned long errcode)
+    {
+        return (ERR_GET_RFLAGS(errcode) & ERR_RFLAG_COMMON) != 0;
+    }
 
 /*
  * ERR_PACK is a helper macro to properly pack OpenSSL error codes and may
@@ -277,8 +275,9 @@ static ossl_unused ossl_inline int ERR_COMMON_ERROR(unsigned long errcode)
  * ERR_PACK takes reason flags and reason code combined in |reason|.
  * ERR_PACK ignores |func|, that parameter is just legacy from pre-3.0 OpenSSL.
  */
-#define ERR_PACK(lib, func, reason) \
-    ((((unsigned long)(lib) & ERR_LIB_MASK) << ERR_LIB_OFFSET) | (((unsigned long)(reason) & ERR_REASON_MASK)))
+#define ERR_PACK(lib, func, reason)                            \
+    ((((unsigned long)(lib)&ERR_LIB_MASK) << ERR_LIB_OFFSET) | \
+     (((unsigned long)(reason)&ERR_REASON_MASK)))
 
 #ifndef OPENSSL_NO_DEPRECATED_3_0
 #define SYS_F_FOPEN 0
@@ -367,19 +366,19 @@ static ossl_unused ossl_inline int ERR_COMMON_ERROR(unsigned long errcode)
 #define ERR_R_UNABLE_TO_GET_READ_LOCK (271 | ERR_R_FATAL)
 #define ERR_R_UNABLE_TO_GET_WRITE_LOCK (272 | ERR_R_FATAL)
 
-typedef struct ERR_string_data_st {
-    unsigned long error;
-    const char *string;
-} ERR_STRING_DATA;
+    typedef struct ERR_string_data_st
+    {
+        unsigned long error;
+        const char* string;
+    } ERR_STRING_DATA;
 
-/* clang-format off */
-DEFINE_LHASH_OF_INTERNAL(ERR_STRING_DATA);
-#define lh_ERR_STRING_DATA_new(hfn, cmp) ((LHASH_OF(ERR_STRING_DATA) *)OPENSSL_LH_set_thunks(OPENSSL_LH_new(ossl_check_ERR_STRING_DATA_lh_hashfunc_type(hfn), ossl_check_ERR_STRING_DATA_lh_compfunc_type(cmp)), lh_ERR_STRING_DATA_hash_thunk, lh_ERR_STRING_DATA_comp_thunk, lh_ERR_STRING_DATA_doall_thunk, lh_ERR_STRING_DATA_doall_arg_thunk))
+    DEFINE_LHASH_OF_INTERNAL(ERR_STRING_DATA);
+#define lh_ERR_STRING_DATA_new(hfn, cmp) ((LHASH_OF(ERR_STRING_DATA)*)OPENSSL_LH_new(ossl_check_ERR_STRING_DATA_lh_hashfunc_type(hfn), ossl_check_ERR_STRING_DATA_lh_compfunc_type(cmp)))
 #define lh_ERR_STRING_DATA_free(lh) OPENSSL_LH_free(ossl_check_ERR_STRING_DATA_lh_type(lh))
 #define lh_ERR_STRING_DATA_flush(lh) OPENSSL_LH_flush(ossl_check_ERR_STRING_DATA_lh_type(lh))
-#define lh_ERR_STRING_DATA_insert(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_insert(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_ERR_STRING_DATA_lh_plain_type(ptr)))
-#define lh_ERR_STRING_DATA_delete(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_delete(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
-#define lh_ERR_STRING_DATA_retrieve(lh, ptr) ((ERR_STRING_DATA *)OPENSSL_LH_retrieve(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_insert(lh, ptr) ((ERR_STRING_DATA*)OPENSSL_LH_insert(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_delete(lh, ptr) ((ERR_STRING_DATA*)OPENSSL_LH_delete(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
+#define lh_ERR_STRING_DATA_retrieve(lh, ptr) ((ERR_STRING_DATA*)OPENSSL_LH_retrieve(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_const_ERR_STRING_DATA_lh_plain_type(ptr)))
 #define lh_ERR_STRING_DATA_error(lh) OPENSSL_LH_error(ossl_check_ERR_STRING_DATA_lh_type(lh))
 #define lh_ERR_STRING_DATA_num_items(lh) OPENSSL_LH_num_items(ossl_check_ERR_STRING_DATA_lh_type(lh))
 #define lh_ERR_STRING_DATA_node_stats_bio(lh, out) OPENSSL_LH_node_stats_bio(ossl_check_const_ERR_STRING_DATA_lh_type(lh), out)
@@ -389,95 +388,83 @@ DEFINE_LHASH_OF_INTERNAL(ERR_STRING_DATA);
 #define lh_ERR_STRING_DATA_set_down_load(lh, dl) OPENSSL_LH_set_down_load(ossl_check_ERR_STRING_DATA_lh_type(lh), dl)
 #define lh_ERR_STRING_DATA_doall(lh, dfn) OPENSSL_LH_doall(ossl_check_ERR_STRING_DATA_lh_type(lh), ossl_check_ERR_STRING_DATA_lh_doallfunc_type(dfn))
 
-/* clang-format on */
-
 /* 12 lines and some on an 80 column terminal */
 #define ERR_MAX_DATA_SIZE 1024
 
-/* Building blocks */
-void ERR_new(void);
-void ERR_set_debug(const char *file, int line, const char *func);
-void ERR_set_error(int lib, int reason, const char *fmt, ...);
-void ERR_vset_error(int lib, int reason, const char *fmt, va_list args);
+    /* Building blocks */
+    void ERR_new(void);
+    void ERR_set_debug(const char* file, int line, const char* func);
+    void ERR_set_error(int lib, int reason, const char* fmt, ...);
+    void ERR_vset_error(int lib, int reason, const char* fmt, va_list args);
 
 /* Main error raising functions */
 #define ERR_raise(lib, reason) ERR_raise_data((lib), (reason), NULL)
-#define ERR_raise_data                                           \
-    (ERR_new(),                                                  \
-        ERR_set_debug(OPENSSL_FILE, OPENSSL_LINE, OPENSSL_FUNC), \
-        ERR_set_error)
+#define ERR_raise_data                                        \
+    (ERR_new(),                                               \
+     ERR_set_debug(OPENSSL_FILE, OPENSSL_LINE, OPENSSL_FUNC), \
+     ERR_set_error)
 
 #ifndef OPENSSL_NO_DEPRECATED_3_0
 /* Backward compatibility */
 #define ERR_put_error(lib, func, reason, file, line) \
     (ERR_new(),                                      \
-        ERR_set_debug((file), (line), OPENSSL_FUNC), \
-        ERR_set_error((lib), (reason), NULL))
+     ERR_set_debug((file), (line), OPENSSL_FUNC),    \
+     ERR_set_error((lib), (reason), NULL))
 #endif
 
-void ERR_set_error_data(char *data, int flags);
+    void ERR_set_error_data(char* data, int flags);
 
-unsigned long ERR_get_error(void);
-unsigned long ERR_get_error_all(const char **file, int *line,
-    const char **func,
-    const char **data, int *flags);
+    unsigned long ERR_get_error(void);
+    unsigned long ERR_get_error_all(const char** file, int* line, const char** func, const char** data, int* flags);
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0
-unsigned long ERR_get_error_line(const char **file, int *line);
-OSSL_DEPRECATEDIN_3_0
-unsigned long ERR_get_error_line_data(const char **file, int *line,
-    const char **data, int *flags);
+    OSSL_DEPRECATEDIN_3_0
+    unsigned long ERR_get_error_line(const char** file, int* line);
+    OSSL_DEPRECATEDIN_3_0
+    unsigned long ERR_get_error_line_data(const char** file, int* line, const char** data, int* flags);
 #endif
-unsigned long ERR_peek_error(void);
-unsigned long ERR_peek_error_line(const char **file, int *line);
-unsigned long ERR_peek_error_func(const char **func);
-unsigned long ERR_peek_error_data(const char **data, int *flags);
-unsigned long ERR_peek_error_all(const char **file, int *line,
-    const char **func,
-    const char **data, int *flags);
+    unsigned long ERR_peek_error(void);
+    unsigned long ERR_peek_error_line(const char** file, int* line);
+    unsigned long ERR_peek_error_func(const char** func);
+    unsigned long ERR_peek_error_data(const char** data, int* flags);
+    unsigned long ERR_peek_error_all(const char** file, int* line, const char** func, const char** data, int* flags);
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0
-unsigned long ERR_peek_error_line_data(const char **file, int *line,
-    const char **data, int *flags);
+    OSSL_DEPRECATEDIN_3_0
+    unsigned long ERR_peek_error_line_data(const char** file, int* line, const char** data, int* flags);
 #endif
-unsigned long ERR_peek_last_error(void);
-unsigned long ERR_peek_last_error_line(const char **file, int *line);
-unsigned long ERR_peek_last_error_func(const char **func);
-unsigned long ERR_peek_last_error_data(const char **data, int *flags);
-unsigned long ERR_peek_last_error_all(const char **file, int *line,
-    const char **func,
-    const char **data, int *flags);
+    unsigned long ERR_peek_last_error(void);
+    unsigned long ERR_peek_last_error_line(const char** file, int* line);
+    unsigned long ERR_peek_last_error_func(const char** func);
+    unsigned long ERR_peek_last_error_data(const char** data, int* flags);
+    unsigned long ERR_peek_last_error_all(const char** file, int* line, const char** func, const char** data, int* flags);
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0
-unsigned long ERR_peek_last_error_line_data(const char **file, int *line,
-    const char **data, int *flags);
+    OSSL_DEPRECATEDIN_3_0
+    unsigned long ERR_peek_last_error_line_data(const char** file, int* line, const char** data, int* flags);
 #endif
 
-void ERR_clear_error(void);
+    void ERR_clear_error(void);
 
-char *ERR_error_string(unsigned long e, char *buf);
-void ERR_error_string_n(unsigned long e, char *buf, size_t len);
-const char *ERR_lib_error_string(unsigned long e);
+    char* ERR_error_string(unsigned long e, char* buf);
+    void ERR_error_string_n(unsigned long e, char* buf, size_t len);
+    const char* ERR_lib_error_string(unsigned long e);
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0 const char *ERR_func_error_string(unsigned long e);
+    OSSL_DEPRECATEDIN_3_0 const char* ERR_func_error_string(unsigned long e);
 #endif
-const char *ERR_reason_error_string(unsigned long e);
+    const char* ERR_reason_error_string(unsigned long e);
 
-void ERR_print_errors_cb(int (*cb)(const char *str, size_t len, void *u),
-    void *u);
+    void ERR_print_errors_cb(int (*cb)(const char* str, size_t len, void* u), void* u);
 #ifndef OPENSSL_NO_STDIO
-void ERR_print_errors_fp(FILE *fp);
+    void ERR_print_errors_fp(FILE* fp);
 #endif
-void ERR_print_errors(BIO *bp);
+    void ERR_print_errors(BIO* bp);
 
-void ERR_add_error_data(int num, ...);
-void ERR_add_error_vdata(int num, va_list args);
-void ERR_add_error_txt(const char *sepr, const char *txt);
-void ERR_add_error_mem_bio(const char *sep, BIO *bio);
+    void ERR_add_error_data(int num, ...);
+    void ERR_add_error_vdata(int num, va_list args);
+    void ERR_add_error_txt(const char* sepr, const char* txt);
+    void ERR_add_error_mem_bio(const char* sep, BIO* bio);
 
-int ERR_load_strings(int lib, ERR_STRING_DATA *str);
-int ERR_load_strings_const(const ERR_STRING_DATA *str);
-int ERR_unload_strings(int lib, ERR_STRING_DATA *str);
+    int ERR_load_strings(int lib, ERR_STRING_DATA* str);
+    int ERR_load_strings_const(const ERR_STRING_DATA* str);
+    int ERR_unload_strings(int lib, ERR_STRING_DATA* str);
 
 #ifndef OPENSSL_NO_DEPRECATED_1_1_0
 #define ERR_load_crypto_strings() \
@@ -487,28 +474,27 @@ int ERR_unload_strings(int lib, ERR_STRING_DATA *str);
     continue
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_1_1_0
-OSSL_DEPRECATEDIN_1_1_0 void ERR_remove_thread_state(void *);
+    OSSL_DEPRECATEDIN_1_1_0 void ERR_remove_thread_state(void*);
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_1_0_0
-OSSL_DEPRECATEDIN_1_0_0 void ERR_remove_state(unsigned long pid);
+    OSSL_DEPRECATEDIN_1_0_0 void ERR_remove_state(unsigned long pid);
 #endif
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-OSSL_DEPRECATEDIN_3_0 ERR_STATE *ERR_get_state(void);
+    OSSL_DEPRECATEDIN_3_0 ERR_STATE* ERR_get_state(void);
 #endif
 
-int ERR_get_next_error_library(void);
+    int ERR_get_next_error_library(void);
 
-int ERR_set_mark(void);
-int ERR_pop_to_mark(void);
-int ERR_clear_last_mark(void);
-int ERR_count_to_mark(void);
-int ERR_pop(void);
+    int ERR_set_mark(void);
+    int ERR_pop_to_mark(void);
+    int ERR_clear_last_mark(void);
+    int ERR_count_to_mark(void);
 
-ERR_STATE *OSSL_ERR_STATE_new(void);
-void OSSL_ERR_STATE_save(ERR_STATE *es);
-void OSSL_ERR_STATE_save_to_mark(ERR_STATE *es);
-void OSSL_ERR_STATE_restore(const ERR_STATE *es);
-void OSSL_ERR_STATE_free(ERR_STATE *es);
+    ERR_STATE* OSSL_ERR_STATE_new(void);
+    void OSSL_ERR_STATE_save(ERR_STATE* es);
+    void OSSL_ERR_STATE_save_to_mark(ERR_STATE* es);
+    void OSSL_ERR_STATE_restore(const ERR_STATE* es);
+    void OSSL_ERR_STATE_free(ERR_STATE* es);
 
 #ifdef __cplusplus
 }

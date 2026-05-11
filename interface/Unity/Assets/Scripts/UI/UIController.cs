@@ -14,17 +14,15 @@ namespace THUAI9.Unity.UI
 {
     public class UIController : MonoBehaviour
     {
-        private const float TeamStatusRightMargin = 36f;
+        private const float TeamStatusRightMargin = 42f;
         private const float TeamStatusTopMargin = 156f;
-        private const float TeamStatusWidth = 420f;
-        private const float TeamStatusHeight = 82f;
-        private const float TeamStatusSpacing = 8f;
+        private const float TeamStatusWidth = 340f;
+        private const float TeamStatusHeight = 34f;
+        private const float TeamStatusSpacing = 10f;
         private const string RecentReplayPrefsKey = "ReplayRecentPaths";
         private const int MaxRecentReplayCount = 8;
         private const int MaxReplayDiscoveryScanCount = 128;
         private const string CjkFontResourcePath = "Fonts/NotoSansCJKsc-Regular";
-        private static readonly float[] PlaybackSpeedValues = { 0.5f, 1f, 2f, 4f };
-        private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x" };
         private static Font cachedUiFont;
 
         [Header("对局时间")]
@@ -56,10 +54,12 @@ namespace THUAI9.Unity.UI
 
         [Header("可选调试文本")]
         public Text pauseButtonText;
+        public Text frameInfoText;
         public Text statusText;
         public Text gameStateText;
         public Text aiEventText;
         public Text aiEffectText;
+        public Text selectionInfoText;
 
         [Header("自动按名称补全引用")]
         public bool autoBindSceneReferences = true;
@@ -82,7 +82,6 @@ namespace THUAI9.Unity.UI
 
             if (autoBindSceneReferences)
             {
-                DestroyNamedGameObjectIfExists("FrameInfoText");
                 EnsureRuntimeSourceControls();
                 AutoBindIfNeeded();
                 ConfigureHudVisualStyle();
@@ -111,9 +110,8 @@ namespace THUAI9.Unity.UI
 
             if (speedDropdown != null)
             {
-                ConfigureSpeedDropdown();
                 speedDropdown.onValueChanged.AddListener(OnSpeedChanged);
-                OnSpeedChanged(speedDropdown.value);
+                speedDropdown.value = 1;
             }
 
             if (loadPlaybackButton != null)
@@ -193,14 +191,21 @@ namespace THUAI9.Unity.UI
             progressSlider ??= FindSliderByName("ReplayProgressSlider") ?? FindSliderByName("ProgressSlider");
             previousFrameButton ??= FindButtonByName("PreviousFrameButton");
             nextFrameButton ??= FindButtonByName("NextFrameButton");
+            frameInfoText ??= FindTextByName("FrameInfoText");
             statusText ??= FindTextByName("StatusText");
             gameStateText ??= FindTextByName("GameStateText");
             aiEventText ??= FindTextByName("AIEventText");
             aiEffectText ??= FindTextByName("AIEffectText");
+            selectionInfoText ??= FindTextByName("SelectionInfoText");
             pauseButtonText ??= FindTextByName("PauseButtonText") ?? pauseButton?.GetComponentInChildren<Text>(true);
             browsePlaybackButton ??= FindButtonByName("BrowseReplayButton");
             recentReplayDropdown ??= FindDropdownByName("RecentReplayDropdown");
             replayHintText ??= FindTextByName("ReplayHintText");
+
+            if (playbackPathInput != null && string.IsNullOrWhiteSpace(playbackPathInput.text) && playbackController != null)
+            {
+                playbackPathInput.text = playbackController.playbackFilePath;
+            }
 
             if (serverAddressInput != null && string.IsNullOrWhiteSpace(serverAddressInput.text) && liveClient != null)
             {
@@ -208,41 +213,13 @@ namespace THUAI9.Unity.UI
             }
         }
 
-        private void ConfigureSpeedDropdown()
-        {
-            if (speedDropdown == null)
-            {
-                return;
-            }
-
-            int selectedIndex = GetNearestSpeedIndex(playbackController != null ? playbackController.playSpeed : 1f);
-            speedDropdown.ClearOptions();
-            speedDropdown.AddOptions(new List<string>(PlaybackSpeedLabels));
-            speedDropdown.interactable = true;
-            StyleDropdown(speedDropdown, GetBuiltInUIFont(), 18);
-            speedDropdown.SetValueWithoutNotify(selectedIndex);
-            speedDropdown.RefreshShownValue();
-        }
-
-        private static int GetNearestSpeedIndex(float speed)
-        {
-            int bestIndex = 1;
-            float bestDelta = float.MaxValue;
-            for (int i = 0; i < PlaybackSpeedValues.Length; i++)
-            {
-                float delta = Mathf.Abs(PlaybackSpeedValues[i] - speed);
-                if (delta < bestDelta)
-                {
-                    bestDelta = delta;
-                    bestIndex = i;
-                }
-            }
-
-            return bestIndex;
-        }
-
         private void UpdateStaticTextFallbacks()
         {
+            if (frameInfoText != null && string.IsNullOrEmpty(frameInfoText.text))
+            {
+                frameInfoText.text = "帧：0/0";
+            }
+
             if (statusText != null && string.IsNullOrEmpty(statusText.text))
             {
                 statusText.text = playbackController != null ? playbackController.StatusText : "状态：未找到 PlaybackController";
@@ -263,9 +240,14 @@ namespace THUAI9.Unity.UI
                 aiEffectText.text = "世界修正：暂无";
             }
 
-            if (replayHintText != null && IsDefaultReplayHint(replayHintText.text))
+            if (selectionInfoText != null && string.IsNullOrEmpty(selectionInfoText.text))
             {
-                replayHintText.text = string.Empty;
+                selectionInfoText.text = "选中对象\n点击地图对象查看详情";
+            }
+
+            if (replayHintText != null && string.IsNullOrEmpty(replayHintText.text))
+            {
+                replayHintText.text = "回放：可输入路径、选择文件，或从最近列表直接加载。";
             }
         }
 
@@ -273,12 +255,11 @@ namespace THUAI9.Unity.UI
         {
             if (gameTimeText != null)
             {
-                gameTimeText.text = FormatPlaybackTime(GetDisplayPlaybackMilliseconds());
+                gameTimeText.text = $"时间：{FormatPlaybackTime(GetDisplayPlaybackMilliseconds())}";
             }
 
             if (CoreParam.allMessage == null)
             {
-                ApplyIdleTeamScoreFallbacks();
                 if (gameStateText != null)
                 {
                     gameStateText.text = "对局：等待首帧";
@@ -300,7 +281,7 @@ namespace THUAI9.Unity.UI
                 }
                 else
                 {
-                    teamScoreTexts[i].text = FormatWaitingTeamStatus(i + 1);
+                    teamScoreTexts[i].text = $"队伍{i + 1}   分 --   原 --   算 --   厂HP --";
                 }
             }
 
@@ -312,31 +293,17 @@ namespace THUAI9.Unity.UI
 
         private int GetDisplayPlaybackMilliseconds()
         {
-            if (FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Live)
-            {
-                return GetCurrentLiveGameMilliseconds();
-            }
-
-            if (FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Playback &&
-                playbackController != null &&
-                playbackController.CurrentFrameIndex >= 0)
+            if (playbackController != null && playbackController.CurrentFrameIndex >= 0)
             {
                 return playbackController.CurrentPlaybackTimeMs;
             }
 
-            if (FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Playback &&
-                CoreParam.playbackCurrentFrameIndex >= 0)
+            if (CoreParam.playbackCurrentFrameIndex >= 0)
             {
                 return CoreParam.playbackElapsedMilliseconds;
             }
 
-            return GetCurrentLiveGameMilliseconds();
-        }
-
-        private static int GetCurrentLiveGameMilliseconds()
-        {
-            MessageOfAll allMessage = CoreParam.currentFrame?.AllMessage ?? CoreParam.allMessage;
-            return allMessage != null ? Mathf.Max(allMessage.GameTime, 0) : 0;
+            return CoreParam.allMessage != null ? Mathf.Max(CoreParam.allMessage.GameTime, 0) : 0;
         }
 
         private static string FormatPlaybackTime(int totalMilliseconds)
@@ -344,27 +311,8 @@ namespace THUAI9.Unity.UI
             totalMilliseconds = Mathf.Max(totalMilliseconds, 0);
             int minutes = totalMilliseconds / 60000;
             int seconds = totalMilliseconds / 1000 % 60;
-            return $"{minutes:D2}:{seconds:D2}";
-        }
-
-        private void ApplyIdleTeamScoreFallbacks()
-        {
-            if (teamScoreTexts == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < teamScoreTexts.Length; i++)
-            {
-                Text text = teamScoreTexts[i];
-                if (text == null)
-                {
-                    continue;
-                }
-
-                text.text = FormatWaitingTeamStatus(i + 1);
-                text.color = GetTeamAccentColor(i);
-            }
+            int milliseconds = totalMilliseconds % 1000;
+            return $"{minutes:D2}:{seconds:D2}.{milliseconds:D3}";
         }
 
         private void UpdateDebugUI()
@@ -374,8 +322,21 @@ namespace THUAI9.Unity.UI
                 return;
             }
 
-            bool liveMode = FrameSourceHub.ActiveKind == FrameSourceHub.SourceKind.Live ||
-                            (liveClient != null && liveClient.IsLiveMode);
+            bool liveMode = liveClient != null && liveClient.IsLiveMode;
+
+            if (frameInfoText != null)
+            {
+                if (liveMode)
+                {
+                    frameInfoText.text = $"实时帧：{CoreParam.frameCount}｜队列：{CoreParam.frameQueue.GetSize()}";
+                }
+                else
+                {
+                    int total = playbackController.TotalFrameCount;
+                    int current = playbackController.CurrentFrameIndex >= 0 ? playbackController.CurrentFrameIndex + 1 : 0;
+                    frameInfoText.text = $"帧：{current}/{total}";
+                }
+            }
 
             if (statusText != null)
             {
@@ -400,180 +361,28 @@ namespace THUAI9.Unity.UI
         {
             if (aiEventText != null)
             {
-                if (liveClient != null && liveClient.HasCurrentEventStatus)
+                if (CoreParam.latestAIEvent == null)
                 {
-                    string eventName = string.IsNullOrWhiteSpace(liveClient.CurrentEventName) ? "normal" : liveClient.CurrentEventName;
-                    string eventDescription = string.IsNullOrWhiteSpace(liveClient.CurrentEventDescription) ? "\u6682\u65e0\u4e8b\u4ef6\u63cf\u8ff0" : liveClient.CurrentEventDescription;
-                    aiEventText.text = $"\u4e8b\u4ef6\u72b6\u6001\uff1a{eventName}\n{eventDescription}";
-                }
-                else if (CoreParam.latestAIEvent == null)
-                {
-                    aiEventText.text = "AI\u4e8b\u4ef6\uff1a\u6682\u65e0";
+                    aiEventText.text = "AI事件：暂无";
                 }
                 else
                 {
                     GlobalAIEvent e = CoreParam.latestAIEvent;
-                    aiEventText.text = $"AI\u4e8b\u4ef6\uff1a{TranslateAIEventCategory(e.Category)}\n{e.Title}\n{e.Description}";
+                    aiEventText.text = $"AI事件：{TranslateAIEventCategory(e.Category)}\n{e.Title}\n{e.Description}";
                 }
             }
 
             if (aiEffectText != null)
             {
                 aiEffectText.text = CoreParam.latestAIEffect == null
-                    ? "\u4e16\u754c\u4fee\u6b63\uff1a\u6682\u65e0"
-                    : $"\u4e16\u754c\u4fee\u6b63\uff1a\u6301\u7eed {CoreParam.latestAIEffect.DurationMs / 1000f:0.#}s\n{FormatAIEffect(CoreParam.latestAIEffect)}";
+                    ? "世界修正：暂无"
+                    : $"世界修正：持续 {CoreParam.latestAIEffect.DurationMs / 1000f:0.#}s\n{FormatAIEffect(CoreParam.latestAIEffect)}";
             }
         }
 
         private static string FormatTeamStatus(int teamIndex, MessageOfAll.Types.TeamInfo team)
         {
-            string techSummary = FormatTeamTechLevels(team.TechLevels);
-            string uuidSummary = FormatTeamUuidSummary(teamIndex);
-            return $"队伍 {teamIndex}：分数 {team.Score}，原料 {team.Material}，算力 {team.ComputePower}\n工厂生命 {team.FactoryHp}，科技等级：{techSummary}\n成员 uuid：{uuidSummary}";
-        }
-
-        private static string FormatWaitingTeamStatus(int teamIndex)
-        {
-            return $"队伍 {teamIndex}：等待首帧\n工厂生命 --，科技等级：暂无\n成员 uuid：等待角色创建";
-        }
-
-        private static string FormatTeamUuidSummary(int teamIndex)
-        {
-            var members = new List<TeamMemberUuidInfo>();
-
-            foreach (MessageOfCharacter character in CoreParam.characters.Values)
-            {
-                if (character == null || character.TeamId != teamIndex)
-                {
-                    continue;
-                }
-
-                AddOrMergeTeamMemberUuid(
-                    members,
-                    character.PlayerId,
-                    character.Guid);
-            }
-
-            foreach (MessageOfTeam team in CoreParam.teams.Values)
-            {
-                if (team == null || team.TeamId != teamIndex || team.PlayerId <= 0)
-                {
-                    continue;
-                }
-
-                AddOrMergeTeamMemberUuid(
-                    members,
-                    team.PlayerId,
-                    0);
-            }
-
-            if (members.Count == 0)
-            {
-                return "暂无（等待角色创建）";
-            }
-
-            members.Sort((left, right) =>
-            {
-                int byPlayer = left.PlayerId.CompareTo(right.PlayerId);
-                return byPlayer != 0 ? byPlayer : left.Guid.CompareTo(right.Guid);
-            });
-
-            var parts = new List<string>();
-            int visibleCount = Mathf.Min(4, members.Count);
-            for (int i = 0; i < visibleCount; i++)
-            {
-                TeamMemberUuidInfo member = members[i];
-                string playerLabel = member.PlayerId > 0 ? $"玩家 {member.PlayerId}" : "未登记玩家";
-                string uuidLabel = member.Guid > 0 ? member.Guid.ToString() : "暂无";
-                parts.Add($"{playerLabel}=uuid {uuidLabel}");
-            }
-
-            if (members.Count > visibleCount)
-            {
-                parts.Add($"其余 {members.Count - visibleCount} 名");
-            }
-
-            return string.Join("，", parts);
-        }
-
-        private static void AddOrMergeTeamMemberUuid(
-            List<TeamMemberUuidInfo> members,
-            long playerId,
-            long guid)
-        {
-            for (int i = 0; i < members.Count; i++)
-            {
-                TeamMemberUuidInfo existing = members[i];
-                bool sameRegisteredPlayer = playerId > 0 && existing.PlayerId == playerId;
-                bool sameGuidOnly = playerId <= 0 && guid > 0 && existing.Guid == guid;
-                if (!sameRegisteredPlayer && !sameGuidOnly)
-                {
-                    continue;
-                }
-
-                if (existing.Guid <= 0 && guid > 0)
-                {
-                    existing.Guid = guid;
-                }
-
-                members[i] = existing;
-                return;
-            }
-
-            members.Add(new TeamMemberUuidInfo
-            {
-                PlayerId = playerId,
-                Guid = guid
-            });
-        }
-
-        private struct TeamMemberUuidInfo
-        {
-            public long PlayerId;
-            public long Guid;
-        }
-
-        private static string FormatTeamTechLevels(IEnumerable<KeyValuePair<string, int>> techLevels)
-        {
-            if (techLevels == null)
-            {
-                return "暂无";
-            }
-
-            var parts = new List<string>();
-            foreach (KeyValuePair<string, int> kv in techLevels)
-            {
-                if (kv.Value <= 0)
-                {
-                    continue;
-                }
-
-                parts.Add($"{ShortTechName(kv.Key)} {kv.Value}级");
-                if (parts.Count >= 3)
-                {
-                    break;
-                }
-            }
-
-            return parts.Count > 0 ? string.Join("、", parts) : "暂无";
-        }
-
-        private static string ShortTechName(string key)
-        {
-            return key switch
-            {
-                "Robust" => "生命耐久",
-                "Warrior" => "攻击能力",
-                "MoveSpeed" => "移动速度",
-                "Carry" => "携带容量",
-                "Efficiency" => "采集效率",
-                "Production" => "生产效率",
-                "Storage" => "仓储容量",
-                "Price" => "出售价格",
-                "Cost" => "生产成本",
-                "Market" => "市场能力",
-                _ => string.IsNullOrWhiteSpace(key) ? "?" : key
-            };
+            return $"队伍{teamIndex}   分 {team.Score}   原 {team.Material}   算 {team.ComputePower}   厂HP {team.FactoryHp}";
         }
 
         private void ConfigureTeamStatusLayout()
@@ -595,20 +404,21 @@ namespace THUAI9.Unity.UI
                 rect.anchorMin = new Vector2(1f, 1f);
                 rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(-TeamStatusRightMargin - 16f, -TeamStatusTopMargin - i * (TeamStatusHeight + TeamStatusSpacing));
-                rect.sizeDelta = new Vector2(TeamStatusWidth - 44f, TeamStatusHeight);
+                rect.anchoredPosition = new Vector2(-TeamStatusRightMargin - 12f, -TeamStatusTopMargin - i * (TeamStatusHeight + TeamStatusSpacing));
+                rect.sizeDelta = new Vector2(TeamStatusWidth - 30f, TeamStatusHeight);
 
                 text.alignment = TextAnchor.MiddleLeft;
                 text.font = GetBuiltInUIFont();
-                text.fontSize = 14;
+                text.fontSize = 16;
                 text.fontStyle = FontStyle.Bold;
-                text.color = GetTeamAccentColor(i);
+                text.color = new Color(0.92f, 0.97f, 1f, 1f);
                 text.resizeTextForBestFit = false;
                 text.horizontalOverflow = HorizontalWrapMode.Wrap;
-                text.verticalOverflow = VerticalWrapMode.Overflow;
+                text.verticalOverflow = VerticalWrapMode.Truncate;
                 text.lineSpacing = 1f;
                 text.raycastTarget = false;
                 EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.72f), new Vector2(1.3f, -1.3f));
+                ConfigureTeamStatusCard(text, i);
             }
         }
 
@@ -684,8 +494,14 @@ namespace THUAI9.Unity.UI
 
         private void OnSpeedChanged(int index)
         {
-            int safeIndex = Mathf.Clamp(index, 0, PlaybackSpeedValues.Length - 1);
-            float speed = PlaybackSpeedValues[safeIndex];
+            float speed = index switch
+            {
+                0 => 0.5f,
+                1 => 1.0f,
+                2 => 2.0f,
+                3 => 4.0f,
+                _ => 1.0f
+            };
 
             playbackController?.SetSpeed(speed);
         }
@@ -702,6 +518,10 @@ namespace THUAI9.Unity.UI
             }
 
             string path = playbackPathInput != null ? playbackPathInput.text : playbackController.playbackFilePath;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = playbackController.playbackFilePath;
+            }
 
             LoadPlaybackPathFromUi(path, true);
             UpdatePauseButtonText("Pause");
@@ -811,7 +631,6 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             string address = serverAddressInput != null ? serverAddressInput.text : null;
             liveClient?.StartLive(address);
-            SetReplayHint("Live hint: for 4-team tests start Server with --teamCount 4.", false);
             UpdatePauseButtonText("Pause");
         }
 
@@ -928,11 +747,11 @@ namespace THUAI9.Unity.UI
             RectTransform panelRect = panel.GetComponent<RectTransform>();
             if (panelRect != null)
             {
-                panelRect.anchorMin = new Vector2(0f, 0f);
-                panelRect.anchorMax = new Vector2(0f, 0f);
-                panelRect.pivot = new Vector2(0f, 0f);
-                panelRect.anchoredPosition = new Vector2(24f, 146f);
-                panelRect.sizeDelta = new Vector2(740f, 98f);
+                panelRect.anchorMin = new Vector2(0.5f, 0f);
+                panelRect.anchorMax = new Vector2(0.5f, 0f);
+                panelRect.pivot = new Vector2(0.5f, 0f);
+                panelRect.anchoredPosition = new Vector2(0f, 146f);
+                panelRect.sizeDelta = new Vector2(1040f, 132f);
             }
 
             Image panelImage = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
@@ -948,107 +767,73 @@ namespace THUAI9.Unity.UI
             SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -16f), new Vector2(64f, 30f), new Vector2(0f, 1f));
 
             playbackPathInput = FindInputFieldByName("ReplayPathInput") ?? CreateInput(panel, "ReplayPathInput",
-                string.Empty,
+                playbackController != null ? playbackController.playbackFilePath : "Assets/Playback/test/official_bot_match.thuaipb",
                 "选择 .thuaipb 或输入路径", font, Vector2.zero, new Vector2(500f, 30f));
             playbackPathInput.transform.SetParent(panel, false);
-            if (IsLegacyDefaultReplayPath(playbackPathInput.text))
-            {
-                playbackPathInput.text = string.Empty;
-            }
-            SetChildRect(playbackPathInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -16f), new Vector2(420f, 30f), new Vector2(0f, 1f));
+            SetChildRect(playbackPathInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -16f), new Vector2(500f, 30f), new Vector2(0f, 1f));
             StyleInputField(playbackPathInput, font);
 
             browsePlaybackButton = FindButtonByName("BrowseReplayButton") ?? CreateButton(panel, "BrowseReplayButton", "选择文件", font, Vector2.zero, new Vector2(94f, 30f), new Color(0.20f, 0.48f, 0.72f, 1f));
             browsePlaybackButton.transform.SetParent(panel, false);
-            SetChildRect(browsePlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(526f, -16f), new Vector2(94f, 30f), new Vector2(0f, 1f));
+            SetChildRect(browsePlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(604f, -16f), new Vector2(94f, 30f), new Vector2(0f, 1f));
             StyleButton(browsePlaybackButton, "选择文件", new Color(0.20f, 0.48f, 0.72f, 1f), font);
 
             loadPlaybackButton = FindButtonByName("LoadReplayButton") ?? CreateButton(panel, "LoadReplayButton", "加载", font, Vector2.zero, new Vector2(82f, 30f), new Color(0.18f, 0.36f, 0.58f, 1f));
             loadPlaybackButton.transform.SetParent(panel, false);
-            SetChildRect(loadPlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(630f, -16f), new Vector2(82f, 30f), new Vector2(0f, 1f));
+            SetChildRect(loadPlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(710f, -16f), new Vector2(82f, 30f), new Vector2(0f, 1f));
             StyleButton(loadPlaybackButton, "加载", new Color(0.18f, 0.36f, 0.58f, 1f), font);
+
+            Text recentLabel = FindOrCreateLabel(panel, "HUD_RecentReplayLabel", "最近", font);
+            SetChildRect(recentLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(64f, 30f), new Vector2(0f, 1f));
 
             recentReplayDropdown = FindDropdownByName("RecentReplayDropdown") ?? CreateDropdown(panel, "RecentReplayDropdown", font, Vector2.zero, new Vector2(500f, 30f));
             recentReplayDropdown.transform.SetParent(panel, false);
-            SetChildRect(recentReplayDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(420f, 30f), new Vector2(0f, 1f));
+            SetChildRect(recentReplayDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(500f, 30f), new Vector2(0f, 1f));
             StyleDropdown(recentReplayDropdown, font);
-            SetNamedGameObjectActive("HUD_RecentReplayLabel", false);
-            SetNamedGameObjectActive("RecentReplayDropdown", false);
 
             replayHintText = FindTextByName("ReplayHintText") ?? FindOrCreateLabel(panel, "ReplayHintText", string.Empty, font);
             replayHintText.transform.SetParent(panel, false);
-            SetChildRect(replayHintText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(602f, -52f), new Vector2(116f, 34f), new Vector2(0f, 1f));
-            if (IsDefaultReplayHint(replayHintText.text))
-            {
-                replayHintText.text = string.Empty;
-            }
-            replayHintText.fontSize = 14;
+            SetChildRect(replayHintText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(604f, -52f), new Vector2(410f, 66f), new Vector2(0f, 1f));
+            replayHintText.fontSize = 13;
             replayHintText.alignment = TextAnchor.UpperLeft;
             replayHintText.horizontalOverflow = HorizontalWrapMode.Wrap;
             replayHintText.verticalOverflow = VerticalWrapMode.Truncate;
             replayHintText.color = new Color(0.74f, 0.86f, 0.92f, 1f);
 
             Text liveLabel = FindOrCreateLabel(panel, "HUD_LiveAddressLabel", "Live", font);
-            SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(64f, 30f), new Vector2(0f, 1f));
+            SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -88f), new Vector2(64f, 30f), new Vector2(0f, 1f));
 
             serverAddressInput = FindInputFieldByName("ServerAddressInput") ?? CreateInput(panel, "ServerAddressInput",
                 liveClient != null ? liveClient.ServerAddress : "127.0.0.1:8888",
                 "server:port", font, Vector2.zero, new Vector2(260f, 30f));
             serverAddressInput.transform.SetParent(panel, false);
-            SetChildRect(serverAddressInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
+            SetChildRect(serverAddressInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -88f), new Vector2(260f, 30f), new Vector2(0f, 1f));
             StyleInputField(serverAddressInput, font);
 
             connectLiveButton = FindButtonByName("ConnectLiveButton") ?? CreateButton(panel, "ConnectLiveButton", "连接", font, Vector2.zero, new Vector2(92f, 30f), new Color(0.12f, 0.48f, 0.32f, 1f));
             connectLiveButton.transform.SetParent(panel, false);
-            SetChildRect(connectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
+            SetChildRect(connectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -88f), new Vector2(92f, 30f), new Vector2(0f, 1f));
             StyleButton(connectLiveButton, "连接", new Color(0.12f, 0.48f, 0.32f, 1f), font);
 
             disconnectLiveButton = FindButtonByName("DisconnectLiveButton") ?? CreateButton(panel, "DisconnectLiveButton", "断开", font, Vector2.zero, new Vector2(118f, 30f), new Color(0.48f, 0.18f, 0.18f, 1f));
             disconnectLiveButton.transform.SetParent(panel, false);
-            SetChildRect(disconnectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -52f), new Vector2(118f, 30f), new Vector2(0f, 1f));
+            SetChildRect(disconnectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -88f), new Vector2(118f, 30f), new Vector2(0f, 1f));
             StyleButton(disconnectLiveButton, "断开", new Color(0.48f, 0.18f, 0.18f, 1f), font);
         }
 
         private void ConfigureHudVisualStyle()
         {
-            LayoutRightInfoPanels();
             StylePanel("HUD_TopBar", new Color(0.020f, 0.032f, 0.050f, 0.95f));
             StylePanel("HUD_ScorePanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_EventPanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
+            StylePanel("HUD_InspectorPanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_ControlPanel", new Color(0.020f, 0.032f, 0.050f, 0.94f));
             StylePanel("HUD_SourcePanel", new Color(0.026f, 0.043f, 0.065f, 0.94f));
-            StyleText("HUD_ScoreTitle", 22, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
-            StyleText("HUD_EventTitle", 20, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
+            StyleText("HUD_ScoreTitle", 20, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
+            StyleText("HUD_EventTitle", 18, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
+            StyleText("HUD_InspectorTitle", 18, FontStyle.Bold, new Color(1.00f, 0.76f, 0.30f, 1f), TextAnchor.MiddleLeft);
             StyleText("HUD_TitleText", 30, FontStyle.Bold, new Color(1.00f, 0.78f, 0.34f, 1f), TextAnchor.MiddleLeft);
-            StyleText("GameStateText", 18, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.MiddleRight);
-            StyleText("AIEventText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
-            StyleText("AIEffectText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
-        }
-
-        private static void LayoutRightInfoPanels()
-        {
-            LayoutTopRightPanel("HUD_ScorePanel", new Vector2(-24f, -108f), new Vector2(460f, 420f));
-        }
-
-        private static void LayoutTopRightPanel(string objectName, Vector2 anchoredPosition, Vector2 size)
-        {
-            GameObject go = GameObject.Find(objectName);
-            if (go == null)
-            {
-                return;
-            }
-
-            RectTransform rect = go.GetComponent<RectTransform>();
-            if (rect == null)
-            {
-                return;
-            }
-
-            rect.anchorMin = new Vector2(1f, 1f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = anchoredPosition;
-            rect.sizeDelta = size;
+            StyleText("GameStateText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.MiddleRight);
         }
 
         private static void StylePanel(string objectName, Color color)
@@ -1299,27 +1084,6 @@ namespace THUAI9.Unity.UI
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsLegacyDefaultReplayPath(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return false;
-            }
-
-            string normalized = path.Trim().Trim('"').Replace('\\', '/');
-            return normalized.Equals("Assets/Playback/test/official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.EndsWith("/Assets/Playback/test/official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.Equals("Assets/Playback/test/test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.EndsWith("/Assets/Playback/test/test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.Equals("test_replay.thuaipb", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsDefaultReplayHint(string text)
-        {
-            return string.IsNullOrWhiteSpace(text)
-                || text.Trim().StartsWith("回放：可输入路径", StringComparison.Ordinal);
-        }
-
         private static string BuildRecentReplayLabel(string path)
         {
             string fileName = Path.GetFileName(path);
@@ -1367,33 +1131,6 @@ namespace THUAI9.Unity.UI
             GameObject eventSystem = new GameObject("EventSystem");
             eventSystem.AddComponent<EventSystem>();
             eventSystem.AddComponent<StandaloneInputModule>();
-        }
-
-        private static void SetNamedGameObjectActive(string objectName, bool active)
-        {
-            GameObject go = GameObject.Find(objectName);
-            if (go != null)
-            {
-                go.SetActive(active);
-            }
-        }
-
-        private static void DestroyNamedGameObjectIfExists(string objectName)
-        {
-            GameObject go = GameObject.Find(objectName);
-            if (go == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Destroy(go);
-            }
-            else
-            {
-                DestroyImmediate(go);
-            }
         }
 
 
@@ -1526,7 +1263,7 @@ namespace THUAI9.Unity.UI
             StretchChildRect(text.rectTransform, 0f, 0f, 0f, 0f);
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
-            text.fontSize = 15;
+            text.fontSize = 14;
             return button;
         }
 
@@ -1638,7 +1375,7 @@ namespace THUAI9.Unity.UI
             if (input.textComponent != null)
             {
                 input.textComponent.font = font;
-                input.textComponent.fontSize = 15;
+                input.textComponent.fontSize = 14;
                 input.textComponent.color = new Color(0.92f, 0.97f, 1f, 1f);
                 input.textComponent.alignment = TextAnchor.MiddleLeft;
                 input.textComponent.horizontalOverflow = HorizontalWrapMode.Overflow;
@@ -1649,7 +1386,7 @@ namespace THUAI9.Unity.UI
             if (placeholder != null)
             {
                 placeholder.font = font;
-                placeholder.fontSize = 15;
+                placeholder.fontSize = 14;
                 placeholder.color = new Color(0.55f, 0.66f, 0.74f, 0.85f);
                 placeholder.alignment = TextAnchor.MiddleLeft;
             }
@@ -1681,7 +1418,7 @@ namespace THUAI9.Unity.UI
             {
                 text.text = label;
                 text.font = font;
-                text.fontSize = 15;
+                text.fontSize = 14;
                 text.fontStyle = FontStyle.Bold;
                 text.alignment = TextAnchor.MiddleCenter;
                 text.color = Color.white;
@@ -1689,7 +1426,7 @@ namespace THUAI9.Unity.UI
             }
         }
 
-        private static void StyleDropdown(Dropdown dropdown, Font font, int fontSize = 15)
+        private static void StyleDropdown(Dropdown dropdown, Font font)
         {
             if (dropdown == null)
             {
@@ -1705,70 +1442,17 @@ namespace THUAI9.Unity.UI
             if (dropdown.captionText != null)
             {
                 dropdown.captionText.font = font;
-                dropdown.captionText.fontSize = fontSize;
-                dropdown.captionText.fontStyle = FontStyle.Bold;
-                dropdown.captionText.alignment = TextAnchor.MiddleCenter;
+                dropdown.captionText.fontSize = 14;
+                dropdown.captionText.alignment = TextAnchor.MiddleLeft;
                 dropdown.captionText.color = new Color(0.92f, 0.97f, 1f, 1f);
                 dropdown.captionText.horizontalOverflow = HorizontalWrapMode.Overflow;
-                dropdown.captionText.verticalOverflow = VerticalWrapMode.Overflow;
             }
 
             if (dropdown.itemText != null)
             {
                 dropdown.itemText.font = font;
-                dropdown.itemText.fontSize = fontSize;
-                dropdown.itemText.fontStyle = FontStyle.Bold;
-                dropdown.itemText.alignment = TextAnchor.MiddleLeft;
-                dropdown.itemText.color = new Color(0.92f, 0.97f, 1f, 1f);
-                dropdown.itemText.horizontalOverflow = HorizontalWrapMode.Overflow;
-                dropdown.itemText.verticalOverflow = VerticalWrapMode.Overflow;
-            }
-
-            RectTransform template = dropdown.template;
-            if (template != null)
-            {
-                template.sizeDelta = new Vector2(Mathf.Max(template.sizeDelta.x, 132f), 232f);
-                Image templateImage = template.GetComponent<Image>();
-                if (templateImage != null)
-                {
-                    templateImage.color = new Color(0.035f, 0.052f, 0.075f, 0.98f);
-                }
-
-                Transform viewport = template.Find("Viewport");
-                Image viewportImage = viewport != null ? viewport.GetComponent<Image>() : null;
-                if (viewportImage != null)
-                {
-                    viewportImage.color = new Color(0.035f, 0.052f, 0.075f, 0.98f);
-                }
-
-                RectTransform itemRect = template.Find("Viewport/Content/Item") as RectTransform;
-                if (itemRect != null)
-                {
-                    itemRect.sizeDelta = new Vector2(itemRect.sizeDelta.x, 36f);
-                }
-
-                Text itemLabel = template.Find("Viewport/Content/Item/Item Label")?.GetComponent<Text>();
-                if (itemLabel != null)
-                {
-                    itemLabel.font = font;
-                    itemLabel.fontSize = fontSize;
-                    itemLabel.fontStyle = FontStyle.Bold;
-                    itemLabel.alignment = TextAnchor.MiddleLeft;
-                    itemLabel.color = new Color(0.92f, 0.97f, 1f, 1f);
-                    itemLabel.horizontalOverflow = HorizontalWrapMode.Overflow;
-                    itemLabel.verticalOverflow = VerticalWrapMode.Overflow;
-                }
-
-                Toggle itemToggle = template.Find("Viewport/Content/Item")?.GetComponent<Toggle>();
-                if (itemToggle != null)
-                {
-                    ColorBlock colors = itemToggle.colors;
-                    colors.normalColor = new Color(0.055f, 0.082f, 0.112f, 0.98f);
-                    colors.highlightedColor = new Color(0.14f, 0.24f, 0.34f, 1f);
-                    colors.pressedColor = new Color(0.10f, 0.18f, 0.28f, 1f);
-                    colors.selectedColor = colors.highlightedColor;
-                    itemToggle.colors = colors;
-                }
+                dropdown.itemText.fontSize = 14;
+                dropdown.itemText.color = new Color(0.08f, 0.10f, 0.13f, 1f);
             }
         }
 
@@ -1795,13 +1479,13 @@ namespace THUAI9.Unity.UI
             switch (teamIndex)
             {
                 case 0:
-                    return new Color(1.00f, 0.06f, 0.06f, 1f);
+                    return new Color(0.24f, 0.92f, 1.00f, 1f);
                 case 1:
-                    return new Color(0.08f, 1.00f, 0.12f, 1f);
+                    return new Color(0.30f, 0.92f, 0.42f, 1f);
                 case 2:
-                    return new Color(0.06f, 0.34f, 1.00f, 1f);
+                    return new Color(0.30f, 0.52f, 1.00f, 1f);
                 default:
-                    return new Color(1.00f, 0.95f, 0.06f, 1f);
+                    return new Color(1.00f, 0.88f, 0.18f, 1f);
             }
         }
 

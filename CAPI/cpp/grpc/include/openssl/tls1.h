@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -23,7 +23,8 @@
 #include <openssl/prov_ssl.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Default security level if not overridden at config time */
@@ -56,19 +57,19 @@ extern "C" {
 
 #define TLS1_AD_DECRYPTION_FAILED 21
 #define TLS1_AD_RECORD_OVERFLOW 22
-#define TLS1_AD_UNKNOWN_CA 48 /* fatal */
+#define TLS1_AD_UNKNOWN_CA 48    /* fatal */
 #define TLS1_AD_ACCESS_DENIED 49 /* fatal */
-#define TLS1_AD_DECODE_ERROR 50 /* fatal */
+#define TLS1_AD_DECODE_ERROR 50  /* fatal */
 #define TLS1_AD_DECRYPT_ERROR 51
-#define TLS1_AD_EXPORT_RESTRICTION 60 /* fatal */
-#define TLS1_AD_PROTOCOL_VERSION 70 /* fatal */
-#define TLS1_AD_INSUFFICIENT_SECURITY 71 /* fatal */
-#define TLS1_AD_INTERNAL_ERROR 80 /* fatal */
+#define TLS1_AD_EXPORT_RESTRICTION 60     /* fatal */
+#define TLS1_AD_PROTOCOL_VERSION 70       /* fatal */
+#define TLS1_AD_INSUFFICIENT_SECURITY 71  /* fatal */
+#define TLS1_AD_INTERNAL_ERROR 80         /* fatal */
 #define TLS1_AD_INAPPROPRIATE_FALLBACK 86 /* fatal */
 #define TLS1_AD_USER_CANCELLED 90
 #define TLS1_AD_NO_RENEGOTIATION 100
 /* TLSv1.3 alerts */
-#define TLS13_AD_MISSING_EXTENSION 109 /* fatal */
+#define TLS13_AD_MISSING_EXTENSION 109    /* fatal */
 #define TLS13_AD_CERTIFICATE_REQUIRED 116 /* fatal */
 /* codes 110-114 are from RFC3546 */
 #define TLS1_AD_UNSUPPORTED_EXTENSION 110
@@ -76,7 +77,7 @@ extern "C" {
 #define TLS1_AD_UNRECOGNIZED_NAME 112
 #define TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE 113
 #define TLS1_AD_BAD_CERTIFICATE_HASH_VALUE 114
-#define TLS1_AD_UNKNOWN_PSK_IDENTITY 115 /* fatal */
+#define TLS1_AD_UNKNOWN_PSK_IDENTITY 115    /* fatal */
 #define TLS1_AD_NO_APPLICATION_PROTOCOL 120 /* fatal */
 
 /* ExtensionType values from RFC3546 / RFC4366 / RFC6066 */
@@ -202,7 +203,7 @@ extern "C" {
 #define TLSEXT_hash_gostr34112012_256 238
 #define TLSEXT_hash_gostr34112012_512 239
 
-/* Total number of different digest algorithms */
+    /* Total number of different digest algorithms */
 
 #define TLSEXT_hash_num 10
 
@@ -218,7 +219,7 @@ extern "C" {
 /* Flag set for unrecognised algorithms */
 #define TLSEXT_nid_unknown 0x1000000
 
-/* ECC curves */
+    /* ECC curves */
 
 #define TLSEXT_curve_P_256 23
 #define TLSEXT_curve_P_384 24
@@ -230,8 +231,6 @@ extern "C" {
 #define TLSEXT_max_fragment_length_1024 2
 #define TLSEXT_max_fragment_length_2048 3
 #define TLSEXT_max_fragment_length_4096 4
-/* OpenSSL value for unset maximum fragment length extension */
-#define TLSEXT_max_fragment_length_UNSPECIFIED 255
 
 /*
  * TLS Certificate Type (for RFC7250)
@@ -242,60 +241,45 @@ extern "C" {
 #define TLSEXT_cert_type_rpk 2
 #define TLSEXT_cert_type_1609dot2 3 /* recognized, but not supported */
 
-int SSL_CTX_set_tlsext_max_fragment_length(SSL_CTX *ctx, uint8_t mode);
-int SSL_set_tlsext_max_fragment_length(SSL *ssl, uint8_t mode);
+    int SSL_CTX_set_tlsext_max_fragment_length(SSL_CTX* ctx, uint8_t mode);
+    int SSL_set_tlsext_max_fragment_length(SSL* ssl, uint8_t mode);
 
 #define TLSEXT_MAXLEN_host_name 255
 
-__owur const char *SSL_get_servername(const SSL *s, const int type);
-__owur int SSL_get_servername_type(const SSL *s);
-/*
- * SSL_export_keying_material exports a value derived from the master secret,
- * as specified in RFC 5705. It writes |olen| bytes to |out| given a label and
- * optional context. (Since a zero length context is allowed, the |use_context|
- * flag controls whether a context is included.) It returns 1 on success and
- * 0 or -1 otherwise.
- */
-__owur int SSL_export_keying_material(SSL *s, unsigned char *out, size_t olen,
-    const char *label, size_t llen,
-    const unsigned char *context,
-    size_t contextlen, int use_context);
+    __owur const char* SSL_get_servername(const SSL* s, const int type);
+    __owur int SSL_get_servername_type(const SSL* s);
+    /*
+     * SSL_export_keying_material exports a value derived from the master secret,
+     * as specified in RFC 5705. It writes |olen| bytes to |out| given a label and
+     * optional context. (Since a zero length context is allowed, the |use_context|
+     * flag controls whether a context is included.) It returns 1 on success and
+     * 0 or -1 otherwise.
+     */
+    __owur int SSL_export_keying_material(SSL* s, unsigned char* out, size_t olen, const char* label, size_t llen, const unsigned char* context, size_t contextlen, int use_context);
 
-/*
- * SSL_export_keying_material_early exports a value derived from the
- * early exporter master secret, as specified in
- * https://tools.ietf.org/html/draft-ietf-tls-tls13-23. It writes
- * |olen| bytes to |out| given a label and optional context. It
- * returns 1 on success and 0 otherwise.
- */
-__owur int SSL_export_keying_material_early(SSL *s, unsigned char *out,
-    size_t olen, const char *label,
-    size_t llen,
-    const unsigned char *context,
-    size_t contextlen);
+    /*
+     * SSL_export_keying_material_early exports a value derived from the
+     * early exporter master secret, as specified in
+     * https://tools.ietf.org/html/draft-ietf-tls-tls13-23. It writes
+     * |olen| bytes to |out| given a label and optional context. It
+     * returns 1 on success and 0 otherwise.
+     */
+    __owur int SSL_export_keying_material_early(SSL* s, unsigned char* out, size_t olen, const char* label, size_t llen, const unsigned char* context, size_t contextlen);
 
-int SSL_get_peer_signature_type_nid(const SSL *s, int *pnid);
-int SSL_get_signature_type_nid(const SSL *s, int *pnid);
+    int SSL_get_peer_signature_type_nid(const SSL* s, int* pnid);
+    int SSL_get_signature_type_nid(const SSL* s, int* pnid);
 
-int SSL_get_sigalgs(SSL *s, int idx,
-    int *psign, int *phash, int *psignandhash,
-    unsigned char *rsig, unsigned char *rhash);
+    int SSL_get_sigalgs(SSL* s, int idx, int* psign, int* phash, int* psignandhash, unsigned char* rsig, unsigned char* rhash);
 
-char *SSL_get1_builtin_sigalgs(OSSL_LIB_CTX *libctx);
+    int SSL_get_shared_sigalgs(SSL* s, int idx, int* psign, int* phash, int* psignandhash, unsigned char* rsig, unsigned char* rhash);
 
-int SSL_get_shared_sigalgs(SSL *s, int idx,
-    int *psign, int *phash, int *psignandhash,
-    unsigned char *rsig, unsigned char *rhash);
+    __owur int SSL_check_chain(SSL* s, X509* x, EVP_PKEY* pk, STACK_OF(X509) * chain);
 
-__owur int SSL_check_chain(SSL *s, X509 *x, EVP_PKEY *pk, STACK_OF(X509) *chain);
+#define SSL_set_tlsext_host_name(s, name) \
+    SSL_ctrl(s, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, (void*)name)
 
-#define SSL_set_tlsext_host_name(s, name)                                \
-    SSL_ctrl(s, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name, \
-        (void *)name)
-
-#define SSL_set_tlsext_debug_callback(ssl, cb)           \
-    SSL_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_DEBUG_CB, \
-        (void (*)(void))cb)
+#define SSL_set_tlsext_debug_callback(ssl, cb) \
+    SSL_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_DEBUG_CB, (void (*)(void))cb)
 
 #define SSL_set_tlsext_debug_arg(ssl, arg) \
     SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_DEBUG_ARG, 0, arg)
@@ -324,15 +308,8 @@ __owur int SSL_check_chain(SSL *s, X509 *x, EVP_PKEY *pk, STACK_OF(X509) *chain)
 #define SSL_set_tlsext_status_ocsp_resp(ssl, arg, arglen) \
     SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_STATUS_REQ_OCSP_RESP, arglen, arg)
 
-#define SSL_get0_tlsext_status_ocsp_resp_ex(ssl, arg) \
-    SSL_ctrl(ssl, SSL_CTRL_GET_TLSEXT_STATUS_REQ_OCSP_RESP_EX, 0, arg)
-
-#define SSL_set0_tlsext_status_ocsp_resp_ex(ssl, arg) \
-    SSL_ctrl(ssl, SSL_CTRL_SET_TLSEXT_STATUS_REQ_OCSP_RESP_EX, 0, arg)
-
-#define SSL_CTX_set_tlsext_servername_callback(ctx, cb)           \
-    SSL_CTX_callback_ctrl(ctx, SSL_CTRL_SET_TLSEXT_SERVERNAME_CB, \
-        (void (*)(void))cb)
+#define SSL_CTX_set_tlsext_servername_callback(ctx, cb) \
+    SSL_CTX_callback_ctrl(ctx, SSL_CTRL_SET_TLSEXT_SERVERNAME_CB, (void (*)(void))cb)
 
 #define SSL_TLSEXT_ERR_OK 0
 #define SSL_TLSEXT_ERR_ALERT_WARNING 1
@@ -348,10 +325,9 @@ __owur int SSL_check_chain(SSL *s, X509 *x, EVP_PKEY *pk, STACK_OF(X509) *chain)
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS, keylen, keys)
 
 #define SSL_CTX_get_tlsext_status_cb(ssl, cb) \
-    SSL_CTX_ctrl(ssl, SSL_CTRL_GET_TLSEXT_STATUS_REQ_CB, 0, (void *)cb)
-#define SSL_CTX_set_tlsext_status_cb(ssl, cb)                     \
-    SSL_CTX_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB, \
-        (void (*)(void))cb)
+    SSL_CTX_ctrl(ssl, SSL_CTRL_GET_TLSEXT_STATUS_REQ_CB, 0, (void*)cb)
+#define SSL_CTX_set_tlsext_status_cb(ssl, cb) \
+    SSL_CTX_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB, (void (*)(void))cb)
 
 #define SSL_CTX_get_tlsext_status_arg(ssl, arg) \
     SSL_CTX_ctrl(ssl, SSL_CTRL_GET_TLSEXT_STATUS_REQ_CB_ARG, 0, arg)
@@ -365,11 +341,10 @@ __owur int SSL_check_chain(SSL *s, X509 *x, EVP_PKEY *pk, STACK_OF(X509) *chain)
     SSL_CTX_ctrl(ssl, SSL_CTRL_GET_TLSEXT_STATUS_REQ_TYPE, 0, NULL)
 
 #ifndef OPENSSL_NO_DEPRECATED_3_0
-#define SSL_CTX_set_tlsext_ticket_key_cb(ssl, cb)                 \
-    SSL_CTX_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_TICKET_KEY_CB, \
-        (void (*)(void))cb)
+#define SSL_CTX_set_tlsext_ticket_key_cb(ssl, cb) \
+    SSL_CTX_callback_ctrl(ssl, SSL_CTRL_SET_TLSEXT_TICKET_KEY_CB, (void (*)(void))cb)
 #endif
-int SSL_CTX_set_tlsext_ticket_key_evp_cb(SSL_CTX *ctx, int (*fp)(SSL *, unsigned char *, unsigned char *, EVP_CIPHER_CTX *, EVP_MAC_CTX *, int));
+    int SSL_CTX_set_tlsext_ticket_key_evp_cb(SSL_CTX* ctx, int (*fp)(SSL*, unsigned char*, unsigned char*, EVP_CIPHER_CTX*, EVP_MAC_CTX*, int));
 
 /* PSK ciphersuites from 4279 */
 #define TLS1_CK_PSK_WITH_RC4_128_SHA 0x0300008A
@@ -629,10 +604,6 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb(SSL_CTX *ctx, int (*fp)(SSL *, unsigned
 #define TLS1_3_CK_AES_128_CCM_SHA256 0x03001304
 #define TLS1_3_CK_AES_128_CCM_8_SHA256 0x03001305
 
-/* Integrity-only ciphersuites from RFC 9150 */
-#define TLS1_3_CK_SHA256_SHA256 0x0300C0B4
-#define TLS1_3_CK_SHA384_SHA384 0x0300C0B5
-
 /* Aria ciphersuites from RFC6209 */
 #define TLS1_CK_RSA_WITH_ARIA_128_GCM_SHA256 0x0300C050
 #define TLS1_CK_RSA_WITH_ARIA_256_GCM_SHA384 0x0300C051
@@ -710,8 +681,6 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb(SSL_CTX *ctx, int (*fp)(SSL *, unsigned
 #define TLS1_3_RFC_AES_128_GCM_SHA256 "TLS_AES_128_GCM_SHA256"
 #define TLS1_3_RFC_AES_256_GCM_SHA384 "TLS_AES_256_GCM_SHA384"
 #define TLS1_3_RFC_CHACHA20_POLY1305_SHA256 "TLS_CHACHA20_POLY1305_SHA256"
-#define TLS1_3_RFC_SHA256_SHA256 "TLS_SHA256_SHA256"
-#define TLS1_3_RFC_SHA384_SHA384 "TLS_SHA384_SHA384"
 #define TLS1_3_RFC_AES_128_CCM_SHA256 "TLS_AES_128_CCM_SHA256"
 #define TLS1_3_RFC_AES_128_CCM_8_SHA256 "TLS_AES_128_CCM_8_SHA256"
 #define TLS1_RFC_ECDHE_ECDSA_WITH_NULL_SHA "TLS_ECDHE_ECDSA_WITH_NULL_SHA"
@@ -1210,11 +1179,12 @@ int SSL_CTX_set_tlsext_ticket_key_evp_cb(SSL_CTX *ctx, int (*fp)(SSL *, unsigned
 #define TLS_MD_EXTENDED_MASTER_SECRET_CONST "\x65\x78\x74\x65\x6e\x64\x65\x64\x20\x6d\x61\x73\x74\x65\x72\x20\x73\x65\x63\x72\x65\x74"
 #define TLS_MD_EXTENDED_MASTER_SECRET_CONST_SIZE 22
 
-/* TLS Session Ticket extension struct */
-struct tls_session_ticket_ext_st {
-    unsigned short length;
-    void *data;
-};
+    /* TLS Session Ticket extension struct */
+    struct tls_session_ticket_ext_st
+    {
+        unsigned short length;
+        void* data;
+    };
 
 #ifdef __cplusplus
 }

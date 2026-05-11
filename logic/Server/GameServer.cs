@@ -187,7 +187,6 @@ namespace Server
                     count++;
                 }
             }
-            // FINISH_URL only receives ladder deltas in mode 2; raw match scores are not uploaded here.
             httpSender?.SendHttpRequest(scores, state, player_role).Wait();
         }
 
@@ -199,16 +198,10 @@ namespace Server
             {
                 httpSender.Url = url2;
                 httpSender.Token = options.Token;
-                // SCORE_URL returns the current absolute ladder scores. The per-match delta is computed locally.
-                double[] org = httpSender.GetLadderScore().Result;
+                double[] org = httpSender.GetLadderScore(scores).Result;
                 if (org.Length == 0)
                 {
                     GameServerLogging.logger.LogInfo("Error: No data returned from the web!");
-                    return new double[0];
-                }
-                if (org.Length != scores.Length)
-                {
-                    GameServerLogging.logger.LogInfo("Error: Ladder base score count from the web does not match the team count!");
                     return new double[0];
                 }
                 else
@@ -236,103 +229,53 @@ namespace Server
              * 中的讨论
              */
 
-            // 当前网站接口固定返回四支队伍的原始天梯分，因此这里只处理四人对战。
-            if (oriScores.Length != 4 || competitionScores.Length != 4)
-                return [];
-
-            return FourTeamLadderCalculate(oriScores, competitionScores);
-        }
-
-        private static double[] FourTeamLadderCalculate(double[] oriScores, double[] competitionScores)
-        {
-            /*
-             * 四人天梯分算法设计原则：
-             * 1. 将四人局拆成 6 组“两两虚拟对局”，每一组都遵循“胜者涨、败者跌、爆冷放大、虐菜收敛”。
-             * 2. 本局分差越大，这一组虚拟对局的修正越强；如果两队本局接近，则只做温和调整。
-             * 3. 低天梯击败高天梯时，收益更高；高天梯击败低天梯时，收益明显收敛。
-             * 4. 每组虚拟对局都设上限，避免四人局累计过快。
-             */
-            const int teamCount = 4;
-            double[] resScore = new double[teamCount];
-
-            // 用本局最高分与最低分的差做归一化，让不同对局总分尺度下的计算保持平滑。
-            double scoreSpread = competitionScores.Max() - competitionScores.Min();
-            double scoreScale = Math.Max(1.0, scoreSpread);
-
-            // 天梯差缩放参数，值越小，爆冷放大的效果越明显。
-            const double ladderScale = 120.0;
-
-            // 四人局中每队会和另外三队各比较一次，因此单组变化上限要收紧。
-            const double winnerCap = 80.0;
-            const double loserCap = 40.0;
-
-            for (int i = 0; i < teamCount; i++)
+            // 调整顺序，让第一项成为获胜者，便于计算
+            bool scoresReverse = false; // 顺序是否需要交换
+            if (competitionScores[0] < competitionScores[1])      // 第一项为落败者
+                scoresReverse = true;
+            else if (competitionScores[0] == competitionScores[1])// 平局
             {
-                for (int j = i + 1; j < teamCount; j++)
+                if (oriScores[0] == oriScores[1])
+                // 完全平局，不改变天梯分数
                 {
-                    double firstCompetition = competitionScores[i];
-                    double secondCompetition = competitionScores[j];
-                    double firstLadder = oriScores[i];
-                    double secondLadder = oriScores[j];
-
-                    int winnerIndex;
-                    int loserIndex;
-                    double winnerCompetition;
-                    double loserCompetition;
-                    double winnerLadder;
-                    double loserLadder;
-
-                    // 先确定这一对虚拟对局中的“胜者”和“败者”。
-                    // 如果比赛得分相同，则让天梯更低的一方视作胜者，推动分数向中间靠拢。
-                    if (firstCompetition > secondCompetition ||
-                        (firstCompetition == secondCompetition && firstLadder < secondLadder))
-                    {
-                        winnerIndex = i;
-                        loserIndex = j;
-                        winnerCompetition = firstCompetition;
-                        loserCompetition = secondCompetition;
-                        winnerLadder = firstLadder;
-                        loserLadder = secondLadder;
-                    }
-                    else if (secondCompetition > firstCompetition ||
-                             (firstCompetition == secondCompetition && secondLadder < firstLadder))
-                    {
-                        winnerIndex = j;
-                        loserIndex = i;
-                        winnerCompetition = secondCompetition;
-                        loserCompetition = firstCompetition;
-                        winnerLadder = secondLadder;
-                        loserLadder = firstLadder;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    // 比赛分差越大，这一对虚拟对局的结果越可信。
-                    double competitionDelta = winnerCompetition - loserCompetition;
-
-                    // 天梯分差越大，说明两队原本强弱越悬殊。
-                    double ladderDelta = winnerLadder - loserLadder;
-
-                    // 把比赛分差压到 [0, 1] 左右的平滑区间内，避免分数尺度过大时更新失控。
-                    double gapFactor = 0.2 + 0.8 * 0.5 * (Math.Tanh((competitionDelta / scoreScale - 0.8) * 1.4) + 1.0);
-
-                    // 爆冷时该值更大；强者按预期赢弱者时，该值会收敛。
-                    double upsetFactor = 0.5 * (1.0 - Math.Tanh(ladderDelta / ladderScale));
-
-                    // 综合“赢得多不多”和“是不是爆冷”，得到这一对虚拟对局的最终强度。
-                    double pairFactor = gapFactor * (0.15 + 0.85 * upsetFactor);
-
-                    // 胜者和败者分别按不同上限更新，保持“赢的涨得多，输的扣得少”的整体倾向。
-                    double winnerDelta = Math.Round(winnerCap * pairFactor);
-                    double loserDelta = Math.Round(loserCap * pairFactor);
-
-                    resScore[winnerIndex] += winnerDelta;
-                    resScore[loserIndex] -= loserDelta;
+                    double[] Score = [0, 0];
+                    return Score;
                 }
+                if (oriScores[0] > oriScores[1])
+                    // 本次游戏平局，但一方天梯分数高，另一方天梯分数低，
+                    // 需要将两者向中间略微靠拢，因此天梯分数低的定为获胜者
+                    scoresReverse = true;
+            }
+            if (scoresReverse)// 如果需要换，交换两者的顺序
+            {
+                (competitionScores[0], competitionScores[1]) = (competitionScores[1], competitionScores[0]);
+                (oriScores[0], oriScores[1]) = (oriScores[1], oriScores[0]);
             }
 
+            const double normalDeltaThereshold = 100.0;                // 天梯分数差参数，天梯分差超过此阈值太多则增长缓慢
+            const double correctParam = normalDeltaThereshold * 1.2;    // 修正参数
+            const double winnerWeight = 4e-10;                           // 获胜者天梯得分权值
+            const double loserWeight = 1.5e-10;                            // 落败者天梯得分权值
+            const double scoreDeltaThereshold = 50000.0;                // 比赛得分参数，比赛得分超过此阈值太多则增长缓慢
+
+            double[] resScore = [0, 0];
+            double oriDelta = oriScores[0] - oriScores[1];                          // 天梯原分数差
+            double competitionDelta = competitionScores[0] - competitionScores[1];  // 本次比赛分数差
+            double normalOriDelta = oriDelta / normalDeltaThereshold;               // 标准化天梯原分数差
+            double correctRate = oriDelta / correctParam;                           // 修正率，修正方向为缩小分数差
+            double correct = 0.5 * (Math.Tanh((competitionDelta - scoreDeltaThereshold) / scoreDeltaThereshold
+                                              - correctRate)
+                                    + 1.0); // 分数修正
+            resScore[0] = Math.Min(300, Math.Round(Math.Pow(competitionScores[0], 2)
+                                                    * winnerWeight
+                                                    * (1 - Math.Tanh(normalOriDelta))
+                                                    * correct)); // 胜者所加天梯分)
+            resScore[1] = Math.Max(-120, -Math.Round(Math.Pow(competitionDelta, 2)
+                                                    * loserWeight
+                                                    * (1 - Math.Tanh(normalOriDelta))
+                                                    * correct)); // 败者所扣天梯分
+            if (scoresReverse)// 顺序换回
+                (resScore[0], resScore[1]) = (resScore[1], resScore[0]);
             return resScore;
         }
 
@@ -343,23 +286,22 @@ namespace Server
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
                              ? options.ResultFileName
                              : options.ResultFileName + ".json");
-            int[] rawMatchScores = GetScore();
-            double[] competitionScores = rawMatchScores.Select(x => (double)x).ToArray();
+            int[] scores = GetScore();
+            double[] doubleArray = scores.Select(x => (double)x).ToArray();
             if (options.Mode == 2)
             {
-                // Mode 2 only reports ladder deltas. A SCORE_URL failure is a network/data issue, not a game crash.
-                bool gameCrashed = false;
-                double[] ladderDeltas = PullScore(competitionScores);
-                if (ladderDeltas.Length == 0)
+                bool crash = false;
+                doubleArray = PullScore(doubleArray);
+                if (doubleArray.Length == 0)
                 {
-                    GameServerLogging.logger.LogInfo("Error: No ladder delta returned from the web!");
+                    crash = true;
+                    GameServerLogging.logger.LogInfo("Error: No data returned from the web!");
                 }
                 else
-                    rawMatchScores = ladderDeltas.Select(x => (int)x).ToArray();
+                    scores = doubleArray.Select(x => (int)x).ToArray();
                 endGameSem.Release();
                 Thread.Sleep(1);
-                if (ladderDeltas.Length != 0)
-                    SendGameResult(rawMatchScores, gameCrashed);
+                //SendGameResult(scores, crash);
             }
             else if (options.Mode == 1)
             {
@@ -531,10 +473,6 @@ namespace Server
         public GameServer(ArgumentOptions options)
         {
             this.options = options;
-
-            // The ladder endpoints are hard-wired to four-team payloads, so reject invalid mode-2 configs early.
-            if (options.Mode == 2 && options.TeamCount != 4)
-                throw new InvalidOperationException("Mode 2 requires exactly 4 teams.");
 
             semaDicts = new ConcurrentDictionary<long, (SemaphoreSlim, SemaphoreSlim)>[options.TeamCount + 1];
             for (int i = 0; i <= options.TeamCount; i++)

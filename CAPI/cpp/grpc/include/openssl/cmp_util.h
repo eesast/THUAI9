@@ -20,17 +20,18 @@
 #include <openssl/trace.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int OSSL_CMP_log_open(void);
-void OSSL_CMP_log_close(void);
+    int OSSL_CMP_log_open(void);
+    void OSSL_CMP_log_close(void);
 #define OSSL_CMP_LOG_PREFIX "CMP "
 
-/*
- * generalized logging/error callback mirroring the severity levels of syslog.h
- */
-typedef int OSSL_CMP_severity;
+    /*
+     * generalized logging/error callback mirroring the severity levels of syslog.h
+     */
+    typedef int OSSL_CMP_severity;
 #define OSSL_CMP_LOG_EMERG 0
 #define OSSL_CMP_LOG_ALERT 1
 #define OSSL_CMP_LOG_CRIT 2
@@ -41,13 +42,11 @@ typedef int OSSL_CMP_severity;
 #define OSSL_CMP_LOG_DEBUG 7
 #define OSSL_CMP_LOG_TRACE 8
 #define OSSL_CMP_LOG_MAX OSSL_CMP_LOG_TRACE
-typedef int (*OSSL_CMP_log_cb_t)(const char *func, const char *file, int line,
-    OSSL_CMP_severity level, const char *msg);
+    typedef int (*OSSL_CMP_log_cb_t)(const char* func, const char* file, int line, OSSL_CMP_severity level, const char* msg);
 
-int OSSL_CMP_print_to_bio(BIO *bio, const char *component, const char *file,
-    int line, OSSL_CMP_severity level, const char *msg);
-/* use of the logging callback for outputting error queue */
-void OSSL_CMP_print_errors_cb(OSSL_CMP_log_cb_t log_fn);
+    int OSSL_CMP_print_to_bio(BIO* bio, const char* component, const char* file, int line, OSSL_CMP_severity level, const char* msg);
+    /* use of the logging callback for outputting error queue */
+    void OSSL_CMP_print_errors_cb(OSSL_CMP_log_cb_t log_fn);
 
 #ifdef __cplusplus
 }
