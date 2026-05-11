@@ -157,7 +157,7 @@ namespace Server
                     return;
                 }
 
-                if (game.GameMap?.Timer?.IsGaming ?? false)
+                if (currentGameInfo != null && currentGameInfo.GameState == GameState.GameEnd)
                     return;
 
                 if (!ValidPlayerID(request.PlayerId))
@@ -170,28 +170,45 @@ namespace Server
 
                 // 加入玩家队列
                 var playerSemas = (new SemaphoreSlim(0, 1), new SemaphoreSlim(0, 1));
+                bool gameAlreadyStarted = game.GameMap?.Timer?.IsGaming ?? false;
                 lock (addPlayerLock)
                 {
-                    GameServerLogging.logger.LogDebug($"player id :{request.PlayerId}  team id:{request.TeamId} sideflag: {request.SideFlag}");
-
-                    bool teamConnectedBefore = IsTeamConnected(request.TeamId);
-                    if (!semaDicts[request.TeamId].TryAdd(request.PlayerId, playerSemas))
+                    lock (spectatorJoinLock)
                     {
-                        GameServerLogging.logger.LogWarning($"Player {request.PlayerId} has already been registered in team {request.TeamId}");
-                        return;
+                        GameServerLogging.logger.LogDebug($"player id :{request.PlayerId}  team id:{request.TeamId} sideflag: {request.SideFlag}");
+
+                        bool teamConnectedBefore = IsTeamConnected(request.TeamId);
+                        if (!semaDicts[request.TeamId].TryAdd(request.PlayerId, playerSemas))
+                        {
+                            GameServerLogging.logger.LogWarning($"Player {request.PlayerId} has already been registered in team {request.TeamId}");
+                            return;
+                        }
+
+                        if (!teamConnectedBefore)
+                        {
+                            Interlocked.Increment(ref connectedTeamCount);
+                        }
+
+                        bool start = connectedTeamCount == TeamCount;
+                        GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}, connected teams: {connectedTeamCount}/{TeamCount}");
+
+                        if (start)
+                        {
+                            StartGame();
+                        }
                     }
+                }
 
-                    if (!teamConnectedBefore)
+                if (gameAlreadyStarted && game.GameMap.Timer.IsGaming)
+                {
+                    try
                     {
-                        Interlocked.Increment(ref connectedTeamCount);
+                        var lateJoinFrame = BuildLateJoinStartFrame();
+                        await responseStream.WriteAsync(lateJoinFrame);
                     }
-
-                    bool start = connectedTeamCount == TeamCount;
-                    GameServerLogging.logger.LogInfo($"Register Factory: Team {request.TeamId}, connected teams: {connectedTeamCount}/{TeamCount}");
-
-                    if (start)
+                    catch (Exception ex)
                     {
-                        StartGame();
+                        GameServerLogging.logger.LogWarning($"Late join bootstrap failed for Team {request.TeamId}, Player {request.PlayerId}: {ex.Message}");
                     }
                 }
 
