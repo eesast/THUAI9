@@ -190,7 +190,7 @@ namespace THUAI9_Avalonia.ViewModels
                 TeamOverviews[0].Material = 80;
                 TeamOverviews[0].ComputePower = 45;
                 TeamOverviews[0].FactoryHp = 3;
-                TeamOverviews[0].MemberUuidText = "成员 uuid：P1=uuid 1";
+                TeamOverviews[0].MemberUuidText = "P1=uuid 1";
                 TeamOverviews[1].Score = 9;
                 TeamOverviews[1].Material = 65;
                 TeamOverviews[1].ComputePower = 30;
@@ -726,7 +726,7 @@ namespace THUAI9_Avalonia.ViewModels
                 return $"{playerLabel}=uuid {guidLabel}";
             });
 
-            return $"成员 uuid：{string.Join("；", labels)}";
+            return string.Join(Environment.NewLine, labels);
         }
 
         private static void AddOrMergeTeamMemberUuid(List<TeamMemberUuidInfo> members, long playerId, long guid)
@@ -762,7 +762,7 @@ namespace THUAI9_Avalonia.ViewModels
 
         private static string BuildWaitingMemberUuidText()
         {
-            return "成员 uuid：等待角色创建";
+            return "等待角色创建";
         }
 
         private void LogSemanticEvent(string message, string level)
