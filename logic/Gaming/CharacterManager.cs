@@ -51,6 +51,11 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Factory for Team {teamId} cannot recruit at this time.");
                     return false;
                 }
+                if (teamCharacters.TryGetValue(teamId, out var dict) && dict.Count >= GameData.MaxCharactersPerTeam)
+                {
+                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
+                    return false;
+                }
                 var occ = OccupationFactory.FindIOccupation(type);
                 int cost = occ.Cost;
                 if (factory.ComputingPower.Get() < cost)
