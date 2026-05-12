@@ -29,17 +29,17 @@ struct TestStep
 };
 
 static const TestStep steps[] = {
-    {1, true,  "setup  Build(Robot,pid=1) first time            "},
+    {1, true, "setup  Build(Robot,pid=1) first time            "},
     {1, false, "BUG2   Build(Robot,pid=1) duplicate -> exp false "},
-    {2, true,  "normal Build(Robot,pid=2)                        "},
-    {3, true,  "normal Build(Robot,pid=3)                        "},
-    {4, true,  "normal Build(Robot,pid=4)                        "},
-    {5, true,  "normal Build(Robot,pid=5)                        "},
-    {6, true,  "normal Build(Robot,pid=6) fills team             "},
+    {2, true, "normal Build(Robot,pid=2)                        "},
+    {3, true, "normal Build(Robot,pid=3)                        "},
+    {4, true, "normal Build(Robot,pid=4)                        "},
+    {5, true, "normal Build(Robot,pid=5)                        "},
+    {6, true, "normal Build(Robot,pid=6) fills team             "},
     {7, false, "BUG1   Build(Robot,pid=7) over limit -> exp false"},
 };
 
-static int  s_step = 0;
+static int s_step = 0;
 static bool s_done = false;
 
 void AI::play(ICharacterAPI& api)
@@ -61,17 +61,17 @@ void AI::play(ITeamAPI& api)
         return;
     }
 
-    const TestStep& step  = steps[s_step];
-    const int       frame = api.GetFrameCount();
+    const TestStep& step = steps[s_step];
+    const int frame = api.GetFrameCount();
 
     bool result = api.BuildCharacter(THUAI9::CharacterType::Robot, step.pid).get();
 
-    bool        pass    = (result == step.expectSuccess);
+    bool pass = (result == step.expectSuccess);
     std::string verdict = pass ? "PASS" : "*** FAIL ***";
 
     api.Print(
         "[TEST frame=" + std::to_string(frame) +
-        " step="  + std::to_string(s_step + 1) + "/8] " +
+        " step=" + std::to_string(s_step + 1) + "/8] " +
         step.label +
         " got=" + (result ? "true " : "false") +
         " " + verdict
