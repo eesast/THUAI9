@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
+import subprocess
+import sys
 import threading
 import time
 from collections import deque
@@ -18,6 +21,10 @@ from PyAPI.State import State
 from PyAPI.utils import AssistFunction, Proto2THUAI9
 
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+PROTO_DIR = ROOT_DIR / "proto"
+
+
 class Logic(ILogic):
     def __init__(
         self,
@@ -26,18 +33,25 @@ class Logic(ILogic):
         playerType: THUAI9.PlayerType,
         characterType: THUAI9.CharacterType,
         sideFlag: Optional[int] = None,
+        aiModule: str = "PyAPI.AI",
     ) -> None:
         self.__playerID = playerID
         self.__teamID = teamID
         self.__playerType = playerType
         self.__characterType = characterType
         self.__sideFlag = bool(teamID % 2 == 1) if sideFlag is None else bool(sideFlag)
+        self.__aiModule = aiModule
 
         self.__comm: Optional[Communication] = None
         self.__currentState = State()
         self.__bufferState = State()
         self.__timer: Optional[IGameTimer] = None
         self.__threadAI: Optional[threading.Thread] = None
+        self.__serverIP = "127.0.0.1"
+        self.__serverPort = "8888"
+        self.__file = False
+        self.__screen = False
+        self.__warnOnly = False
 
         self.__mtxAI = threading.Lock()
         self.__mtxState = threading.Lock()
@@ -241,7 +255,69 @@ class Logic(ILogic):
     def BuildCharacter(self, characterType: THUAI9.CharacterType, playerID: int) -> bool:
         if self.__comm is None:
             return False
-        return self.__comm.BuildCharacter(self.__teamID, playerID, characterType)
+        success = self.__comm.BuildCharacter(self.__teamID, playerID, characterType)
+        if success:
+            self.__StartCharacterProcess(characterType, playerID)
+        return success
+
+    def __StartCharacterProcess(
+        self, characterType: THUAI9.CharacterType, playerID: int
+    ) -> None:
+        if self.__playerType != THUAI9.PlayerType.Team or playerID <= 0:
+            return
+
+        command = [
+            sys.executable or "python",
+            "-m",
+            "PyAPI.main",
+            "-t",
+            str(self.__teamID),
+            "-p",
+            str(playerID),
+            "-c",
+            str(int(characterType)),
+            "-I",
+            self.__serverIP,
+            "-P",
+            self.__serverPort,
+            "--aiModule",
+            self.__aiModule,
+        ]
+        if self.__file:
+            command.append("-d")
+        if self.__screen:
+            command.append("-o")
+        if self.__warnOnly:
+            command.append("-w")
+
+        env = os.environ.copy()
+        python_path = env.get("PYTHONPATH")
+        paths = [str(ROOT_DIR), str(PROTO_DIR)]
+        if python_path:
+            paths.append(python_path)
+        env["PYTHONPATH"] = os.pathsep.join(paths)
+
+        try:
+            if os.name == "nt":
+                subprocess.Popen(
+                    command,
+                    cwd=str(ROOT_DIR),
+                    env=env,
+                    creationflags=subprocess.CREATE_NEW_CONSOLE,
+                )
+            else:
+                subprocess.Popen(command, cwd=str(ROOT_DIR), env=env)
+            self.__logger.info(
+                "Spawned character process: team=%s player=%s",
+                self.__teamID,
+                playerID,
+            )
+        except OSError:
+            self.__logger.exception(
+                "Failed to spawn character process: team=%s player=%s",
+                self.__teamID,
+                playerID,
+            )
 
     def ProduceGoods(self, goodsType: THUAI9.GoodsType, maxProduceNum: int) -> bool:
         if self.__comm is None:
@@ -483,6 +559,12 @@ class Logic(ILogic):
         screen: bool,
         warnOnly: bool,
     ) -> None:
+        self.__serverIP = IP
+        self.__serverPort = port
+        self.__file = file
+        self.__screen = screen
+        self.__warnOnly = warnOnly
+
         self.__logger.handlers.clear()
         self.__logger.propagate = False
         self.__logger.setLevel(logging.DEBUG)
