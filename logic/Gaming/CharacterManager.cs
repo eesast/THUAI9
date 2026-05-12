@@ -51,6 +51,12 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Factory for Team {teamId} cannot recruit at this time.");
                     return false;
                 }
+                var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
+                if (teamDict.ContainsKey(playerId))
+                {
+                    LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
+                    return false;
+                }
                 var occ = OccupationFactory.FindIOccupation(type);
                 int cost = occ.Cost;
                 if (factory.ComputingPower.Get() < cost)

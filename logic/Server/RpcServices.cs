@@ -452,14 +452,18 @@ namespace Server
         public override Task<BoolRes> CreateCharacter(CreateCharacterMsg request, ServerCallContext context)
         {
             GameServerLogging.logger.LogDebug($"TRY CreatCharacter: CharacterType {request.CharacterType} from Team {request.TeamId}");
-            BoolRes boolRes = new()
+            BoolRes boolRes = new();
+            if (request.TeamId <= 0 || request.TeamId > TeamCount || request.PlayerId <= 0 || !ValidPlayerID(request.PlayerId))
             {
-                ActSuccess =
-                    game.RecruitCharacterAtFactory(
-                        request.TeamId,
-                        request.PlayerId,
-                        Transformation.CharacterTypeFromProto(request.CharacterType))
-            };
+                boolRes.ActSuccess = false;
+                GameServerLogging.logger.LogDebug($"END CreateCharacter: Invalid TeamId {request.TeamId} or PlayerId {request.PlayerId}");
+                return Task.FromResult(boolRes);
+            }
+            boolRes.ActSuccess =
+                game.RecruitCharacterAtFactory(
+                    request.TeamId,
+                    request.PlayerId,
+                    Transformation.CharacterTypeFromProto(request.CharacterType));
             // if (boolRes.ActSuccess) teamMoneyPool.SubMoney(activateCost);
             GameServerLogging.logger.LogDebug($"END CreateCharacter:{boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
