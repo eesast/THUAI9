@@ -1,6 +1,7 @@
 gymnasium>=0.29.0
 stable-baselines3>=2.3.0
 sb3-contrib>=2.3.0      # MaskablePPO (optional but recommended)
+torch>=2.0.0            # for custom agents
 numpy>=1.24.0
 pyyaml>=6.0
 matplotlib>=3.7.0       # visualization (optional)
