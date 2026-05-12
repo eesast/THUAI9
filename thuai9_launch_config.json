@@ -1,0 +1,13 @@
+﻿{
+    "CapiDebug":  true,
+    "TeamCount":  4,
+    "GameTime":  600,
+    "CapiOutput":  true,
+    "CapiWarnOnly":  false,
+    "ServerIP":  "127.0.0.1",
+    "StartUI":  true,
+    "CharacterNum":  6,
+    "ServerPort":  8888,
+    "CheatMode":  false,
+    "PlaybackFile":  "mygame"
+}

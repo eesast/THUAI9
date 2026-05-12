@@ -52,6 +52,11 @@ namespace Gaming
                     return false;
                 }
                 var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
+                if (teamDict.Count >= GameData.MaxCharactersPerTeam)
+                {
+                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
+                    return false;
+                }
                 if (teamDict.ContainsKey(playerId))
                 {
                     LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
