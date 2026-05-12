@@ -40,6 +40,10 @@ THUAI9-PvE-RL/
 │   ├── evaluate.py      # 评测脚本
 │   ├── visualization.py # ASCII 渲染 + 奖励曲线
 │   └── configs/         # easy / medium / hard YAML
+├── my_agent/            # 自定义 Agent 示例（手写 DQN）
+│   ├── dqn_agent.py     # DQN 实现（Q-Network + ReplayBuffer）
+│   ├── train.py         # 训练入口
+│   └── evaluate.py      # 多 seed 评测
 ├── tests/               # 单元测试
 └── ITERATIONS.md        # 迭代演化日志（核心文档）
 ```

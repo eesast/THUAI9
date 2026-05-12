@@ -72,14 +72,14 @@ env.render()           -> str   # ANSI 单行状态摘要
 
 `step()` 返回的 `info` 字典：
 
-| 字段 | 类型 | 含义 |
-| --- | --- | --- |
-| `step` | `int` | 当前步数 |
-| `time` | `float` | 游戏时间（秒） |
-| `money` | `float` | 当前现金 |
-| `score` | `float` | 当前累计得分（卖出收入 × score_factor） |
-| `compute` | `float` | 当前算力点 |
-| `action_valid` | `bool` | 上一步是否有效 |
+| 字段             | 类型      | 含义                                     |
+| ---------------- | --------- | ---------------------------------------- |
+| `step`         | `int`   | 当前步数                                 |
+| `time`         | `float` | 游戏时间（秒）                           |
+| `money`        | `float` | 当前现金                                 |
+| `score`        | `float` | 当前累计得分（卖出收入 × score_factor） |
+| `compute`      | `float` | 当前算力点                               |
+| `action_valid` | `bool`  | 上一步是否有效                           |
 
 终止条件：
 
@@ -92,26 +92,26 @@ env.render()           -> str   # ANSI 单行状态摘要
 
 以下对象可在规则层内部自由使用，但不应作为选手算法依赖的接口：
 
-| 对象 | 来源文件 | 职责 |
-| --- | --- | --- |
-| `Unit` | `character.py` | 单位背包、HP、busy 状态机 |
-| `Market` | `market.py` | 正弦价格函数，per-product per-market |
-| `ResourcePoint` | `board.py` | 资源库存与再生速率 |
-| `ComputeCenter` | `board.py` | 算力中心占领进度 |
-| `Board` | `board.py` | 地图网格、实体查询（nearest_market 等） |
-| `Factory` | `game_env.py` | 仓库（raw_stock + products）、生产队列 |
+| 对象              | 来源文件         | 职责                                    |
+| ----------------- | ---------------- | --------------------------------------- |
+| `Unit`          | `character.py` | 单位背包、HP、busy 状态机               |
+| `Market`        | `market.py`    | 正弦价格函数，per-product per-market    |
+| `ResourcePoint` | `board.py`     | 资源库存与再生速率                      |
+| `ComputeCenter` | `board.py`     | 算力中心占领进度                        |
+| `Board`         | `board.py`     | 地图网格、实体查询（nearest_market 等） |
+| `Factory`       | `game_env.py`  | 仓库（raw_stock + products）、生产队列  |
 
 ### 商品定义（`GameLogic/config.py`）
 
 `PRODUCT_DEFS` 中定义 5 类商品：
 
-| ID | 名称 | 购买成本 | 市场价格范围 | 生产时间 |
-| ---: | --- | ---: | --- | ---: |
-| 0 | 半导体 | 10 | 40–120 | 5.0 s |
-| 1 | 药品 | 5 | 20–60 | 4.0 s |
-| 2 | 小商品 | 1 | 4–12 | 2.0 s |
-| 3 | 服饰 | 8 | 32–96 | 6.0 s |
-| 4 | 食品 | 3 | 12–24 | 1.0 s |
+| ID | 名称   | 购买成本 | 市场价格范围 | 生产时间 |
+| -: | ------ | -------: | ------------ | -------: |
+|  0 | 半导体 |       10 | 40–120      |    5.0 s |
+|  1 | 药品   |        5 | 20–60       |    4.0 s |
+|  2 | 小商品 |        1 | 4–12        |    2.0 s |
+|  3 | 服饰   |        8 | 32–96       |    6.0 s |
+|  4 | 食品   |        3 | 12–24       |    1.0 s |
 
 ### 市场价格（`GameLogic/market.py`）
 
@@ -160,26 +160,26 @@ class Action(IntEnum):
 
 当前维度 `OBS_DIM = 32`，由 `_encode_obs()` 生成：
 
-| 索引 | 含义 | 归一化 |
-| ---: | --- | --- |
-| 0–1 | 单位位置 (x, y) | / (H, W) |
-| 2 | 单位 HP | / max_hp |
-| 3 | 原材料背包 | raw_inv / capacity |
-| 4 | 成品背包 | prod_inv / capacity |
-| 5 | busy_ticks | / 10，截断到 1 |
-| 6 | money | log10(money+1) / 5 |
-| 7 | compute | / 100，截断到 2 |
-| 8 | time | / max_game_time |
-| 9–10 | 价格相位 | sin / cos（用于识别周期） |
-| 11 | 工厂原材料库存 | / storage_cap |
-| 12 | 工厂成品库存 | / storage_cap |
-| 13 | 生产队列长度 | / 10，截断到 1 |
-| 14–16 | 资源点 0 | dx/H, dy/W, stock ratio |
-| 17–19 | 资源点 1 | 同上 |
-| 20–22 | 算力中心 0 | dx/H, dy/W, is_open |
-| 23–25 | 算力中心 1 | 同上 |
-| 26–28 | 市场 0 | dx/H, dy/W, best_price（归一化） |
-| 29–31 | 市场 1 | 同上 |
+|   索引 | 含义            | 归一化                           |
+| -----: | --------------- | -------------------------------- |
+|   0–1 | 单位位置 (x, y) | / (H, W)                         |
+|      2 | 单位 HP         | / max_hp                         |
+|      3 | 原材料背包      | raw_inv / capacity               |
+|      4 | 成品背包        | prod_inv / capacity              |
+|      5 | busy_ticks      | / 10，截断到 1                   |
+|      6 | money           | log10(money+1) / 5               |
+|      7 | compute         | / 100，截断到 2                  |
+|      8 | time            | / max_game_time                  |
+|  9–10 | 价格相位        | sin / cos（用于识别周期）        |
+|     11 | 工厂原材料库存  | / storage_cap                    |
+|     12 | 工厂成品库存    | / storage_cap                    |
+|     13 | 生产队列长度    | / 10，截断到 1                   |
+| 14–16 | 资源点 0        | dx/H, dy/W, stock ratio          |
+| 17–19 | 资源点 1        | 同上                             |
+| 20–22 | 算力中心 0      | dx/H, dy/W, is_open              |
+| 23–25 | 算力中心 1      | 同上                             |
+| 26–28 | 市场 0          | dx/H, dy/W, best_price（归一化） |
+| 29–31 | 市场 1          | 同上                             |
 
 当前只编码前 2 个市场和前 2 个资源点。如果修改观测结构，必须同步更新：
 
@@ -191,15 +191,15 @@ class Action(IntEnum):
 
 奖励由 `RewardCalculator` 按 `RewardConfig` 权重计算：
 
-| 来源 | 默认参数 | 默认值 |
-| --- | --- | --- |
-| 现金变化 `Δmoney` | `money_scale = 0.01` | `Δmoney × 0.01` |
-| 得分变化 `Δscore` | `money_scale = 0.01` | `Δscore × 0.01` |
-| 时间惩罚（每步） | `time_penalty` | `−0.002` |
-| 采集奖励（每单位） | `harvest_bonus_per_unit` | `+0.001` |
-| 算力中心解锁（一次性） | `compute_center_bonus` | `+0.5` |
-| 无效动作 | `invalid_action_penalty` | `−0.05` |
-| 破产（终止时） | `bankruptcy_penalty` | `−10.0` |
+| 来源                   | 默认参数                   | 默认值              |
+| ---------------------- | -------------------------- | ------------------- |
+| 现金变化 `Δmoney`   | `money_scale = 0.01`     | `Δmoney × 0.01` |
+| 得分变化 `Δscore`   | `money_scale = 0.01`     | `Δscore × 0.01` |
+| 时间惩罚（每步）       | `time_penalty`           | `−0.002`         |
+| 采集奖励（每单位）     | `harvest_bonus_per_unit` | `+0.001`          |
+| 算力中心解锁（一次性） | `compute_center_bonus`   | `+0.5`            |
+| 无效动作               | `invalid_action_penalty` | `−0.05`          |
+| 破产（终止时）         | `bankruptcy_penalty`     | `−10.0`          |
 
 奖励是训练辅助信号，比赛排名以 `score` 为准。调整 `RewardConfig` 权重时不影响 `score` 的计算。
 
@@ -207,18 +207,18 @@ class Action(IntEnum):
 
 所有规则参数集中在 `GameConfig` dataclass：
 
-| 参数 | easy | medium（默认） | hard |
-| --- | ---: | ---: | ---: |
-| `map_width / map_height` | 5 / 5 | 10 / 10 | 15 / 15 |
-| `num_markets` | 3 | 3 | 4 |
-| `num_resource_points` | 2 | 2 | 4 |
-| `num_compute_centers` | 1 | 2 | 3 |
-| `initial_money` | 200 | 50 | 30 |
-| `initial_compute` | 60 | 30 | 20 |
-| `price_volatility` | 0.3 | 1.0 | 2.0 |
-| `resource_regen_rate` | 2.0 | 1.0 | 0.5 |
-| `initial_resource_stock` | 200 | 100 | 50 |
-| `max_game_time (s)` | 300 | 300 | 500 |
+| 参数                       |  easy | medium（默认） |    hard |
+| -------------------------- | ----: | -------------: | ------: |
+| `map_width / map_height` | 5 / 5 |        10 / 10 | 15 / 15 |
+| `num_markets`            |     3 |              3 |       4 |
+| `num_resource_points`    |     2 |              2 |       4 |
+| `num_compute_centers`    |     1 |              2 |       3 |
+| `initial_money`          |   200 |             50 |      30 |
+| `initial_compute`        |    60 |             30 |      20 |
+| `price_volatility`       |   0.3 |            1.0 |     2.0 |
+| `resource_regen_rate`    |   2.0 |            1.0 |     0.5 |
+| `initial_resource_stock` |   200 |            100 |      50 |
+| `max_game_time (s)`      |   300 |            300 |     500 |
 
 通过 YAML 自定义参数：
 
@@ -282,13 +282,11 @@ ASCII 渲染轨迹和奖励曲线，用于调试策略行为。
    ```bash
    python -m pytest tests/ -v
    ```
-
 3. 用 easy 配置快速验证环境可解：
 
    ```bash
    python TrainingDemo/train_basic.py --config easy --timesteps 50000
    ```
-
 4. 确认规则没有变成无解（简单规则策略仍能盈利）。
 5. 确认规则没有被 vanilla PPO 轻松解决。
 6. 更新本文档和 `docs/CONTESTANT_GUIDE.md`。
@@ -303,12 +301,3 @@ ASCII 渲染轨迹和奖励曲线，用于调试策略行为。
 - 不依赖固定地图路线（支持 random_map 或多 seed）。
 - 不依赖私有状态即可实现合理策略。
 - 多 seed 下的方差小于单 seed 表现差异。
-
-## 注意事项
-
-- 不要把训练产物（`models/`、`plots/`）提交到仓库。
-- 不要让算法依赖 `GameLogic` 内部私有方法或对象字段。
-- 修改 `num_markets` 或 `num_resource_points` 后，检查 `game_env.py` 中观测向量编码是否需要扩展（当前硬编码只编码前 2 个市场和前 2 个资源点）。
-- 修改观测结构后必须同步更新 `GameEnvironment.OBS_DIM`。
-- 比赛评测应使用固定隐藏 seeds，不同于训练时使用的 seeds。
-- 科技树（`TECH_TREE`）和多单位调度为 Phase 2 功能，当前未在评测中启用。
