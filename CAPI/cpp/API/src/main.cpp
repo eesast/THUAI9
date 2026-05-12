@@ -1,4 +1,4 @@
-﻿#include "AI.h"
+#include "AI.h"
 #include "logic.h"
 #include "structures.h"
 
@@ -19,12 +19,12 @@
 using namespace std::literals::string_view_literals;
 
 static constexpr std::string_view welcomeString = R"welcome(
-______________ ___  ____ ___  _____  .___ ________ 
+______________ ___  ____ ___  _____  .___ ________
 \__    ___/   |   \|    |   \/  _  \ |   /   __   \
   |    | /    ~    \    |   /  /_\  \|   \____    /
-  |    | \    Y    /    |  /    |    \   |  /    / 
-  |____|  \___|_  /|______/\____|__  /___| /____/  
-                \/                 \/              
+  |    | \    Y    /    |  /    |    \   |  /    /
+  |____|  \___|_  /|______/\____|__  /___| /____/
+                \/                 \/
 )welcome"sv;
 
 namespace
@@ -40,12 +40,12 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
 {
     int pID = -1;
     int tID = -1;
+    int cTypeInt = -1;
     std::string sIP = "127.0.0.1";
     std::string sPort = "8888";
     bool file = false;
     bool print = false;
     bool warnOnly = false;
-    extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict;
 
     auto requireValue = [&](int& index, std::string_view flag) -> std::string
     {
@@ -68,6 +68,8 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
                 tID = std::stoi(requireValue(i, arg));
             else if (arg == "-p" || arg == "--playerID")
                 pID = std::stoi(requireValue(i, arg));
+            else if (arg == "-c" || arg == "--characterType")
+                cTypeInt = std::stoi(requireValue(i, arg));
             else if (arg == "-d" || arg == "--debug")
                 file = true;
             else if (arg == "-o" || arg == "--output")
@@ -85,7 +87,7 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         return 1;
     }
 
-    if (tID < 1 || tID > 4 || pID < 0 || pID > 3)
+    if (tID < 1 || tID > 4 || pID < 0 )
     {
         PrintUsage();
         return 1;
@@ -97,9 +99,9 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
     try
     {
         THUAI9::PlayerType playerType = pID == 0 ? THUAI9::PlayerType::Team : THUAI9::PlayerType::Character;
-        THUAI9::CharacterType characterType = THUAI9::CharacterType::NullCharacterType;
-        if (pID > 0)
-            characterType = CharacterTypeDict[pID - 1];
+        THUAI9::CharacterType characterType = cTypeInt >= 0
+            ? static_cast<THUAI9::CharacterType>(cTypeInt)
+            : THUAI9::CharacterType::NullCharacterType;
 
 #ifdef _MSC_VER
         std::cout << welcomeString << std::endl;
