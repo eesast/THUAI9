@@ -68,9 +68,9 @@ THUAI9::PlaceType Logic::GetPlaceType(int32_t cellX, int32_t cellY) const
         return THUAI9::PlaceType::NullPlaceType;
     if (cellX < 0 || cellY < 0)
         return THUAI9::PlaceType::NullPlaceType;
-    if (static_cast<size_t>(cellX) >= currentState->gameMap.size() || static_cast<size_t>(cellY) >= currentState->gameMap.front().size())
+    if (static_cast<size_t>(cellY) >= currentState->gameMap.size() || static_cast<size_t>(cellX) >= currentState->gameMap.front().size())
         return THUAI9::PlaceType::NullPlaceType;
-    return currentState->gameMap[cellX][cellY];
+    return currentState->gameMap[cellY][cellX];
 }
 
 std::optional<THUAI9::Resource> Logic::GetResourceState(int32_t cellX, int32_t cellY) const

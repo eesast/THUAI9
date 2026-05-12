@@ -22,6 +22,9 @@ namespace THUAI9_Avalonia.Models
         [ObservableProperty]
         private int factoryHp;
 
+        [ObservableProperty]
+        private string memberUuidText = "成员 uuid：等待角色创建";
+
         public string Header => $"队伍 {TeamId}";
 
         public string SummaryText => $"得分 {Score} · 原料 {Material} · 算力 {ComputePower} · 工厂血量 {FactoryHp}";

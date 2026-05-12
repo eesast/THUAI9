@@ -91,7 +91,7 @@ namespace THUAI9.Unity.WebGL
             PlaybackSelection selection = ParsePlaybackSelection(payload);
             if (selection == null || string.IsNullOrWhiteSpace(selection.url))
             {
-                Debug.LogError("WebGL playback payload did not include a URL.");
+                Debug.LogWarning("WebGL playback payload did not include a URL.");
                 DispatchEvent("playback-error", "missing-url");
                 return;
             }
@@ -99,7 +99,7 @@ namespace THUAI9.Unity.WebGL
             RefreshReferences();
             if (playbackController == null)
             {
-                Debug.LogError("PlaybackController not found for WebGL playback load.");
+                Debug.LogWarning("PlaybackController not found for WebGL playback load.");
                 DispatchEvent("playback-error", "missing-playback-controller");
                 return;
             }
@@ -124,7 +124,7 @@ namespace THUAI9.Unity.WebGL
             PlaybackDataSelection selection = ParsePlaybackDataSelection(payload);
             if (selection == null || string.IsNullOrWhiteSpace(selection.data))
             {
-                Debug.LogError("WebGL playback base64 payload was empty.");
+                Debug.LogWarning("WebGL playback base64 payload was empty.");
                 DispatchEvent("playback-error", "missing-base64-data");
                 return;
             }
@@ -134,7 +134,7 @@ namespace THUAI9.Unity.WebGL
                 RefreshReferences();
                 if (playbackController == null)
                 {
-                    Debug.LogError("PlaybackController not found for WebGL playback base64 load.");
+                    Debug.LogWarning("PlaybackController not found for WebGL playback base64 load.");
                     DispatchEvent("playback-error", "missing-playback-controller");
                     return;
                 }
@@ -146,7 +146,7 @@ namespace THUAI9.Unity.WebGL
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load WebGL playback base64 data: {ex.Message}");
+                Debug.LogWarning($"Failed to load WebGL playback base64 data ({ex.GetType().Name}).");
                 DispatchEvent("playback-error", ex.Message);
             }
         }
@@ -185,7 +185,7 @@ namespace THUAI9.Unity.WebGL
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to parse WebGL live frame base64: {ex.Message}");
+                Debug.LogWarning($"Failed to parse WebGL live frame base64 ({ex.GetType().Name}).");
                 DispatchEvent("live-frame-error", ex.Message);
             }
         }
@@ -209,7 +209,7 @@ namespace THUAI9.Unity.WebGL
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to parse WebGL live frame JSON: {ex.Message}");
+                Debug.LogWarning($"Failed to parse WebGL live frame JSON ({ex.GetType().Name}).");
                 DispatchEvent("live-frame-error", ex.Message);
             }
         }

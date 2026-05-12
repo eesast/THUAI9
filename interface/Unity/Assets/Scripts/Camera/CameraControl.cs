@@ -1,6 +1,7 @@
-﻿using THUAI9.Unity.Core;
+using THUAI9.Unity.Core;
 using THUAI9.Unity.Render;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace THUAI9.Unity.CameraControlNS
 {
@@ -174,8 +175,19 @@ namespace THUAI9.Unity.CameraControlNS
                 return;
             }
 
+            if (IsPointerOverUi())
+            {
+                return;
+            }
+
             _mainCamera.orthographicSize -= scroll * zoomSpeed * Mathf.Max(_mainCamera.orthographicSize / 12f, 1f);
             _mainCamera.orthographicSize = Mathf.Clamp(_mainCamera.orthographicSize, minZoom, maxZoom);
+        }
+
+        private static bool IsPointerOverUi()
+        {
+            EventSystem eventSystem = EventSystem.current;
+            return eventSystem != null && eventSystem.IsPointerOverGameObject();
         }
 
         private void ClampPosition()

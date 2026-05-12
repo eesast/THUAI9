@@ -61,6 +61,18 @@ namespace THUAI9_Avalonia.ViewModels
         private readonly Dictionary<long, CharacterViewModel> _team2CharacterIndex = new();
         private readonly Dictionary<long, CharacterViewModel> _team3CharacterIndex = new();
         private readonly Dictionary<long, CharacterViewModel> _team4CharacterIndex = new();
+        private readonly struct TeamMemberUuidInfo
+        {
+            public TeamMemberUuidInfo(long playerId, long guid)
+            {
+                PlayerId = playerId;
+                Guid = guid;
+            }
+
+            public long PlayerId { get; }
+            public long Guid { get; }
+        }
+
         private readonly MapDynamicStateManager _dynamicStateManager;
         private readonly long _spectatorPlayerId = 2023 + Environment.ProcessId;
 
@@ -106,7 +118,8 @@ namespace THUAI9_Avalonia.ViewModels
                     Score = 0,
                     Material = 0,
                     ComputePower = 0,
-                    FactoryHp = 0
+                    FactoryHp = 0,
+                    MemberUuidText = BuildWaitingMemberUuidText()
                 });
             }
         }
@@ -161,6 +174,7 @@ namespace THUAI9_Avalonia.ViewModels
             Team1Characters.Add(new CharacterViewModel
             {
                 Guid = 1,
+                CharacterId = 1,
                 Name = "无人机 1 号",
                 Hp = 2,
                 MaxHp = 3,
@@ -176,6 +190,7 @@ namespace THUAI9_Avalonia.ViewModels
                 TeamOverviews[0].Material = 80;
                 TeamOverviews[0].ComputePower = 45;
                 TeamOverviews[0].FactoryHp = 3;
+                TeamOverviews[0].MemberUuidText = "P1=uuid 1";
                 TeamOverviews[1].Score = 9;
                 TeamOverviews[1].Material = 65;
                 TeamOverviews[1].ComputePower = 30;
@@ -453,6 +468,8 @@ namespace THUAI9_Avalonia.ViewModels
             RemoveUnseenCharacters(Team2Characters, _team2CharacterIndex, currentFrameGuids);
             RemoveUnseenCharacters(Team3Characters, _team3CharacterIndex, currentFrameGuids);
             RemoveUnseenCharacters(Team4Characters, _team4CharacterIndex, currentFrameGuids);
+
+            UpdateTeamUuidSummaries(message);
         }
 
         private void UpdateCharacterOnMap(MessageOfCharacter data, int maxHp)
@@ -652,7 +669,100 @@ namespace THUAI9_Avalonia.ViewModels
                 TeamOverviews[i].Material = 0;
                 TeamOverviews[i].ComputePower = 0;
                 TeamOverviews[i].FactoryHp = 0;
+                TeamOverviews[i].MemberUuidText = BuildWaitingMemberUuidText();
             }
+        }
+
+        private void UpdateTeamUuidSummaries(MessageToClient message)
+        {
+            for (int teamId = 1; teamId <= 4 && teamId <= TeamOverviews.Count; teamId++)
+            {
+                TeamOverviews[teamId - 1].MemberUuidText = FormatTeamUuidSummary(teamId, message);
+            }
+        }
+
+        private string FormatTeamUuidSummary(int teamId, MessageToClient message)
+        {
+            var members = new List<TeamMemberUuidInfo>();
+
+            ObservableCollection<CharacterViewModel>? characterList = GetTeamList(teamId);
+            if (characterList != null)
+            {
+                foreach (CharacterViewModel character in characterList)
+                {
+                    AddOrMergeTeamMemberUuid(members, character.CharacterId, character.Guid);
+                }
+            }
+
+            if (message.ObjMessage != null)
+            {
+                foreach (MessageOfObj obj in message.ObjMessage)
+                {
+                    MessageOfTeam? team = obj.TeamMessage;
+                    if (team == null || team.TeamId != teamId)
+                    {
+                        continue;
+                    }
+
+                    AddOrMergeTeamMemberUuid(members, team.PlayerId, 0);
+                }
+            }
+
+            if (members.Count == 0)
+            {
+                return BuildWaitingMemberUuidText();
+            }
+
+            members.Sort((left, right) =>
+            {
+                int playerCompare = NormalizePlayerIdForSort(left.PlayerId).CompareTo(NormalizePlayerIdForSort(right.PlayerId));
+                return playerCompare != 0 ? playerCompare : left.Guid.CompareTo(right.Guid);
+            });
+
+            IEnumerable<string> labels = members.Select(member =>
+            {
+                string playerLabel = member.PlayerId > 0 ? $"P{member.PlayerId}" : "P?";
+                string guidLabel = member.Guid > 0 ? member.Guid.ToString() : "暂无";
+                return $"{playerLabel}=uuid {guidLabel}";
+            });
+
+            return string.Join(Environment.NewLine, labels);
+        }
+
+        private static void AddOrMergeTeamMemberUuid(List<TeamMemberUuidInfo> members, long playerId, long guid)
+        {
+            if (playerId <= 0 && guid <= 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < members.Count; i++)
+            {
+                TeamMemberUuidInfo existing = members[i];
+                bool samePlayer = playerId > 0 && existing.PlayerId == playerId;
+                bool sameGuidWithoutPlayer = playerId <= 0 && guid > 0 && existing.Guid == guid;
+                if (!samePlayer && !sameGuidWithoutPlayer)
+                {
+                    continue;
+                }
+
+                long mergedPlayerId = existing.PlayerId > 0 ? existing.PlayerId : playerId;
+                long mergedGuid = existing.Guid > 0 ? existing.Guid : guid;
+                members[i] = new TeamMemberUuidInfo(mergedPlayerId, mergedGuid);
+                return;
+            }
+
+            members.Add(new TeamMemberUuidInfo(playerId, guid));
+        }
+
+        private static long NormalizePlayerIdForSort(long playerId)
+        {
+            return playerId > 0 ? playerId : long.MaxValue;
+        }
+
+        private static string BuildWaitingMemberUuidText()
+        {
+            return "等待角色创建";
         }
 
         private void LogSemanticEvent(string message, string level)
