@@ -18,6 +18,7 @@
 #include <system_error>  // NOLINT(build/c++11)
 
 #include "absl/base/config.h"
+#include "absl/base/nullability.h"
 
 namespace absl
 {
@@ -47,7 +48,7 @@ namespace absl
     // to the `first` argument to from_chars.
     struct from_chars_result
     {
-        const char* ptr;
+        absl::Nonnull<const char*> ptr;
         std::errc ec;
     };
 
@@ -79,11 +80,11 @@ namespace absl
     // format that strtod() accepts, except that a "0x" prefix is NOT matched.
     // (In particular, in `hex` mode, the input "0xff" results in the largest
     // matching pattern "0".)
-    absl::from_chars_result from_chars(const char* first, const char* last,
+    absl::from_chars_result from_chars(absl::Nonnull<const char*> first, absl::Nonnull<const char*> last,
                                        double& value,  // NOLINT
                                        chars_format fmt = chars_format::general);
 
-    absl::from_chars_result from_chars(const char* first, const char* last,
+    absl::from_chars_result from_chars(absl::Nonnull<const char*> first, absl::Nonnull<const char*> last,
                                        float& value,  // NOLINT
                                        chars_format fmt = chars_format::general);
 

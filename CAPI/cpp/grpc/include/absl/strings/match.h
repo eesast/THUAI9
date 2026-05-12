@@ -57,21 +57,36 @@ namespace absl
     // StartsWith()
     //
     // Returns whether a given string `text` begins with `prefix`.
-    inline bool StartsWith(absl::string_view text, absl::string_view prefix) noexcept
+    inline constexpr bool StartsWith(absl::string_view text, absl::string_view prefix) noexcept
     {
-        return prefix.empty() ||
-               (text.size() >= prefix.size() &&
-                memcmp(text.data(), prefix.data(), prefix.size()) == 0);
+        if (prefix.empty())
+        {
+            return true;
+        }
+        if (text.size() < prefix.size())
+        {
+            return false;
+        }
+        absl::string_view possible_match = text.substr(0, prefix.size());
+
+        return possible_match == prefix;
     }
 
     // EndsWith()
     //
     // Returns whether a given string `text` ends with `suffix`.
-    inline bool EndsWith(absl::string_view text, absl::string_view suffix) noexcept
+    inline constexpr bool EndsWith(absl::string_view text, absl::string_view suffix) noexcept
     {
-        return suffix.empty() ||
-               (text.size() >= suffix.size() &&
-                memcmp(text.data() + (text.size() - suffix.size()), suffix.data(), suffix.size()) == 0);
+        if (suffix.empty())
+        {
+            return true;
+        }
+        if (text.size() < suffix.size())
+        {
+            return false;
+        }
+        absl::string_view possible_match = text.substr(text.size() - suffix.size());
+        return possible_match == suffix;
     }
     // StrContainsIgnoreCase()
     //

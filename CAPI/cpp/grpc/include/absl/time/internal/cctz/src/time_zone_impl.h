@@ -21,8 +21,8 @@
 #include "absl/base/config.h"
 #include "absl/time/internal/cctz/include/cctz/civil_time.h"
 #include "absl/time/internal/cctz/include/cctz/time_zone.h"
-#include "time_zone_if.h"
-#include "time_zone_info.h"
+#include "absl/time/internal/cctz/src/time_zone_if.h"
+#include "absl/time/internal/cctz/src/time_zone_info.h"
 
 namespace absl
 {
@@ -103,7 +103,7 @@ namespace absl
             };
 
         }  // namespace cctz
-    }      // namespace time_internal
+    }  // namespace time_internal
     ABSL_NAMESPACE_END
 }  // namespace absl
 

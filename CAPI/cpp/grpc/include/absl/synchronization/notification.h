@@ -53,6 +53,7 @@
 #include <atomic>
 
 #include "absl/base/attributes.h"
+#include "absl/base/internal/tracing.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/time/time.h"
 
@@ -84,7 +85,12 @@ namespace absl
         // Returns the value of the notification's internal "notified" state.
         ABSL_MUST_USE_RESULT bool HasBeenNotified() const
         {
-            return HasBeenNotifiedInternal(&this->notified_yet_);
+            if (HasBeenNotifiedInternal(&this->notified_yet_))
+            {
+                base_internal::TraceObserved(this, TraceObjectKind());
+                return true;
+            }
+            return false;
         }
 
         // Notification::WaitForNotification()
@@ -117,6 +123,12 @@ namespace absl
         void Notify();
 
     private:
+        // Convenience helper to reduce verbosity at call sites.
+        static inline constexpr base_internal::ObjectKind TraceObjectKind()
+        {
+            return base_internal::ObjectKind::kNotification;
+        }
+
         static inline bool HasBeenNotifiedInternal(
             const std::atomic<bool>* notified_yet
         )

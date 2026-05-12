@@ -19,16 +19,18 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
+#include <cstring>
+#include <string>
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/endian.h"
 #include "absl/base/internal/invoke.h"
+#include "absl/base/macros.h"
+#include "absl/base/nullability.h"
 #include "absl/base/optimization.h"
 #include "absl/container/internal/compressed_tuple.h"
 #include "absl/container/internal/container_memory.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/string_view.h"
 
 // We can only add poisoning if we can detect consteval executions.
@@ -57,7 +59,6 @@ namespace absl
         struct CordRepFlat;
         struct CordRepSubstring;
         struct CordRepCrc;
-        class CordRepRing;
         class CordRepBtree;
 
         class CordzInfo;
@@ -65,17 +66,10 @@ namespace absl
         // Default feature enable states for cord ring buffers
         enum CordFeatureDefaults
         {
-            kCordEnableRingBufferDefault = false,
             kCordShallowSubcordsDefault = false
         };
 
-        extern std::atomic<bool> cord_ring_buffer_enabled;
         extern std::atomic<bool> shallow_subcords_enabled;
-
-        inline void enable_cord_ring_buffer(bool enable)
-        {
-            cord_ring_buffer_enabled.store(enable, std::memory_order_relaxed);
-        }
 
         inline void enable_shallow_subcords(bool enable)
         {
@@ -100,7 +94,7 @@ namespace absl
         };
 
         // Emits a fatal error "Unexpected node type: xyz" and aborts the program.
-        ABSL_ATTRIBUTE_NORETURN void LogFatalNodeType(CordRep* rep);
+        [[noreturn]] void LogFatalNodeType(CordRep* rep);
 
         // Fast implementation of memmove for up to 15 bytes. This implementation is
         // safe for overlapping regions. If nullify_tail is true, the destination is
@@ -119,8 +113,16 @@ namespace absl
                 {
                     memset(dst + 7, 0, 8);
                 }
+                // GCC 12 has a false-positive -Wstringop-overflow warning here.
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#endif
                 memcpy(dst, &buf1, 8);
                 memcpy(dst + n - 8, &buf2, 8);
+#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
+#pragma GCC diagnostic pop
+#endif
             }
             else if (n >= 4)
             {
@@ -185,10 +187,10 @@ namespace absl
             inline bool Decrement()
             {
                 int32_t refcount = count_.load(std::memory_order_acquire);
-                assert((refcount & kRefcountMask) > 0 || refcount & kImmortalFlag);
+                assert(refcount > 0 || refcount & kImmortalFlag);
                 return refcount != kRefIncrement &&
-                       (count_.fetch_sub(kRefIncrement, std::memory_order_acq_rel) &
-                        kHighRefcountMask) != 0;
+                       count_.fetch_sub(kRefIncrement, std::memory_order_acq_rel) !=
+                           kRefIncrement;
             }
 
             // Same as Decrement but expect that refcount is greater than 1.
@@ -196,8 +198,8 @@ namespace absl
             {
                 int32_t refcount =
                     count_.fetch_sub(kRefIncrement, std::memory_order_acq_rel);
-                assert((refcount & kRefcountMask) > 0 || refcount & kImmortalFlag);
-                return (refcount & kHighRefcountMask) != 0;
+                assert(refcount > 0 || refcount & kImmortalFlag);
+                return refcount != kRefIncrement;
             }
 
             // Returns the current reference count using acquire semantics.
@@ -213,11 +215,10 @@ namespace absl
             // This call performs the test for a reference count of one, and
             // performs the memory barrier needed for the owning thread
             // to act on the object, knowing that it has exclusive access to the
-            // object.  Always returns false when the immortal bit is set.
+            // object. Always returns false when the immortal bit is set.
             inline bool IsOne()
             {
-                return (count_.load(std::memory_order_acquire) & kRefcountMask) ==
-                       kRefIncrement;
+                return count_.load(std::memory_order_acquire) == kRefIncrement;
             }
 
             bool IsImmortal() const
@@ -226,33 +227,16 @@ namespace absl
             }
 
         private:
-            // We reserve the bottom bits for flags.
+            // We reserve the bottom bit for flag.
             // kImmortalBit indicates that this entity should never be collected; it is
             // used for the StringConstant constructor to avoid collecting immutable
             // constant cords.
-            // kReservedFlag is reserved for future use.
             enum Flags
             {
-                kNumFlags = 2,
+                kNumFlags = 1,
 
                 kImmortalFlag = 0x1,
-                kReservedFlag = 0x2,
                 kRefIncrement = (1 << kNumFlags),
-
-                // Bitmask to use when checking refcount by equality.  This masks out
-                // all flags except kImmortalFlag, which is part of the refcount for
-                // purposes of equality.  (A refcount of 0 or 1 does not count as 0 or 1
-                // if the immortal bit is set.)
-                kRefcountMask = ~kReservedFlag,
-
-                // Bitmask to use when checking if refcount is equal to 1 and not
-                // immortal when decrementing the refcount. This masks out kRefIncrement and
-                // all flags except kImmortalFlag. If the masked RefcountAndFlags is 0, we
-                // assume the refcount is equal to 1, since we know it's not immortal and
-                // not greater than 1. If the masked RefcountAndFlags is not 0, we can
-                // assume the refcount is not equal to 1 since either a higher bit in the
-                // refcount is set, or kImmortal is set.
-                kHighRefcountMask = kRefcountMask & ~kRefIncrement,
             };
 
             std::atomic<int32_t> count_;
@@ -265,7 +249,7 @@ namespace absl
             SUBSTRING = 1,
             CRC = 2,
             BTREE = 3,
-            RING = 4,
+            UNUSED_4 = 4,
             EXTERNAL = 5,
 
             // We have different tags for different sized flat arrays,
@@ -284,12 +268,8 @@ namespace absl
         // There are various locations where we want to check if some rep is a 'plain'
         // data edge, i.e. an external or flat rep. By having FLAT == EXTERNAL + 1, we
         // can perform this check in a single branch as 'tag >= EXTERNAL'
-        // Likewise, we have some locations where we check for 'ring or external/flat',
-        // so likewise align RING to EXTERNAL.
         // Note that we can leave this optimization to the compiler. The compiler will
         // DTRT when it sees a condition like `tag == EXTERNAL || tag >= FLAT`.
-        static_assert(RING == BTREE + 1, "BTREE and RING not consecutive");
-        static_assert(EXTERNAL == RING + 1, "BTREE and EXTERNAL not consecutive");
         static_assert(FLAT == EXTERNAL + 1, "EXTERNAL and FLAT not consecutive");
 
         struct CordRep
@@ -321,7 +301,7 @@ namespace absl
             // on the specific layout of these fields. Notably: the non-trivial field
             // `refcount` being preceded by `length`, and being tailed by POD data
             // members only.
-            // # LINT.IfChange
+            // LINT.IfChange
             size_t length;
             RefcountAndFlags refcount;
             // If tag < FLAT, it represents CordRepKind and indicates the type of node.
@@ -337,13 +317,9 @@ namespace absl
             // allocate room for these in the derived class, as not all compilers reuse
             // padding space from the base class (clang and gcc do, MSVC does not, etc)
             uint8_t storage[3];
-            // # LINT.ThenChange(cord_rep_btree.h:copy_raw)
+            // LINT.ThenChange(cord_rep_btree.h:copy_raw)
 
             // Returns true if this instance's tag matches the requested type.
-            constexpr bool IsRing() const
-            {
-                return tag == RING;
-            }
             constexpr bool IsSubstring() const
             {
                 return tag == SUBSTRING;
@@ -365,8 +341,6 @@ namespace absl
                 return tag == BTREE;
             }
 
-            inline CordRepRing* ring();
-            inline const CordRepRing* ring() const;
             inline CordRepSubstring* substring();
             inline const CordRepSubstring* substring() const;
             inline CordRepCrc* crc();
@@ -439,21 +413,22 @@ namespace absl
             static void Delete(CordRep* rep);
         };
 
-        struct Rank1
+        // Use go/ranked-overloads for dispatching.
+        struct Rank0
         {
         };
-        struct Rank0 : Rank1
+        struct Rank1 : Rank0
         {
         };
 
         template<typename Releaser, typename = ::absl::base_internal::invoke_result_t<Releaser, absl::string_view>>
-        void InvokeReleaser(Rank0, Releaser&& releaser, absl::string_view data)
+        void InvokeReleaser(Rank1, Releaser&& releaser, absl::string_view data)
         {
             ::absl::base_internal::invoke(std::forward<Releaser>(releaser), data);
         }
 
         template<typename Releaser, typename = ::absl::base_internal::invoke_result_t<Releaser>>
-        void InvokeReleaser(Rank1, Releaser&& releaser, absl::string_view)
+        void InvokeReleaser(Rank0, Releaser&& releaser, absl::string_view)
         {
             ::absl::base_internal::invoke(std::forward<Releaser>(releaser));
         }
@@ -473,7 +448,7 @@ namespace absl
 
             ~CordRepExternalImpl()
             {
-                InvokeReleaser(Rank0{}, std::move(this->template get<0>()), absl::string_view(base, length));
+                InvokeReleaser(Rank1{}, std::move(this->template get<0>()), absl::string_view(base, length));
             }
 
             static void Release(CordRepExternal* rep)
@@ -490,7 +465,6 @@ namespace absl
             assert(pos < child->length);
             assert(n <= child->length - pos);
 
-            // TODO(b/217376272): Harden internal logic.
             // Move to strategical places inside the Cord logic and make this an assert.
             if (ABSL_PREDICT_FALSE(!(child->IsExternal() || child->IsFlat())))
             {
@@ -636,6 +610,7 @@ namespace absl
 
             constexpr InlineData(const InlineData& rhs) noexcept;
             InlineData& operator=(const InlineData& rhs) noexcept;
+            friend void swap(InlineData& lhs, InlineData& rhs) noexcept;
 
             friend bool operator==(const InlineData& lhs, const InlineData& rhs)
             {
@@ -770,6 +745,20 @@ namespace absl
                 poison();
             }
 
+            void CopyInlineToString(absl::Nonnull<std::string*> dst) const
+            {
+                assert(!is_tree());
+                // As Cord can store only 15 bytes it is smaller than std::string's
+                // small string optimization buffer size. Therefore we will always trigger
+                // the fast assign short path.
+                //
+                // Copying with a size equal to the maximum allows more efficient, wider
+                // stores to be used and no branching.
+                dst->assign(rep_.SanitizerSafeCopy().as_chars(), kMaxInline);
+                // After the copy we then change the size and put in a 0 byte.
+                dst->erase(inline_size());
+            }
+
             void copy_max_inline_to(char* dst) const
             {
                 assert(!is_tree());
@@ -855,6 +844,32 @@ namespace absl
                 {
                 }
 
+#ifdef ABSL_INTERNAL_CORD_HAVE_SANITIZER
+                // Break compiler optimization for cases when value is allocated on the
+                // stack. Compiler assumes that the the variable is fully accessible
+                // regardless of our poisoning.
+                // Missing report: https://github.com/llvm/llvm-project/issues/100640
+                const Rep* self() const
+                {
+                    const Rep* volatile ptr = this;
+                    return ptr;
+                }
+                Rep* self()
+                {
+                    Rep* volatile ptr = this;
+                    return ptr;
+                }
+#else
+                constexpr const Rep* self() const
+                {
+                    return this;
+                }
+                constexpr Rep* self()
+                {
+                    return this;
+                }
+#endif
+
                 // Disable sanitizer as we must always be able to read `tag`.
                 ABSL_CORD_INTERNAL_NO_SANITIZE
                 int8_t tag() const
@@ -863,57 +878,57 @@ namespace absl
                 }
                 void set_tag(int8_t rhs)
                 {
-                    reinterpret_cast<int8_t*>(this)[0] = rhs;
+                    reinterpret_cast<int8_t*>(self())[0] = rhs;
                 }
 
                 char* as_chars()
                 {
-                    return data + 1;
+                    return self()->data + 1;
                 }
                 const char* as_chars() const
                 {
-                    return data + 1;
+                    return self()->data + 1;
                 }
 
                 bool is_tree() const
                 {
-                    return (tag() & 1) != 0;
+                    return (self()->tag() & 1) != 0;
                 }
 
                 size_t inline_size() const
                 {
-                    ABSL_ASSERT(!is_tree());
-                    return static_cast<size_t>(tag()) >> 1;
+                    ABSL_ASSERT(!self()->is_tree());
+                    return static_cast<size_t>(self()->tag()) >> 1;
                 }
 
                 void set_inline_size(size_t size)
                 {
                     ABSL_ASSERT(size <= kMaxInline);
-                    set_tag(static_cast<int8_t>(size << 1));
+                    self()->set_tag(static_cast<int8_t>(size << 1));
                 }
 
                 CordRep* tree() const
                 {
-                    return as_tree.rep;
+                    return self()->as_tree.rep;
                 }
                 void set_tree(CordRep* rhs)
                 {
-                    as_tree.rep = rhs;
+                    self()->as_tree.rep = rhs;
                 }
 
                 cordz_info_t cordz_info() const
                 {
-                    return as_tree.cordz_info;
+                    return self()->as_tree.cordz_info;
                 }
                 void set_cordz_info(cordz_info_t rhs)
                 {
-                    as_tree.cordz_info = rhs;
+                    self()->as_tree.cordz_info = rhs;
                 }
 
                 void make_tree(CordRep* tree)
                 {
-                    as_tree.rep = tree;
-                    as_tree.cordz_info = kNullCordzInfo;
+                    self()->as_tree.rep = tree;
+                    self()->as_tree.cordz_info = kNullCordzInfo;
                 }
 
 #ifdef ABSL_INTERNAL_CORD_HAVE_SANITIZER
@@ -954,6 +969,13 @@ namespace absl
                     char data[kMaxInline + 1];
                     AsTree as_tree;
                 };
+
+                // TODO(b/145829486): see swap(InlineData, InlineData) for more info.
+                inline void SwapValue(Rep rhs, Rep& refrhs)
+                {
+                    memcpy(&refrhs, this, sizeof(*this));
+                    memcpy(this, &rhs, sizeof(*this));
+                }
             };
 
             // Private implementation of `Compare()`
@@ -1098,6 +1120,20 @@ namespace absl
             {
                 Destroy(rep);
             }
+        }
+
+        inline void swap(InlineData& lhs, InlineData& rhs) noexcept
+        {
+            lhs.unpoison();
+            rhs.unpoison();
+            // TODO(b/145829486): `std::swap(lhs.rep_, rhs.rep_)` results in bad codegen
+            // on clang, spilling the temporary swap value on the stack. Since `Rep` is
+            // trivial, we can make clang DTRT by calling a hand-rolled `SwapValue` where
+            // we pass `rhs` both by value (register allocated) and by reference. The IR
+            // then folds and inlines correctly into an optimized swap without spill.
+            lhs.rep_.SwapValue(rhs.rep_, rhs.rep_);
+            rhs.poison();
+            lhs.poison();
         }
 
     }  // namespace cord_internal

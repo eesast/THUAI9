@@ -46,7 +46,7 @@ namespace absl
             };
 
         }  // namespace cctz
-    }      // namespace time_internal
+    }  // namespace time_internal
     ABSL_NAMESPACE_END
 }  // namespace absl
 
@@ -103,7 +103,7 @@ namespace absl
             extern ZoneInfoSourceFactory zone_info_source_factory;
 
         }  // namespace cctz_extension
-    }      // namespace time_internal
+    }  // namespace time_internal
     ABSL_NAMESPACE_END
 }  // namespace absl
 

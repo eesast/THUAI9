@@ -177,7 +177,7 @@ namespace absl
         // Typical use case:
         //
         //   struct HashTablezTag {};
-        //   thread_local PeriodicSampler sampler;
+        //   thread_local PeriodicSampler<HashTablezTag, 100> sampler;
         //
         //   void HashTableSamplingLogic(...) {
         //     if (sampler.Sample()) {

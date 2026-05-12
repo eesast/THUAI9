@@ -151,9 +151,8 @@
 // Annotations useful for debugging.
 
 // Report the current thread `name` to a race detector.
-#define ABSL_ANNOTATE_THREAD_NAME(name)             \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateThreadName) \
-    (__FILE__, __LINE__, name)
+#define ABSL_ANNOTATE_THREAD_NAME(name) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateThreadName)(__FILE__, __LINE__, name)
 
 // -------------------------------------------------------------
 // Annotations useful when implementing locks. They are not normally needed by
@@ -161,9 +160,8 @@
 // object.
 
 // Report that a lock has been created at address `lock`.
-#define ABSL_ANNOTATE_RWLOCK_CREATE(lock)             \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockCreate) \
-    (__FILE__, __LINE__, lock)
+#define ABSL_ANNOTATE_RWLOCK_CREATE(lock) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockCreate)(__FILE__, __LINE__, lock)
 
 // Report that a linker initialized lock has been created at address `lock`.
 #ifdef ABSL_HAVE_THREAD_SANITIZER
@@ -176,9 +174,8 @@
 #endif
 
 // Report that the lock at address `lock` is about to be destroyed.
-#define ABSL_ANNOTATE_RWLOCK_DESTROY(lock)             \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockDestroy) \
-    (__FILE__, __LINE__, lock)
+#define ABSL_ANNOTATE_RWLOCK_DESTROY(lock) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockDestroy)(__FILE__, __LINE__, lock)
 
 // Report that the lock at address `lock` has been acquired.
 // `is_w`=1 for writer lock, `is_w`=0 for reader lock.
@@ -251,26 +248,8 @@ ABSL_INTERNAL_END_EXTERN_C
 
 #else  // !defined(ABSL_HAVE_MEMORY_SANITIZER)
 
-// TODO(rogeeff): remove this branch
-#ifdef ABSL_HAVE_THREAD_SANITIZER
-#define ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(address, size) \
-    do                                                     \
-    {                                                      \
-        (void)(address);                                   \
-        (void)(size);                                      \
-    } while (0)
-#define ABSL_ANNOTATE_MEMORY_IS_UNINITIALIZED(address, size) \
-    do                                                       \
-    {                                                        \
-        (void)(address);                                     \
-        (void)(size);                                        \
-    } while (0)
-#else
-
 #define ABSL_ANNOTATE_MEMORY_IS_INITIALIZED(address, size)    // empty
 #define ABSL_ANNOTATE_MEMORY_IS_UNINITIALIZED(address, size)  // empty
-
-#endif
 
 #endif  // ABSL_HAVE_MEMORY_SANITIZER
 
@@ -368,14 +347,12 @@ ABSL_INTERNAL_STATIC_INLINE void ABSL_INTERNAL_C_SYMBOL(
 #if ABSL_INTERNAL_WRITES_ANNOTATIONS_ENABLED == 1
 
 // Similar to ABSL_ANNOTATE_IGNORE_READS_BEGIN, but ignore writes instead.
-#define ABSL_ANNOTATE_IGNORE_WRITES_BEGIN()                \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesBegin) \
-    (__FILE__, __LINE__)
+#define ABSL_ANNOTATE_IGNORE_WRITES_BEGIN() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesBegin)(__FILE__, __LINE__)
 
 // Stop ignoring writes.
-#define ABSL_ANNOTATE_IGNORE_WRITES_END()                \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesEnd) \
-    (__FILE__, __LINE__)
+#define ABSL_ANNOTATE_IGNORE_WRITES_END() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesEnd)(__FILE__, __LINE__)
 
 // Function prototypes of annotations provided by the compiler-based sanitizer
 // implementation.

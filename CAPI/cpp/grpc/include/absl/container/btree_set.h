@@ -48,10 +48,13 @@
 //
 // Another API difference is that btree iterators can be subtracted, and this
 // is faster than using std::distance.
+//
+// B-tree sets are not exception-safe.
 
 #ifndef ABSL_CONTAINER_BTREE_SET_H_
 #define ABSL_CONTAINER_BTREE_SET_H_
 
+#include "absl/base/attributes.h"
 #include "absl/container/internal/btree.h"            // IWYU pragma: export
 #include "absl/container/internal/btree_container.h"  // IWYU pragma: export
 
@@ -86,8 +89,8 @@ namespace absl
     // `absl::btree_set<K, C, A>`.
     //
     template<typename Key, typename Compare = std::less<Key>, typename Alloc = std::allocator<Key>>
-    class btree_set : public container_internal::btree_set_container<container_internal::btree<container_internal::set_params<Key, Compare, Alloc, /*TargetNodeSize=*/256,
-                                                                                                                              /*IsMulti=*/false>>>
+    class ABSL_ATTRIBUTE_OWNER btree_set : public container_internal::btree_set_container<container_internal::btree<container_internal::set_params<Key, Compare, Alloc, /*TargetNodeSize=*/256,
+                                                                                                                                                   /*IsMulti=*/false>>>
     {
         using Base = typename btree_set::btree_set_container;
 
@@ -442,8 +445,8 @@ namespace absl
     // `absl::btree_multiset<K, C, A>`.
     //
     template<typename Key, typename Compare = std::less<Key>, typename Alloc = std::allocator<Key>>
-    class btree_multiset : public container_internal::btree_multiset_container<container_internal::btree<container_internal::set_params<Key, Compare, Alloc, /*TargetNodeSize=*/256,
-                                                                                                                                        /*IsMulti=*/true>>>
+    class ABSL_ATTRIBUTE_OWNER btree_multiset : public container_internal::btree_multiset_container<container_internal::btree<container_internal::set_params<Key, Compare, Alloc, /*TargetNodeSize=*/256,
+                                                                                                                                                             /*IsMulti=*/true>>>
     {
         using Base = typename btree_multiset::btree_multiset_container;
 

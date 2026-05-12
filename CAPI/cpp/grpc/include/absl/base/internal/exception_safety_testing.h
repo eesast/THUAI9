@@ -1258,7 +1258,8 @@ namespace testing
                 WithContracts(const MoreContracts&... more_contracts) const
             {
                 return {
-                    factory_, operation_, std::tuple_cat(contracts_, std::tuple<absl::decay_t<MoreContracts>...>(more_contracts...))};
+                    factory_, operation_, std::tuple_cat(contracts_, std::tuple<absl::decay_t<MoreContracts>...>(more_contracts...))
+                };
             }
 
             /*
