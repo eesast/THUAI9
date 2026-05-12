@@ -241,15 +241,13 @@ bool Logic::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerID
         char exePath[MAX_PATH] = {};
         GetModuleFileNameA(nullptr, exePath, MAX_PATH);
 
-        std::string cmd = std::string("\"") + exePath + "\""
-            + " -t " + std::to_string(teamID)
-            + " -p " + std::to_string(playerIDArg)
-            + " -c " + std::to_string(static_cast<int>(characterType))
-            + " -I " + serverIP
-            + " -P " + serverPort;
-        if (debugFile)     cmd += " -d";
-        if (debugPrint)    cmd += " -o";
-        if (debugWarnOnly) cmd += " -w";
+        std::string cmd = std::string("\"") + exePath + "\"" + " -t " + std::to_string(teamID) + " -p " + std::to_string(playerIDArg) + " -c " + std::to_string(static_cast<int>(characterType)) + " -I " + serverIP + " -P " + serverPort;
+        if (debugFile)
+            cmd += " -d";
+        if (debugPrint)
+            cmd += " -o";
+        if (debugWarnOnly)
+            cmd += " -w";
 
         std::string winTitle = "THUAI9 CAPI " + std::to_string(teamID) + "-" + std::to_string(playerIDArg);
         STARTUPINFOA si = {};
@@ -257,8 +255,7 @@ bool Logic::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerID
         si.cb = sizeof(si);
         si.lpTitle = winTitle.data();
         // CREATE_NEW_CONSOLE opens a separate console window for each character
-        if (CreateProcessA(nullptr, cmd.data(), nullptr, nullptr,
-                           FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi))
+        if (CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi))
         {
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
@@ -266,8 +263,7 @@ bool Logic::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerID
         }
         else
         {
-            logger->warn("Failed to spawn character CAPI: team={} player={} err={}",
-                         teamID, playerIDArg, GetLastError());
+            logger->warn("Failed to spawn character CAPI: team={} player={} err={}", teamID, playerIDArg, GetLastError());
         }
 #endif
     }
@@ -562,11 +558,11 @@ void Logic::Main(CreateAIFunc createAI, std::string IP, std::string port, bool f
     logger = std::make_unique<spdlog::logger>("logicLogger", spdlog::sinks_init_list{fileLogger, printLogger});
     logger->flush_on(spdlog::level::warn);
 
-    serverIP       = IP;
-    serverPort     = port;
-    debugFile      = file;
-    debugPrint     = print;
-    debugWarnOnly  = warnOnly;
+    serverIP = IP;
+    serverPort = port;
+    debugFile = file;
+    debugPrint = print;
+    debugWarnOnly = warnOnly;
 
     pComm = std::make_unique<Communication>(IP, port);
 

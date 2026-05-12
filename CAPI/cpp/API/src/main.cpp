@@ -87,7 +87,7 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
         return 1;
     }
 
-    if (tID < 1 || tID > 4 || pID < 0 )
+    if (tID < 1 || tID > 4 || pID < 0)
     {
         PrintUsage();
         return 1;
@@ -99,9 +99,7 @@ int THUAI9Main(int argc, char** argv, CreateAIFunc AIBuilder)
     try
     {
         THUAI9::PlayerType playerType = pID == 0 ? THUAI9::PlayerType::Team : THUAI9::PlayerType::Character;
-        THUAI9::CharacterType characterType = cTypeInt >= 0
-            ? static_cast<THUAI9::CharacterType>(cTypeInt)
-            : THUAI9::CharacterType::NullCharacterType;
+        THUAI9::CharacterType characterType = cTypeInt >= 0 ? static_cast<THUAI9::CharacterType>(cTypeInt) : THUAI9::CharacterType::NullCharacterType;
 
 #ifdef _MSC_VER
         std::cout << welcomeString << std::endl;
