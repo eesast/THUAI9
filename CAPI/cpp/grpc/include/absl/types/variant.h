@@ -318,12 +318,11 @@ namespace absl
     }
 
     // Overload for getting a variant's rvalue by type.
-    // Note: `absl::move()` is required to allow use of constexpr in C++11.
     template<class T, class... Types>
     constexpr T&& get(variant<Types...>&& v)
     {
         return variant_internal::VariantCoreAccess::CheckedAccess<
-            variant_internal::IndexOf<T, Types...>::value>(absl::move(v));
+            variant_internal::IndexOf<T, Types...>::value>(std::move(v));
     }
 
     // Overload for getting a variant's const lvalue by type.
@@ -335,12 +334,11 @@ namespace absl
     }
 
     // Overload for getting a variant's const rvalue by type.
-    // Note: `absl::move()` is required to allow use of constexpr in C++11.
     template<class T, class... Types>
     constexpr const T&& get(const variant<Types...>&& v)
     {
         return variant_internal::VariantCoreAccess::CheckedAccess<
-            variant_internal::IndexOf<T, Types...>::value>(absl::move(v));
+            variant_internal::IndexOf<T, Types...>::value>(std::move(v));
     }
 
     // Overload for getting a variant's lvalue by index.
@@ -353,13 +351,12 @@ namespace absl
     }
 
     // Overload for getting a variant's rvalue by index.
-    // Note: `absl::move()` is required to allow use of constexpr in C++11.
     template<std::size_t I, class... Types>
     constexpr variant_alternative_t<I, variant<Types...>>&& get(
         variant<Types...>&& v
     )
     {
-        return variant_internal::VariantCoreAccess::CheckedAccess<I>(absl::move(v));
+        return variant_internal::VariantCoreAccess::CheckedAccess<I>(std::move(v));
     }
 
     // Overload for getting a variant's const lvalue by index.
@@ -372,13 +369,12 @@ namespace absl
     }
 
     // Overload for getting a variant's const rvalue by index.
-    // Note: `absl::move()` is required to allow use of constexpr in C++11.
     template<std::size_t I, class... Types>
     constexpr const variant_alternative_t<I, variant<Types...>>&& get(
         const variant<Types...>&& v
     )
     {
-        return variant_internal::VariantCoreAccess::CheckedAccess<I>(absl::move(v));
+        return variant_internal::VariantCoreAccess::CheckedAccess<I>(std::move(v));
     }
 
     // get_if()
@@ -463,8 +459,9 @@ namespace absl
         return variant_internal::
             VisitIndices<variant_size<absl::decay_t<Variants>>::value...>::Run(
                 variant_internal::PerformVisitation<Visitor, Variants...>{
-                    std::forward_as_tuple(absl::forward<Variants>(vars)...),
-                    absl::forward<Visitor>(vis)},
+                    std::forward_as_tuple(std::forward<Variants>(vars)...),
+                    std::forward<Visitor>(vis)
+                },
                 vars.index()...
             );
     }
@@ -552,10 +549,9 @@ namespace absl
                 variant_internal::IsNeitherSelfNorInPlace<variant, absl::decay_t<T>>::value,
                 variant_internal::IndexOfConstructedType<variant, T>>::type::value,
             class Tj = absl::variant_alternative_t<I, variant>,
-            absl::enable_if_t<std::is_constructible<Tj, T>::value>* =
-                nullptr>
+            absl::enable_if_t<std::is_constructible<Tj, T>::value>* = nullptr>
         constexpr variant(T&& t) noexcept(std::is_nothrow_constructible<Tj, T>::value) :
-            Base(variant_internal::EmplaceTag<I>(), absl::forward<T>(t))
+            Base(variant_internal::EmplaceTag<I>(), std::forward<T>(t))
         {
         }
 
@@ -566,7 +562,7 @@ namespace absl
         // constructor shall be a constexpr constructor.
         template<class T, class... Args, typename std::enable_if<std::is_constructible<variant_internal::UnambiguousTypeOfT<variant, T>, Args...>::value>::type* = nullptr>
         constexpr explicit variant(in_place_type_t<T>, Args&&... args) :
-            Base(variant_internal::EmplaceTag<variant_internal::UnambiguousIndexOf<variant, T>::value>(), absl::forward<Args>(args)...)
+            Base(variant_internal::EmplaceTag<variant_internal::UnambiguousIndexOf<variant, T>::value>(), std::forward<Args>(args)...)
         {
         }
 
@@ -577,7 +573,7 @@ namespace absl
         // constructor shall be a constexpr constructor.
         template<class T, class U, class... Args, typename std::enable_if<std::is_constructible<variant_internal::UnambiguousTypeOfT<variant, T>, std::initializer_list<U>&, Args...>::value>::type* = nullptr>
         constexpr explicit variant(in_place_type_t<T>, std::initializer_list<U> il, Args&&... args) :
-            Base(variant_internal::EmplaceTag<variant_internal::UnambiguousIndexOf<variant, T>::value>(), il, absl::forward<Args>(args)...)
+            Base(variant_internal::EmplaceTag<variant_internal::UnambiguousIndexOf<variant, T>::value>(), il, std::forward<Args>(args)...)
         {
         }
 
@@ -585,7 +581,7 @@ namespace absl
         // through value-initialization using the provided forwarded arguments.
         template<std::size_t I, class... Args, typename std::enable_if<std::is_constructible<variant_internal::VariantAlternativeSfinaeT<I, variant>, Args...>::value>::type* = nullptr>
         constexpr explicit variant(in_place_index_t<I>, Args&&... args) :
-            Base(variant_internal::EmplaceTag<I>(), absl::forward<Args>(args)...)
+            Base(variant_internal::EmplaceTag<I>(), std::forward<Args>(args)...)
         {
         }
 
@@ -594,7 +590,7 @@ namespace absl
         // forwarded arguments.
         template<std::size_t I, class U, class... Args, typename std::enable_if<std::is_constructible<variant_internal::VariantAlternativeSfinaeT<I, variant>, std::initializer_list<U>&, Args...>::value>::type* = nullptr>
         constexpr explicit variant(in_place_index_t<I>, std::initializer_list<U> il, Args&&... args) :
-            Base(variant_internal::EmplaceTag<I>(), il, absl::forward<Args>(args)...)
+            Base(variant_internal::EmplaceTag<I>(), il, std::forward<Args>(args)...)
         {
         }
 
@@ -626,13 +622,13 @@ namespace absl
             typename std::enable_if<std::is_assignable<Tj&, T>::value && std::is_constructible<Tj, T>::value>::type* =
                 nullptr>
         variant& operator=(T&& t) noexcept(
-            std::is_nothrow_assignable<Tj&, T>::value&&
-                std::is_nothrow_constructible<Tj, T>::value
+            std::is_nothrow_assignable<Tj&, T>::value &&
+            std::is_nothrow_constructible<Tj, T>::value
         )
         {
             variant_internal::VisitIndices<sizeof...(Tn) + 1>::Run(
                 variant_internal::VariantCoreAccess::MakeConversionAssignVisitor(
-                    this, absl::forward<T>(t)
+                    this, std::forward<T>(t)
                 ),
                 index()
             );
@@ -664,7 +660,7 @@ namespace absl
         {
             return variant_internal::VariantCoreAccess::Replace<
                 variant_internal::UnambiguousIndexOf<variant, T>::value>(
-                this, absl::forward<Args>(args)...
+                this, std::forward<Args>(args)...
             );
         }
 
@@ -691,7 +687,7 @@ namespace absl
         {
             return variant_internal::VariantCoreAccess::Replace<
                 variant_internal::UnambiguousIndexOf<variant, T>::value>(
-                this, il, absl::forward<Args>(args)...
+                this, il, std::forward<Args>(args)...
             );
         }
 
@@ -709,7 +705,7 @@ namespace absl
         absl::variant_alternative_t<I, variant>& emplace(Args&&... args)
         {
             return variant_internal::VariantCoreAccess::Replace<I>(
-                this, absl::forward<Args>(args)...
+                this, std::forward<Args>(args)...
             );
         }
 
@@ -725,7 +721,7 @@ namespace absl
         absl::variant_alternative_t<I, variant>& emplace(std::initializer_list<U> il, Args&&... args)
         {
             return variant_internal::VariantCoreAccess::Replace<I>(
-                this, il, absl::forward<Args>(args)...
+                this, il, std::forward<Args>(args)...
             );
         }
 

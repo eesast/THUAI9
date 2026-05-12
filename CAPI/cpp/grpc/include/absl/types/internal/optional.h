@@ -96,7 +96,7 @@ namespace absl
             template<typename... Args>
             constexpr explicit optional_data_dtor_base(in_place_t, Args&&... args) :
                 engaged_(true),
-                data_(absl::forward<Args>(args)...)
+                data_(std::forward<Args>(args)...)
             {
             }
 
@@ -141,7 +141,7 @@ namespace absl
             template<typename... Args>
             constexpr explicit optional_data_dtor_base(in_place_t, Args&&... args) :
                 engaged_(true),
-                data_(absl::forward<Args>(args)...)
+                data_(std::forward<Args>(args)...)
             {
             }
         };
@@ -181,7 +181,7 @@ namespace absl
         // have trivial move but nontrivial copy.
         // Also, we should be checking is_trivially_copyable here, which is not
         // supported now, so we use is_trivially_* traits instead.
-        template<typename T, bool unused = absl::is_trivially_copy_constructible<T>::value&& absl::is_trivially_copy_assignable<typename std::remove_cv<T>::type>::value&& std::is_trivially_destructible<T>::value>
+        template<typename T, bool unused = absl::is_trivially_copy_constructible<T>::value && absl::is_trivially_copy_assignable<typename std::remove_cv<T>::type>::value && std::is_trivially_destructible<T>::value>
         class optional_data;
 
         // Trivially copyable types
@@ -235,8 +235,8 @@ namespace absl
             }
 
             optional_data& operator=(optional_data&& rhs) noexcept(
-                std::is_nothrow_move_assignable<T>::value&&
-                    std::is_nothrow_move_constructible<T>::value
+                std::is_nothrow_move_assignable<T>::value &&
+                std::is_nothrow_move_constructible<T>::value
             )
             {
                 if (rhs.engaged_)

@@ -141,7 +141,7 @@ namespace absl
             bool ParsePosixSpec(const std::string& spec, PosixTimeZone* res);
 
         }  // namespace cctz
-    }      // namespace time_internal
+    }  // namespace time_internal
     ABSL_NAMESPACE_END
 }  // namespace absl
 

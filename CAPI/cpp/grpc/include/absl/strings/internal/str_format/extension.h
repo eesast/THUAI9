@@ -16,16 +16,13 @@
 #ifndef ABSL_STRINGS_INTERNAL_STR_FORMAT_EXTENSION_H_
 #define ABSL_STRINGS_INTERNAL_STR_FORMAT_EXTENSION_H_
 
-#include <limits.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <ostream>
+#include <string>
 
 #include "absl/base/config.h"
-#include "absl/base/port.h"
-#include "absl/meta/type_traits.h"
 #include "absl/strings/internal/str_format/output.h"
 #include "absl/strings/string_view.h"
 
@@ -35,6 +32,19 @@ namespace absl
 
     enum class FormatConversionChar : uint8_t;
     enum class FormatConversionCharSet : uint64_t;
+    enum class LengthMod : std::uint8_t
+    {
+        h,
+        hh,
+        l,
+        ll,
+        L,
+        j,
+        z,
+        t,
+        q,
+        none
+    };
 
     namespace str_format_internal
     {
@@ -173,7 +183,8 @@ namespace absl
             kAlt = 1 << 3,
             kZero = 1 << 4,
             // This is not a real flag. It just exists to turn off kBasic when no other
-            // flags are set. This is for when width/precision are specified.
+            // flags are set. This is for when width/precision are specified, or a length
+            // modifier affects the behavior ("%lc").
             kNonBasic = 1 << 5,
         };
 
@@ -195,7 +206,7 @@ namespace absl
             return os << FlagsToString(v);
         }
 
-// clang-format off
+        // clang-format off
 #define ABSL_INTERNAL_CONVERSION_CHARS_EXPAND_(X_VAL, X_SEP) \
   /* text */ \
   X_VAL(c) X_SEP X_VAL(s) X_SEP \
@@ -356,6 +367,11 @@ namespace absl
                 return FlagsContains(flags_, Flags::kZero);
             }
 
+            LengthMod length_mod() const
+            {
+                return length_mod_;
+            }
+
             FormatConversionChar conversion_char() const
             {
                 // Keep this field first in the struct . It generates better code when
@@ -392,6 +408,7 @@ namespace absl
             friend struct str_format_internal::FormatConversionSpecImplFriend;
             FormatConversionChar conv_ = FormatConversionCharInternal::kNone;
             Flags flags_;
+            LengthMod length_mod_ = LengthMod::none;
             int width_;
             int precision_;
         };
@@ -401,6 +418,10 @@ namespace absl
             static void SetFlags(Flags f, FormatConversionSpecImpl* conv)
             {
                 conv->flags_ = f;
+            }
+            static void SetLengthMod(LengthMod l, FormatConversionSpecImpl* conv)
+            {
+                conv->length_mod_ = l;
             }
             static void SetConversionChar(FormatConversionChar c, FormatConversionSpecImpl* conv)
             {

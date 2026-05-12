@@ -146,9 +146,8 @@
 // Annotations useful for debugging.
 
 // Report the current thread `name` to a race detector.
-#define ANNOTATE_THREAD_NAME(name)                  \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateThreadName) \
-    (__FILE__, __LINE__, name)
+#define ANNOTATE_THREAD_NAME(name) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateThreadName)(__FILE__, __LINE__, name)
 
 // -------------------------------------------------------------
 // Annotations useful when implementing locks. They are not normally needed by
@@ -156,9 +155,8 @@
 // object.
 
 // Report that a lock has been created at address `lock`.
-#define ANNOTATE_RWLOCK_CREATE(lock)                  \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockCreate) \
-    (__FILE__, __LINE__, lock)
+#define ANNOTATE_RWLOCK_CREATE(lock) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockCreate)(__FILE__, __LINE__, lock)
 
 // Report that a linker initialized lock has been created at address `lock`.
 #ifdef ABSL_HAVE_THREAD_SANITIZER
@@ -170,9 +168,8 @@
 #endif
 
 // Report that the lock at address `lock` is about to be destroyed.
-#define ANNOTATE_RWLOCK_DESTROY(lock)                  \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockDestroy) \
-    (__FILE__, __LINE__, lock)
+#define ANNOTATE_RWLOCK_DESTROY(lock) \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateRWLockDestroy)(__FILE__, __LINE__, lock)
 
 // Report that the lock at address `lock` has been acquired.
 // `is_w`=1 for writer lock, `is_w`=0 for reader lock.
@@ -277,14 +274,12 @@
 // ANNOTATE_IGNORE_READS_END is called. Useful to ignore intentional racey
 // reads, while still checking other reads and all writes.
 // See also ANNOTATE_UNPROTECTED_READ.
-#define ANNOTATE_IGNORE_READS_BEGIN()                     \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreReadsBegin) \
-    (__FILE__, __LINE__)
+#define ANNOTATE_IGNORE_READS_BEGIN() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreReadsBegin)(__FILE__, __LINE__)
 
 // Stop ignoring reads.
-#define ANNOTATE_IGNORE_READS_END()                     \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreReadsEnd) \
-    (__FILE__, __LINE__)
+#define ANNOTATE_IGNORE_READS_END() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreReadsEnd)(__FILE__, __LINE__)
 
 #elif defined(ABSL_INTERNAL_ANNOTALYSIS_ENABLED)
 
@@ -295,13 +290,11 @@
 // TODO(delesley) -- The exclusive lock here ignores writes as well, but
 // allows IGNORE_READS_AND_WRITES to work properly.
 
-#define ANNOTATE_IGNORE_READS_BEGIN()                                 \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AbslInternalAnnotateIgnoreReadsBegin) \
-    ()
+#define ANNOTATE_IGNORE_READS_BEGIN() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AbslInternalAnnotateIgnoreReadsBegin)()
 
-#define ANNOTATE_IGNORE_READS_END()                                 \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AbslInternalAnnotateIgnoreReadsEnd) \
-    ()
+#define ANNOTATE_IGNORE_READS_END() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AbslInternalAnnotateIgnoreReadsEnd)()
 
 #else
 
@@ -316,14 +309,12 @@
 #if ABSL_INTERNAL_WRITES_ANNOTATIONS_ENABLED == 1
 
 // Similar to ANNOTATE_IGNORE_READS_BEGIN, but ignore writes instead.
-#define ANNOTATE_IGNORE_WRITES_BEGIN()                     \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesBegin) \
-    (__FILE__, __LINE__)
+#define ANNOTATE_IGNORE_WRITES_BEGIN() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesBegin)(__FILE__, __LINE__)
 
 // Stop ignoring writes.
-#define ANNOTATE_IGNORE_WRITES_END()                     \
-    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesEnd) \
-    (__FILE__, __LINE__)
+#define ANNOTATE_IGNORE_WRITES_END() \
+    ABSL_INTERNAL_GLOBAL_SCOPED(AnnotateIgnoreWritesEnd)(__FILE__, __LINE__)
 
 #else
 

@@ -15,16 +15,19 @@
 #ifndef ABSL_STRINGS_INTERNAL_STR_FORMAT_BIND_H_
 #define ABSL_STRINGS_INTERNAL_STR_FORMAT_BIND_H_
 
-#include <array>
+#include <cassert>
 #include <cstdio>
-#include <sstream>
+#include <ostream>
 #include <string>
 
-#include "absl/base/port.h"
+#include "absl/base/config.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/strings/internal/str_format/arg.h"
 #include "absl/strings/internal/str_format/checker.h"
+#include "absl/strings/internal/str_format/constexpr_parser.h"
+#include "absl/strings/internal/str_format/extension.h"
 #include "absl/strings/internal/str_format/parser.h"
+#include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "absl/utility/utility.h"
 
@@ -244,7 +247,7 @@ namespace absl
 
         std::string& AppendPack(std::string* out, UntypedFormatSpecImpl format, absl::Span<const FormatArgImpl> args);
 
-        std::string FormatPack(const UntypedFormatSpecImpl format, absl::Span<const FormatArgImpl> args);
+        std::string FormatPack(UntypedFormatSpecImpl format, absl::Span<const FormatArgImpl> args);
 
         int FprintF(std::FILE* output, UntypedFormatSpecImpl format, absl::Span<const FormatArgImpl> args);
         int SnprintF(char* output, size_t size, UntypedFormatSpecImpl format, absl::Span<const FormatArgImpl> args);

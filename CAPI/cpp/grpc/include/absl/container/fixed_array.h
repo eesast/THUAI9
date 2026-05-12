@@ -41,6 +41,7 @@
 #include <type_traits>
 
 #include "absl/algorithm/algorithm.h"
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/dynamic_annotations.h"
 #include "absl/base/internal/throw_delegate.h"
@@ -74,7 +75,7 @@ namespace absl
     // This matches the behavior of c-style arrays and `std::array`, but not
     // `std::vector`.
     template<typename T, size_t N = kFixedArrayUseDefault, typename A = std::allocator<T>>
-    class FixedArray
+    class ABSL_ATTRIBUTE_WARN_UNUSED FixedArray
     {
         static_assert(!std::is_array<T>::value || std::extent<T>::value > 0, "Arrays with unknown bounds cannot be used with FixedArray.");
 

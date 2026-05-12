@@ -19,8 +19,9 @@
 #include <wchar.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
-#include <iomanip>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -28,12 +29,17 @@
 #include <type_traits>
 #include <utility>
 
-#include "absl/base/port.h"
+#include "absl/base/config.h"
+#include "absl/base/optimization.h"
 #include "absl/meta/type_traits.h"
 #include "absl/numeric/int128.h"
-#include "absl/strings/internal/has_absl_stringify.h"
+#include "absl/strings/has_absl_stringify.h"
 #include "absl/strings/internal/str_format/extension.h"
 #include "absl/strings/string_view.h"
+
+#if defined(ABSL_HAVE_STD_STRING_VIEW)
+#include <string_view>
+#endif
 
 namespace absl
 {
@@ -98,6 +104,7 @@ namespace absl
         extern template bool ConvertIntArg<char>(char v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
         extern template bool ConvertIntArg<signed char>(signed char v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
         extern template bool ConvertIntArg<unsigned char>(unsigned char v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        extern template bool ConvertIntArg<wchar_t>(wchar_t v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
         extern template bool ConvertIntArg<short>(short v,  // NOLINT
                                                   FormatConversionSpecImpl conv,
                                                   FormatSinkImpl* sink);
@@ -160,7 +167,7 @@ namespace absl
 
         template<typename T>
         auto FormatConvertImpl(const T& v, FormatConversionSpecImpl, FormatSinkImpl* sink)
-            -> std::enable_if_t<!std::is_enum<T>::value && std::is_void<decltype(AbslStringify(std::declval<FormatSink&>(), v))>::value, ArgConvertResult<FormatConversionCharSetInternal::v>>
+            -> std::enable_if_t<!std::is_enum<T>::value && !std::is_same<T, absl::Cord>::value && std::is_void<decltype(AbslStringify(std::declval<FormatSink&>(), v))>::value, ArgConvertResult<FormatConversionCharSetInternal::v>>
         {
             using FormatSinkT =
                 absl::enable_if_t<sizeof(const T& (*)()) != 0, FormatSink>;
@@ -209,27 +216,37 @@ namespace absl
             return C;
         }
 
-        using StringConvertResult = ArgConvertResult<FormatConversionCharSetUnion(
-            FormatConversionCharSetInternal::s, FormatConversionCharSetInternal::v
-        )>;
         ArgConvertResult<FormatConversionCharSetInternal::p> FormatConvertImpl(
             VoidPtr v, FormatConversionSpecImpl conv, FormatSinkImpl* sink
         );
 
         // Strings.
+        using StringConvertResult = ArgConvertResult<FormatConversionCharSetUnion(
+            FormatConversionCharSetInternal::s,
+            FormatConversionCharSetInternal::v
+        )>;
         StringConvertResult FormatConvertImpl(const std::string& v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        StringConvertResult FormatConvertImpl(const std::wstring& v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
         StringConvertResult FormatConvertImpl(string_view v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
-#if defined(ABSL_HAVE_STD_STRING_VIEW) && !defined(ABSL_USES_STD_STRING_VIEW)
+#if defined(ABSL_HAVE_STD_STRING_VIEW)
+        StringConvertResult FormatConvertImpl(std::wstring_view v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+#if !defined(ABSL_USES_STD_STRING_VIEW)
         inline StringConvertResult FormatConvertImpl(std::string_view v, FormatConversionSpecImpl conv, FormatSinkImpl* sink)
         {
             return FormatConvertImpl(absl::string_view(v.data(), v.size()), conv, sink);
         }
-#endif  // ABSL_HAVE_STD_STRING_VIEW && !ABSL_USES_STD_STRING_VIEW
+#endif  // !ABSL_USES_STD_STRING_VIEW
+#endif  // ABSL_HAVE_STD_STRING_VIEW
 
-        ArgConvertResult<FormatConversionCharSetUnion(
-            FormatConversionCharSetInternal::s, FormatConversionCharSetInternal::p
-        )>
-            FormatConvertImpl(const char* v, const FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        using StringPtrConvertResult = ArgConvertResult<FormatConversionCharSetUnion(
+            FormatConversionCharSetInternal::s,
+            FormatConversionCharSetInternal::p
+        )>;
+        StringPtrConvertResult FormatConvertImpl(const char* v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        StringPtrConvertResult FormatConvertImpl(const wchar_t* v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        // This overload is needed to disambiguate, since `nullptr` could match either
+        // of the other overloads equally well.
+        StringPtrConvertResult FormatConvertImpl(std::nullptr_t, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
 
         template<class AbslCord, typename std::enable_if<std::is_same<AbslCord, absl::Cord>::value>::type* = nullptr>
         StringConvertResult FormatConvertImpl(const AbslCord& value, FormatConversionSpecImpl conv, FormatSinkImpl* sink)
@@ -284,6 +301,7 @@ namespace absl
 
         // Chars.
         CharConvertResult FormatConvertImpl(char v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
+        CharConvertResult FormatConvertImpl(wchar_t v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
 
         // Ints.
         IntegralConvertResult FormatConvertImpl(signed char v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
@@ -327,7 +345,7 @@ namespace absl
         // We provide this function to help the checker, but it is never defined.
         // FormatArgImpl will use the underlying Convert functions instead.
         template<typename T>
-        typename std::enable_if<std::is_enum<T>::value && !HasUserDefinedConvert<T>::value && !strings_internal::HasAbslStringify<T>::value, IntegralConvertResult>::type
+        typename std::enable_if<std::is_enum<T>::value && !HasUserDefinedConvert<T>::value && !HasAbslStringify<T>::value, IntegralConvertResult>::type
             FormatConvertImpl(T v, FormatConversionSpecImpl conv, FormatSinkImpl* sink);
 
         template<typename T>
@@ -445,6 +463,7 @@ namespace absl
             // Anything with a user-defined Convert will get its own vtable.
             // For everything else:
             //   - Decay char* and char arrays into `const char*`
+            //   - Decay wchar_t* and wchar_t arrays into `const wchar_t*`
             //   - Decay any other pointer to `const void*`
             //   - Decay all enums to the integral promotion of their underlying type.
             //   - Decay function pointers to void*.
@@ -453,14 +472,24 @@ namespace absl
             {
                 static constexpr bool kHasUserDefined =
                     str_format_internal::HasUserDefinedConvert<T>::value ||
-                    strings_internal::HasAbslStringify<T>::value;
+                    HasAbslStringify<T>::value;
                 using type = typename std::conditional<
                     !kHasUserDefined && std::is_convertible<T, const char*>::value,
                     const char*,
-                    typename std::conditional<!kHasUserDefined && std::is_convertible<T, VoidPtr>::value, VoidPtr, const T&>::type>::type;
+                    typename std::conditional<
+                        !kHasUserDefined && std::is_convertible<T, const wchar_t*>::value,
+                        const wchar_t*,
+                        typename std::conditional<
+                            !kHasUserDefined && std::is_convertible<T, VoidPtr>::value,
+                            VoidPtr,
+                            const T&>::type>::type>::type;
             };
             template<typename T>
-            struct DecayType<T, typename std::enable_if<!str_format_internal::HasUserDefinedConvert<T>::value && !strings_internal::HasAbslStringify<T>::value && std::is_enum<T>::value>::type>
+            struct DecayType<
+                T,
+                typename std::enable_if<
+                    !str_format_internal::HasUserDefinedConvert<T>::value &&
+                    !HasAbslStringify<T>::value && std::is_enum<T>::value>::type>
             {
                 using type = decltype(+typename std::underlying_type<T>::type());
             };
@@ -548,7 +577,9 @@ namespace absl
                 {
                     return (std::numeric_limits<int>::max)();
                 }
-                else if (std::is_signed<T>::value && static_cast<CommonType>(val) < static_cast<CommonType>((std::numeric_limits<int>::min)()))
+                else if (std::is_signed<T>::value &&
+                         static_cast<CommonType>(val) <
+                             static_cast<CommonType>((std::numeric_limits<int>::min)()))
                 {
                     return (std::numeric_limits<int>::min)();
                 }
@@ -602,7 +633,7 @@ namespace absl
 #define ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(T, E) \
     E template bool FormatArgImpl::Dispatch<T>(Data, FormatConversionSpecImpl, void*)
 
-#define ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_(...)                               \
+#define ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_NO_WSTRING_VIEW_(...)               \
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(str_format_internal::VoidPtr, __VA_ARGS__); \
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(bool, __VA_ARGS__);                         \
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(char, __VA_ARGS__);                         \
@@ -627,7 +658,20 @@ namespace absl
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(long double, __VA_ARGS__);                  \
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(const char*, __VA_ARGS__);                  \
     ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(std::string, __VA_ARGS__);                  \
-    ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(string_view, __VA_ARGS__)
+    ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(string_view, __VA_ARGS__);                  \
+    ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(const wchar_t*, __VA_ARGS__);               \
+    ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(std::wstring, __VA_ARGS__)
+
+#if defined(ABSL_HAVE_STD_STRING_VIEW)
+#define ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_(...)         \
+    ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_NO_WSTRING_VIEW_( \
+        __VA_ARGS__                                                  \
+    );                                                               \
+    ABSL_INTERNAL_FORMAT_DISPATCH_INSTANTIATE_(std::wstring_view, __VA_ARGS__)
+#else
+#define ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_(...) \
+    ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_NO_WSTRING_VIEW_(__VA_ARGS__)
+#endif
 
         ABSL_INTERNAL_FORMAT_DISPATCH_OVERLOADS_EXPAND_(extern);
 

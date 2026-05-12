@@ -32,6 +32,8 @@ namespace absl
             kAmdRome,
             kAmdNaples,
             kAmdMilan,
+            kAmdGenoa,
+            kAmdRyzenV3000,
             kIntelCascadelakeXeon,
             kIntelSkylakeXeon,
             kIntelBroadwell,
@@ -40,6 +42,10 @@ namespace absl
             kIntelSandybridge,
             kIntelWestmere,
             kArmNeoverseN1,
+            kArmNeoverseV1,
+            kAmpereSiryn,
+            kArmNeoverseN2,
+            kArmNeoverseV2
         };
 
         // Returns the type of host CPU this code is running on.  Returns kUnknown if

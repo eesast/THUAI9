@@ -82,8 +82,7 @@ extern "C"
 
 inline void absl::base_internal::SpinLockWake(std::atomic<uint32_t>* w, bool all)
 {
-    ABSL_INTERNAL_C_SYMBOL(AbslInternalSpinLockWake)
-    (w, all);
+    ABSL_INTERNAL_C_SYMBOL(AbslInternalSpinLockWake)(w, all);
 }
 
 inline void absl::base_internal::SpinLockDelay(

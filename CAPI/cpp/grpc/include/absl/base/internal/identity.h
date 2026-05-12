@@ -24,14 +24,16 @@ namespace absl
     namespace internal
     {
 
+        // This is a back-fill of C++20's `std::type_identity`.
         template<typename T>
-        struct identity
+        struct type_identity
         {
             typedef T type;
         };
 
+        // This is a back-fill of C++20's `std::type_identity_t`.
         template<typename T>
-        using identity_t = typename identity<T>::type;
+        using type_identity_t = typename type_identity<T>::type;
 
     }  // namespace internal
     ABSL_NAMESPACE_END

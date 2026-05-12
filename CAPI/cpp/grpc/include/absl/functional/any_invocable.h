@@ -34,6 +34,7 @@
 #define ABSL_FUNCTIONAL_ANY_INVOCABLE_H_
 
 #include <cstddef>
+#include <functional>
 #include <initializer_list>
 #include <type_traits>
 #include <utility>
@@ -99,9 +100,9 @@ namespace absl
     // `AnyInvocable` also properly respects `const` qualifiers, reference
     // qualifiers, and the `noexcept` specification (only in C++ 17 and beyond) as
     // part of the user-specified function type (e.g.
-    // `AnyInvocable<void()&& const noexcept>`). These qualifiers will be applied to
-    // the `AnyInvocable` object's `operator()`, and the underlying invocable must
-    // be compatible with those qualifiers.
+    // `AnyInvocable<void() const && noexcept>`). These qualifiers will be applied
+    // to the `AnyInvocable` object's `operator()`, and the underlying invocable
+    // must be compatible with those qualifiers.
     //
     // Comparison of const and non-const function types:
     //
@@ -152,6 +153,12 @@ namespace absl
     //
     // Attempting to call `absl::AnyInvocable` multiple times in such a case
     // results in undefined behavior.
+    //
+    // Invoking an empty `absl::AnyInvocable` results in undefined behavior:
+    //
+    //   // Create an empty instance using the default constructor.
+    //   AnyInvocable<void()> empty;
+    //   empty();  // WARNING: Undefined behavior!
     template<class Sig>
     class AnyInvocable : private internal_any_invocable::Impl<Sig>
     {
@@ -170,6 +177,7 @@ namespace absl
         // Constructors
 
         // Constructs the `AnyInvocable` in an empty state.
+        // Invoking it results in undefined behavior.
         AnyInvocable() noexcept = default;
         AnyInvocable(std::nullptr_t) noexcept
         {
@@ -281,6 +289,8 @@ namespace absl
         // In other words:
         //   std::function<void()> f;  // empty
         //   absl::AnyInvocable<void()> a = std::move(f);  // not empty
+        //
+        // Invoking an empty `AnyInvocable` results in undefined behavior.
         explicit operator bool() const noexcept
         {
             return this->HasValue();
