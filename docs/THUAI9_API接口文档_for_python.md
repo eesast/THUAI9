@@ -69,6 +69,7 @@ python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 0
 - `-P/--serverPort`：服务器端口，默认 `8888`
 - `-t/--teamID`：队伍编号
 - `-p/--playerID`：队内单位编号
+- `-c/--characterType`：角色进程使用的单位类型编号；通常由队伍进程在 `BuildCharacter` 成功后自动传入，手动启动队伍进程时不需要填写
 - `-d/--debug`：将接口日志保存到 `CAPI/python/logs`
 - `-o/--output`：将接口日志输出到控制台
 - `-w/--warning`：控制台仅显示 warning 及以上日志
@@ -80,6 +81,8 @@ python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 0
 
 - `playerID` 只用于区分队伍控制端与单位控制端，以及区分同队的不同单位
 - 单位的真实类型由队伍控制端在创建时显式指定
+- `playerID` 与单位类型没有固定对应关系；同一个 `playerID` 可以由 `BuildCharacter` 参数创建成任意合法 `CharacterType`
+- `playerID == 0` 表示队伍控制进程，负责招募单位、生产货物、升级科技；`playerID > 0` 表示单位控制进程
 - 角色进程如果需要判断自身类型，应以 `api.GetSelfInfo().characterType` 为准
 
 创建单位时，由队伍控制端调用：
@@ -88,7 +91,7 @@ python -m PyAPI.main -I 127.0.0.1 -P 8888 -t 1 -p 0
 api.BuildCharacter(characterType, playerID)
 ```
 
-来决定新单位的类型与编号。
+来决定新单位的类型与编号。Python API 与 C++ API 对齐：当该调用返回成功后，队伍进程会自动启动一个新的 Python 角色进程，并把 `teamID`、`playerID`、`characterType`、服务器地址、日志参数和 `--aiModule` 传给它。选手通常只需要启动 `playerID == 0` 的队伍进程，新增单位的控制进程由接口负责启动。
 
 ### 4. 编写 AI 的位置
 
@@ -102,48 +105,47 @@ api.BuildCharacter(characterType, playerID)
 - 在 `TeamPlay` / `CharacterPlay` 中写按帧推进的状态机
 - 每帧只执行少量动作，而不是在回调函数里写死循环
 
-### 5. 使用脚本调试单队 Python AI
+### 5. 使用脚本调试 Python AI
 
 在 Windows 上调试 Python AI 时，推荐直接运行仓库根目录的：
 
-- `start_thuai9_python_single_team.bat`
+- `start_thuai9_python_1team.bat`：对齐 `start_thuai9_cpp_1team.bat`，启动 UI、2 队服务器、1 队活跃队伍进程和 2 队空转队伍进程
+- `start_thuai9_python_4team.bat`：对齐 `start_thuai9_cpp_4team.bat`，启动 UI、4 队服务器和 4 个队伍进程
+
 
 例如，在仓库根目录执行：
 
 ```bat
-start_thuai9_python_single_team.bat
+start_thuai9_python_1team.bat
 ```
 
 该脚本会自动完成以下工作：
 
 - 生成 Python proto 代码
 - 启动游戏服务器
-- 在启用 UI 时编译并启动 Avalonia 调试界面
-- 启动一个活跃队伍进程，默认是 `team 1, player 0`，AI 模块为 `PyAPI.AI`
-- 启动一个空转占位队伍进程，默认是 `team 2, player 0`，AI 模块为 `PyAPI.IdleAI`
+- 启动 Avalonia 调试界面
+- 启动 `playerID == 0` 的队伍进程
+- 当 `BuildCharacter` 成功时，由队伍进程自动启动对应 `playerID > 0` 的角色进程
 
-这个脚本适合调试单队的 `TeamPlay` 逻辑，不需要再手动分别启动 Server、UI 和多个 Python 进程。
+`start_thuai9_python_1team.bat` 适合调试单队的 `TeamPlay` 逻辑；`start_thuai9_python_4team.bat` 适合调试四队同时运行。二者都不需要手动提前启动角色进程。
 
 如果需要自定义仓库根目录、Python 解释器或 AI 模块，可以先设置环境变量，再运行脚本：
 
 ```bat
-set THUAI9_ROOT=D:\YourPath\THUAI9
 set PYTHON_EXE=python
 set ACTIVE_AI_MODULE=PyAPI.AI
 set DUMMY_AI_MODULE=PyAPI.IdleAI
-start_thuai9_python_single_team.bat
+start_thuai9_python_1team.bat
 ```
 
 常用可选环境变量：
 
-- `THUAI9_ROOT`：仓库根目录；如果直接运行仓库中的脚本，通常不需要手动设置
 - `PYTHON_EXE`：Python 解释器命令或路径
-- `ACTIVE_TEAM`：活跃队伍编号
-- `DUMMY_TEAM`：占位队伍编号
-- `SERVER_IP`、`SERVER_PORT`：服务器地址与端口
+- `SERVER_PORT`：服务器端口
 - `ACTIVE_AI_MODULE`：活跃队伍使用的 AI 模块
 - `DUMMY_AI_MODULE`：占位队伍使用的 AI 模块
-- `ENABLE_UI`：是否启动 UI，`1` 表示启动，`0` 表示不启动
+- `PY_AI_MODULE`：四队脚本的默认 AI 模块
+- `TEAM1_AI_MODULE`、`TEAM2_AI_MODULE`、`TEAM3_AI_MODULE`、`TEAM4_AI_MODULE`：四队脚本中各队使用的 AI 模块
 - `PY_FLAGS`：传给 Python 客户端的额外参数，默认 `-o -d`
 
 ---
@@ -871,13 +873,15 @@ def BuildCharacter(self, characterType: CharacterType, playerID: int) -> Future[
 - **说明**
   - 队伍控制端用于招募单位
   - 需要工厂允许招募，且算力足够
+  - `playerID` 只是新单位的队内编号，不决定单位类型
+  - 调用成功后，Python API 会自动启动对应的角色控制进程；角色进程启动参数中会携带 `-c/--characterType`
 
 **示例**：
 
 ```python
 ok = api.BuildCharacter(THUAI9.CharacterType.Robot, 1).result()
 if ok:
-    api.Print("robot created")
+    api.Print("robot created for playerID 1")
 ```
 
 ### ProduceGoods
