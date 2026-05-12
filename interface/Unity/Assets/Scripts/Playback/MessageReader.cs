@@ -26,6 +26,8 @@ namespace THUAI9.Unity.Playback
 
         public uint TeamCount { get; private set; }
         public uint PlayerCount { get; private set; }
+        public byte FileVersion { get; private set; }
+        public bool IsLegacyVersion => FileVersion != 0 && FileVersion != PlayBackConstant.FILE_VERSION;
 
         public void LoadData(byte[] data)
         {
@@ -44,17 +46,18 @@ namespace THUAI9.Unity.Playback
                 byte magic2 = headerReader.ReadByte();
                 if (magic1 != 'P' || magic2 != 'B')
                 {
-                    throw new FormatException($"?????????? PB???? {(char)magic1}{(char)magic2}");
+                    throw new FormatException($"Invalid playback header magic: {(char)magic1}{(char)magic2}; expected PB.");
                 }
 
                 byte version = headerReader.ReadByte();
                 _ = headerReader.ReadByte();
                 TeamCount = headerReader.ReadUInt32();
                 PlayerCount = headerReader.ReadUInt32();
+                FileVersion = version;
 
-                if (version != PlayBackConstant.FILE_VERSION)
+                if (!PlayBackConstant.IsSupportedFileVersion(version))
                 {
-                    throw new FormatException($"?????????????? {version}????? {PlayBackConstant.FILE_VERSION}");
+                    throw new FormatException($"Unsupported playback version {version}; current version is {PlayBackConstant.FILE_VERSION}.");
                 }
             }
 
@@ -225,7 +228,7 @@ namespace THUAI9.Unity.Playback
                 {
                     if (messages.Count >= PlayBackConstant.MAX_MESSAGE_COUNT)
                     {
-                        throw new FormatException($"???????????{PlayBackConstant.MAX_MESSAGE_COUNT}");
+                        throw new FormatException($"Playback message count exceeds {PlayBackConstant.MAX_MESSAGE_COUNT}.");
                     }
 
                     var message = new MessageToClient();
