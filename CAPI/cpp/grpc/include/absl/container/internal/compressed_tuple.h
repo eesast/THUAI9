@@ -95,22 +95,22 @@ namespace absl
                 constexpr Storage() = default;
                 template<typename V>
                 explicit constexpr Storage(absl::in_place_t, V&& v) :
-                    value(absl::forward<V>(v))
+                    value(std::forward<V>(v))
                 {
                 }
                 constexpr const T& get() const&
                 {
                     return value;
                 }
-                T& get() &
+                constexpr T& get() &
                 {
                     return value;
                 }
                 constexpr const T&& get() const&&
                 {
-                    return absl::move(*this).value;
+                    return std::move(*this).value;
                 }
-                T&& get() &&
+                constexpr T&& get() &&
                 {
                     return std::move(*this).value;
                 }
@@ -123,7 +123,7 @@ namespace absl
 
                 template<typename V>
                 explicit constexpr Storage(absl::in_place_t, V&& v) :
-                    T(absl::forward<V>(v))
+                    T(std::forward<V>(v))
                 {
                 }
 
@@ -131,15 +131,15 @@ namespace absl
                 {
                     return *this;
                 }
-                T& get() &
+                constexpr T& get() &
                 {
                     return *this;
                 }
                 constexpr const T&& get() const&&
                 {
-                    return absl::move(*this);
+                    return std::move(*this);
                 }
-                T&& get() &&
+                constexpr T&& get() &&
                 {
                     return std::move(*this);
                 }
@@ -162,7 +162,7 @@ namespace absl
                 constexpr CompressedTupleImpl() = default;
                 template<typename... Vs>
                 explicit constexpr CompressedTupleImpl(absl::in_place_t, Vs&&... args) :
-                    Storage<Ts, I>(absl::in_place, absl::forward<Vs>(args))...
+                    Storage<Ts, I>(absl::in_place, std::forward<Vs>(args))...
                 {
                 }
                 friend CompressedTuple<Ts...>;
@@ -179,7 +179,7 @@ namespace absl
                 constexpr CompressedTupleImpl() = default;
                 template<typename... Vs>
                 explicit constexpr CompressedTupleImpl(absl::in_place_t, Vs&&... args) :
-                    Storage<Ts, I, false>(absl::in_place, absl::forward<Vs>(args))...
+                    Storage<Ts, I, false>(absl::in_place, std::forward<Vs>(args))...
                 {
                 }
                 friend CompressedTuple<Ts...>;
@@ -276,12 +276,12 @@ namespace absl
                                                                            internal_compressed_tuple::TupleItemsMoveConstructible<CompressedTuple<Ts...>, First, Vs...>>::value,
                                                                        bool> = true>
             explicit constexpr CompressedTuple(First&& first, Vs&&... base) :
-                CompressedTuple::CompressedTupleImpl(absl::in_place, absl::forward<First>(first), absl::forward<Vs>(base)...)
+                CompressedTuple::CompressedTupleImpl(absl::in_place, std::forward<First>(first), std::forward<Vs>(base)...)
             {
             }
 
             template<int I>
-            ElemT<I>& get() &
+            constexpr ElemT<I>& get() &
             {
                 return StorageT<I>::get();
             }
@@ -293,7 +293,7 @@ namespace absl
             }
 
             template<int I>
-            ElemT<I>&& get() &&
+            constexpr ElemT<I>&& get() &&
             {
                 return std::move(*this).StorageT<I>::get();
             }
@@ -301,7 +301,7 @@ namespace absl
             template<int I>
             constexpr const ElemT<I>&& get() const&&
             {
-                return absl::move(*this).StorageT<I>::get();
+                return std::move(*this).StorageT<I>::get();
             }
         };
 

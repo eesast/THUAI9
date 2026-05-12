@@ -1,5 +1,62 @@
 # 选手介绍文档
 
+## 文件修改权限
+
+以下规则强制约束你可以修改和不可修改的文件。评测机只会加载你的模型文件和你自建目录中的代码。
+
+### 不可修改（只读）
+
+以下文件/目录**只能读取，禁止修改**。任何修改将被评测系统忽略或判为违规：
+
+| 路径 | 原因 |
+|---|---|
+| `GameLogic/**` (全部) | 游戏规则引擎，修改即作弊 |
+| `RLInterfaces/base_agent.py` | Agent 接口契约，评测机依赖此基类 |
+| `RLInterfaces/__init__.py` | 包导出声明 |
+| `tests/test_game_logic.py` | 环境正确性验证 |
+| `TrainingDemo/configs/*.yaml` | 官方难度配置 |
+
+### 可参考但禁止直接使用
+
+以下文件仅供学习参考，**提交时禁止直接使用其中的类或函数**。你必须自己实现 `BaseAgent` 的子类：
+
+| 路径 | 用途 | 禁止行为 |
+|---|---|---|
+| `RLInterfaces/ppo_agent.py` | PPO 实现思路参考 | 禁止 `from RLInterfaces import PPOAgent` |
+| `RLInterfaces/training_loop.py` | 训练循环逻辑参考 | 禁止直接使用 `TrainingLoop` |
+| `my_agent/dqn_agent.py` | DQN 实现思路参考 | 禁止直接使用 `DQNAgent` |
+| `TrainingDemo/train_basic.py` | 训练脚本结构参考 | 禁止照搬 |
+| `TrainingDemo/evaluate.py` | 评测脚本结构参考 | 禁止照搬 |
+| `TrainingDemo/visualization.py` | 可视化工具 | 可用于调试 |
+| `tests/test_interfaces.py` | 接口测试参考 | 禁止照搬 |
+
+### 可自由修改（你的工作区）
+
+你需要在包根目录下自建目录（如 `my_agent/`）来放置你的代码：
+
+```
+logic/pve/
+├── my_agent/          ← 你的代码放这里
+│   ├── __init__.py
+│   ├── my_model.py    ← 自定义模型
+│   ├── train.py       ← 训练脚本
+│   └── evaluate.py    ← 评测脚本
+```
+
+import 规则：你只能 import 以下公开符号，**禁止 import `GameLogic` 的子模块**（如 `from GameLogic.board import Board`），**禁止使用官方提供的任何 Agent 类**（如 `PPOAgent`、`DQNAgent`）：
+
+```python
+from GameLogic import GameConfig, GameEnvironment, N_ACTIONS  # ✅ 允许
+from RLInterfaces import BaseAgent                             # ✅ 允许
+
+from GameLogic.board import Board                              # ❌ 禁止
+from GameLogic.market import Market                            # ❌ 禁止
+from RLInterfaces import PPOAgent                              # ❌ 禁止（必须自己写）
+from my_agent import DQNAgent                                  # ❌ 禁止（必须自己写）
+```
+
+---
+
 ## 比赛目标
 
 你需要编写一个智能体，在 PvE 经济环境中通过买卖商品和采集资源，尽可能积累高分。
@@ -60,6 +117,130 @@ price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
 - HARVEST：当前格 Manhattan 距离 ≤ 2 内有未耗尽资源点；背包有空余容量。
 
 执行无效动作不会报错，但会受到惩罚并浪费步数。
+
+## 自定义模型开发（必须自己写）
+
+**你必须自己从零实现模型**。官方提供了 `BaseAgent` 抽象基类作为唯一接口，以及 `my_agent/dqn_agent.py` 和 `RLInterfaces/ppo_agent.py` 作为**参考示例**，但你提交时不能直接使用这些示例中的类。
+
+### 唯一接口：BaseAgent
+
+你只能使用 `BaseAgent` 作为基类，然后自己实现全部逻辑：
+
+```python
+from RLInterfaces import BaseAgent
+from GameLogic import N_ACTIONS
+import numpy as np
+
+class MyAgent(BaseAgent):
+    def get_action(self, observation: np.ndarray) -> int:
+        """
+        observation → action id.
+        不能访问 self.env.unit / self.env.board 等内部对象。
+        """
+        # ⚠️ 必须显式调用 action_masks()！
+        # MaskablePPO（sb3-contrib）会自动应用掩码，但自定义 Agent 没有自动机制。
+        # 不调用此方法 → 无掩码过滤 → 网络会执行大量无效动作，训练效率极低。
+        mask = self.env.action_masks()       # (8,) bool 数组，True=有效
+        valid = np.where(mask)[0]            # 当前允许的动作编号
+        if len(valid) == 0:
+            return 0                         # fallback: WAIT
+
+        # 探索时从有效动作中随机选
+        if np.random.random() < self.epsilon:
+            return int(np.random.choice(valid))
+
+        # 利用时屏蔽无效动作的 Q 值
+        q_values = self._compute_q(observation)   # 你的推理逻辑
+        q_values[~mask] = -1e9                    # 无效动作设为极小值
+        return int(np.argmax(q_values))
+
+    def train(self, total_timesteps: int, **kwargs) -> dict:
+        """
+        训练循环。只能通过 self.reset() / self.step() 与环境交互。
+        get_action() 内部已经调用了 action_masks()，这里无需额外处理。
+        """
+        obs = self.reset()
+        for _ in range(total_timesteps):
+            action = self.get_action(obs)
+            obs, reward, terminated, truncated, info = self.step(action)
+            if terminated or truncated:
+                obs = self.reset()
+            # 在这里更新你的网络……
+        return {"total_timesteps": total_timesteps, ...}
+
+    def save(self, path: str):
+        """持久化模型权重。"""
+        ...
+
+    @classmethod
+    def load(cls, path: str, env) -> "MyAgent":
+        """从文件加载模型。评测机将调用此方法。"""
+        ...
+```
+
+### MaskablePPO 与自定义 Agent 的区别（重要）
+
+这一点经常被忽略，请务必理解：
+
+| | MaskablePPO（SB3 方案） | 自定义 Agent（你的实现） |
+|---|---|---|
+| 谁调用 `action_masks()` | `ActionMasker` 包装器自动调用 | **你必须在 `get_action()` 里显式调用** |
+| 掩码如何生效 | SB3 内部在 softmax 前将无效动作 logit 设为 `-inf` | 你自己设置 `q_values[~mask] = -1e9` |
+| 探索时是否过滤 | 自动：策略采样只会从有效动作中选 | 你需要手动：`np.random.choice(valid)` |
+
+一句话总结：**MaskablePPO 是自动档，自定义 Agent 是手动档——不手动调 `action_masks()` 就不会有任何掩码效果。**
+
+### 实现要求
+
+你自己实现的 Agent 类必须满足以下要求：
+
+1. **继承 `BaseAgent`** — 这是评测机加载的唯一入口。
+2. **实现 `get_action()`** — 给定 32 维 observation 向量，返回一个 `int` 动作编号（0–7）。
+3. **实现 `train()`** — 完整的训练循环，内部只能通过 `self.reset()` / `self.step()` 与环境交互。
+4. **实现 `save(path)` 和 `load(cls, path, env)`** — 保存/加载模型权重。评测机会调用 `YourAgent.load(path, env)` 加载你的模型。
+5. **不能访问 `self.env` 的内部属性** — `self.env.unit`、`self.env.board`、`self.env.money` 等都是禁止的。状态信息只能从 `observation` 和 `info` 字典中获得。
+6. **必须用 `self.reset()` / `self.step()`** — 不要直接调用 `self.env.reset()` 或 `self.env.step()`，用 `BaseAgent` 提供的包装方法。
+7. **必须在 `get_action()` 中显式调用 `self.env.action_masks()`** — MaskablePPO 会自动应用掩码，但自定义 Agent 不会。不调用则没有任何无效动作过滤，网络会频繁执行无效动作，训练效率极低。
+
+### 参考示例（学习用，禁止直接使用）
+
+`my_agent/` 目录和 `RLInterfaces/ppo_agent.py` 分别展示了手写 DQN 和 SB3 PPO 两种实现思路：
+
+```
+my_agent/                     # 手写 DQN 参考
+├── dqn_agent.py              # Q-Network + ReplayBuffer + 训练循环
+├── train.py                  # 训练入口
+└── evaluate.py               # 多 seed 评测入口
+
+RLInterfaces/ppo_agent.py     # SB3 PPO 参考
+```
+
+你可以参考这些代码的结构和思路，然后**用你自己的方式重新实现**——例如：
+- 改网络结构（CNN、RNN、Transformer、更大的 MLP）
+- 换算法（DQN → PPO、A3C、SAC、Rainbow）
+- 换框架（PyTorch → JAX、TensorFlow）
+- 加入规则策略（如 A* 路径规划 + RL 买卖决策）
+- 设计自定义奖励塑形
+
+只要能跑通 `YourAgent.load(path, env)` 并正常工作即可。
+
+### 训练你的模型
+
+```bash
+# 建立你的工作目录
+mkdir my_submission
+# 在里面写 my_model.py（继承 BaseAgent）、train.py、evaluate.py
+
+# 训练
+python my_submission/train.py --config easy --timesteps 200000
+
+# 评测
+python my_submission/evaluate.py --model models/my_model.pt --config medium --episodes 100 --seeds 0 42 123 999 7777
+```
+
+评测输出 `score_mean` 和 `score_std`——最终排名依据**多 seed 下的平均得分**。
+
+---
 
 ## 公开接口
 
@@ -162,28 +343,27 @@ model = MaskablePPO("MlpPolicy", masked_env)
 pip install -r requirements.txt
 ```
 
-运行单元测试：
+运行单元测试（验证环境正常）：
 
 ```bash
 python -m pytest tests/ -v
 ```
 
-基础训练（easy 难度，10 万步）：
+参考训练脚本（学习用，提交时需用自己的代码）：
 
 ```bash
+# 官方 PPO 参考（RLInterfaces/ppo_agent.py）
 python TrainingDemo/train_basic.py --config easy --timesteps 100000
+
+# 手写 DQN 参考（my_agent/dqn_agent.py）
+python my_agent/train.py --config easy --timesteps 200000
 ```
 
-评测已保存模型：
+评测：
 
 ```bash
 python TrainingDemo/evaluate.py --model models/ppo_thuai9_best --config easy --episodes 50
-```
-
-使用 YAML 自定义配置：
-
-```bash
-python TrainingDemo/train_basic.py --config TrainingDemo/configs/medium.yaml --timesteps 200000
+python my_agent/evaluate.py --model models/dqn_custom.pt --config easy --episodes 50
 ```
 
 ## 建议方向
@@ -211,3 +391,85 @@ python TrainingDemo/train_basic.py --config TrainingDemo/configs/medium.yaml --t
 - 任何以下划线开头的方法或属性
 
 后续评测机只会暴露标准 Gymnasium 接口，请确保算法不依赖私有状态。
+
+此外，**禁止 import `GameLogic` 的子模块**。评测环境可能不提供这些模块，或使用不同的内部实现。你只能 import 以下公开符号：
+
+```python
+from GameLogic import GameConfig, GameEnvironment, N_ACTIONS  # ✅
+from RLInterfaces import BaseAgent                             # ✅
+```
+
+## 提交格式
+
+提交目录**必须**符合以下结构，否则官方评测器无法加载：
+
+```
+submission/
+├── agent.py              # ⚠️ 文件名必须是 agent.py，类名必须是 Agent
+├── model.pt              # 训练好的权重（默认文件名 model.pt）
+└── ...                   # 其他辅助模块（可选，由 agent.py import）
+```
+
+### agent.py 合约（必须满足）
+
+```python
+# agent.py
+from RLInterfaces import BaseAgent
+
+class Agent(BaseAgent):               # ← 类名必须是 Agent
+    def get_action(self, observation: np.ndarray) -> int:
+        ...                            # 你的推理逻辑
+
+    def train(self, total_timesteps: int, **kwargs) -> dict:
+        ...                            # 你的训练逻辑
+
+    def save(self, path: str):
+        ...                            # 保存权重
+
+    @classmethod
+    def load(cls, path: str, env) -> "Agent":   # ← 必须实现
+        ...                            # 加载权重，返回 Agent 实例
+```
+
+**合约要点**：
+- 文件名必须是 `agent.py`，类名必须是 `Agent`
+- 必须继承 `BaseAgent`
+- 必须实现 `load(cls, path, env)` 类方法
+- `agent.py` 可以 import 同目录下的其他 Python 文件作为辅助模块
+- `agent.py` 只能 import `GameLogic` 和 `RLInterfaces` 的公开符号（见上方 import 规则）
+
+### 官方评测器
+
+排名完全由 `official_evaluator.py` 决定。所有选手的提交通过同一个评测脚本跑分：
+
+```bash
+python official_evaluator.py \
+    --submission ./submission \
+    --config hard \
+    --episodes 200 \
+    --seeds 0 42 123 999 7777
+```
+
+评测器做的事：
+1. 加载 `submission/agent.py` 中的 `Agent` 类
+2. 调用 `Agent.load(model.pt, env)` 获取 agent 实例
+3. 在**你不知道的 seed** 和 **`random_map=True`** 的环境下跑 N 个 episode
+4. 以 `info["score"]` 为准输出每个 seed 的平均分
+5. 最终排名 = 所有 seed 的 score 总平均
+
+### 自测命令
+
+提交前，用同样的官方评测器自测：
+
+```bash
+# 用 easy 快速验证加载和推理是否正常
+python official_evaluator.py --submission ./submission --config easy --episodes 10 --seeds 0
+
+# 用 medium 预估成绩
+python official_evaluator.py --submission ./submission --config medium --episodes 50 --seeds 0 42 123
+
+# 用 hard 做最终自测
+python official_evaluator.py --submission ./submission --config hard --episodes 100 --seeds 0 42 123 999 7777 --output results.json
+```
+
+**注意**：比赛评测会使用更多 seed 和更多 episode，且种子值不会提前公开。

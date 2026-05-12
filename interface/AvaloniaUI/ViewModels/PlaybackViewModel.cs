@@ -1,7 +1,9 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Protobuf;
 using System;
+using System.Collections.Generic;
 using THUAI9_Avalonia.Models;
 
 namespace THUAI9_Avalonia.ViewModels
@@ -16,8 +18,9 @@ namespace THUAI9_Avalonia.ViewModels
     public partial class PlaybackViewModel : ViewModelBase
     {
         private const double FrameIntervalMs = 100;
+        private static readonly double[] PlaybackSpeeds = { 0.5, 1, 2, 4 };
         private readonly PlaybackReader _reader = new();
-        private System.Timers.Timer? _playbackTimer;
+        private DispatcherTimer? _playbackTimer;
         private int _currentFrame;
         private int _totalFrames;
         private Action<MessageToClient>? _onMessageReceived;
@@ -30,6 +33,19 @@ namespace THUAI9_Avalonia.ViewModels
 
         [ObservableProperty]
         private string filePath = string.Empty;
+
+        [ObservableProperty]
+        private int playbackSpeedIndex = 1;
+
+        [ObservableProperty]
+        private string playbackTimeText = "00:00";
+
+        [ObservableProperty]
+        private string frameProgressText = "帧 0/0";
+
+        public IReadOnlyList<string> PlaybackSpeedLabels { get; } = new[] { "0.5x", "1x", "2x", "4x" };
+
+        public double PlaybackSpeed => PlaybackSpeeds[Math.Clamp(PlaybackSpeedIndex, 0, PlaybackSpeeds.Length - 1)];
 
         public void SetMessageCallback(Action<MessageToClient> callback)
         {
@@ -52,11 +68,15 @@ namespace THUAI9_Avalonia.ViewModels
                 _totalFrames = CountTotalFrames();
                 _currentFrame = 0;
                 State = PlaybackState.Stopped;
+                UpdatePlaybackProgress(null);
             }
             catch (Exception ex)
             {
                 IsFileLoaded = false;
                 FilePath = string.Empty;
+                _currentFrame = 0;
+                _totalFrames = 0;
+                UpdatePlaybackProgress(null);
                 System.Diagnostics.Debug.WriteLine($"加载回放失败：{ex.Message}");
                 throw;
             }
@@ -104,12 +124,17 @@ namespace THUAI9_Avalonia.ViewModels
             _reader.Reset();
             _currentFrame = 0;
             State = PlaybackState.Stopped;
+            UpdatePlaybackProgress(null);
         }
 
         private void StartPlaybackTimer()
         {
-            _playbackTimer = new System.Timers.Timer(FrameIntervalMs);
-            _playbackTimer.Elapsed += OnPlaybackTimerElapsed;
+            StopPlaybackTimer();
+            _playbackTimer = new DispatcherTimer
+            {
+                Interval = GetPlaybackInterval()
+            };
+            _playbackTimer.Tick += OnPlaybackTimerElapsed;
             _playbackTimer.Start();
         }
 
@@ -118,12 +143,12 @@ namespace THUAI9_Avalonia.ViewModels
             if (_playbackTimer != null)
             {
                 _playbackTimer.Stop();
-                _playbackTimer.Dispose();
+                _playbackTimer.Tick -= OnPlaybackTimerElapsed;
                 _playbackTimer = null;
             }
         }
 
-        private void OnPlaybackTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+        private void OnPlaybackTimerElapsed(object? sender, EventArgs e)
         {
             var message = _reader.ReadNext();
             if (message == null)
@@ -133,7 +158,42 @@ namespace THUAI9_Avalonia.ViewModels
             }
 
             _currentFrame++;
+            UpdatePlaybackProgress(message);
             _onMessageReceived?.Invoke(message);
+        }
+
+        private TimeSpan GetPlaybackInterval()
+        {
+            return TimeSpan.FromMilliseconds(FrameIntervalMs / Math.Max(PlaybackSpeed, 0.1));
+        }
+
+        private void UpdatePlaybackProgress(MessageToClient? message)
+        {
+            int gameTimeMs = message?.AllMessage?.GameTime ?? (int)Math.Round(_currentFrame * FrameIntervalMs);
+            PlaybackTimeText = FormatGameTime(gameTimeMs);
+            FrameProgressText = IsFileLoaded ? $"帧 {_currentFrame}/{_totalFrames}" : "帧 0/0";
+        }
+
+        private static string FormatGameTime(int gameTimeMs)
+        {
+            if (gameTimeMs < 0)
+            {
+                gameTimeMs = 0;
+            }
+
+            var time = TimeSpan.FromMilliseconds(gameTimeMs);
+            return time.TotalHours >= 1
+                ? $"{(int)time.TotalHours:00}:{time.Minutes:00}:{time.Seconds:00}"
+                : $"{time.Minutes:00}:{time.Seconds:00}";
+        }
+
+        partial void OnPlaybackSpeedIndexChanged(int value)
+        {
+            OnPropertyChanged(nameof(PlaybackSpeed));
+            if (_playbackTimer != null)
+            {
+                _playbackTimer.Interval = GetPlaybackInterval();
+            }
         }
 
         public override void Dispose()

@@ -62,6 +62,7 @@ namespace absl
 #include <utility>
 
 #include "absl/base/attributes.h"
+#include "absl/base/nullability.h"
 #include "absl/base/internal/inline_variable.h"
 #include "absl/meta/type_traits.h"
 #include "absl/types/bad_optional_access.h"
@@ -150,7 +151,7 @@ namespace absl
         // should be constructed in-place.)
         template<typename InPlaceT, typename... Args, absl::enable_if_t<absl::conjunction<std::is_same<InPlaceT, in_place_t>, std::is_constructible<T, Args&&...>>::value>* = nullptr>
         constexpr explicit optional(InPlaceT, Args&&... args) :
-            data_base(in_place_t(), absl::forward<Args>(args)...)
+            data_base(in_place_t(), std::forward<Args>(args)...)
         {
         }
 
@@ -160,7 +161,7 @@ namespace absl
         // should be constructed in-place.)
         template<typename U, typename... Args, typename = typename std::enable_if<std::is_constructible<T, std::initializer_list<U>&, Args&&...>::value>::type>
         constexpr explicit optional(in_place_t, std::initializer_list<U> il, Args&&... args) :
-            data_base(in_place_t(), il, absl::forward<Args>(args)...)
+            data_base(in_place_t(), il, std::forward<Args>(args)...)
         {
         }
 
@@ -171,7 +172,7 @@ namespace absl
                 absl::conjunction<absl::negation<std::is_same<in_place_t, typename std::decay<U>::type>>, absl::negation<std::is_same<optional<T>, typename std::decay<U>::type>>, std::is_convertible<U&&, T>, std::is_constructible<T, U&&>>::value,
                 bool>::type = false>
         constexpr optional(U&& v) :
-            data_base(in_place_t(), absl::forward<U>(v))
+            data_base(in_place_t(), std::forward<U>(v))
         {
         }
 
@@ -182,7 +183,7 @@ namespace absl
                 absl::conjunction<absl::negation<std::is_same<in_place_t, typename std::decay<U>::type>>, absl::negation<std::is_same<optional<T>, typename std::decay<U>::type>>, absl::negation<std::is_convertible<U&&, T>>, std::is_constructible<T, U&&>>::value,
                 bool>::type = false>
         explicit constexpr optional(U&& v) :
-            data_base(in_place_t(), absl::forward<U>(v))
+            data_base(in_place_t(), std::forward<U>(v))
         {
         }
 
@@ -365,8 +366,8 @@ namespace absl
 
         // Swap, standard semantics
         void swap(optional& rhs) noexcept(
-            std::is_nothrow_move_constructible<T>::value&&
-                type_traits_internal::IsNothrowSwappable<T>::value
+            std::is_nothrow_move_constructible<T>::value &&
+            type_traits_internal::IsNothrowSwappable<T>::value
         )
         {
             if (*this)
@@ -403,12 +404,12 @@ namespace absl
         // `optional` is empty, behavior is undefined.
         //
         // If you need myOpt->foo in constexpr, use (*myOpt).foo instead.
-        const T* operator->() const ABSL_ATTRIBUTE_LIFETIME_BOUND
+        absl::Nonnull<const T*> operator->() const ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
             ABSL_HARDENING_ASSERT(this->engaged_);
             return std::addressof(this->data_);
         }
-        T* operator->() ABSL_ATTRIBUTE_LIFETIME_BOUND
+        absl::Nonnull<T*> operator->() ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
             ABSL_HARDENING_ASSERT(this->engaged_);
             return std::addressof(this->data_);
@@ -420,7 +421,8 @@ namespace absl
         // empty, behavior is undefined.
         constexpr const T& operator*() const& ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
-            return ABSL_HARDENING_ASSERT(this->engaged_), reference();
+            ABSL_HARDENING_ASSERT(this->engaged_);
+            return reference();
         }
         T& operator*() & ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
@@ -429,7 +431,8 @@ namespace absl
         }
         constexpr const T&& operator*() const&& ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
-            return ABSL_HARDENING_ASSERT(this->engaged_), absl::move(reference());
+            ABSL_HARDENING_ASSERT(this->engaged_);
+            return std::move(reference());
         }
         T&& operator*() && ABSL_ATTRIBUTE_LIFETIME_BOUND
         {
@@ -490,7 +493,7 @@ namespace absl
         constexpr const T&& value()
             const&& ABSL_ATTRIBUTE_LIFETIME_BOUND
         {  // NOLINT(build/c++11)
-            return absl::move(
+            return std::move(
                 static_cast<bool>(*this) ? reference() : (optional_internal::throw_bad_optional_access(), reference())
             );
         }
@@ -507,7 +510,7 @@ namespace absl
         {
             static_assert(std::is_copy_constructible<value_type>::value, "optional<T>::value_or: T must be copy constructible");
             static_assert(std::is_convertible<U&&, value_type>::value, "optional<T>::value_or: U must be convertible to T");
-            return static_cast<bool>(*this) ? **this : static_cast<T>(absl::forward<U>(v));
+            return static_cast<bool>(*this) ? **this : static_cast<T>(std::forward<U>(v));
         }
         template<typename U>
         T value_or(U&& v) &&
@@ -571,19 +574,19 @@ namespace absl
     template<typename T>
     constexpr optional<typename std::decay<T>::type> make_optional(T&& v)
     {
-        return optional<typename std::decay<T>::type>(absl::forward<T>(v));
+        return optional<typename std::decay<T>::type>(std::forward<T>(v));
     }
 
     template<typename T, typename... Args>
     constexpr optional<T> make_optional(Args&&... args)
     {
-        return optional<T>(in_place_t(), absl::forward<Args>(args)...);
+        return optional<T>(in_place_t(), std::forward<Args>(args)...);
     }
 
     template<typename T, typename U, typename... Args>
     constexpr optional<T> make_optional(std::initializer_list<U> il, Args&&... args)
     {
-        return optional<T>(in_place_t(), il, absl::forward<Args>(args)...);
+        return optional<T>(in_place_t(), il, std::forward<Args>(args)...);
     }
 
     // Relational operators [optional.relops]

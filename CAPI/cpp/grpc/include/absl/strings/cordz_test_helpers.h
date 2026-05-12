@@ -21,6 +21,7 @@
 #include "gtest/gtest.h"
 #include "absl/base/config.h"
 #include "absl/base/macros.h"
+#include "absl/base/nullability.h"
 #include "absl/strings/cord.h"
 #include "absl/strings/internal/cord_internal.h"
 #include "absl/strings/internal/cordz_info.h"
@@ -34,7 +35,7 @@ namespace absl
     ABSL_NAMESPACE_BEGIN
 
     // Returns the CordzInfo for the cord, or nullptr if the cord is not sampled.
-    inline const cord_internal::CordzInfo* GetCordzInfoForTesting(
+    inline absl::Nullable<const cord_internal::CordzInfo*> GetCordzInfoForTesting(
         const Cord& cord
     )
     {
@@ -44,7 +45,10 @@ namespace absl
     }
 
     // Returns true if the provided cordz_info is in the list of sampled cords.
-    inline bool CordzInfoIsListed(const cord_internal::CordzInfo* cordz_info, cord_internal::CordzSampleToken token = {})
+    inline bool CordzInfoIsListed(
+        absl::Nonnull<const cord_internal::CordzInfo*> cordz_info,
+        cord_internal::CordzSampleToken token = {}
+    )
     {
         for (const cord_internal::CordzInfo& info : token)
         {
@@ -136,7 +140,7 @@ namespace absl
     // Wrapper struct managing a small CordRep `rep`
     struct TestCordRep
     {
-        cord_internal::CordRepFlat* rep;
+        absl::Nonnull<cord_internal::CordRepFlat*> rep;
 
         TestCordRep()
         {

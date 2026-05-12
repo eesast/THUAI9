@@ -43,24 +43,32 @@ namespace absl
         class PrivateHandleAccessor;
     }  // namespace flags_internal
 
-    // CommandLineFlag
-    //
-    // This type acts as a type-erased handle for an instance of an Abseil Flag and
-    // holds reflection information pertaining to that flag. Use CommandLineFlag to
-    // access a flag's name, location, help string etc.
-    //
-    // To obtain an absl::CommandLineFlag, invoke `absl::FindCommandLineFlag()`
-    // passing it the flag name string.
-    //
-    // Example:
-    //
-    //   // Obtain reflection handle for a flag named "flagname".
-    //   const absl::CommandLineFlag* my_flag_data =
-    //        absl::FindCommandLineFlag("flagname");
-    //
-    //   // Now you can get flag info from that reflection handle.
-    //   std::string flag_location = my_flag_data->Filename();
-    //   ...
+// CommandLineFlag
+//
+// This type acts as a type-erased handle for an instance of an Abseil Flag and
+// holds reflection information pertaining to that flag. Use CommandLineFlag to
+// access a flag's name, location, help string etc.
+//
+// To obtain an absl::CommandLineFlag, invoke `absl::FindCommandLineFlag()`
+// passing it the flag name string.
+//
+// Example:
+//
+//   // Obtain reflection handle for a flag named "flagname".
+//   const absl::CommandLineFlag* my_flag_data =
+//        absl::FindCommandLineFlag("flagname");
+//
+//   // Now you can get flag info from that reflection handle.
+//   std::string flag_location = my_flag_data->Filename();
+//   ...
+
+// These are only used as constexpr global objects.
+// They do not use a virtual destructor to simplify their implementation.
+// They are not destroyed except at program exit, so leaks do not matter.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#endif
     class CommandLineFlag
     {
     public:
@@ -202,7 +210,17 @@ namespace absl
         // Checks that flags default value can be converted to string and back to the
         // flag's value type.
         virtual void CheckDefaultValueParsingRoundtrip() const = 0;
+
+        // absl::CommandLineFlag::TypeName()
+        //
+        // Returns string representation of the type of this flag
+        // (the way it is spelled in the ABSL_FLAG macro).
+        // The default implementation returns the empty string.
+        virtual absl::string_view TypeName() const;
     };
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
     ABSL_NAMESPACE_END
 }  // namespace absl

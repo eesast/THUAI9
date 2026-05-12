@@ -113,16 +113,14 @@ void absl::synchronization_internal::PerThreadSem::Init(
     absl::base_internal::ThreadIdentity* identity
 )
 {
-    ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemInit)
-    (identity);
+    ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemInit)(identity);
 }
 
 void absl::synchronization_internal::PerThreadSem::Post(
     absl::base_internal::ThreadIdentity* identity
 )
 {
-    ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)
-    (identity);
+    ABSL_INTERNAL_C_SYMBOL(AbslInternalPerThreadSemPost)(identity);
 }
 
 bool absl::synchronization_internal::PerThreadSem::Wait(

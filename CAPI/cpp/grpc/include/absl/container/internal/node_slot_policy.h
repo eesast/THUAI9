@@ -67,10 +67,12 @@ namespace absl
                 Policy::delete_element(alloc, *slot);
             }
 
+            // Returns true_type to indicate that transfer can use memcpy.
             template<class Alloc>
-            static void transfer(Alloc*, slot_type* new_slot, slot_type* old_slot)
+            static std::true_type transfer(Alloc*, slot_type* new_slot, slot_type* old_slot)
             {
                 *new_slot = *old_slot;
+                return {};
             }
 
             static size_t space_used(const slot_type* slot)

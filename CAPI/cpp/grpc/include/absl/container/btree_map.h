@@ -49,10 +49,13 @@
 //
 // Another API difference is that btree iterators can be subtracted, and this
 // is faster than using std::distance.
+//
+// B-tree maps are not exception-safe.
 
 #ifndef ABSL_CONTAINER_BTREE_MAP_H_
 #define ABSL_CONTAINER_BTREE_MAP_H_
 
+#include "absl/base/attributes.h"
 #include "absl/container/internal/btree.h"            // IWYU pragma: export
 #include "absl/container/internal/btree_container.h"  // IWYU pragma: export
 
@@ -84,8 +87,8 @@ namespace absl
     // custom comparator `C`) as in `absl::btree_map<K, V, C, A>`.
     //
     template<typename Key, typename Value, typename Compare = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, Value>>>
-    class btree_map : public container_internal::btree_map_container<container_internal::btree<container_internal::map_params<Key, Value, Compare, Alloc, /*TargetNodeSize=*/256,
-                                                                                                                              /*IsMulti=*/false>>>
+    class ABSL_ATTRIBUTE_OWNER btree_map : public container_internal::btree_map_container<container_internal::btree<container_internal::map_params<Key, Value, Compare, Alloc, /*TargetNodeSize=*/256,
+                                                                                                                                                   /*IsMulti=*/false>>>
     {
         using Base = typename btree_map::btree_map_container;
 
@@ -524,8 +527,8 @@ namespace absl
     // custom comparator `C`) as in `absl::btree_multimap<K, V, C, A>`.
     //
     template<typename Key, typename Value, typename Compare = std::less<Key>, typename Alloc = std::allocator<std::pair<const Key, Value>>>
-    class btree_multimap : public container_internal::btree_multimap_container<container_internal::btree<container_internal::map_params<Key, Value, Compare, Alloc, /*TargetNodeSize=*/256,
-                                                                                                                                        /*IsMulti=*/true>>>
+    class ABSL_ATTRIBUTE_OWNER btree_multimap : public container_internal::btree_multimap_container<container_internal::btree<container_internal::map_params<Key, Value, Compare, Alloc, /*TargetNodeSize=*/256,
+                                                                                                                                                             /*IsMulti=*/true>>>
     {
         using Base = typename btree_multimap::btree_multimap_container;
 
@@ -871,7 +874,8 @@ namespace absl
             using init_type = typename super_type::init_type;
 
             template<typename V>
-            static auto key(const V& value) -> decltype(value.first)
+            static auto key(const V& value ABSL_ATTRIBUTE_LIFETIME_BOUND)
+                -> decltype((value.first))
             {
                 return value.first;
             }

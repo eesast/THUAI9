@@ -182,7 +182,7 @@ namespace absl
 
             std::atomic<FnPtr> hook_;
 #else  // !ABSL_HAVE_WORKING_ATOMIC_POINTER
-       // Use a sentinel value unlikely to be the address of an actual function.
+            // Use a sentinel value unlikely to be the address of an actual function.
             static constexpr intptr_t kUninitialized = 0;
 
             static_assert(sizeof(intptr_t) >= sizeof(FnPtr), "intptr_t can't contain a function pointer");

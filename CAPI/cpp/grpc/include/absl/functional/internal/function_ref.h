@@ -111,7 +111,7 @@ namespace absl
         }
 
         template<typename F, typename C>
-        void AssertNonNull(F C::*f)
+        void AssertNonNull(F C::* f)
         {
             assert(f != nullptr);
             (void)f;

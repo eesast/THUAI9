@@ -1,30 +1,26 @@
-# Docs
+# THUAI9 文档
 
-## 简介
+## 面向选手
 
-THUAI9 说明文档
+| 文档 | 说明 |
+|---|---|
+| [**选手使用说明书**](./选手使用说明书.md) | **从这里开始** — 环境配置、编写 AI、编译运行、API 速查 |
+| [游戏规则](./规则.md) | 完整游戏规则：地图、单位、商品、科技、战斗、得分 |
+| [Python API 接口文档](./THUAI9_API接口文档_for_python.md) | Python 选手接口详细文档 |
 
-## 相关文档
+## 面向开发者
 
-- 逻辑组：游戏规则文档
-- 通信组：CAPI文档
-- 界面组：界面使用说明文档
-- 运维组：下载器&启动器说明文档；汇总文档
+| 文档 | 说明 |
+|---|---|
+| [logic/pve/docs/DEVELOPER_GUIDE.md](../logic/pve/docs/DEVELOPER_GUIDE.md) | PvE-RL 训练框架开发者文档 |
+| [logic/pve/docs/CONTESTANT_GUIDE.md](../logic/pve/docs/CONTESTANT_GUIDE.md) | PvE-RL 选手引导文档 |
 
 ## 更新方式
 
-THUAI9 文档不在此仓库内更新，可以在这里存放文档临时版本
+THUAI9 正式文档托管在 [eesast/docs](https://github.com/eesast/docs)，本文档目录存放临时版本和开发中版本。
 
-### 更新方式：
-- fork [eesast/docs](https://github.com/eesast/docs) 到自己仓库
-- **每次更新**都建立一个临时的分支用于更改
-- 在新的分支上进行文档更新
-- 向 [eesast/docs](https://github.com/eesast/docs) master分支提pull request
-- 删除本地临时分支
-
-## 开发人员
-
-- 逻辑组：刘承昊、贾兴道
-- 通信组：杨再鹏、王俊杰
-- 界面组：朱羿帆、陈厚永、杜志翔
-- 运维组：李科、李果
+- fork [eesast/docs](https://github.com/eesast/docs)
+- 建立临时分支
+- 修改文档
+- 向 master 提 PR
+- 删除临时分支

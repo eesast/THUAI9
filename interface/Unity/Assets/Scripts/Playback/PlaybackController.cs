@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Runtime.InteropServices;
 using Protobuf;
 using THUAI9.Unity.Core;
 using UnityEngine;
@@ -10,7 +11,12 @@ namespace THUAI9.Unity.Playback
 {
     public class PlaybackController : MonoBehaviour
     {
-        private const string DefaultPlaybackRelativePath = "Assets/Playback/test/official_bot_match.thuaipb";
+        private const string DefaultPlaybackRelativePath = "";
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport("__Internal")]
+        private static extern void THUAI9_ClearDevelopmentConsole();
+#endif
 
         [Header("回放文件")]
         public string playbackFilePath = DefaultPlaybackRelativePath;
@@ -86,7 +92,7 @@ namespace THUAI9.Unity.Playback
             {
                 statusText = "Status: playback file not found";
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
-                Debug.LogError($"Playback file does not exist: {playbackFilePath}");
+                Debug.LogWarning($"Playback file does not exist: {playbackFilePath}");
                 return;
             }
 
@@ -186,14 +192,17 @@ namespace THUAI9.Unity.Playback
                 {
                     statusText = "Status: playback file has no readable frames";
                     FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
-                    Debug.LogError($"Playback file contains no readable frames: {playbackFilePath}");
+                    Debug.LogWarning($"Playback file contains no readable frames: {playbackFilePath}");
                     return;
                 }
 
                 firstFrameGameTimeMs = GetFrameGameTimeMs(messageReader.ReadMessageAt(0));
                 currentPlaybackTimeMs = 0;
                 playbackMap = FindPlaybackMap();
-                statusText = $"Status: loaded {messageReader.GetMessageCount()} frames";
+                statusText = messageReader.IsLegacyVersion
+                    ? $"状态：已加载旧版回放 v{messageReader.FileVersion}，共 {messageReader.GetMessageCount()} 帧（建议使用当前逻辑重新生成）"
+                    : $"状态：已加载 {messageReader.GetMessageCount()} 帧";
+                ClearWebGLDevelopmentConsole();
                 if (autoPlayOnLoad)
                 {
                     Play();
@@ -212,16 +221,55 @@ namespace THUAI9.Unity.Playback
         private void MarkPlaybackLoadFailed(string status, Exception ex)
         {
             playbackLoaded = false;
-            statusText = status;
+            statusText = BuildPlaybackFailureStatus(status, ex);
             FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
             if (ex != null)
             {
-                Debug.LogError($"Failed to load playback file: {ex.Message}");
+                Debug.LogWarning($"Playback load failed ({ex.GetType().Name}).");
             }
             else
             {
-                Debug.LogError(status);
+                Debug.LogWarning(status);
             }
+        }
+
+        private static string BuildPlaybackFailureStatus(string fallbackStatus, Exception ex)
+        {
+            if (ex == null)
+            {
+                return string.IsNullOrWhiteSpace(fallbackStatus) ? "状态：回放加载失败" : fallbackStatus;
+            }
+
+            if (ex is InvalidDataException)
+            {
+                return "状态：回放数据为空或已损坏";
+            }
+
+            if (ex is FormatException)
+            {
+                return "状态：回放文件格式或版本不兼容，请使用当前逻辑组生成的 .thuaipb";
+            }
+
+            if (ex is IOException)
+            {
+                return "状态：读取回放文件失败，请检查文件是否被占用或路径是否有效";
+            }
+
+            return "状态：回放加载失败，请换用当前逻辑组生成的 .thuaipb";
+        }
+
+        private static void ClearWebGLDevelopmentConsole()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            try
+            {
+                THUAI9_ClearDevelopmentConsole();
+            }
+            catch
+            {
+                // Browser helper is best-effort only; playback success must not depend on the page chrome.
+            }
+#endif
         }
 
         private void ShowFirstFramePreview(string previewStatus = null)
@@ -482,6 +530,10 @@ namespace THUAI9.Unity.Playback
                     {
                         deltaMs = PlayBackConstant.MILLISECONDS_PER_FRAME;
                     }
+                    else if (deltaMs > PlayBackConstant.MAX_REASONABLE_FRAME_DELTA_MS)
+                    {
+                        deltaMs = PlayBackConstant.SERVER_FRAME_INTERVAL_MS;
+                    }
 
                     float delaySeconds = deltaMs / 1000f / Mathf.Max(playSpeed, PlayBackConstant.MIN_PLAY_SPEED);
                     yield return WaitWhileRespectingPause(delaySeconds);
@@ -564,10 +616,14 @@ namespace THUAI9.Unity.Playback
             int gameTimeMs = GetFrameGameTimeMs(frame);
             if (firstFrameGameTimeMs >= 0 && gameTimeMs >= firstFrameGameTimeMs)
             {
-                return gameTimeMs - firstFrameGameTimeMs;
+                int elapsed = gameTimeMs - firstFrameGameTimeMs;
+                int fallbackElapsed = Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS);
+                int reasonableUpperBound = Mathf.RoundToInt((Mathf.Max(frameIndex, 0) + 1) * PlayBackConstant.MAX_REASONABLE_FRAME_DELTA_MS);
+
+                return elapsed <= reasonableUpperBound ? elapsed : fallbackElapsed;
             }
 
-            return Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.MILLISECONDS_PER_FRAME);
+            return Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS);
         }
 
         private static int GetFrameGameTimeMs(MessageToClient frame)
@@ -686,7 +742,9 @@ namespace THUAI9.Unity.Playback
 
             string normalized = filePath.Replace('\\', '/');
             return normalized.EndsWith("/test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
-                || normalized.Equals("test_replay.thuaipb", StringComparison.OrdinalIgnoreCase);
+                || normalized.EndsWith("/official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("test_replay.thuaipb", StringComparison.OrdinalIgnoreCase)
+                || normalized.Equals("official_bot_match.thuaipb", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

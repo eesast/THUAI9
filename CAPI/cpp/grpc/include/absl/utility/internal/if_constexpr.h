@@ -62,9 +62,7 @@ namespace absl
         template<bool condition, typename Func, typename... Args>
         void IfConstexpr(Func&& func, Args&&... args)
         {
-            IfConstexprElse<condition>(
-                std::forward<Func>(func), [](auto&&...) {}, std::forward<Args>(args)...
-            );
+            IfConstexprElse<condition>(std::forward<Func>(func), [](auto&&...) { }, std::forward<Args>(args)...);
         }
 
     }  // namespace utility_internal

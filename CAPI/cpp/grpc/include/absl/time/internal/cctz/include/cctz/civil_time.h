@@ -328,7 +328,7 @@ namespace absl
             using detail::get_yearday;
 
         }  // namespace cctz
-    }      // namespace time_internal
+    }  // namespace time_internal
     ABSL_NAMESPACE_END
 }  // namespace absl
 
