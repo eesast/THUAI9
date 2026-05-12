@@ -14,17 +14,23 @@ namespace THUAI9.Unity.UI
 {
     public class UIController : MonoBehaviour
     {
-        private const float TeamStatusRightMargin = 36f;
+        private const float TeamStatusRightMargin = 24f;
         private const float TeamStatusTopMargin = 156f;
-        private const float TeamStatusWidth = 420f;
-        private const float TeamStatusHeight = 82f;
-        private const float TeamStatusSpacing = 8f;
+        private const float TeamStatusWidth = 292f;
+        private const float TeamStatusHeight = 182f;
+        private const float TeamStatusColumnSpacing = 12f;
+        private const float TeamStatusRowSpacing = 12f;
+        private const float TeamStatusContentHeight = 660f;
         private const string RecentReplayPrefsKey = "ReplayRecentPaths";
         private const int MaxRecentReplayCount = 8;
         private const int MaxReplayDiscoveryScanCount = 128;
         private const string CjkFontResourcePath = "Fonts/NotoSansCJKsc-Regular";
+        private const int EventPanelMaxCharsPerLine = 28;
+        private const int AIEventPanelMaxLines = 4;
+        private const int AIEffectPanelMaxLines = 3;
         private static readonly float[] PlaybackSpeedValues = { 0.5f, 1f, 2f, 4f };
         private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x" };
+        private static readonly Color TeamStatusBodyColor = new Color(0.88f, 0.94f, 0.98f, 1f);
         private static Font cachedUiFont;
 
         [Header("对局时间")]
@@ -404,7 +410,10 @@ namespace THUAI9.Unity.UI
                 {
                     string eventName = string.IsNullOrWhiteSpace(liveClient.CurrentEventName) ? "normal" : liveClient.CurrentEventName;
                     string eventDescription = string.IsNullOrWhiteSpace(liveClient.CurrentEventDescription) ? "\u6682\u65e0\u4e8b\u4ef6\u63cf\u8ff0" : liveClient.CurrentEventDescription;
-                    aiEventText.text = $"\u4e8b\u4ef6\u72b6\u6001\uff1a{eventName}\n{eventDescription}";
+                    aiEventText.text = BuildBoundedPanelText(
+                        AIEventPanelMaxLines,
+                        $"事件状态：{eventName}",
+                        eventDescription);
                 }
                 else if (CoreParam.latestAIEvent == null)
                 {
@@ -413,7 +422,11 @@ namespace THUAI9.Unity.UI
                 else
                 {
                     GlobalAIEvent e = CoreParam.latestAIEvent;
-                    aiEventText.text = $"AI\u4e8b\u4ef6\uff1a{TranslateAIEventCategory(e.Category)}\n{e.Title}\n{e.Description}";
+                    aiEventText.text = BuildBoundedPanelText(
+                        AIEventPanelMaxLines,
+                        $"AI事件：{TranslateAIEventCategory(e.Category)}",
+                        e.Title,
+                        e.Description);
                 }
             }
 
@@ -421,20 +434,166 @@ namespace THUAI9.Unity.UI
             {
                 aiEffectText.text = CoreParam.latestAIEffect == null
                     ? "\u4e16\u754c\u4fee\u6b63\uff1a\u6682\u65e0"
-                    : $"\u4e16\u754c\u4fee\u6b63\uff1a\u6301\u7eed {CoreParam.latestAIEffect.DurationMs / 1000f:0.#}s\n{FormatAIEffect(CoreParam.latestAIEffect)}";
+                    : BuildBoundedPanelText(
+                        AIEffectPanelMaxLines,
+                        $"世界修正：持续 {CoreParam.latestAIEffect.DurationMs / 1000f:0.#}s",
+                        FormatAIEffect(CoreParam.latestAIEffect));
             }
+        }
+
+        private static string BuildBoundedPanelText(int maxLines, params string[] rawLines)
+        {
+            List<string> lines = new List<string>(maxLines);
+            bool truncated = false;
+
+            for (int i = 0; i < rawLines.Length; i++)
+            {
+                string remaining = NormalizePanelLine(rawLines[i]);
+                if (string.IsNullOrEmpty(remaining))
+                {
+                    continue;
+                }
+
+                while (remaining.Length > 0)
+                {
+                    if (lines.Count >= maxLines)
+                    {
+                        truncated = true;
+                        break;
+                    }
+
+                    int take = Mathf.Min(EventPanelMaxCharsPerLine, remaining.Length);
+                    if (take < remaining.Length)
+                    {
+                        int wrapIndex = FindPanelWrapIndex(remaining, take);
+                        if (wrapIndex > 0)
+                        {
+                            take = wrapIndex;
+                        }
+                    }
+
+                    string segment = remaining.Substring(0, take).Trim();
+                    if (!string.IsNullOrEmpty(segment))
+                    {
+                        lines.Add(segment);
+                    }
+
+                    remaining = remaining.Substring(take).TrimStart();
+                    if (remaining.Length > 0 && lines.Count >= maxLines)
+                    {
+                        truncated = true;
+                        break;
+                    }
+                }
+
+                if (truncated)
+                {
+                    break;
+                }
+            }
+
+            if (lines.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (truncated)
+            {
+                int last = lines.Count - 1;
+                string line = lines[last].TrimEnd('…');
+                if (line.Length >= EventPanelMaxCharsPerLine)
+                {
+                    line = line.Substring(0, EventPanelMaxCharsPerLine - 1).TrimEnd();
+                }
+                lines[last] = line + "…";
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private static string NormalizePanelLine(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            return raw
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Replace('\t', ' ')
+                .Trim();
+        }
+
+        private static int FindPanelWrapIndex(string text, int maxChars)
+        {
+            int limit = Mathf.Min(maxChars, text.Length - 1);
+            for (int i = limit; i > 0; i--)
+            {
+                char ch = text[i];
+                if (char.IsWhiteSpace(ch) || ch == '，' || ch == '。' || ch == '、' || ch == '；' || ch == ';' || ch == '：' || ch == ':' || ch == '｜' || ch == '|')
+                {
+                    return i + 1;
+                }
+            }
+
+            return maxChars;
         }
 
         private static string FormatTeamStatus(int teamIndex, MessageOfAll.Types.TeamInfo team)
         {
             string techSummary = FormatTeamTechLevels(team.TechLevels);
             string uuidSummary = FormatTeamUuidSummary(teamIndex);
-            return $"队伍 {teamIndex}：分数 {team.Score}，原料 {team.Material}，算力 {team.ComputePower}\n工厂生命 {team.FactoryHp}，科技等级：{techSummary}\n成员 uuid：{uuidSummary}";
+            string memberStatus = FormatTeamMemberStatus(teamIndex);
+            return BuildTeamStatusText(
+                teamIndex,
+                team.Score.ToString(),
+                team.Material.ToString(),
+                team.ComputePower.ToString(),
+                team.FactoryHp.ToString(),
+                techSummary,
+                uuidSummary,
+                memberStatus);
         }
 
         private static string FormatWaitingTeamStatus(int teamIndex)
         {
-            return $"队伍 {teamIndex}：等待首帧\n工厂生命 --，科技等级：暂无\n成员 uuid：等待角色创建";
+            return BuildTeamStatusText(
+                teamIndex,
+                "0",
+                "--",
+                "--",
+                "--",
+                "暂无",
+                "等待角色创建",
+                "等待首帧");
+        }
+
+        private static string BuildTeamStatusText(
+            int teamIndex,
+            string score,
+            string material,
+            string computePower,
+            string factoryHp,
+            string techSummary,
+            string uuidSummary,
+            string memberStatus)
+        {
+            string accent = ColorUtility.ToHtmlStringRGB(GetTeamAccentColor(teamIndex - 1));
+            return
+                $"<size=20><b><color=#{accent}>队伍 {teamIndex}</color>{WideGap(2)}得分：{score}</b></size>\n" +
+                $"原料：{material}{WideGap(2)}算力：{computePower}\n" +
+                $"工厂血量：{factoryHp}\n" +
+                $"科技等级：{techSummary}\n" +
+                "<b>成员</b>\n" +
+                $"<size=14>{uuidSummary}</size>\n" +
+                "<b>成员状态</b>\n" +
+                $"<size=14>{memberStatus}</size>";
+        }
+
+        private static string WideGap(int count)
+        {
+            return new string('\u3000', Mathf.Max(count, 0));
         }
 
         private static string FormatTeamUuidSummary(int teamIndex)
@@ -479,21 +638,83 @@ namespace THUAI9.Unity.UI
             });
 
             var parts = new List<string>();
-            int visibleCount = Mathf.Min(4, members.Count);
+            int visibleCount = members.Count;
             for (int i = 0; i < visibleCount; i++)
             {
                 TeamMemberUuidInfo member = members[i];
-                string playerLabel = member.PlayerId > 0 ? $"玩家 {member.PlayerId}" : "未登记玩家";
+                string playerLabel = member.PlayerId > 0 ? $"P{member.PlayerId}" : "P?";
                 string uuidLabel = member.Guid > 0 ? member.Guid.ToString() : "暂无";
                 parts.Add($"{playerLabel}=uuid {uuidLabel}");
             }
 
-            if (members.Count > visibleCount)
+            return string.Join("\n", parts);
+        }
+
+        private static string FormatTeamMemberStatus(int teamIndex)
+        {
+            var members = new List<MessageOfCharacter>();
+
+            foreach (MessageOfCharacter character in CoreParam.characters.Values)
             {
-                parts.Add($"其余 {members.Count - visibleCount} 名");
+                if (character == null || character.TeamId != teamIndex)
+                {
+                    continue;
+                }
+
+                members.Add(character);
             }
 
-            return string.Join("，", parts);
+            if (members.Count == 0)
+            {
+                return "暂无成员上报";
+            }
+
+            members.Sort((left, right) =>
+            {
+                int byPlayer = left.PlayerId.CompareTo(right.PlayerId);
+                return byPlayer != 0 ? byPlayer : left.Guid.CompareTo(right.Guid);
+            });
+
+            var lines = new List<string>(members.Count);
+            for (int i = 0; i < members.Count; i++)
+            {
+                MessageOfCharacter member = members[i];
+                string playerLabel = member.PlayerId > 0 ? $"P{member.PlayerId}" : "P?";
+                string typeLabel = TranslateCharacterType(member.CharacterType);
+                string stateLabel = TranslateCharacterState(member.CharacterActiveState);
+                string position = $"({member.X / 1000f:0.0},{member.Y / 1000f:0.0})";
+                lines.Add($"{playerLabel} {typeLabel} 生命 {member.Hp} 坐标 {position} {stateLabel}");
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private static string TranslateCharacterType(CharacterType type)
+        {
+            return type switch
+            {
+                CharacterType.Drone => "无人机",
+                CharacterType.Robot => "机器人",
+                CharacterType.AutonomousCar => "无人车",
+                _ => "未知单位"
+            };
+        }
+
+        private static string TranslateCharacterState(CharacterState state)
+        {
+            return state switch
+            {
+                CharacterState.None => "空闲",
+                CharacterState.Idle => "空闲",
+                CharacterState.Harvesting => "采集中",
+                CharacterState.Attacking => "攻击中",
+                CharacterState.Ocuppying => "占领中",
+                CharacterState.Trading => "交易中",
+                CharacterState.Moving => "移动中",
+                CharacterState.KnockedBack => "被击退",
+                CharacterState.Deceased => "已死亡",
+                _ => "未知"
+            };
         }
 
         private static void AddOrMergeTeamMemberUuid(
@@ -591,24 +812,19 @@ namespace THUAI9.Unity.UI
                     continue;
                 }
 
-                RectTransform rect = text.rectTransform;
-                rect.anchorMin = new Vector2(1f, 1f);
-                rect.anchorMax = new Vector2(1f, 1f);
-                rect.pivot = new Vector2(1f, 1f);
-                rect.anchoredPosition = new Vector2(-TeamStatusRightMargin - 16f, -TeamStatusTopMargin - i * (TeamStatusHeight + TeamStatusSpacing));
-                rect.sizeDelta = new Vector2(TeamStatusWidth - 44f, TeamStatusHeight);
-
-                text.alignment = TextAnchor.MiddleLeft;
+                text.alignment = TextAnchor.UpperLeft;
                 text.font = GetBuiltInUIFont();
-                text.fontSize = 14;
+                text.fontSize = 16;
                 text.fontStyle = FontStyle.Bold;
-                text.color = GetTeamAccentColor(i);
+                text.color = TeamStatusBodyColor;
                 text.resizeTextForBestFit = false;
                 text.horizontalOverflow = HorizontalWrapMode.Wrap;
                 text.verticalOverflow = VerticalWrapMode.Overflow;
-                text.lineSpacing = 1f;
+                text.lineSpacing = 1.02f;
+                text.supportRichText = true;
                 text.raycastTarget = false;
-                EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.72f), new Vector2(1.3f, -1.3f));
+                EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.72f), new Vector2(1.2f, -1.2f));
+                ConfigureTeamStatusCard(text, i);
             }
         }
 
@@ -619,18 +835,27 @@ namespace THUAI9.Unity.UI
                 return;
             }
 
-            Transform parent = text.transform.parent;
+            Transform parent = text.transform.root;
+            if (parent == null)
+            {
+                parent = text.transform.parent;
+            }
+
             Color accent = GetTeamAccentColor(teamIndex);
-            RectTransform card = FindOrCreateRect(parent, $"TeamStatusCard{teamIndex + 1}", typeof(Image));
+            RectTransform card = FindOrCreateRect(parent, $"TeamStatusCard{teamIndex + 1}", typeof(Image), typeof(ScrollRect));
             card.anchorMin = new Vector2(1f, 1f);
             card.anchorMax = new Vector2(1f, 1f);
             card.pivot = new Vector2(1f, 1f);
-            card.anchoredPosition = new Vector2(-TeamStatusRightMargin, -TeamStatusTopMargin - teamIndex * (TeamStatusHeight + TeamStatusSpacing));
+            int row = teamIndex / 2;
+            int column = teamIndex % 2;
+            float x = -TeamStatusRightMargin - (1 - column) * (TeamStatusWidth + TeamStatusColumnSpacing);
+            float y = -TeamStatusTopMargin - row * (TeamStatusHeight + TeamStatusRowSpacing);
+            card.anchoredPosition = new Vector2(x, y);
             card.sizeDelta = new Vector2(TeamStatusWidth, TeamStatusHeight);
 
             Image cardImage = card.GetComponent<Image>();
-            cardImage.color = new Color(0.035f, 0.060f, 0.085f, 0.88f);
-            cardImage.raycastTarget = false;
+            cardImage.color = new Color(0.035f, 0.060f, 0.085f, 0.90f);
+            cardImage.raycastTarget = true;
 
             RectTransform stripe = FindOrCreateRect(card.transform, "AccentStripe", typeof(Image));
             stripe.anchorMin = new Vector2(0f, 0f);
@@ -642,8 +867,44 @@ namespace THUAI9.Unity.UI
             stripeImage.color = accent;
             stripeImage.raycastTarget = false;
 
-            card.SetSiblingIndex(Mathf.Max(0, text.transform.GetSiblingIndex()));
-            text.transform.SetAsLastSibling();
+            RectTransform viewport = FindOrCreateRect(card.transform, "Viewport", typeof(Image), typeof(Mask));
+            viewport.anchorMin = Vector2.zero;
+            viewport.anchorMax = Vector2.one;
+            viewport.pivot = new Vector2(0.5f, 0.5f);
+            viewport.offsetMin = new Vector2(16f, 10f);
+            viewport.offsetMax = new Vector2(-12f, -12f);
+            Image viewportImage = viewport.GetComponent<Image>();
+            viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+            viewportImage.raycastTarget = true;
+            Mask mask = viewport.GetComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            RectTransform content = FindOrCreateRect(viewport, "Content");
+            content.anchorMin = new Vector2(0f, 1f);
+            content.anchorMax = new Vector2(1f, 1f);
+            content.pivot = new Vector2(0f, 1f);
+            content.anchoredPosition = Vector2.zero;
+            content.sizeDelta = new Vector2(0f, TeamStatusContentHeight);
+
+            text.transform.SetParent(content, false);
+            RectTransform textRect = text.rectTransform;
+            textRect.anchorMin = new Vector2(0f, 1f);
+            textRect.anchorMax = new Vector2(1f, 1f);
+            textRect.pivot = new Vector2(0f, 1f);
+            textRect.anchoredPosition = Vector2.zero;
+            textRect.sizeDelta = new Vector2(0f, TeamStatusContentHeight - 10f);
+
+            ScrollRect scrollRect = card.GetComponent<ScrollRect>();
+            scrollRect.viewport = viewport;
+            scrollRect.content = content;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.inertia = true;
+            scrollRect.scrollSensitivity = 24f;
+            scrollRect.verticalNormalizedPosition = 1f;
+
+            card.SetAsLastSibling();
         }
 
         private void OnPlayClicked()
@@ -1023,11 +1284,13 @@ namespace THUAI9.Unity.UI
             StyleText("GameStateText", 18, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.MiddleRight);
             StyleText("AIEventText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
             StyleText("AIEffectText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
+            ConfigureEventInfoText(aiEventText, new Vector2(18f, -48f), new Vector2(-36f, 78f));
+            ConfigureEventInfoText(aiEffectText, new Vector2(18f, -128f), new Vector2(-36f, 50f));
         }
 
         private static void LayoutRightInfoPanels()
         {
-            LayoutTopRightPanel("HUD_ScorePanel", new Vector2(-24f, -108f), new Vector2(460f, 420f));
+            LayoutTopRightPanel("HUD_ScorePanel", new Vector2(-24f, -108f), new Vector2(620f, 430f));
         }
 
         private static void LayoutTopRightPanel(string objectName, Vector2 anchoredPosition, Vector2 size)
@@ -1088,6 +1351,27 @@ namespace THUAI9.Unity.UI
             text.alignment = alignment;
             text.raycastTarget = false;
             EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.52f), new Vector2(1f, -1f));
+        }
+
+        private static void ConfigureEventInfoText(Text text, Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            SetChildRect(
+                text.rectTransform,
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                anchoredPosition,
+                sizeDelta,
+                new Vector2(0f, 1f));
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = false;
+            text.supportRichText = false;
+            text.lineSpacing = 1.05f;
         }
 
         private void RefreshRecentReplayDropdown()

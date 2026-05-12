@@ -143,7 +143,7 @@ namespace THUAI9.Unity.Player
                 string[] parts = payload.Split('|');
                 if (parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0])) serverAddress = NormalizeGrpcTarget(parts[0]);
                 if (parts.Length > 1 && long.TryParse(parts[1], out long parsedTeam)) teamId = Math.Max(1, parsedTeam);
-                if (parts.Length > 2 && long.TryParse(parts[2], out long parsedRegister)) registerPlayerId = Math.Max(1, parsedRegister);
+                if (parts.Length > 2 && long.TryParse(parts[2], out long parsedRegister)) registerPlayerId = Math.Max(0, parsedRegister);
                 if (parts.Length > 3 && long.TryParse(parts[3], out long parsedCharacter)) characterPlayerId = Math.Max(1, parsedCharacter);
                 if (parts.Length > 4 && int.TryParse(parts[4], out int parsedSide)) sideFlag = parsedSide <= 0 ? (int)teamId : parsedSide;
             }

@@ -19,6 +19,14 @@ public static class MainGameUILayoutBuilder
     private static readonly Color Cyan = new Color(0.18f, 0.88f, 0.96f, 1f);
     private static readonly Color Gold = new Color(1.00f, 0.72f, 0.22f, 1f);
     private static readonly Color TextColor = new Color(0.88f, 0.94f, 0.98f, 1f);
+    private const float TeamStatusRightMargin = 24f;
+    private const float TeamStatusTopMargin = 156f;
+    private const float TeamStatusWidth = 292f;
+    private const float TeamStatusHeight = 182f;
+    private const float TeamStatusColumnSpacing = 12f;
+    private const float TeamStatusRowSpacing = 12f;
+    private const float TeamStatusContentHeight = 660f;
+    private static readonly Color TeamStatusBodyColor = new Color(0.88f, 0.94f, 0.98f, 1f);
 
     [MenuItem("Tools/UI/Rebuild MainGame HUD Layout")]
     public static void RebuildMainGameHud()
@@ -46,13 +54,18 @@ public static class MainGameUILayoutBuilder
         DeleteObjectIfExists("FrameInfoText");
         DeleteObjectIfExists("PreviousFrameButton");
         DeleteObjectIfExists("NextFrameButton");
+        for (int i = 1; i <= 4; i++)
+        {
+            DeleteObjectIfExists($"TeamStatusCard{i}");
+            DeleteObjectIfExists($"TeamScoreText{i}");
+        }
         RemoveLegacyInspectorComponents(canvas);
 
         RectTransform topBar = EnsurePanel(canvasRt, "HUD_TopBar", PanelColor);
         SetStretchTop(topBar, 86f, 0f);
 
         RectTransform scorePanel = EnsurePanel(canvasRt, "HUD_ScorePanel", PanelSoftColor);
-        SetTopRight(scorePanel, new Vector2(-24f, -108f), new Vector2(460f, 420f));
+        SetTopRight(scorePanel, new Vector2(-24f, -108f), new Vector2(620f, 430f));
 
         RectTransform eventPanel = EnsurePanel(canvasRt, "HUD_EventPanel", PanelSoftColor);
         SetChildRect(eventPanel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -108f), new Vector2(430f, 178f), new Vector2(0f, 1f));
@@ -90,25 +103,20 @@ public static class MainGameUILayoutBuilder
         SetChildRect(scoreTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -16f), new Vector2(-36f, 32f), new Vector2(0f, 1f));
         for (int i = 0; i < 4; i++)
         {
-            Text score = MoveText($"TeamScoreText{i + 1}", canvasRt, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-52f, -156f - i * 90f), new Vector2(376f, 82f), new Vector2(1f, 1f), 14, TextAnchor.MiddleLeft);
-            if (score != null)
-            {
-                score.text = $"队伍 {i + 1}：等待首帧\n工厂生命 --，科技等级：暂无\n成员 uuid：等待角色创建";
-                score.fontStyle = FontStyle.Bold;
-                score.fontSize = 14;
-                score.color = GetTeamAccentColor(i);
-                score.alignment = TextAnchor.MiddleLeft;
-                score.horizontalOverflow = HorizontalWrapMode.Wrap;
-                score.verticalOverflow = VerticalWrapMode.Overflow;
-            }
+            Text score = EnsureText(canvasRt, $"TeamScoreText{i + 1}",
+                BuildWaitingTeamStatusText(i + 1),
+                16, FontStyle.Bold, TeamStatusBodyColor, TextAnchor.UpperLeft);
+            ConfigureTeamStatusCard(canvasRt, score, i);
         }
 
         Text eventTitle = EnsureText(eventPanel, "HUD_EventTitle", "工业呼吸 / AI 事件", 20, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
         SetChildRect(eventTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -12f), new Vector2(-36f, 28f), new Vector2(0f, 1f));
         Text aiEventText = EnsureText(eventPanel, "AIEventText", "AI事件：暂无", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
-        SetChildRect(aiEventText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -48f), new Vector2(-36f, 76f), new Vector2(0f, 1f));
+        SetChildRect(aiEventText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -48f), new Vector2(-36f, 78f), new Vector2(0f, 1f));
+        ConfigureEventInfoText(aiEventText);
         Text aiEffectText = EnsureText(eventPanel, "AIEffectText", "世界修正：暂无", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
-        SetChildRect(aiEffectText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -124f), new Vector2(-36f, 46f), new Vector2(0f, 1f));
+        SetChildRect(aiEffectText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -128f), new Vector2(-36f, 50f), new Vector2(0f, 1f));
+        ConfigureEventInfoText(aiEffectText);
 
         LayoutControls(canvasRt);
         LayoutSourceControls(sourcePanel);
@@ -182,6 +190,94 @@ public static class MainGameUILayoutBuilder
 
         Button disconnectButton = EnsureButton(panel, "DisconnectLiveButton", "断开", new Color(0.48f, 0.18f, 0.18f, 1f));
         SetChildRect(disconnectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -52f), new Vector2(118f, 30f), new Vector2(0f, 1f));
+    }
+
+    private static void ConfigureTeamStatusCard(RectTransform parent, Text text, int teamIndex)
+    {
+        if (parent == null || text == null)
+        {
+            return;
+        }
+
+        Color accent = GetTeamAccentColor(teamIndex);
+        RectTransform card = EnsurePanel(parent, $"TeamStatusCard{teamIndex + 1}", new Color(0.035f, 0.060f, 0.085f, 0.90f));
+        if (card.GetComponent<ScrollRect>() == null) card.gameObject.AddComponent<ScrollRect>();
+        int row = teamIndex / 2;
+        int column = teamIndex % 2;
+        float x = -TeamStatusRightMargin - (1 - column) * (TeamStatusWidth + TeamStatusColumnSpacing);
+        float y = -TeamStatusTopMargin - row * (TeamStatusHeight + TeamStatusRowSpacing);
+        SetTopRight(card, new Vector2(x, y), new Vector2(TeamStatusWidth, TeamStatusHeight));
+        Image cardImage = card.GetComponent<Image>();
+        if (cardImage != null) cardImage.raycastTarget = true;
+
+        RectTransform stripe = EnsurePanel(card, "AccentStripe", accent);
+        stripe.anchorMin = new Vector2(0f, 0f);
+        stripe.anchorMax = new Vector2(0f, 1f);
+        stripe.pivot = new Vector2(0f, 0.5f);
+        stripe.anchoredPosition = Vector2.zero;
+        stripe.sizeDelta = new Vector2(5f, 0f);
+
+        RectTransform viewport = EnsurePanel(card, "Viewport", new Color(1f, 1f, 1f, 0.01f));
+        Image viewportImage = viewport.GetComponent<Image>();
+        viewportImage.raycastTarget = true;
+        Mask mask = viewport.GetComponent<Mask>() ?? viewport.gameObject.AddComponent<Mask>();
+        mask.showMaskGraphic = false;
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.pivot = new Vector2(0.5f, 0.5f);
+        viewport.offsetMin = new Vector2(16f, 10f);
+        viewport.offsetMax = new Vector2(-12f, -12f);
+
+        RectTransform content = EnsurePanel(viewport, "Content", new Color(1f, 1f, 1f, 0f));
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0f, 1f);
+        content.anchoredPosition = Vector2.zero;
+        content.sizeDelta = new Vector2(0f, TeamStatusContentHeight);
+        Image contentImage = content.GetComponent<Image>();
+        if (contentImage != null) contentImage.raycastTarget = false;
+
+        text.transform.SetParent(content, false);
+        RectTransform textRect = text.rectTransform;
+        textRect.anchorMin = new Vector2(0f, 1f);
+        textRect.anchorMax = new Vector2(1f, 1f);
+        textRect.pivot = new Vector2(0f, 1f);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = new Vector2(0f, TeamStatusContentHeight - 10f);
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+        text.lineSpacing = 1.02f;
+        text.supportRichText = true;
+        text.raycastTarget = false;
+
+        ScrollRect scrollRect = card.GetComponent<ScrollRect>();
+        scrollRect.viewport = viewport;
+        scrollRect.content = content;
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.inertia = true;
+        scrollRect.scrollSensitivity = 24f;
+        scrollRect.verticalNormalizedPosition = 1f;
+    }
+
+    private static string BuildWaitingTeamStatusText(int teamIndex)
+    {
+        string accent = ColorUtility.ToHtmlStringRGB(GetTeamAccentColor(teamIndex - 1));
+        return
+            $"<size=20><b><color=#{accent}>队伍 {teamIndex}</color>{WideGap(2)}得分：0</b></size>\n" +
+            $"原料：--{WideGap(2)}算力：--\n" +
+            "工厂血量：--\n" +
+            "科技等级：暂无\n" +
+            "<b>成员</b>\n" +
+            "<size=14>等待角色创建</size>\n" +
+            "<b>成员状态</b>\n" +
+            "<size=14>等待首帧</size>";
+    }
+
+    private static string WideGap(int count)
+    {
+        return new string('\u3000', Mathf.Max(count, 0));
     }
 
     private static void ConfigureCamera()
@@ -403,6 +499,15 @@ public static class MainGameUILayoutBuilder
         text.horizontalOverflow = HorizontalWrapMode.Wrap;
         text.verticalOverflow = VerticalWrapMode.Truncate;
         text.resizeTextForBestFit = false;
+        text.lineSpacing = 1.05f;
+    }
+
+    private static void ConfigureEventInfoText(Text text)
+    {
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
+        text.verticalOverflow = VerticalWrapMode.Truncate;
+        text.resizeTextForBestFit = false;
+        text.supportRichText = false;
         text.lineSpacing = 1.05f;
     }
 

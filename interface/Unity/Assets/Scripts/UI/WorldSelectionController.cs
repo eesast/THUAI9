@@ -92,13 +92,33 @@ namespace THUAI9.Unity.UI
                 SetHighlightVisible(selectedHighlight, false);
             }
 
-            if (selectedInfo != null && selectedInfo.TryGetBounds(out Bounds currentBounds))
+            if (selectedInfo != null)
             {
-                PositionHighlight(selectedHighlight, currentBounds);
+                if (selectedInfo.TryGetBounds(out Bounds currentBounds))
+                {
+                    PositionHighlight(selectedHighlight, currentBounds);
+                }
+                else
+                {
+                    ClearSelection();
+                    SetHighlightVisible(selectedHighlight, false);
+                }
             }
-            else if (selectedTile.HasValue && !TryGetMapTileAt(Tool.GridToUnity(selectedTile.Value.x, selectedTile.Value.y), out _))
+            else if (selectedTile.HasValue)
             {
-                ClearSelection();
+                if (IsMapTileValid(selectedTile.Value))
+                {
+                    Bounds tileBounds = new Bounds(Tool.GridToUnity(selectedTile.Value.x, selectedTile.Value.y), Vector3.one);
+                    PositionHighlight(selectedHighlight, tileBounds);
+                }
+                else
+                {
+                    ClearSelection();
+                    SetHighlightVisible(selectedHighlight, false);
+                }
+            }
+            else
+            {
                 SetHighlightVisible(selectedHighlight, false);
             }
         }
@@ -154,6 +174,16 @@ namespace THUAI9.Unity.UI
             }
 
             return true;
+        }
+
+        private static bool IsMapTileValid(Vector2Int tile)
+        {
+            if (CoreParam.map == null || tile.x < 0 || tile.y < 0 || tile.x >= CoreParam.map.Height || tile.y >= CoreParam.map.Width)
+            {
+                return false;
+            }
+
+            return tile.x < CoreParam.map.Rows.Count && tile.y < CoreParam.map.Rows[tile.x].Cols.Count;
         }
 
         private void ClearSelection()

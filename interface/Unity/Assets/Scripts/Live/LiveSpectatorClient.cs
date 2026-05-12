@@ -59,8 +59,10 @@ namespace THUAI9.Unity.Live
         private string currentEventName = string.Empty;
         private string currentEventDescription = string.Empty;
         private bool hasCurrentEventStatus;
+#if !UNITY_WEBGL || UNITY_EDITOR
         private bool eventStatusPollInFlight;
         private float nextEventStatusPollTime;
+#endif
         private int receivedFrameCount;
         private int lastReceivedObjectCount;
         private int lastReceivedTeamCount;
@@ -449,8 +451,10 @@ namespace THUAI9.Unity.Live
             hasCurrentEventStatus = false;
             currentEventName = string.Empty;
             currentEventDescription = string.Empty;
+#if !UNITY_WEBGL || UNITY_EDITOR
             nextEventStatusPollTime = 0f;
             eventStatusPollInFlight = false;
+#endif
         }
 
         private void UpdateReceiveCounters(MessageToClient message)
