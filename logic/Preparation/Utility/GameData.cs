@@ -30,6 +30,7 @@ namespace Preparation.Utility
         public const int MaxATKSize = 3 * NumOfPosGridPerCell;
         public const int MaxATKPower = 100;
         public const int MaxLoad = 30;
+        public const int MaxCharactersPerTeam = 6;      // 每队最多角色数
         public const int MaxViewRange = 10 * NumOfPosGridPerCell;
         public const int MaxStorage = 150;
 

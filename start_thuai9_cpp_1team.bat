@@ -5,7 +5,7 @@ set "ROOT=%~dp0"
 set "SERVER_PORT=8888"
 set "CAPI_EXE="
 
-echo [THUAI9] Launching UI, server, and 4-team CAPI clients...
+echo [THUAI9] Launching UI, server, and debug CAPI clients...
 
 if not exist "%ROOT%interface\AvaloniaUI\THUAI9_Avalonia.csproj" (
     echo [ERROR] UI project not found: interface\AvaloniaUI\THUAI9_Avalonia.csproj
@@ -36,7 +36,7 @@ if errorlevel 1 (
 start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run"
 timeout /t 2 /nobreak >nul
 
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port %SERVER_PORT% --teamCount 4"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port %SERVER_PORT% --teamCount 2"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Waiting for server to listen on 127.0.0.1:%SERVER_PORT%...
@@ -46,19 +46,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-for /L %%t in (1,1,4) do (
-    start "THUAI9 CAPI %%t-0" cmd /k ""%CAPI_EXE%" -t %%t -p 0 -I 127.0.0.1 -P %SERVER_PORT% -d -o"
-)
+echo [THUAI9] Starting home clients (pid=0) for both teams...
+start "THUAI9 CAPI 1-0" cmd /k ""%CAPI_EXE%" -t 1 -p 0 -I 127.0.0.1 -P %SERVER_PORT% -d -o"
+start "THUAI9 CAPI 2-0" cmd /k ""%CAPI_EXE%" -t 2 -p 0 -I 127.0.0.1 -P %SERVER_PORT% -d -o"
 
-timeout /t 2 /nobreak >nul
-
-for /L %%t in (1,1,4) do (
-    for /L %%p in (1,1,3) do (
-        start "THUAI9 CAPI %%t-%%p" cmd /k ""%CAPI_EXE%" -t %%t -p %%p -I 127.0.0.1 -P %SERVER_PORT% -d -o"
-    )
-)
-
-echo [THUAI9] All processes launched.
-echo Keep each terminal open to inspect logs.
+echo [THUAI9] All home clients launched.
+echo Character CAPI processes will start automatically when characters are created.
 
 endlocal

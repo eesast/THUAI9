@@ -52,6 +52,13 @@ private:
     bool side_flag;
     THUAI9::CharacterType CharacterType;
     std::unique_ptr<IGameTimer> timer;
+
+    // Connection info (saved in Main, used to spawn character processes)
+    std::string serverIP;
+    std::string serverPort;
+    bool debugFile = false;
+    bool debugPrint = false;
+    bool debugWarnOnly = false;
     std::thread tAI;  // 用于运行AI的线程
 
     mutable std::mutex mtxAI;

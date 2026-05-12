@@ -4,7 +4,12 @@
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <thread>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #include "Communication.h"
 #include "structures.h"
@@ -228,7 +233,41 @@ bool Logic::HaveView(int32_t x, int32_t y, int32_t newX, int32_t newY, int32_t v
 
 bool Logic::BuildCharacter(THUAI9::CharacterType characterType, int32_t playerIDArg)
 {
-    return pComm->BuildCharacter(teamID, playerIDArg, characterType);
+    bool ok = pComm->BuildCharacter(teamID, playerIDArg, characterType);
+    if (ok)
+    {
+#ifdef _WIN32
+        // Build the command line for the new character CAPI process
+        char exePath[MAX_PATH] = {};
+        GetModuleFileNameA(nullptr, exePath, MAX_PATH);
+
+        std::string cmd = std::string("\"") + exePath + "\"" + " -t " + std::to_string(teamID) + " -p " + std::to_string(playerIDArg) + " -c " + std::to_string(static_cast<int>(characterType)) + " -I " + serverIP + " -P " + serverPort;
+        if (debugFile)
+            cmd += " -d";
+        if (debugPrint)
+            cmd += " -o";
+        if (debugWarnOnly)
+            cmd += " -w";
+
+        std::string winTitle = "THUAI9 CAPI " + std::to_string(teamID) + "-" + std::to_string(playerIDArg);
+        STARTUPINFOA si = {};
+        PROCESS_INFORMATION pi = {};
+        si.cb = sizeof(si);
+        si.lpTitle = winTitle.data();
+        // CREATE_NEW_CONSOLE opens a separate console window for each character
+        if (CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &pi))
+        {
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            logger->info("Spawned character CAPI: team={} player={}", teamID, playerIDArg);
+        }
+        else
+        {
+            logger->warn("Failed to spawn character CAPI: team={} player={} err={}", teamID, playerIDArg, GetLastError());
+        }
+#endif
+    }
+    return ok;
 }
 
 bool Logic::ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum)
@@ -518,6 +557,12 @@ void Logic::Main(CreateAIFunc createAI, std::string IP, std::string port, bool f
         printLogger->set_level(spdlog::level::warn);
     logger = std::make_unique<spdlog::logger>("logicLogger", spdlog::sinks_init_list{fileLogger, printLogger});
     logger->flush_on(spdlog::level::warn);
+
+    serverIP = IP;
+    serverPort = port;
+    debugFile = file;
+    debugPrint = print;
+    debugWarnOnly = warnOnly;
 
     pComm = std::make_unique<Communication>(IP, port);
 
