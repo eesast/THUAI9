@@ -23,6 +23,8 @@ namespace Preparation.Utility
         public const int CharacterRadius = 300;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
+        public const int MaxCharactersPerTeam = 6;          // 每队最大存活角色数
+
         public const int MaxRobust = 50;
         public const int MaxEfficiency = 10;
         public const int MaxHP = 300;
@@ -30,7 +32,6 @@ namespace Preparation.Utility
         public const int MaxATKSize = 3 * NumOfPosGridPerCell;
         public const int MaxATKPower = 100;
         public const int MaxLoad = 30;
-        public const int MaxCharactersPerTeam = 6;      // 每队最多角色数
         public const int MaxViewRange = 10 * NumOfPosGridPerCell;
         public const int MaxStorage = 150;
 

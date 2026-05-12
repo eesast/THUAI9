@@ -1,0 +1,19 @@
+﻿{
+    "CapiDebug":  true,
+    "TeamCount":  3,
+    "TeamCapiExes":  [
+                         "",
+                         "D:\\Desktop\\THUAI\\API_harvest.exe",
+                         "D:\\Desktop\\THUAI\\API_harvest.exe",
+                         ""
+                     ],
+    "GameTime":  600,
+    "CapiOutput":  true,
+    "CapiWarnOnly":  false,
+    "ServerIP":  "127.0.0.1",
+    "StartUI":  true,
+    "CharacterNum":  5,
+    "ServerPort":  8888,
+    "CheatMode":  false,
+    "PlaybackFile":  "mygame"
+}
