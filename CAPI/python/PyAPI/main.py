@@ -34,14 +34,6 @@ ______________ ___  ____ ___  _____  .___ ________
     print(welcomeString)
 
 
-def _infer_character_type(playerID: int) -> THUAI9.CharacterType:
-    return {
-        1: THUAI9.CharacterType.Robot,
-        2: THUAI9.CharacterType.Drone,
-        3: THUAI9.CharacterType.AutonomousCar,
-    }.get(playerID, THUAI9.CharacterType.NullCharacterType)
-
-
 def _build_ai_builder(ai_module_name: str) -> Callable[[int], IAI]:
     module = importlib.import_module(ai_module_name)
     ai_class = getattr(module, "AI", None)
@@ -62,6 +54,13 @@ def THUAI9Main(argv: List[str], AIBuilder: Callable[[int], IAI]) -> None:
     parser.add_argument("-P", "--serverPort", type=str, default="8888")
     parser.add_argument("-t", "--teamID", type=int, required=True)
     parser.add_argument("-p", "--playerID", type=int, required=True)
+    parser.add_argument(
+        "-c",
+        "--characterType",
+        type=int,
+        default=-1,
+        help="Character type passed to a character process after BuildCharacter",
+    )
     parser.add_argument(
         "-d",
         "--debug",
@@ -100,16 +99,20 @@ def THUAI9Main(argv: List[str], AIBuilder: Callable[[int], IAI]) -> None:
     )
     args = parser.parse_args(argv[1:])
 
+    if args.teamID < 1 or args.teamID > 4 or args.playerID < 0:
+        parser.error("teamID must be in 1..4 and playerID must be >= 0")
+
     playerType = (
         THUAI9.PlayerType.Team
         if args.playerID == 0
         else THUAI9.PlayerType.Character
     )
-    characterType = (
-        THUAI9.CharacterType.NullCharacterType
-        if playerType == THUAI9.PlayerType.Team
-        else _infer_character_type(args.playerID)
-    )
+    characterType = THUAI9.CharacterType.NullCharacterType
+    if args.characterType >= 0:
+        try:
+            characterType = THUAI9.CharacterType(args.characterType)
+        except ValueError:
+            characterType = THUAI9.CharacterType.NullCharacterType
 
     if platform.system().lower() == "windows":
         PrintWelcomeString()
@@ -124,6 +127,7 @@ def THUAI9Main(argv: List[str], AIBuilder: Callable[[int], IAI]) -> None:
         playerType,
         characterType,
         sideFlag=args.side,
+        aiModule=args.aiModule,
     )
     logic.Main(
         aiBuilder,
