@@ -17,11 +17,25 @@ $cfg = @{
     CapiOutput   = $true
     CapiWarnOnly = $false
     PlaybackFile = "mygame"
+    TeamCapiExes = @("","","","")
 }
 if (Test-Path $CONFIG_FILE)
 {
     $saved = Get-Content $CONFIG_FILE -Raw | ConvertFrom-Json
-    foreach ($k in @($cfg.Keys))
+    # Load array field separately
+    if ($null -ne $saved.PSObject.Properties["TeamCapiExes"])
+    {
+        $loaded = @($saved.TeamCapiExes)
+        for ($i = 0; $i -lt 4; $i++)
+        {
+            if ($i -lt $loaded.Count -and $null -ne $loaded[$i])
+            {
+                $cfg.TeamCapiExes[$i] = [string]$loaded[$i]
+            }
+        }
+    }
+    # Load scalar keys (excluding TeamCapiExes)
+    foreach ($k in @($cfg.Keys | Where-Object { $_ -ne "TeamCapiExes" }))
     {
         if ($null -ne $saved.PSObject.Properties[$k])
         {
@@ -64,11 +78,23 @@ function New-Group($text, $x, $y, $w, $h)
     $g.Size     = [System.Drawing.Size]::new($w, $h)
     return $g
 }
+function New-BrowseClick($txtTarget)
+{
+    return {
+        $dlg = New-Object System.Windows.Forms.OpenFileDialog
+        $dlg.Filter = "Executable (*.exe)|*.exe|All files (*.*)|*.*"
+        $dlg.Title  = "Select CAPI executable"
+        if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK)
+        {
+            $txtTarget.Text = $dlg.FileName
+        }
+    }.GetNewClosure()
+}
 
 # ── Form ──────────────────────────────────────────────────────────────────────
 $form                  = New-Object System.Windows.Forms.Form
 $form.Text             = "THUAI9  —  Launch Configuration"
-$form.ClientSize       = [System.Drawing.Size]::new(480, 430)
+$form.ClientSize       = [System.Drawing.Size]::new(480, 598)
 $form.StartPosition    = "CenterScreen"
 $form.FormBorderStyle  = "FixedDialog"
 $form.MaximizeBox      = $false
@@ -100,8 +126,29 @@ $grpCapi.Controls.AddRange(@(
     ($cbWarn = New-Check "Warning only (-w)"   $cfg.CapiWarnOnly 310 58)
 ))
 
+# ── Group: Team CAPI Executables ──────────────────────────────────────────────
+$grpTeamCapi = New-Group "Team CAPI Executables" 12 295 456 163
+$form.Controls.Add($grpTeamCapi)
+
+$grpTeamCapi.Controls.Add((New-Label "Leave blank to use auto-detected CAPI exe" 10 20))
+
+$txtTeamCapi = @()
+for ($i = 0; $i -lt 4; $i++)
+{
+    $rowY = 42 + $i * 28
+    $lbl  = New-Label "Team $($i+1):" 10 $rowY
+    $txt  = New-TextBox $cfg.TeamCapiExes[$i] 70 $rowY 290
+    $btn  = New-Object System.Windows.Forms.Button
+    $btn.Text     = "..."
+    $btn.Location = [System.Drawing.Point]::new(370, $rowY)
+    $btn.Size     = [System.Drawing.Size]::new(72, 22)
+    $btn.Add_Click((New-BrowseClick $txt))
+    $grpTeamCapi.Controls.AddRange(@($lbl, $txt, $btn))
+    $txtTeamCapi += $txt
+}
+
 # ── Group: Other ──────────────────────────────────────────────────────────────
-$grpOther = New-Group "Other" 12 295 456 65
+$grpOther = New-Group "Other" 12 468 456 65
 $form.Controls.Add($grpOther)
 
 $grpOther.Controls.AddRange(@(
@@ -112,7 +159,7 @@ $grpOther.Controls.AddRange(@(
 # ── Buttons ───────────────────────────────────────────────────────────────────
 $btnStart          = New-Object System.Windows.Forms.Button
 $btnStart.Text     = "Start Game"
-$btnStart.Location = [System.Drawing.Point]::new(12, 375)
+$btnStart.Location = [System.Drawing.Point]::new(12, 543)
 $btnStart.Size     = [System.Drawing.Size]::new(215, 40)
 $btnStart.BackColor = [System.Drawing.Color]::FromArgb(0, 120, 215)
 $btnStart.ForeColor = [System.Drawing.Color]::White
@@ -122,7 +169,7 @@ $form.Controls.Add($btnStart)
 
 $btnCancel          = New-Object System.Windows.Forms.Button
 $btnCancel.Text     = "Cancel"
-$btnCancel.Location = [System.Drawing.Point]::new(253, 375)
+$btnCancel.Location = [System.Drawing.Point]::new(253, 543)
 $btnCancel.Size     = [System.Drawing.Size]::new(215, 40)
 $form.Controls.Add($btnCancel)
 $btnCancel.Add_Click({ $form.Close() })
@@ -133,26 +180,46 @@ $btnStart.Add_Click({
     # -- Validate numeric fields -----------------------------------------------
     $port    = 0; $teams = 0; $charNum = 0; $time = 0
     if (-not [int]::TryParse($txtPort.Text,    [ref]$port)    -or $port    -lt 1 -or $port    -gt 65535) { [System.Windows.Forms.MessageBox]::Show("Invalid Server Port.",            "Validation", "OK", "Warning"); return }
-    if (-not [int]::TryParse($txtTeams.Text,   [ref]$teams)   -or $teams   -lt 1 -or $teams   -gt 8)     { [System.Windows.Forms.MessageBox]::Show("Invalid Team Count (1-8).",       "Validation", "OK", "Warning"); return }
+    if (-not [int]::TryParse($txtTeams.Text,   [ref]$teams)   -or $teams   -lt 1 -or $teams   -gt 4)     { [System.Windows.Forms.MessageBox]::Show("Invalid Team Count (1-4).",       "Validation", "OK", "Warning"); return }
     if (-not [int]::TryParse($txtCharNum.Text, [ref]$charNum) -or $charNum -lt 1 -or $charNum -gt 20)    { [System.Windows.Forms.MessageBox]::Show("Invalid Characters per Team.",    "Validation", "OK", "Warning"); return }
     if (-not [int]::TryParse($txtTime.Text,    [ref]$time)    -or $time    -lt 10)                        { [System.Windows.Forms.MessageBox]::Show("Game Time must be >= 10 seconds.","Validation", "OK", "Warning"); return }
 
     $ip    = $txtIP.Text.Trim()
     $pbFile = $txtPB.Text.Trim()
 
-    # -- Find CAPI exe ---------------------------------------------------------
-    $capiExe = ""
+    # -- Auto-detect default CAPI exe ------------------------------------------
+    $capiExeDefault = ""
     foreach ($candidate in @(
         (Join-Path $ROOT "CAPI\cpp\x64\Debug\API.exe"),
         (Join-Path $ROOT "CAPI\cpp\x64\Release\API.exe")
     ))
     {
-        if (Test-Path $candidate) { $capiExe = $candidate; break }
+        if (Test-Path $candidate) { $capiExeDefault = $candidate; break }
     }
-    if (-not $capiExe)
+
+    # -- Build per-team exe array ----------------------------------------------
+    $teamExes = @()
+    for ($t = 1; $t -le $teams; $t++)
     {
-        [System.Windows.Forms.MessageBox]::Show("CAPI executable not found.`nBuild API.sln in Visual Studio 2022 first.", "Error", "OK", "Error")
-        return
+        $specific = $txtTeamCapi[$t - 1].Text.Trim()
+        if ($specific -ne "")
+        {
+            if (-not (Test-Path $specific))
+            {
+                [System.Windows.Forms.MessageBox]::Show("CAPI exe for Team $t not found:`n$specific", "Error", "OK", "Error")
+                return
+            }
+            $teamExes += $specific
+        }
+        else
+        {
+            if (-not $capiExeDefault)
+            {
+                [System.Windows.Forms.MessageBox]::Show("No CAPI exe for Team $t and no default found.`nBuild API.sln in Visual Studio 2022 first.", "Error", "OK", "Error")
+                return
+            }
+            $teamExes += $capiExeDefault
+        }
     }
 
     # -- Save config -----------------------------------------------------------
@@ -168,6 +235,7 @@ $btnStart.Add_Click({
         CapiOutput   = $cbOut.Checked
         CapiWarnOnly = $cbWarn.Checked
         PlaybackFile = $pbFile
+        TeamCapiExes = @($txtTeamCapi | ForEach-Object { $_.Text.Trim() })
     } | ConvertTo-Json | Set-Content $CONFIG_FILE -Encoding UTF8
 
     $form.Close()
@@ -214,8 +282,8 @@ $btnStart.Add_Click({
     # -- Start home clients (pid=0) for every team -----------------------------
     for ($t = 1; $t -le $teams; $t++)
     {
-        $args = "-t $t -p 0 -I $ip -P $port$capiFlags"
-        Start-Process "cmd" -ArgumentList "/k `"$capiExe`" $args"
+        $clientArgs = "-t $t -p 0 -I $ip -P $port$capiFlags"
+        Start-Process "cmd" -ArgumentList "/k `"$($teamExes[$t-1])`" $clientArgs"
     }
 
     Write-Host "[THUAI9] All home clients launched."

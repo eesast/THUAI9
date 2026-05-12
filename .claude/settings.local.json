@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dotnet build *)",
       "Bash(pip install *)",
-      "Bash(dotnet format:*)"
+      "Bash(dotnet format:*)",
+      "Bash(powershell:*)"
     ]
   }
 }
