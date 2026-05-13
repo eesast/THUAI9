@@ -1,7 +1,7 @@
 """
 GameEnvironment: the main Gymnasium-compatible environment.
 
-Observation (58 floats, all in [-1, 1] or [0, 1]):
+Observation (58 floats, normalized to bounded ranges; some features may reach 2.0):
   [0-1]   unit position (x/H, y/W)
   [2]     unit HP ratio
   [3]     unit raw inventory / capacity
