@@ -1,6 +1,7 @@
 ﻿using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Protobuf;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using THUAI9_Avalonia.Models;
@@ -140,20 +141,72 @@ namespace THUAI9_Avalonia.ViewModels
         {
             if (_dynamicOverlayIndex.TryGetValue(overlay.Key, out var existing))
             {
-                existing.CellX = overlay.CellX;
-                existing.CellY = overlay.CellY;
-                existing.Label = overlay.Label;
-                existing.Tooltip = overlay.Tooltip;
-                existing.Background = overlay.Background;
-                existing.Foreground = overlay.Foreground;
-                existing.BorderBrush = overlay.BorderBrush;
-                existing.Opacity = overlay.Opacity;
-                existing.Kind = overlay.Kind;
+                if (existing.CellX != overlay.CellX)
+                {
+                    existing.CellX = overlay.CellX;
+                }
+
+                if (existing.CellY != overlay.CellY)
+                {
+                    existing.CellY = overlay.CellY;
+                }
+
+                if (!string.Equals(existing.Label, overlay.Label, StringComparison.Ordinal))
+                {
+                    existing.Label = overlay.Label;
+                }
+
+                if (!string.Equals(existing.Tooltip, overlay.Tooltip, StringComparison.Ordinal))
+                {
+                    existing.Tooltip = overlay.Tooltip;
+                }
+
+                if (!AreBrushesEqual(existing.Background, overlay.Background))
+                {
+                    existing.Background = overlay.Background;
+                }
+
+                if (!AreBrushesEqual(existing.Foreground, overlay.Foreground))
+                {
+                    existing.Foreground = overlay.Foreground;
+                }
+
+                if (!AreBrushesEqual(existing.BorderBrush, overlay.BorderBrush))
+                {
+                    existing.BorderBrush = overlay.BorderBrush;
+                }
+
+                if (Math.Abs(existing.Opacity - overlay.Opacity) > 0.001)
+                {
+                    existing.Opacity = overlay.Opacity;
+                }
+
+                if (existing.Kind != overlay.Kind)
+                {
+                    existing.Kind = overlay.Kind;
+                }
+
                 return;
             }
 
             _dynamicOverlayIndex[overlay.Key] = overlay;
             DynamicOverlays.Add(overlay);
+        }
+
+        private static bool AreBrushesEqual(IBrush? left, IBrush? right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left is ISolidColorBrush leftSolid && right is ISolidColorBrush rightSolid)
+            {
+                return leftSolid.Color == rightSolid.Color
+                    && Math.Abs(leftSolid.Opacity - rightSolid.Opacity) <= 0.001;
+            }
+
+            return Equals(left, right);
         }
 
         public void RemoveDynamicOverlay(string key)

@@ -137,7 +137,7 @@ namespace ClientTest2
                                     _facGoods[gs.ProductType] = gs.Quantity;
                             }
                         }
-                        else
+                        else if (fac.TeamId is >= 1 and <= 4 && fac.Hp > 0)
                         {
                             lock (_lk)
                             {
