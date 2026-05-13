@@ -124,11 +124,11 @@ def test_buy_requires_adjacent_market(easy_env):
 
 
 def test_sell_empty_inventory_invalid(easy_env):
-    """SELL with empty inventory should be flagged as invalid."""
+    """SELL_0 with empty inventory should be flagged as invalid."""
     easy_env.reset()
     u = easy_env.unit
     assert u.total_goods == 0
-    _, _, _, _, info = easy_env.step(Action.SELL)
+    _, _, _, _, info = easy_env.step(Action.SELL_0)
     assert not info["action_valid"] or u.total_goods == 0
 
 

@@ -1,34 +1,34 @@
 """
 GameEnvironment: the main Gymnasium-compatible environment.
 
-Observation (32 floats, all in [-1, 1] or [0, 1]):
+Observation (44 floats, all in [-1, 1] or [0, 1]):
   [0-1]   unit position (x/H, y/W)
   [2]     unit HP ratio
   [3]     unit raw inventory / capacity
-  [4]     unit product inventory / capacity
-  [5]     unit busy ticks / 10
-  [6]     log10(money+1) / 5
-  [7]     compute / 100
-  [8]     time / max_time
-  [9]     sin(2π t / period)
-  [10]    cos(2π t / period)
-  [11]    factory raw stock / storage_cap
-  [12]    factory product stock / storage_cap
-  [13]    factory production queue length / 10
-  [14-15] resource 0 (dx/H, dy/W)
-  [16]    resource 0 stock ratio
-  [17-18] resource 1 (dx/H, dy/W)
-  [19]    resource 1 stock ratio
-  [20-21] compute center 0 (dx/H, dy/W)
-  [22]    compute center 0 is_open
-  [23-24] compute center 1 (dx/H, dy/W)
-  [25]    compute center 1 is_open
-  [26-27] market 0 (dx/H, dy/W)
-  [28]    market 0 best price (normalized 0-1)
-  [29-30] market 1 (dx/H, dy/W)
-  [31]    market 1 best price (normalized 0-1)
+  [4-8]   unit product inventory by type (pid 0-4) / capacity
+  [9]     unit busy ticks / 10
+  [10]    log10(money+1) / 5
+  [11]    compute / 100
+  [12]    time / max_time
+  [13]    sin(2π t / period)
+  [14]    cos(2π t / period)
+  [15]    factory raw stock / storage_cap
+  [16]    factory product stock / storage_cap
+  [17]    factory production queue length / 10
+  [18-19] resource 0 (dx/H, dy/W)
+  [20]    resource 0 stock ratio
+  [21-22] resource 1 (dx/H, dy/W)
+  [23]    resource 1 stock ratio
+  [24-25] compute center 0 (dx/H, dy/W)
+  [26]    compute center 0 is_open
+  [27-28] compute center 1 (dx/H, dy/W)
+  [29]    compute center 1 is_open
+  [30-31] market 0 (dx/H, dy/W)
+  [32-36] market 0 prices for all 5 products (normalized by each product's val_range)
+  [37-38] market 1 (dx/H, dy/W)
+  [39-43] market 1 prices for all 5 products (normalized by each product's val_range)
 
-Action space: Discrete(8)  → see action_space.py
+Action space: Discrete(12)  → see action_space.py
 """
 from __future__ import annotations
 
@@ -44,12 +44,14 @@ from .config import GameConfig, PRODUCT_DEFS, CELL_OBSTACLE
 from .board import Board, ResourcePoint
 from .character import Unit
 from .market import Market, build_markets
-from .action_space import Action, N_ACTIONS, MOVE_DELTAS, compute_action_mask
+from .action_space import Action, N_ACTIONS, MOVE_DELTAS, SELL_ACTIONS, compute_action_mask
 from .reward_calculator import RewardCalculator, RewardConfig
 
-# Price normalisation constants (use semiconductor range as reference)
-_PRICE_MIN, _PRICE_MAX = 4.0, 120.0   # global min/max across all products
-_PRICE_RANGE = _PRICE_MAX - _PRICE_MIN
+# Per-product price normalisation: (lo, range) keyed by product id
+_PRICE_NORM = {
+    pid: (pdef["val_range"][0], max(1.0, pdef["val_range"][1] - pdef["val_range"][0]))
+    for pid, pdef in PRODUCT_DEFS.items()
+}
 
 
 class Factory:
@@ -140,7 +142,7 @@ class GameEnvironment(gym.Env):
 
     metadata = {"render_modes": ["ansi"]}
 
-    OBS_DIM = 32
+    OBS_DIM = 44
 
     def __init__(
         self,
@@ -280,20 +282,20 @@ class GameEnvironment(gym.Env):
             u.busy_action = "buy_done"
             return True, 0.0
 
-        if action == Action.SELL:
+        if action in SELL_ACTIONS:
+            pid = int(action) - int(Action.SELL_0)
             mkt_pos = board.nearest_market(u.x, u.y)
-            if mkt_pos is None or u.total_goods <= 0:
+            if mkt_pos is None:
                 return False, 0.0
             mkt = self._market_at(*mkt_pos)
             if mkt is None:
                 return False, 0.0
-            revenue = 0.0
+            qty = u.prod_inv.get(pid, 0.0)
+            if qty <= 0:
+                return False, 0.0
             mult = self._price_multiplier()
-            for pid, qty in list(u.prod_inv.items()):
-                if qty > 0:
-                    price = mkt.get_price(pid, self.time, mult) * qty
-                    revenue += price
-                    u.prod_inv[pid] = 0.0
+            revenue = mkt.get_price(pid, self.time, mult) * qty
+            u.prod_inv[pid] = 0.0
             self.money += revenue
             self.score += revenue * cfg.score_factor
             u.state = "selling"
@@ -360,56 +362,63 @@ class GameEnvironment(gym.Env):
         f = self.factory
         obs = np.zeros(self.OBS_DIM, dtype=np.float32)
 
-        # Unit (0-5)
+        # Unit position + HP (0-2)
         obs[0] = u.x / max(1, cfg.map_height)
         obs[1] = u.y / max(1, cfg.map_width)
         obs[2] = u.hp / max(1, u.max_hp)
+
+        # Unit inventory: raw + per-product (3-8)
         obs[3] = u.raw_inv / max(1, u.capacity)
-        obs[4] = sum(u.prod_inv.values()) / max(1, u.capacity)
-        obs[5] = min(u.busy_ticks / 10.0, 1.0)
+        cap = max(1, u.capacity)
+        for pid in range(5):
+            obs[4 + pid] = u.prod_inv.get(pid, 0.0) / cap
 
-        # Economy (6-7)
-        obs[6] = math.log10(max(1, self.money + 1)) / 5.0
-        obs[7] = min(self.compute / 100.0, 2.0)
+        # Busy (9)
+        obs[9] = min(u.busy_ticks / 10.0, 1.0)
 
-        # Time (8-10)
-        obs[8]  = self.time / max(1, cfg.max_game_time)
-        obs[9]  = math.sin(2 * math.pi * self.time / cfg.market_period)
-        obs[10] = math.cos(2 * math.pi * self.time / cfg.market_period)
+        # Economy (10-11)
+        obs[10] = math.log10(max(1, self.money + 1)) / 5.0
+        obs[11] = min(self.compute / 100.0, 2.0)
 
-        # Factory (11-13)
-        obs[11] = f.raw_stock / max(1, f.storage_cap)
-        obs[12] = f.total_product_stock / max(1, f.storage_cap)
-        obs[13] = min(f.queue_len / 10.0, 1.0)
+        # Time (12-14)
+        obs[12] = self.time / max(1, cfg.max_game_time)
+        obs[13] = math.sin(2 * math.pi * self.time / cfg.market_period)
+        obs[14] = math.cos(2 * math.pi * self.time / cfg.market_period)
 
-        # Resource points (14-19)
+        # Factory (15-17)
+        obs[15] = f.raw_stock / max(1, f.storage_cap)
+        obs[16] = f.total_product_stock / max(1, f.storage_cap)
+        obs[17] = min(f.queue_len / 10.0, 1.0)
+
+        # Resource points (18-23)
         for i in range(2):
-            base = 14 + i * 3
+            base = 18 + i * 3
             if i < len(self.board.resource_points):
                 rp = self.board.resource_points[i]
                 obs[base]   = (rp.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (rp.y - u.y) / max(1, cfg.map_width)
                 obs[base+2] = rp.stock / max(1, rp.max_stock)
-            # else stays 0
 
-        # Compute centers (20-25)
+        # Compute centers (24-29)
         for i in range(2):
-            base = 20 + i * 3
+            base = 24 + i * 3
             if i < len(self.board.compute_centers):
                 cc = self.board.compute_centers[i]
                 obs[base]   = (cc.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (cc.y - u.y) / max(1, cfg.map_width)
                 obs[base+2] = float(cc.is_open)
 
-        # Markets (26-31): first 2 markets only
+        # Markets (30-43): 2 markets × (2 pos + 5 prices) = 14 floats
         for i in range(2):
-            base = 26 + i * 3
+            base = 30 + i * 7
             if i < len(self.markets):
                 m = self.markets[i]
                 obs[base]   = (m.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (m.y - u.y) / max(1, cfg.map_width)
-                _, best_price = m.best_product_to_sell(self.time)
-                obs[base+2] = (best_price - _PRICE_MIN) / max(1, _PRICE_RANGE)
+                mult = self._price_multiplier()
+                for pid in range(5):
+                    lo, rng = _PRICE_NORM[pid]
+                    obs[base + 2 + pid] = (m.get_price(pid, self.time, mult) - lo) / rng
 
         return obs
 
