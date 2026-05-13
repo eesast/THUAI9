@@ -120,8 +120,8 @@
                                 Height="35" />
                     </Grid>
 
-                    <Border Background="#E8E8E8" CornerRadius="5" Padding="8" Margin="0,5,0,0">
-                        <Grid ColumnDefinitions="Auto,18,72,86,150,*" ColumnSpacing="8">
+                    <Border Background="#E8E8E8" CornerRadius="5" Padding="8" Margin="0,5,0,0" ClipToBounds="True">
+                        <Grid ColumnDefinitions="Auto,64,76,*" ColumnSpacing="8" ClipToBounds="True">
                             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
                             <Button Content="播放"
                                     Command="{Binding PlaybackVM.PlayCommand}"
@@ -148,26 +148,27 @@
                                     ToolTip.Tip="停止" />
                             </StackPanel>
 
-                            <TextBlock Grid.Column="2"
+                            <TextBlock Grid.Column="1"
                                        Text="{Binding PlaybackVM.PlaybackTimeText}"
                                        FontSize="15"
                                        FontWeight="Bold"
-                                       Width="72"
+                                       Width="64"
                                        TextAlignment="Right"
                                        VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="3"
+                            <ComboBox Grid.Column="2"
                                       ItemsSource="{Binding PlaybackVM.PlaybackSpeedLabels}"
                                       SelectedIndex="{Binding PlaybackVM.PlaybackSpeedIndex, Mode=TwoWay}"
-                                      Width="86"
+                                      Width="76"
                                       Height="34"
                                       VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="4"
+                            <TextBlock Grid.Column="3"
                                        Text="{Binding PlaybackVM.FrameProgressText}"
                                        FontSize="11"
                                        Foreground="#666666"
-                                       Width="150"
+                                       MinWidth="0"
                                        TextAlignment="Left"
                                        TextTrimming="CharacterEllipsis"
+                                       HorizontalAlignment="Stretch"
                                        VerticalAlignment="Center" />
                         </Grid>
                     </Border>

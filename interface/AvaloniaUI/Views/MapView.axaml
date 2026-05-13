@@ -17,7 +17,7 @@
             <Canvas Name="DynamicOverlayCanvas" Background="Transparent" />
 
             <!-- 角色图层 -->
-            <Canvas Name="CharacterCanvas" Background="Transparent" />
+            <Canvas Name="CharacterCanvas" Background="Transparent" IsHitTestVisible="False" />
         </Grid>
     </Viewbox>
 </UserControl>

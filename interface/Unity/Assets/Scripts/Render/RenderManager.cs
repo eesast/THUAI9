@@ -759,7 +759,7 @@ namespace THUAI9.Unity.Render
             info.SetInfo(
                 "Factory",
                 $"工厂 #{msg.FactoryId}",
-                $"HP：{msg.Hp}/{observedMaxHp}\n耐久：{msg.Robust}\n库存容量：{msg.Storage}\n效率：{msg.Efficiency}\n算力：{msg.ComputingPower}\n可生产：{YesNo(msg.CanProduce)}  可招募：{YesNo(msg.CanRecruit)}\n库存：{FormatInventory(msg)}",
+                $"HP：{msg.Hp}/{observedMaxHp}\n耐久：{msg.Robust}\n库存容量：{msg.Storage}\n效率：{msg.Efficiency}\n算力：{msg.ComputingPower}\n可生产：{YesNo(msg.CanProduce)}  可招募：{YesNo(msg.CanRecruit)}\n库存：\n{FormatInventory(msg)}",
                 msg.FactoryId,
                 msg.TeamId,
                 pos.Item1,
@@ -1570,17 +1570,21 @@ namespace THUAI9.Unity.Render
                 return "空";
             }
 
+            List<MessageOfFactory.Types.GoodsStack> products = new List<MessageOfFactory.Types.GoodsStack>(msg.ProductInventory);
+            products.Sort((left, right) => ((int)left.ProductType).CompareTo((int)right.ProductType));
+
             StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < msg.ProductInventory.Count; i++)
+            for (int i = 0; i < products.Count; i++)
             {
                 if (i > 0)
                 {
-                    builder.Append("，");
+                    builder.Append('\n');
                 }
 
-                builder.Append(TranslateGoodsType(msg.ProductInventory[i].ProductType));
-                builder.Append('x');
-                builder.Append(msg.ProductInventory[i].Quantity);
+                builder.Append("· ");
+                builder.Append(TranslateGoodsType(products[i].ProductType));
+                builder.Append("：");
+                builder.Append(products[i].Quantity);
             }
 
             return builder.ToString();

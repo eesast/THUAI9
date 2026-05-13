@@ -300,7 +300,7 @@ namespace THUAI9.Unity.Live
                 statusText = $"实时：连接失败，{ShortError(ex)}";
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                 ReleaseConnectionResources();
-                ScheduleReconnect();
+                ScheduleReconnect($"连接失败，{ShortError(ex)}");
             }
             finally
             {
@@ -320,9 +320,10 @@ namespace THUAI9.Unity.Live
                     bool hasMessage = await stream.ResponseStream.MoveNext(token).ConfigureAwait(false);
                     if (!hasMessage)
                     {
-                        statusText = hasReceivedFirstFrame
-                            ? "实时：服务器消息流已结束"
-                            : "实时：服务器消息流结束，未收到首帧";
+                        string streamEndReason = hasReceivedFirstFrame
+                            ? "服务器消息流已结束"
+                            : "服务器消息流结束，未收到首帧";
+                        statusText = $"实时：{streamEndReason}";
                         FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                         liveEndedCleanly = hasReceivedFirstFrame;
                         shouldReconnect = !hasReceivedFirstFrame;
@@ -368,7 +369,9 @@ namespace THUAI9.Unity.Live
                 ReleaseConnectionResources();
                 if (liveRequested && shouldReconnect)
                 {
-                    ScheduleReconnect();
+                    ScheduleReconnect(statusText.StartsWith("实时：", StringComparison.Ordinal)
+                        ? statusText.Substring("实时：".Length)
+                        : "等待服务器");
                 }
             }
         }
@@ -488,14 +491,18 @@ namespace THUAI9.Unity.Live
             maxReceivedCharacterCount = Math.Max(maxReceivedCharacterCount, lastReceivedCharacterCount);
         }
 
-        private void ScheduleReconnect()
+        private void ScheduleReconnect(string reason = null)
         {
             if (!liveRequested || !autoReconnect)
             {
                 return;
             }
 
-            nextConnectUtc = DateTime.UtcNow.AddSeconds(Mathf.Max(0.5f, reconnectIntervalSeconds));
+            float delaySeconds = Mathf.Max(0.5f, reconnectIntervalSeconds);
+            nextConnectUtc = DateTime.UtcNow.AddSeconds(delaySeconds);
+            string reasonText = string.IsNullOrWhiteSpace(reason) ? "等待服务器" : reason.Trim();
+            statusText = $"实时：{reasonText}，{delaySeconds:0.#}s 后自动重试";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
         }
 
         private void ReleaseConnectionResources()

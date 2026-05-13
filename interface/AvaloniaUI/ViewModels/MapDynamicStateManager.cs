@@ -151,7 +151,7 @@ namespace THUAI9_Avalonia.ViewModels
                 CellX = factory.X / 1000,
                 CellY = factory.Y / 1000,
                 Label = factory.Hp.ToString(CultureInfo.InvariantCulture),
-                Tooltip = $"工厂 #{factory.FactoryId}\n归属：{GetTeamName(factory.TeamId)}\n生命值：{factory.Hp}\n仓储：{factory.Storage}\n算力：{factory.ComputingPower}\n可生产：{(factory.CanProduce ? "是" : "否")}\n可招募：{(factory.CanRecruit ? "是" : "否")}",
+                Tooltip = BuildFactoryTooltip(factory),
                 Background = GetTeamBrush(factory.TeamId),
                 BorderBrush = Brushes.White,
                 Foreground = Brushes.White,
@@ -358,16 +358,38 @@ namespace THUAI9_Avalonia.ViewModels
 
         private static string BuildMarketTooltip(MessageOfMarket market)
         {
-            var entries = market.PriceList.Take(4)
-                .Select(entry => $"{GetGoodsTypeName(entry.GoodsType)}：{entry.Price}（成交 {entry.TradedQuantity}）");
+            var entries = market.PriceList
+                .OrderBy(entry => (int)entry.GoodsType)
+                .Select(entry => $"· {GetGoodsTypeName(entry.GoodsType)}：{entry.Price}（成交 {entry.TradedQuantity}）");
             string lines = string.Join("\n", entries);
-            if (market.PriceList.Count > 4)
+
+            return $"市场 #{market.MarketId}\n类型：{GetMarketTypeName(market.MarketType)}\n全部商品当前卖价：" +
+                (string.IsNullOrWhiteSpace(lines) ? string.Empty : $"\n{lines}");
+        }
+
+        private static string BuildFactoryTooltip(MessageOfFactory factory)
+        {
+            return $"工厂 #{factory.FactoryId}\n" +
+                $"归属：{GetTeamName(factory.TeamId)}\n" +
+                $"生命值：{factory.Hp}\n" +
+                $"仓储：{factory.Storage}\n" +
+                $"算力：{factory.ComputingPower}\n" +
+                $"可生产：{(factory.CanProduce ? "是" : "否")}\n" +
+                $"可招募：{(factory.CanRecruit ? "是" : "否")}\n" +
+                $"库存：\n{FormatFactoryInventory(factory)}";
+        }
+
+        private static string FormatFactoryInventory(MessageOfFactory factory)
+        {
+            if (factory.ProductInventory == null || factory.ProductInventory.Count == 0)
             {
-                lines += $"\n…… 其余 {market.PriceList.Count - 4} 条";
+                return "空";
             }
 
-            return $"市场 #{market.MarketId}\n类型：{GetMarketTypeName(market.MarketType)}\n价目数量：{market.PriceList.Count}" +
-                (string.IsNullOrWhiteSpace(lines) ? string.Empty : $"\n{lines}");
+            var entries = factory.ProductInventory
+                .OrderBy(entry => (int)entry.ProductType)
+                .Select(entry => $"· {GetGoodsTypeName(entry.ProductType)}：{entry.Quantity}");
+            return string.Join("\n", entries);
         }
 
         private static string GetResourceTypeName(ResourceType type)

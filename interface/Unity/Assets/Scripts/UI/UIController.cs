@@ -5,6 +5,7 @@ using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Live;
 using THUAI9.Unity.Playback;
+using THUAI9.Unity.Render;
 using THUAI9.Unity.WebGL;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,8 +29,21 @@ namespace THUAI9.Unity.UI
         private const int EventPanelMaxCharsPerLine = 28;
         private const int AIEventPanelMaxLines = 4;
         private const int AIEffectPanelMaxLines = 3;
+        private const int HoverInfoMaxCharsPerLine = 32;
+        private const int HoverInfoMaxBodyLines = 11;
+        private const float HoverInfoWidth = 360f;
+        private const float HoverInfoHeight = 248f;
+        private static readonly Vector2 HoverInfoOffset = new Vector2(18f, -18f);
         private static readonly float[] PlaybackSpeedValues = { 0.5f, 1f, 2f, 4f };
         private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x" };
+        private static readonly string[] HoverBlockingUiNames =
+        {
+            "HUD_TopBar",
+            "HUD_SourcePanel",
+            "HUD_ControlPanel",
+            "HUD_ScorePanel",
+            "HUD_EventPanel"
+        };
         private static readonly Color TeamStatusBodyColor = new Color(0.88f, 0.94f, 0.98f, 1f);
         private static Font cachedUiFont;
 
@@ -70,10 +84,25 @@ namespace THUAI9.Unity.UI
         [Header("自动按名称补全引用")]
         public bool autoBindSceneReferences = true;
 
+        [Header("实时观战")]
+        public bool autoConnectLiveOnStart = false;
+        public bool showWorldHoverInfo = true;
+
         private Playback.PlaybackController playbackController;
         private LiveSpectatorClient liveClient;
+        private WorldSelectionController worldSelectionController;
+        private Canvas rootCanvas;
+        private RectTransform hoverInfoPanel;
+        private Text hoverInfoTitleText;
+        private Text hoverInfoBodyText;
+        private RectTransform[] hoverBlockingRects = Array.Empty<RectTransform>();
+        private WorldObjectInfo lastHoverInfo;
+        private int lastHoverFrame = -1;
+        private string lastHoverTitle;
+        private string lastHoverDetail;
         private bool suppressProgressCallback;
         private bool suppressRecentReplayCallback;
+        private bool hasAutoStartedLive;
         private readonly List<string> recentReplayPaths = new List<string>();
 
         private void Awake()
@@ -96,6 +125,9 @@ namespace THUAI9.Unity.UI
                 ApplyFontToSceneTexts();
                 RefreshRecentReplayDropdown();
             }
+
+            EnsureWorldSelectionController();
+            EnsureHoverInfoPanel();
         }
 
         private void Start()
@@ -166,12 +198,14 @@ namespace THUAI9.Unity.UI
             UpdatePauseButtonText("Pause");
             UpdateStaticTextFallbacks();
             ApplyFontToSceneTexts();
+            StartLiveAutomatically();
         }
 
         private void Update()
         {
             UpdateScoreAndTimeUI();
             UpdateDebugUI();
+            UpdateWorldHoverInfoPanel();
         }
 
         private void AutoBindIfNeeded()
@@ -408,8 +442,8 @@ namespace THUAI9.Unity.UI
             {
                 if (liveClient != null && liveClient.HasCurrentEventStatus)
                 {
-                    string eventName = string.IsNullOrWhiteSpace(liveClient.CurrentEventName) ? "normal" : liveClient.CurrentEventName;
-                    string eventDescription = string.IsNullOrWhiteSpace(liveClient.CurrentEventDescription) ? "\u6682\u65e0\u4e8b\u4ef6\u63cf\u8ff0" : liveClient.CurrentEventDescription;
+                    string eventName = LocalizeLiveEventName(liveClient.CurrentEventName);
+                    string eventDescription = LocalizeLiveEventDescription(liveClient.CurrentEventName, liveClient.CurrentEventDescription);
                     aiEventText.text = BuildBoundedPanelText(
                         AIEventPanelMaxLines,
                         $"事件状态：{eventName}",
@@ -425,8 +459,8 @@ namespace THUAI9.Unity.UI
                     aiEventText.text = BuildBoundedPanelText(
                         AIEventPanelMaxLines,
                         $"AI事件：{TranslateAIEventCategory(e.Category)}",
-                        e.Title,
-                        e.Description);
+                        LocalizeEventPanelText(e.Title, "事件详情"),
+                        LocalizeEventPanelText(e.Description, "事件影响已生效"));
                 }
             }
 
@@ -1072,7 +1106,7 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             string address = serverAddressInput != null ? serverAddressInput.text : null;
             liveClient?.StartLive(address);
-            SetReplayHint("Live hint: for 4-team tests start Server with --teamCount 4.", false);
+            SetReplayHint("实时观战：正在连接；若服务端尚未启动会自动重试。", false);
             UpdatePauseButtonText("Pause");
         }
 
@@ -1121,6 +1155,348 @@ namespace THUAI9.Unity.UI
             {
                 liveClient.StopLive();
             }
+        }
+
+        private void StartLiveAutomatically()
+        {
+            if (!autoConnectLiveOnStart || hasAutoStartedLive || liveClient == null)
+            {
+                return;
+            }
+
+            if (playbackController != null &&
+                (playbackController.PlaybackLoaded || !string.IsNullOrWhiteSpace(playbackController.playbackFilePath)))
+            {
+                SetReplayHint("已检测到启动回放配置，实时自动连接已跳过。", false);
+                return;
+            }
+
+            hasAutoStartedLive = true;
+            string address = serverAddressInput != null ? serverAddressInput.text : liveClient.ServerAddress;
+            liveClient.StartLive(address);
+            SetReplayHint("实时观战：启动后自动连接，连接失败会自动重试；可点“重连”手动重试。", false);
+        }
+
+        private void EnsureWorldSelectionController()
+        {
+            if (worldSelectionController == null)
+            {
+                worldSelectionController = FindObjectOfType<WorldSelectionController>();
+            }
+
+            if (worldSelectionController == null)
+            {
+                Canvas canvas = rootCanvas != null ? rootCanvas : FindObjectOfType<Canvas>();
+                if (canvas != null)
+                {
+                    worldSelectionController = canvas.GetComponent<WorldSelectionController>() ?? canvas.gameObject.AddComponent<WorldSelectionController>();
+                }
+            }
+
+            if (worldSelectionController != null)
+            {
+                worldSelectionController.targetCamera = Camera.main;
+                worldSelectionController.enableHover = true;
+            }
+        }
+
+        private void EnsureHoverInfoPanel()
+        {
+            Canvas canvas = rootCanvas != null ? rootCanvas : FindObjectOfType<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            rootCanvas = canvas;
+            Font font = GetBuiltInUIFont();
+            hoverInfoPanel = GameObject.Find("HUD_HoverInfoPanel")?.GetComponent<RectTransform>();
+            if (hoverInfoPanel == null)
+            {
+                hoverInfoPanel = FindOrCreateRect(canvas.transform, "HUD_HoverInfoPanel", typeof(Image), typeof(CanvasGroup));
+            }
+            else
+            {
+                hoverInfoPanel.SetParent(canvas.transform, false);
+            }
+
+            hoverInfoPanel.anchorMin = Vector2.zero;
+            hoverInfoPanel.anchorMax = Vector2.zero;
+            hoverInfoPanel.pivot = new Vector2(0f, 1f);
+            hoverInfoPanel.sizeDelta = new Vector2(HoverInfoWidth, HoverInfoHeight);
+
+            Image image = hoverInfoPanel.GetComponent<Image>() ?? hoverInfoPanel.gameObject.AddComponent<Image>();
+            image.color = new Color(0.018f, 0.028f, 0.042f, 0.95f);
+            image.raycastTarget = false;
+
+            CanvasGroup group = hoverInfoPanel.GetComponent<CanvasGroup>() ?? hoverInfoPanel.gameObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            hoverInfoTitleText = FindOrCreateHoverText(hoverInfoPanel, "HUD_HoverInfoTitle", font);
+            SetChildRect(hoverInfoTitleText.rectTransform, Vector2.up, Vector2.up, new Vector2(14f, -12f), new Vector2(HoverInfoWidth - 28f, 32f), Vector2.up);
+            ConfigureHoverText(hoverInfoTitleText, 17, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f));
+
+            hoverInfoBodyText = FindOrCreateHoverText(hoverInfoPanel, "HUD_HoverInfoBody", font);
+            SetChildRect(hoverInfoBodyText.rectTransform, Vector2.up, Vector2.up, new Vector2(14f, -48f), new Vector2(HoverInfoWidth - 28f, HoverInfoHeight - 60f), Vector2.up);
+            ConfigureHoverText(hoverInfoBodyText, 14, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f));
+
+            hoverInfoPanel.gameObject.SetActive(false);
+            RefreshHoverBlockingRects();
+        }
+
+        private static Text FindOrCreateHoverText(RectTransform parent, string name, Font font)
+        {
+            Transform existing = parent.Find(name);
+            Text text = existing != null ? existing.GetComponent<Text>() : null;
+            if (text == null)
+            {
+                RectTransform rect = FindOrCreateRect(parent, name, typeof(Text));
+                text = rect.GetComponent<Text>();
+            }
+
+            text.font = font;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static void ConfigureHoverText(Text text, int fontSize, FontStyle fontStyle, Color color)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.fontSize = fontSize;
+            text.fontStyle = fontStyle;
+            text.color = color;
+            text.alignment = TextAnchor.UpperLeft;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = false;
+            text.supportRichText = false;
+            text.lineSpacing = 1.04f;
+            EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.62f), new Vector2(1f, -1f));
+        }
+
+        private void UpdateWorldHoverInfoPanel()
+        {
+            if (!showWorldHoverInfo)
+            {
+                lastHoverInfo = null;
+                SetHoverInfoVisible(false);
+                return;
+            }
+
+            if (hoverInfoPanel == null || hoverInfoTitleText == null || hoverInfoBodyText == null)
+            {
+                EnsureHoverInfoPanel();
+                if (hoverInfoPanel == null)
+                {
+                    return;
+                }
+            }
+
+            EnsureWorldSelectionController();
+            WorldObjectInfo info = worldSelectionController != null ? worldSelectionController.HoveredInfo : null;
+            if (info == null || IsPointerOverAnyUiControl())
+            {
+                lastHoverInfo = null;
+                SetHoverInfoVisible(false);
+                return;
+            }
+
+            UpdateHoverInfoTextIfNeeded(info);
+            PositionHoverInfoPanel();
+            SetHoverInfoVisible(true);
+        }
+
+        private void UpdateHoverInfoTextIfNeeded(WorldObjectInfo info)
+        {
+            string title = string.IsNullOrWhiteSpace(info.title) ? info.objectType : info.title;
+            string detail = info.detail ?? string.Empty;
+            if (ReferenceEquals(info, lastHoverInfo) &&
+                info.lastSeenFrame == lastHoverFrame &&
+                string.Equals(title, lastHoverTitle, StringComparison.Ordinal) &&
+                string.Equals(detail, lastHoverDetail, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lastHoverInfo = info;
+            lastHoverFrame = info.lastSeenFrame;
+            lastHoverTitle = title;
+            lastHoverDetail = detail;
+            hoverInfoTitleText.text = title;
+            hoverInfoBodyText.text = BuildHoverBodyText(info);
+        }
+
+        private static string BuildHoverBodyText(WorldObjectInfo info)
+        {
+            List<string> lines = new List<string>();
+            if (info.teamId > 0)
+            {
+                lines.Add($"队伍：{info.teamId}");
+            }
+
+            if (info.guid != 0)
+            {
+                lines.Add($"ID：{info.guid}");
+            }
+
+            if (info.gridX >= 0 && info.gridY >= 0)
+            {
+                lines.Add($"坐标：({info.gridX}, {info.gridY})");
+            }
+
+            if (info.lastSeenFrame > 0)
+            {
+                lines.Add($"最后更新帧：{info.lastSeenFrame}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.detail))
+            {
+                string[] detailLines = info.detail.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+                for (int i = 0; i < detailLines.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(detailLines[i]))
+                    {
+                        lines.Add(detailLines[i].Trim());
+                    }
+                }
+            }
+
+            return BuildBoundedHoverText(lines);
+        }
+
+        private static string BuildBoundedHoverText(IEnumerable<string> sourceLines)
+        {
+            List<string> output = new List<string>();
+            foreach (string rawLine in sourceLines)
+            {
+                foreach (string wrapped in WrapHoverLine(rawLine))
+                {
+                    if (output.Count >= HoverInfoMaxBodyLines)
+                    {
+                        output[HoverInfoMaxBodyLines - 1] = "…";
+                        return string.Join("\n", output);
+                    }
+
+                    output.Add(wrapped);
+                }
+            }
+
+            return string.Join("\n", output);
+        }
+
+        private static IEnumerable<string> WrapHoverLine(string line)
+        {
+            string safeLine = string.IsNullOrWhiteSpace(line) ? string.Empty : line.Trim();
+            if (safeLine.Length <= HoverInfoMaxCharsPerLine)
+            {
+                yield return safeLine;
+                yield break;
+            }
+
+            for (int start = 0; start < safeLine.Length; start += HoverInfoMaxCharsPerLine)
+            {
+                int length = Mathf.Min(HoverInfoMaxCharsPerLine, safeLine.Length - start);
+                yield return safeLine.Substring(start, length);
+            }
+        }
+
+        private void PositionHoverInfoPanel()
+        {
+            if (rootCanvas == null || hoverInfoPanel == null)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = rootCanvas.transform as RectTransform;
+            if (canvasRect == null)
+            {
+                return;
+            }
+
+            Camera uiCamera = rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : rootCanvas.worldCamera;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, Input.mousePosition, uiCamera, out Vector2 localPoint))
+            {
+                return;
+            }
+
+            Vector2 canvasSize = canvasRect.rect.size;
+            Vector2 bottomLeftPoint = localPoint + new Vector2(canvasSize.x * canvasRect.pivot.x, canvasSize.y * canvasRect.pivot.y);
+            Vector2 position = bottomLeftPoint + HoverInfoOffset;
+            float margin = 10f;
+
+            if (position.x + HoverInfoWidth > canvasSize.x - margin)
+            {
+                position.x = bottomLeftPoint.x - HoverInfoWidth - HoverInfoOffset.x;
+            }
+
+            position.x = Mathf.Clamp(position.x, margin, Mathf.Max(margin, canvasSize.x - HoverInfoWidth - margin));
+            position.y = Mathf.Clamp(position.y, HoverInfoHeight + margin, Mathf.Max(HoverInfoHeight + margin, canvasSize.y - margin));
+            hoverInfoPanel.anchoredPosition = position;
+        }
+
+        private void SetHoverInfoVisible(bool visible)
+        {
+            if (hoverInfoPanel != null && hoverInfoPanel.gameObject.activeSelf != visible)
+            {
+                hoverInfoPanel.gameObject.SetActive(visible);
+            }
+        }
+
+        private bool IsPointerOverAnyUiControl()
+        {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return true;
+            }
+
+            if (hoverBlockingRects == null || hoverBlockingRects.Length == 0)
+            {
+                RefreshHoverBlockingRects();
+            }
+
+            for (int i = 0; i < hoverBlockingRects.Length; i++)
+            {
+                RectTransform rect = hoverBlockingRects[i];
+                if (rect == null || !rect.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (IsScreenPointInsideRect(rect, Input.mousePosition))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void RefreshHoverBlockingRects()
+        {
+            List<RectTransform> rects = new List<RectTransform>(HoverBlockingUiNames.Length);
+            for (int i = 0; i < HoverBlockingUiNames.Length; i++)
+            {
+                GameObject go = GameObject.Find(HoverBlockingUiNames[i]);
+                RectTransform rect = go != null ? go.GetComponent<RectTransform>() : null;
+                if (rect != null)
+                {
+                    rects.Add(rect);
+                }
+            }
+
+            hoverBlockingRects = rects.ToArray();
+        }
+
+        private static bool IsScreenPointInsideRect(RectTransform rect, Vector2 screenPoint)
+        {
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, camera);
         }
 
         private void UpdatePauseButtonVisualState()
@@ -1259,10 +1635,10 @@ namespace THUAI9.Unity.UI
             SetChildRect(serverAddressInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
             StyleInputField(serverAddressInput, font);
 
-            connectLiveButton = FindButtonByName("ConnectLiveButton") ?? CreateButton(panel, "ConnectLiveButton", "连接", font, Vector2.zero, new Vector2(92f, 30f), new Color(0.12f, 0.48f, 0.32f, 1f));
+            connectLiveButton = FindButtonByName("ConnectLiveButton") ?? CreateButton(panel, "ConnectLiveButton", "重连", font, Vector2.zero, new Vector2(92f, 30f), new Color(0.12f, 0.48f, 0.32f, 1f));
             connectLiveButton.transform.SetParent(panel, false);
             SetChildRect(connectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
-            StyleButton(connectLiveButton, "连接", new Color(0.12f, 0.48f, 0.32f, 1f), font);
+            StyleButton(connectLiveButton, "重连", new Color(0.12f, 0.48f, 0.32f, 1f), font);
 
             disconnectLiveButton = FindButtonByName("DisconnectLiveButton") ?? CreateButton(panel, "DisconnectLiveButton", "断开", font, Vector2.zero, new Vector2(118f, 30f), new Color(0.48f, 0.18f, 0.18f, 1f));
             disconnectLiveButton.transform.SetParent(panel, false);
@@ -2159,6 +2535,118 @@ namespace THUAI9.Unity.UI
                 AIEventCategory.CombatEvent => "战斗修正",
                 _ => "未知"
             };
+        }
+
+        private static string LocalizeLiveEventName(string rawName)
+        {
+            string name = NormalizePanelLine(rawName);
+            if (string.IsNullOrEmpty(name) || IsNormalEventName(name))
+            {
+                return "正常";
+            }
+
+            if (ContainsIgnoreCase(name, "festival of lights"))
+            {
+                return "灯火节";
+            }
+
+            if (ContainsIgnoreCase(name, "festival") || ContainsIgnoreCase(name, "celebration"))
+            {
+                return "庆典活动";
+            }
+
+            if (ContainsIgnoreCase(name, "storm") || ContainsIgnoreCase(name, "rain") || ContainsIgnoreCase(name, "weather"))
+            {
+                return "天气波动";
+            }
+
+            if (ContainsIgnoreCase(name, "chip") || ContainsIgnoreCase(name, "shortage") || ContainsIgnoreCase(name, "supply"))
+            {
+                return "供应波动";
+            }
+
+            if (ContainsIgnoreCase(name, "market") || ContainsIgnoreCase(name, "price"))
+            {
+                return "市场波动";
+            }
+
+            return ContainsAsciiLetter(name) ? "特殊事件" : name;
+        }
+
+        private static string LocalizeLiveEventDescription(string rawName, string rawDescription)
+        {
+            string description = NormalizePanelLine(rawDescription);
+            if (string.IsNullOrEmpty(description))
+            {
+                return "暂无事件描述";
+            }
+
+            if (!ContainsAsciiLetter(description))
+            {
+                return description;
+            }
+
+            string name = NormalizePanelLine(rawName);
+            if (ContainsIgnoreCase(name, "festival of lights") || ContainsIgnoreCase(description, "festival of lights"))
+            {
+                return "一年一度的灯火节庆典正在提升市场活跃度。";
+            }
+
+            if (ContainsIgnoreCase(description, "boost") || ContainsIgnoreCase(description, "increase"))
+            {
+                return "当前事件正在提高部分局内收益或效率。";
+            }
+
+            if (ContainsIgnoreCase(description, "reduce") || ContainsIgnoreCase(description, "decrease"))
+            {
+                return "当前事件正在降低部分局内收益或效率。";
+            }
+
+            return "当前事件影响已生效，具体效果请以世界修正和局内状态为准。";
+        }
+
+        private static string LocalizeEventPanelText(string rawText, string fallback)
+        {
+            string text = NormalizePanelLine(rawText);
+            if (string.IsNullOrEmpty(text))
+            {
+                return fallback;
+            }
+
+            return ContainsAsciiLetter(text) ? fallback : text;
+        }
+
+        private static bool IsNormalEventName(string name)
+        {
+            return string.Equals(name, "normal", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "none", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "no event", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ContainsIgnoreCase(string text, string value)
+        {
+            return !string.IsNullOrEmpty(text) &&
+                   !string.IsNullOrEmpty(value) &&
+                   text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ContainsAsciiLetter(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+                if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string FormatAIEffect(AIWorldEffect effect)

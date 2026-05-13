@@ -7,3 +7,23 @@ Unity/Temp/
 Unity/Logs/
 Unity/UserSettings/
 Unity/.codex/
+
+# Unity local agent/config scratch files
+Unity/AGENTS.md
+Unity/fix_unity.ps1
+
+# Unity local playback/screenshot/test artifacts
+Unity/Assets/Playback/
+Unity/Assets/Playback.meta
+Unity/Assets/Screenshots/
+Unity/Assets/Screenshots.meta
+
+# Unity local embedded tooling package; do not commit unless the team explicitly adopts it
+Unity/Packages/com.besty.unity-skills/
+
+# Unity local build artifacts, including temporary WebGL/standalone exports
+Unity/Build/
+Unity/Builds/
+Unity/WebGLBuild/
+Unity/WebGLBuilds/
+Unity/StandaloneBuild/

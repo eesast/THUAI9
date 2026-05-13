@@ -84,6 +84,7 @@ namespace THUAI9_Avalonia.ViewModels
         private bool _hasReceivedFirstFrame;
         private bool _hasLoggedRetrying;
         private bool _playbackModeActive;
+        private int _liveFrameCount;
         private readonly object _drawPicLock = new();
         private readonly CancellationTokenSource _autoConnectCts = new();
         private Task? _autoConnectTask;
@@ -386,6 +387,8 @@ namespace THUAI9_Avalonia.ViewModels
                     LogConsoleVM.AddLog("已收到首帧实时游戏消息", "SUCCESS");
                 }
 
+                _liveFrameCount++;
+                PlaybackVM.UpdateLiveProgress(message, _liveFrameCount);
                 UpdateCharacters(message);
                 UpdateGameStatus(message);
                 UpdateMapElements(message);
@@ -621,6 +624,8 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void ResetMatchVisualizationState(bool resetBaseMap)
         {
+            _liveFrameCount = 0;
+            PlaybackVM.UpdateLiveProgress(null, _liveFrameCount);
             ClearCharacterState();
             _dynamicStateManager.Reset(resetBaseMap);
             ResetSummaryState();
