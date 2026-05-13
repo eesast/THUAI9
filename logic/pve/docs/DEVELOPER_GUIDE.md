@@ -126,7 +126,7 @@ price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
 - `phase`：每市场随机偏移，防止各市场同步
 - `period`：`market_period × random(0.7, 1.5)`
 
-BUY 动作执行时购买"当前成本最低的可负担商品"（见 `_cheapest_buyable`），不是利润最高的商品。
+BUY 动作执行时购买"当前可负担商品中利润最高的"（见 `_best_buyable`），即市价 − 成本的差值最大的商品。不同市场的价格不同，因此同一时刻在不同市场 BUY 会买到不同商品。
 
 如果修改价格范围或新增商品，需同步更新 `game_env.py` 顶部的归一化常量：
 

@@ -45,7 +45,8 @@ def test_random_agent_can_run_episode(easy_env):
     assert obs.shape == (GameEnvironment.OBS_DIM,)
     done = False
     steps = 0
-    while not done and steps < 1000:
+    max_steps = easy_env.cfg.max_steps + 100
+    while not done and steps < max_steps:
         action = agent.get_action(obs)
         obs, reward, terminated, truncated, info = agent.step(action)
         done = terminated or truncated
