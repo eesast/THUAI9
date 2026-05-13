@@ -82,10 +82,22 @@ namespace THUAI9.Unity.Render
         public string BuildDisplayText()
         {
             string position = gridX >= 0 && gridY >= 0 ? $"\n坐标：({gridX}, {gridY})" : string.Empty;
-            string team = teamId > 0 ? $"\n队伍：Team {teamId}" : string.Empty;
+            string teamLabel = FormatTeamLabel(teamId);
+            string team = !string.IsNullOrEmpty(teamLabel) ? $"\n队伍：{teamLabel}" : string.Empty;
             string id = guid != 0 ? $"\nID：{guid}" : string.Empty;
             string frame = lastSeenFrame > 0 ? $"\n最后更新帧：{lastSeenFrame}" : string.Empty;
             return $"{title}{team}{id}{position}{frame}\n{detail}";
+        }
+
+        private static string FormatTeamLabel(long value)
+        {
+            return value switch
+            {
+                >= 1 and <= 4 => $"队伍 {value}",
+                0 => string.Empty,
+                long.MaxValue => "未归属",
+                _ => "未归属"
+            };
         }
 
         public bool TryGetBounds(out Bounds bounds)

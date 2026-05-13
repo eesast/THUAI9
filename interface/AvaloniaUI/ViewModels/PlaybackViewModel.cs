@@ -174,6 +174,14 @@ namespace THUAI9_Avalonia.ViewModels
             FrameProgressText = IsFileLoaded ? $"帧 {_currentFrame}/{_totalFrames}" : "帧 0/0";
         }
 
+        public void UpdateLiveProgress(MessageToClient? message, int liveFrameCount)
+        {
+            int safeFrameCount = Math.Max(liveFrameCount, 0);
+            int gameTimeMs = message?.AllMessage?.GameTime ?? (int)Math.Round(safeFrameCount * FrameIntervalMs);
+            PlaybackTimeText = FormatGameTime(gameTimeMs);
+            FrameProgressText = safeFrameCount > 0 ? $"实时帧 {safeFrameCount}" : "实时帧 0";
+        }
+
         private static string FormatGameTime(int gameTimeMs)
         {
             if (gameTimeMs < 0)

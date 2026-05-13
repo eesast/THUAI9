@@ -55,6 +55,7 @@ namespace THUAI9.Unity.Render
         private readonly Dictionary<long, Vector2> _previousCharacterPositions = new();
         private readonly Dictionary<long, int> _previousCharacterLoads = new();
         private readonly Dictionary<long, long> _previousCharacterAttackCooldowns = new();
+        private readonly Dictionary<long, string> _lastRuntimeUnitDirections = new();
 
         public bool IsFrameLoopRunning => _updateCoroutine != null;
         public int FrameLoopTickCount => _frameLoopTickCount;
@@ -611,7 +612,7 @@ namespace THUAI9.Unity.Render
             RuntimeUnitAction runtimeAction = GetRuntimeUnitAction(guid, msg, pos);
             go.transform.rotation = isCompactRuntimeUnit
                 ? Quaternion.identity
-                : Quaternion.AngleAxis((float)(-msg.FacingDirection * Mathf.Rad2Deg), Vector3.forward);
+                : Quaternion.AngleAxis((float)GetScreenFacingDegrees(msg), Vector3.forward);
 
             Color baseColor = GetTeamColor(msg.TeamId);
             Color displayColor = msg.CharacterActiveState == CharacterState.Deceased
@@ -619,7 +620,8 @@ namespace THUAI9.Unity.Render
                 : baseColor;
             if (isCompactRuntimeUnit)
             {
-                Sprite sprite = GetRuntimeUnitSprite(msg, runtimeAction, guid);
+                string runtimeDirection = GetRuntimeUnitDirectionKey(guid, msg, pos);
+                Sprite sprite = GetRuntimeUnitSprite(msg, runtimeAction, guid, runtimeDirection);
                 SpriteRenderer spriteRenderer = go.GetComponent<SpriteRenderer>();
                 if (sprite != null && spriteRenderer != null)
                 {
@@ -663,7 +665,9 @@ namespace THUAI9.Unity.Render
         private bool TryCreateCompactCharacterObject(long guid, MessageOfCharacter msg, out GameObject go)
         {
             go = null;
-            Sprite sprite = GetRuntimeUnitSprite(msg, RuntimeUnitAction.Idle, guid);
+            Vector2 pos = Tool.GameToUnity(msg.X, msg.Y);
+            string direction = GetRuntimeUnitDirectionKey(guid, msg, pos);
+            Sprite sprite = GetRuntimeUnitSprite(msg, RuntimeUnitAction.Idle, guid, direction);
             if (sprite == null)
             {
                 return false;
@@ -759,7 +763,7 @@ namespace THUAI9.Unity.Render
             info.SetInfo(
                 "Factory",
                 $"工厂 #{msg.FactoryId}",
-                $"HP：{msg.Hp}/{observedMaxHp}\n耐久：{msg.Robust}\n库存容量：{msg.Storage}\n效率：{msg.Efficiency}\n算力：{msg.ComputingPower}\n可生产：{YesNo(msg.CanProduce)}  可招募：{YesNo(msg.CanRecruit)}\n库存：{FormatInventory(msg)}",
+                $"HP：{msg.Hp}/{observedMaxHp}\n耐久：{msg.Robust}\n库存容量：{msg.Storage}\n效率：{msg.Efficiency}\n算力：{msg.ComputingPower}\n可生产：{YesNo(msg.CanProduce)}  可招募：{YesNo(msg.CanRecruit)}\n库存：\n{FormatInventory(msg)}",
                 msg.FactoryId,
                 msg.TeamId,
                 pos.Item1,
@@ -1236,7 +1240,7 @@ namespace THUAI9.Unity.Render
             return Resources.Load<Sprite>($"Runtime/Units/{GetCompactUnitSpriteKey(msg)}");
         }
 
-        private static Sprite GetRuntimeUnitSprite(MessageOfCharacter msg, RuntimeUnitAction action, long guid)
+        private static Sprite GetRuntimeUnitSprite(MessageOfCharacter msg, RuntimeUnitAction action, long guid, string directionOverride = null)
         {
             string unit = GetRuntimeUnitName(msg.CharacterType);
             int team = ClampTeamId(msg.TeamId);
@@ -1245,7 +1249,7 @@ namespace THUAI9.Unity.Render
                 team = 1;
             }
 
-            string direction = GetFacingDirectionKey(msg);
+            string direction = string.IsNullOrEmpty(directionOverride) ? GetFacingDirectionKey(msg) : directionOverride;
             string actionName = action.ToString().ToLowerInvariant();
             int frame = GetRuntimeUnitFrameIndex(action, guid);
             string animatedKey = $"unit_{unit}_team_{team}_{actionName}_{direction}_{frame:00}";
@@ -1286,7 +1290,7 @@ namespace THUAI9.Unity.Render
 
         private static string GetFacingDirectionKey(MessageOfCharacter msg)
         {
-            double degrees = msg.FacingDirection * Mathf.Rad2Deg;
+            double degrees = GetScreenFacingDegrees(msg);
             degrees %= 360.0;
             if (degrees < 0)
             {
@@ -1309,6 +1313,73 @@ namespace THUAI9.Unity.Render
             }
 
             return "e";
+        }
+
+        private static double GetScreenFacingDegrees(MessageOfCharacter msg)
+        {
+            return msg.FacingDirection * Mathf.Rad2Deg - 90.0;
+        }
+
+        private string GetRuntimeUnitDirectionKey(long guid, MessageOfCharacter msg, Vector2 currentPosition)
+        {
+            if (_previousCharacterPositions.TryGetValue(guid, out Vector2 previousPosition))
+            {
+                Vector2 delta = currentPosition - previousPosition;
+                if (delta.sqrMagnitude > 0.0001f)
+                {
+                    string movementDirection = GetScreenDirectionKey(delta);
+                    return NormalizeRuntimeDirectionKey(guid, msg, movementDirection);
+                }
+            }
+
+            return NormalizeRuntimeDirectionKey(guid, msg, GetFacingDirectionKey(msg));
+        }
+
+        private static string GetScreenDirectionKey(Vector2 delta)
+        {
+            if (Mathf.Abs(delta.x) >= Mathf.Abs(delta.y))
+            {
+                return delta.x >= 0f ? "e" : "w";
+            }
+
+            return delta.y >= 0f ? "n" : "s";
+        }
+
+        private string NormalizeRuntimeDirectionKey(long guid, MessageOfCharacter msg, string direction)
+        {
+            if (msg.CharacterType != CharacterType.AutonomousCar)
+            {
+                _lastRuntimeUnitDirections[guid] = direction;
+                return direction;
+            }
+
+            if (direction == "e" || direction == "w")
+            {
+                _lastRuntimeUnitDirections[guid] = direction;
+                return direction;
+            }
+
+            if (_lastRuntimeUnitDirections.TryGetValue(guid, out string lastDirection) &&
+                (lastDirection == "e" || lastDirection == "w"))
+            {
+                return lastDirection;
+            }
+
+            string fallbackDirection = GetHorizontalFacingDirectionKey(msg);
+            _lastRuntimeUnitDirections[guid] = fallbackDirection;
+            return fallbackDirection;
+        }
+
+        private static string GetHorizontalFacingDirectionKey(MessageOfCharacter msg)
+        {
+            double degrees = GetScreenFacingDegrees(msg);
+            degrees %= 360.0;
+            if (degrees < 0)
+            {
+                degrees += 360.0;
+            }
+
+            return degrees > 90.0 && degrees < 270.0 ? "w" : "e";
         }
 
         private static int GetRuntimeUnitFrameIndex(RuntimeUnitAction action, long guid)
@@ -1351,6 +1422,7 @@ namespace THUAI9.Unity.Render
             _previousCharacterPositions.Clear();
             _previousCharacterLoads.Clear();
             _previousCharacterAttackCooldowns.Clear();
+            _lastRuntimeUnitDirections.Clear();
         }
 
         private static Vector3 GetCharacterPixelScale(CharacterType type)
@@ -1570,17 +1642,21 @@ namespace THUAI9.Unity.Render
                 return "空";
             }
 
+            List<MessageOfFactory.Types.GoodsStack> products = new List<MessageOfFactory.Types.GoodsStack>(msg.ProductInventory);
+            products.Sort((left, right) => ((int)left.ProductType).CompareTo((int)right.ProductType));
+
             StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < msg.ProductInventory.Count; i++)
+            for (int i = 0; i < products.Count; i++)
             {
                 if (i > 0)
                 {
-                    builder.Append("，");
+                    builder.Append('\n');
                 }
 
-                builder.Append(TranslateGoodsType(msg.ProductInventory[i].ProductType));
-                builder.Append('x');
-                builder.Append(msg.ProductInventory[i].Quantity);
+                builder.Append("· ");
+                builder.Append(TranslateGoodsType(products[i].ProductType));
+                builder.Append("：");
+                builder.Append(products[i].Quantity);
             }
 
             return builder.ToString();

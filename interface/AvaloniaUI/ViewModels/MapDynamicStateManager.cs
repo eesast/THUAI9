@@ -84,7 +84,7 @@ namespace THUAI9_Avalonia.ViewModels
             RemoveMissing(_factories, seenFactories, factory => _mapViewModel.RemoveDynamicOverlay(BuildKey("factory", factory.FactoryId, factory.X, factory.Y)),
                 factory =>
                 {
-                    if (_hasPrimedFrame && factory.Hp > 0)
+                    if (_hasPrimedFrame && factory.Hp > 0 && IsKnownTeam(factory.TeamId))
                     {
                         semanticLog?.Invoke($"{GetTeamName(factory.TeamId)}在 ({factory.X / 1000},{factory.Y / 1000}) 的工厂不再上报", "WARNING");
                     }
@@ -133,13 +133,17 @@ namespace THUAI9_Avalonia.ViewModels
 
             if (_factories.TryGetValue(key, out var previous) && _hasPrimedFrame)
             {
-                if (previous.TeamId != factory.TeamId)
+                if (previous.Hp > 0 && factory.Hp <= 0)
+                {
+                    long collapsedTeamId = ResolveKnownFactoryTeamId(previous, factory);
+                    if (collapsedTeamId > 0)
+                    {
+                        semanticLog?.Invoke($"{GetTeamName(collapsedTeamId)}在 ({factory.X / 1000},{factory.Y / 1000}) 的工厂已瘫痪", "WARNING");
+                    }
+                }
+                else if (previous.TeamId != factory.TeamId)
                 {
                     semanticLog?.Invoke($"({factory.X / 1000},{factory.Y / 1000}) 的工厂归属变为 {GetTeamName(factory.TeamId)}", "INFO");
-                }
-                else if (previous.Hp > 0 && factory.Hp <= 0)
-                {
-                    semanticLog?.Invoke($"{GetTeamName(factory.TeamId)}在 ({factory.X / 1000},{factory.Y / 1000}) 的工厂已瘫痪", "WARNING");
                 }
             }
 
@@ -151,7 +155,7 @@ namespace THUAI9_Avalonia.ViewModels
                 CellX = factory.X / 1000,
                 CellY = factory.Y / 1000,
                 Label = factory.Hp.ToString(CultureInfo.InvariantCulture),
-                Tooltip = $"工厂 #{factory.FactoryId}\n归属：{GetTeamName(factory.TeamId)}\n生命值：{factory.Hp}\n仓储：{factory.Storage}\n算力：{factory.ComputingPower}\n可生产：{(factory.CanProduce ? "是" : "否")}\n可招募：{(factory.CanRecruit ? "是" : "否")}",
+                Tooltip = BuildFactoryTooltip(factory),
                 Background = GetTeamBrush(factory.TeamId),
                 BorderBrush = Brushes.White,
                 Foreground = Brushes.White,
@@ -337,8 +341,29 @@ namespace THUAI9_Avalonia.ViewModels
                 2 => "队伍 2",
                 3 => "队伍 3",
                 4 => "队伍 4",
+                0 => "未归属",
                 _ => "未知队伍"
             };
+        }
+
+        private static bool IsKnownTeam(long teamId)
+        {
+            return teamId is >= 1 and <= 4;
+        }
+
+        private static long ResolveKnownFactoryTeamId(MessageOfFactory previous, MessageOfFactory current)
+        {
+            if (IsKnownTeam(current.TeamId))
+            {
+                return current.TeamId;
+            }
+
+            if (IsKnownTeam(previous.TeamId))
+            {
+                return previous.TeamId;
+            }
+
+            return 0;
         }
 
         private static string CompactNumber(int value)
@@ -358,16 +383,38 @@ namespace THUAI9_Avalonia.ViewModels
 
         private static string BuildMarketTooltip(MessageOfMarket market)
         {
-            var entries = market.PriceList.Take(4)
-                .Select(entry => $"{GetGoodsTypeName(entry.GoodsType)}：{entry.Price}（成交 {entry.TradedQuantity}）");
+            var entries = market.PriceList
+                .OrderBy(entry => (int)entry.GoodsType)
+                .Select(entry => $"· {GetGoodsTypeName(entry.GoodsType)}：{entry.Price}（成交 {entry.TradedQuantity}）");
             string lines = string.Join("\n", entries);
-            if (market.PriceList.Count > 4)
+
+            return $"市场 #{market.MarketId}\n类型：{GetMarketTypeName(market.MarketType)}\n全部商品当前卖价：" +
+                (string.IsNullOrWhiteSpace(lines) ? string.Empty : $"\n{lines}");
+        }
+
+        private static string BuildFactoryTooltip(MessageOfFactory factory)
+        {
+            return $"工厂 #{factory.FactoryId}\n" +
+                $"归属：{GetTeamName(factory.TeamId)}\n" +
+                $"生命值：{factory.Hp}\n" +
+                $"仓储：{factory.Storage}\n" +
+                $"算力：{factory.ComputingPower}\n" +
+                $"可生产：{(factory.CanProduce ? "是" : "否")}\n" +
+                $"可招募：{(factory.CanRecruit ? "是" : "否")}\n" +
+                $"库存：\n{FormatFactoryInventory(factory)}";
+        }
+
+        private static string FormatFactoryInventory(MessageOfFactory factory)
+        {
+            if (factory.ProductInventory == null || factory.ProductInventory.Count == 0)
             {
-                lines += $"\n…… 其余 {market.PriceList.Count - 4} 条";
+                return "空";
             }
 
-            return $"市场 #{market.MarketId}\n类型：{GetMarketTypeName(market.MarketType)}\n价目数量：{market.PriceList.Count}" +
-                (string.IsNullOrWhiteSpace(lines) ? string.Empty : $"\n{lines}");
+            var entries = factory.ProductInventory
+                .OrderBy(entry => (int)entry.ProductType)
+                .Select(entry => $"· {GetGoodsTypeName(entry.ProductType)}：{entry.Quantity}");
+            return string.Join("\n", entries);
         }
 
         private static string GetResourceTypeName(ResourceType type)

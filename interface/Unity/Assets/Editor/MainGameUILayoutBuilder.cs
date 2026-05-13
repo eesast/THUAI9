@@ -185,7 +185,7 @@ public static class MainGameUILayoutBuilder
         InputField liveInput = EnsureInputField(panel, "ServerAddressInput", "127.0.0.1:8888", "server:port");
         SetChildRect(liveInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
 
-        Button connectButton = EnsureButton(panel, "ConnectLiveButton", "连接", new Color(0.12f, 0.48f, 0.32f, 1f));
+        Button connectButton = EnsureButton(panel, "ConnectLiveButton", "重连", new Color(0.12f, 0.48f, 0.32f, 1f));
         SetChildRect(connectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
 
         Button disconnectButton = EnsureButton(panel, "DisconnectLiveButton", "断开", new Color(0.48f, 0.18f, 0.18f, 1f));
@@ -295,6 +295,7 @@ public static class MainGameUILayoutBuilder
     {
         UIController ui = canvas.GetComponent<UIController>() ?? canvas.gameObject.AddComponent<UIController>();
         ui.autoBindSceneReferences = true;
+        ui.autoConnectLiveOnStart = true;
         ui.gameStateText = gameStateText;
         ui.aiEventText = aiEventText;
         ui.aiEffectText = aiEffectText;
