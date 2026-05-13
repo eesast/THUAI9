@@ -75,8 +75,8 @@ namespace THUAI9.Unity.Player
         private void BuildPanel()
         {
             Canvas canvas = EnsureCanvas();
-            toggleButton = FindOrCreateButton(canvas.transform, "HUD_PlayerPanelToggle", "打开试玩面板", new Color(0.11f, 0.22f, 0.30f, 0.94f));
-            SetRect(toggleButton.GetComponent<RectTransform>(), 24f, 258f, 128f, 32f, false);
+            toggleButton = FindOrCreateButton(canvas.transform, "HUD_PlayerPanelToggle", "本地试玩", new Color(0.11f, 0.22f, 0.30f, 0.94f));
+            SetBottomRightRect(toggleButton.GetComponent<RectTransform>(), 24f, 356f, 150f, 34f);
             toggleButton.onClick.RemoveListener(OnToggleClicked);
             toggleButton.onClick.AddListener(OnToggleClicked);
 
@@ -84,15 +84,15 @@ namespace THUAI9.Unity.Player
             panelObject.transform.SetParent(canvas.transform, false);
 
             RectTransform rect = panelObject.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(0f, 0f);
-            rect.pivot = new Vector2(0f, 0f);
-            rect.anchoredPosition = new Vector2(24f, 300f);
-            rect.sizeDelta = new Vector2(430f, 268f);
+            rect.anchorMin = new Vector2(1f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(1f, 0f);
+            rect.anchoredPosition = new Vector2(-24f, 24f);
+            rect.sizeDelta = new Vector2(500f, 320f);
 
             Image image = panelObject.GetComponent<Image>() ?? panelObject.AddComponent<Image>();
             image.color = new Color(0.026f, 0.043f, 0.065f, 0.92f);
-            image.raycastTarget = false;
+            image.raycastTarget = true;
 
             Text title = FindOrCreateText(panelObject.transform, "HUD_PlayerPanelTitle", "试玩接入面板", 18, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f));
             SetRect(title.rectTransform, 14f, -12f, 220f, 26f, true);
@@ -175,12 +175,12 @@ namespace THUAI9.Unity.Player
                 new Color(0.74f, 0.86f, 0.92f, 1f));
             helpText.alignment = TextAnchor.UpperLeft;
             helpText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            SetRect(helpText.rectTransform, 14f, -184f, 390f, 40f, true);
+            SetRect(helpText.rectTransform, 14f, -184f, 458f, 54f, true);
 
             statusText = FindOrCreateText(panelObject.transform, "PlayerStatusText", "模式：观战/回放\n玩家：未接入", 12, FontStyle.Normal, new Color(0.74f, 0.92f, 0.82f, 1f));
             statusText.alignment = TextAnchor.UpperLeft;
             statusText.horizontalOverflow = HorizontalWrapMode.Wrap;
-            SetRect(statusText.rectTransform, 14f, -226f, 390f, 38f, true);
+            SetRect(statusText.rectTransform, 14f, -244f, 458f, 58f, true);
 
             SetPanelVisible(showPanelOnStart);
             UpdateToggleLabel();
@@ -210,7 +210,7 @@ namespace THUAI9.Unity.Player
             Text label = toggleButton.GetComponentInChildren<Text>(true);
             if (label != null)
             {
-                label.text = panelObject != null && panelObject.activeSelf ? "收起试玩面板" : "打开试玩面板";
+                label.text = panelObject != null && panelObject.activeSelf ? "收起试玩" : "本地试玩";
             }
         }
 
@@ -307,6 +307,10 @@ namespace THUAI9.Unity.Player
             Canvas canvas = FindObjectOfType<Canvas>();
             if (canvas != null)
             {
+                if (canvas.GetComponent<GraphicRaycaster>() == null)
+                {
+                    canvas.gameObject.AddComponent<GraphicRaycaster>();
+                }
                 return canvas;
             }
 
@@ -446,6 +450,15 @@ namespace THUAI9.Unity.Player
             rect.anchorMax = anchorTop ? new Vector2(0f, 1f) : new Vector2(0f, 0f);
             rect.pivot = anchorTop ? new Vector2(0f, 1f) : new Vector2(0f, 0f);
             rect.anchoredPosition = new Vector2(left, topOrBottom);
+            rect.sizeDelta = new Vector2(width, height);
+        }
+
+        private static void SetBottomRightRect(RectTransform rect, float right, float bottom, float width, float height)
+        {
+            rect.anchorMin = new Vector2(1f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(1f, 0f);
+            rect.anchoredPosition = new Vector2(-right, bottom);
             rect.sizeDelta = new Vector2(width, height);
         }
 

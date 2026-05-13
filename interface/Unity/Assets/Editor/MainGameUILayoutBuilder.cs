@@ -68,19 +68,20 @@ public static class MainGameUILayoutBuilder
         SetTopRight(scorePanel, new Vector2(-24f, -108f), new Vector2(620f, 430f));
 
         RectTransform eventPanel = EnsurePanel(canvasRt, "HUD_EventPanel", PanelSoftColor);
-        SetChildRect(eventPanel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -108f), new Vector2(430f, 178f), new Vector2(0f, 1f));
+        SetChildRect(eventPanel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -296f), new Vector2(430f, 148f), new Vector2(0f, 1f));
 
 
         RectTransform controlPanel = EnsurePanel(canvasRt, "HUD_ControlPanel", PanelColor);
         SetBottomCenter(controlPanel, new Vector2(0f, 44f), new Vector2(860f, 120f));
 
         RectTransform sourcePanel = EnsurePanel(canvasRt, "HUD_SourcePanel", PanelColor);
-        SetBottomCenter(sourcePanel, new Vector2(0f, 146f), new Vector2(740f, 98f));
+        SetChildRect(sourcePanel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -108f), new Vector2(520f, 168f), new Vector2(0f, 1f));
+        Image sourceImage = sourcePanel.GetComponent<Image>();
+        if (sourceImage != null) sourceImage.raycastTarget = true;
 
-        Button playerToggle = EnsureButton(canvasRt, "HUD_PlayerPanelToggle", "打开试玩面板", new Color(0.11f, 0.22f, 0.30f, 0.94f));
-        SetChildRect(playerToggle.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(24f, 258f), new Vector2(128f, 32f), new Vector2(0f, 0f));
+        Button playerToggle = EnsureButton(canvasRt, "HUD_PlayerPanelToggle", "本地试玩", new Color(0.11f, 0.22f, 0.30f, 0.94f));
+        SetChildRect(playerToggle.GetComponent<RectTransform>(), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-24f, 356f), new Vector2(150f, 34f), new Vector2(1f, 0f));
 
-        controlPanel.SetAsFirstSibling();
         sourcePanel.SetAsFirstSibling();
         playerToggle.transform.SetAsFirstSibling();
         eventPanel.SetAsFirstSibling();
@@ -112,14 +113,15 @@ public static class MainGameUILayoutBuilder
         Text eventTitle = EnsureText(eventPanel, "HUD_EventTitle", "工业呼吸 / AI 事件", 20, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
         SetChildRect(eventTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -12f), new Vector2(-36f, 28f), new Vector2(0f, 1f));
         Text aiEventText = EnsureText(eventPanel, "AIEventText", "AI事件：暂无", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
-        SetChildRect(aiEventText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -48f), new Vector2(-36f, 78f), new Vector2(0f, 1f));
+        SetChildRect(aiEventText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -44f), new Vector2(-36f, 66f), new Vector2(0f, 1f));
         ConfigureEventInfoText(aiEventText);
         Text aiEffectText = EnsureText(eventPanel, "AIEffectText", "世界修正：暂无", 16, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
-        SetChildRect(aiEffectText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -128f), new Vector2(-36f, 50f), new Vector2(0f, 1f));
+        SetChildRect(aiEffectText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -112f), new Vector2(-36f, 38f), new Vector2(0f, 1f));
         ConfigureEventInfoText(aiEffectText);
 
-        LayoutControls(canvasRt);
+        LayoutControls(sourcePanel);
         LayoutSourceControls(sourcePanel);
+        DeleteChildIfExists(canvasRt, "HUD_ControlPanel");
         WireRuntimeControllers(canvas, gameStateText, aiEventText, aiEffectText);
         ConfigureCamera();
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
@@ -134,21 +136,25 @@ public static class MainGameUILayoutBuilder
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
+        if (canvas.GetComponent<GraphicRaycaster>() == null)
+        {
+            canvas.gameObject.AddComponent<GraphicRaycaster>();
+        }
     }
 
     private static void LayoutControls(RectTransform panel)
     {
-        RectTransform slider = MoveRect("ReplayProgressSlider", panel, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(760f, 22f), new Vector2(0.5f, 1f));
+        RectTransform slider = MoveRect("ReplayProgressSlider", panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -56f), new Vector2(484f, 22f), new Vector2(0f, 1f));
         if (slider != null) StyleSlider(slider);
 
         DeleteObjectIfExists("FrameInfoText");
 
         DeleteObjectIfExists("PreviousFrameButton");
         DeleteObjectIfExists("NextFrameButton");
-        RectTransform play = MoveRect("PlayButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-170f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
-        RectTransform pause = MoveRect("PauseButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-43f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
-        RectTransform stop = MoveRect("StopButton", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(84f, 68f), new Vector2(108f, 42f), new Vector2(0.5f, 0f));
-        RectTransform speed = MoveRect("SpeedDropdown", panel, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(222f, 68f), new Vector2(138f, 42f), new Vector2(0.5f, 0f));
+        RectTransform play = MoveRect("PlayButton", panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+        RectTransform pause = MoveRect("PauseButton", panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(108f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+        RectTransform stop = MoveRect("StopButton", panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(198f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+        RectTransform speed = MoveRect("SpeedDropdown", panel, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(296f, -88f), new Vector2(112f, 34f), new Vector2(0f, 1f));
 
         StyleButton(play, "播放", new Color(0.18f, 0.72f, 0.28f, 1f));
         StyleButton(pause, "暂停", new Color(0.88f, 0.72f, 0.18f, 1f));
@@ -161,35 +167,27 @@ public static class MainGameUILayoutBuilder
         DeleteChildIfExists(panel, "HUD_SourceHintText");
         DeleteChildIfExists(panel, "HUD_RecentReplayLabel");
         DeleteChildIfExists(panel, "RecentReplayDropdown");
+        DeleteObjectIfExists("HUD_LiveAddressLabel");
+        DeleteObjectIfExists("ServerAddressInput");
+        DeleteObjectIfExists("ConnectLiveButton");
+        DeleteObjectIfExists("DisconnectLiveButton");
 
         Text replayLabel = EnsureText(panel, "HUD_ReplayPathLabel", "回放", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
-        SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -16f), new Vector2(64f, 30f), new Vector2(0f, 1f));
+        SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -14f), new Vector2(56f, 30f), new Vector2(0f, 1f));
 
         InputField replayInput = EnsureInputField(panel, "ReplayPathInput", string.Empty, "选择 .thuaipb 或输入路径");
         replayInput.text = string.Empty;
-        SetChildRect(replayInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -16f), new Vector2(420f, 30f), new Vector2(0f, 1f));
+        SetChildRect(replayInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(76f, -14f), new Vector2(282f, 30f), new Vector2(0f, 1f));
 
         Button browseButton = EnsureButton(panel, "BrowseReplayButton", "选择文件", new Color(0.20f, 0.48f, 0.72f, 1f));
-        SetChildRect(browseButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(526f, -16f), new Vector2(94f, 30f), new Vector2(0f, 1f));
+        SetChildRect(browseButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(368f, -14f), new Vector2(76f, 30f), new Vector2(0f, 1f));
 
         Button loadButton = EnsureButton(panel, "LoadReplayButton", "加载", new Color(0.18f, 0.36f, 0.58f, 1f));
-        SetChildRect(loadButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(630f, -16f), new Vector2(82f, 30f), new Vector2(0f, 1f));
+        SetChildRect(loadButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(452f, -14f), new Vector2(50f, 30f), new Vector2(0f, 1f));
 
         Text hint = EnsureText(panel, "ReplayHintText", string.Empty, 13, FontStyle.Normal, new Color(0.74f, 0.86f, 0.92f, 1f), TextAnchor.UpperLeft);
         hint.text = string.Empty;
-        SetChildRect(hint.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(602f, -52f), new Vector2(116f, 34f), new Vector2(0f, 1f));
-
-        Text liveLabel = EnsureText(panel, "HUD_LiveAddressLabel", "Live", 15, FontStyle.Bold, Cyan, TextAnchor.MiddleLeft);
-        SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(64f, 30f), new Vector2(0f, 1f));
-
-        InputField liveInput = EnsureInputField(panel, "ServerAddressInput", "127.0.0.1:8888", "server:port");
-        SetChildRect(liveInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
-
-        Button connectButton = EnsureButton(panel, "ConnectLiveButton", "重连", new Color(0.12f, 0.48f, 0.32f, 1f));
-        SetChildRect(connectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
-
-        Button disconnectButton = EnsureButton(panel, "DisconnectLiveButton", "断开", new Color(0.48f, 0.18f, 0.18f, 1f));
-        SetChildRect(disconnectButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -52f), new Vector2(118f, 30f), new Vector2(0f, 1f));
+        SetChildRect(hint.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -132f), new Vector2(-36f, 28f), new Vector2(0f, 1f));
     }
 
     private static void ConfigureTeamStatusCard(RectTransform parent, Text text, int teamIndex)
@@ -304,9 +302,6 @@ public static class MainGameUILayoutBuilder
         ui.loadPlaybackButton = GameObject.Find("LoadReplayButton")?.GetComponent<Button>();
         ui.recentReplayDropdown = GameObject.Find("RecentReplayDropdown")?.GetComponent<Dropdown>();
         ui.replayHintText = GameObject.Find("ReplayHintText")?.GetComponent<Text>();
-        ui.serverAddressInput = GameObject.Find("ServerAddressInput")?.GetComponent<InputField>();
-        ui.connectLiveButton = GameObject.Find("ConnectLiveButton")?.GetComponent<Button>();
-        ui.disconnectLiveButton = GameObject.Find("DisconnectLiveButton")?.GetComponent<Button>();
 
         WorldSelectionController selectionController = canvas.GetComponent<WorldSelectionController>() ?? canvas.gameObject.AddComponent<WorldSelectionController>();
         selectionController.targetCamera = Camera.main;
@@ -481,7 +476,7 @@ public static class MainGameUILayoutBuilder
         if (go == null) return null;
         RectTransform rt = go.GetComponent<RectTransform>();
         if (rt == null) return null;
-        if (rt.parent == null)
+        if (rt.parent != parent)
         {
             rt.SetParent(parent, false);
         }

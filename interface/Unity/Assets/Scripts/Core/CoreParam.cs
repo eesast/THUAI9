@@ -64,7 +64,14 @@ namespace THUAI9.Unity.Core
         public static int frameCount;
         public static int playbackCurrentFrameIndex = -1;
         public static int playbackElapsedMilliseconds;
+        public static int stableLiveGameMilliseconds;
         public static bool initialized;
+
+        // Server GameEnd frames can report an overflowed timer after the match timer stops.
+        // Keep the UI clock on the last sane live value instead of rendering 500+ minutes.
+        private const int MaximumReasonableLiveGameMilliseconds = 2 * 60 * 60 * 1000;
+        private const int MaximumSingleLiveTimeJumpMilliseconds = 10 * 60 * 1000;
+        private static bool hasStableLiveGameTime;
 
         public static Dictionary<long, MessageOfCharacter> characters = new Dictionary<long, MessageOfCharacter>();
         public static Dictionary<long, MessageOfTeam> teams = new Dictionary<long, MessageOfTeam>();
@@ -121,7 +128,49 @@ namespace THUAI9.Unity.Core
             frameCount = 0;
             playbackCurrentFrameIndex = -1;
             playbackElapsedMilliseconds = 0;
+            stableLiveGameMilliseconds = 0;
+            hasStableLiveGameTime = false;
             initialized = false;
+        }
+
+        public static void SetAllMessage(MessageOfAll message, GameState state)
+        {
+            allMessage = message;
+            UpdateStableLiveGameTime(message, state);
+        }
+
+        private static void UpdateStableLiveGameTime(MessageOfAll message, GameState state)
+        {
+            if (message == null)
+            {
+                return;
+            }
+
+            int rawTime = message.GameTime;
+            bool rawLooksValid = rawTime >= 0 && rawTime <= MaximumReasonableLiveGameMilliseconds;
+            if (!rawLooksValid)
+            {
+                return;
+            }
+
+            if (!hasStableLiveGameTime)
+            {
+                stableLiveGameMilliseconds = rawTime;
+                hasStableLiveGameTime = true;
+                return;
+            }
+
+            if (state == GameState.GameEnd && rawTime > stableLiveGameMilliseconds + MaximumSingleLiveTimeJumpMilliseconds)
+            {
+                return;
+            }
+
+            if (rawTime > stableLiveGameMilliseconds + MaximumSingleLiveTimeJumpMilliseconds)
+            {
+                return;
+            }
+
+            stableLiveGameMilliseconds = Math.Max(rawTime, stableLiveGameMilliseconds);
         }
 
         private static void DestroyAll<TKey>(Dictionary<TKey, GameObject> objects)

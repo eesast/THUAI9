@@ -7,7 +7,7 @@ set "SERVER_IP=127.0.0.1"
 if not defined GAME_TIME_SECONDS set "GAME_TIME_SECONDS=180"
 if not defined REPLAY_FILE_NAME set "REPLAY_FILE_NAME=avalonia_4team"
 if not defined AVALONIA_WARMUP_SECONDS set "AVALONIA_WARMUP_SECONDS=10"
-if not defined AVALONIA_READY_TIMEOUT_SECONDS set "AVALONIA_READY_TIMEOUT_SECONDS=45"
+if not defined AVALONIA_READY_TIMEOUT_SECONDS set "AVALONIA_READY_TIMEOUT_SECONDS=12"
 set "AVALONIA_READY_FILE=%TEMP%\thuai9_avalonia_ready_%RANDOM%%RANDOM%.txt"
 set "AVALONIA_EXE=%ROOT%interface\AvaloniaUI\bin\Debug\net8.0\THUAI9_Avalonia.exe"
 
@@ -68,9 +68,9 @@ if exist "%AVALONIA_READY_FILE%" del /q "%AVALONIA_READY_FILE%" >nul 2>nul
 
 echo [THUAI9] Starting Avalonia UI first; it will auto-connect and retry.
 if exist "%AVALONIA_EXE%" (
-    start "THUAI9 Avalonia" cmd /k "cd /d ""%ROOT%"" && set ""THUAI9_AVALONIA_READY_FILE=%AVALONIA_READY_FILE%"" && ""%AVALONIA_EXE%"""
+    start "THUAI9 Avalonia" cmd /k "cd /d ""%ROOT%"" && set ""THUAI9_AVALONIA_READY_FILE=%AVALONIA_READY_FILE%"" && ""%AVALONIA_EXE%"" --readyFile ""%AVALONIA_READY_FILE%"""
 ) else (
-    start "THUAI9 Avalonia" cmd /k "cd /d ""%ROOT%"" && set ""THUAI9_AVALONIA_READY_FILE=%AVALONIA_READY_FILE%"" && dotnet run --no-build --project interface\AvaloniaUI\THUAI9_Avalonia.csproj"
+    start "THUAI9 Avalonia" cmd /k "cd /d ""%ROOT%"" && set ""THUAI9_AVALONIA_READY_FILE=%AVALONIA_READY_FILE%"" && dotnet run --no-build --project interface\AvaloniaUI\THUAI9_Avalonia.csproj -- --readyFile ""%AVALONIA_READY_FILE%"""
 )
 echo [THUAI9] Waiting %AVALONIA_WARMUP_SECONDS%s for Avalonia to enter its auto-connect loop...
 timeout /t %AVALONIA_WARMUP_SECONDS% /nobreak >nul
@@ -89,9 +89,8 @@ if errorlevel 1 (
 echo [THUAI9] Waiting for Avalonia spectator registration before clients start...
 powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(%AVALONIA_READY_TIMEOUT_SECONDS%); while((Get-Date) -lt $deadline){ if(Test-Path -LiteralPath '%AVALONIA_READY_FILE%'){ exit 0 }; Start-Sleep -Milliseconds 250 }; exit 1"
 if errorlevel 1 (
-    echo [ERROR] Avalonia did not report spectator readiness within %AVALONIA_READY_TIMEOUT_SECONDS%s.
-    echo [ERROR] Not starting clients, otherwise the spectator may miss the opening seconds.
-    exit /b 1
+    echo [WARNING] Avalonia did not write spectator readiness marker within %AVALONIA_READY_TIMEOUT_SECONDS%s.
+    echo [WARNING] Continuing anyway; Avalonia is already started first and will keep auto-retrying.
 )
 
 echo [THUAI9] Starting ClientTest2 teams...

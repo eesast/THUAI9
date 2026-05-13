@@ -18,11 +18,15 @@ namespace THUAI9_Avalonia.ViewModels
     public partial class PlaybackViewModel : ViewModelBase
     {
         private const double FrameIntervalMs = 100;
+        private const int MaximumReasonableLiveGameMilliseconds = 2 * 60 * 60 * 1000;
+        private const int MaximumSingleLiveTimeJumpMilliseconds = 10 * 60 * 1000;
         private static readonly double[] PlaybackSpeeds = { 0.5, 1, 2, 4 };
         private readonly PlaybackReader _reader = new();
         private DispatcherTimer? _playbackTimer;
         private int _currentFrame;
         private int _totalFrames;
+        private int _stableLiveGameTimeMs;
+        private bool _hasStableLiveGameTime;
         private Action<MessageToClient>? _onMessageReceived;
 
         [ObservableProperty]
@@ -177,9 +181,66 @@ namespace THUAI9_Avalonia.ViewModels
         public void UpdateLiveProgress(MessageToClient? message, int liveFrameCount)
         {
             int safeFrameCount = Math.Max(liveFrameCount, 0);
-            int gameTimeMs = message?.AllMessage?.GameTime ?? (int)Math.Round(safeFrameCount * FrameIntervalMs);
+            int gameTimeMs = ResolveStableLiveGameTime(message, safeFrameCount);
             PlaybackTimeText = FormatGameTime(gameTimeMs);
             FrameProgressText = safeFrameCount > 0 ? $"实时帧 {safeFrameCount}" : "实时帧 0";
+        }
+
+        private int ResolveStableLiveGameTime(MessageToClient? message, int liveFrameCount)
+        {
+            int estimatedGameTimeMs = EstimateLiveGameTime(liveFrameCount);
+
+            if (message?.AllMessage == null)
+            {
+                if (message == null && liveFrameCount <= 0)
+                {
+                    ResetStableLiveGameTime();
+                }
+
+                return _hasStableLiveGameTime ? _stableLiveGameTimeMs : estimatedGameTimeMs;
+            }
+
+            int rawGameTimeMs = message.AllMessage.GameTime;
+            if (AcceptLiveGameTime(rawGameTimeMs, message.GameState))
+            {
+                _stableLiveGameTimeMs = _hasStableLiveGameTime
+                    ? Math.Max(_stableLiveGameTimeMs, rawGameTimeMs)
+                    : rawGameTimeMs;
+                _hasStableLiveGameTime = true;
+            }
+
+            return _hasStableLiveGameTime ? _stableLiveGameTimeMs : estimatedGameTimeMs;
+        }
+
+        private bool AcceptLiveGameTime(int rawGameTimeMs, GameState gameState)
+        {
+            if (rawGameTimeMs < 0 || rawGameTimeMs > MaximumReasonableLiveGameMilliseconds)
+            {
+                return false;
+            }
+
+            if (!_hasStableLiveGameTime)
+            {
+                return true;
+            }
+
+            if (gameState == GameState.GameEnd && rawGameTimeMs > _stableLiveGameTimeMs + MaximumSingleLiveTimeJumpMilliseconds)
+            {
+                return false;
+            }
+
+            return rawGameTimeMs <= _stableLiveGameTimeMs + MaximumSingleLiveTimeJumpMilliseconds;
+        }
+
+        private static int EstimateLiveGameTime(int liveFrameCount)
+        {
+            return (int)Math.Round(Math.Max(liveFrameCount, 0) * FrameIntervalMs);
+        }
+
+        private void ResetStableLiveGameTime()
+        {
+            _stableLiveGameTimeMs = 0;
+            _hasStableLiveGameTime = false;
         }
 
         private static string FormatGameTime(int gameTimeMs)

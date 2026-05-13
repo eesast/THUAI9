@@ -10,12 +10,12 @@ using UnityEngine.UI;
 
 namespace THUAI9.Unity.UI
 {
-    public sealed class EventLogPanelController : MonoBehaviour, IScrollHandler
+    public sealed class EventLogPanelController : MonoBehaviour
     {
         private const int MaxEntries = 80;
         private const float AutoScrollBottomThreshold = 0.02f;
-        private static readonly Vector2 PanelSize = new Vector2(462f, 300f);
-        private static readonly Vector2 PanelPosition = new Vector2(24f, 326f);
+        private static readonly Vector2 PanelSize = new Vector2(500f, 320f);
+        private static readonly Vector2 PanelPosition = new Vector2(24f, 24f);
         private static Font cachedFont;
 
         private readonly List<EventLogEntry> entries = new List<EventLogEntry>();
@@ -29,6 +29,7 @@ namespace THUAI9.Unity.UI
         private RectTransform contentRect;
         private Text titleText;
         private Text contentText;
+        private Scrollbar verticalScrollbar;
         private int lastProcessedFrame = -1;
         private bool hasPrimedFrame;
         private bool contentDirty = true;
@@ -81,6 +82,7 @@ namespace THUAI9.Unity.UI
             panelRect.pivot = Vector2.zero;
             panelRect.anchoredPosition = PanelPosition;
             panelRect.sizeDelta = PanelSize;
+            transform.SetAsLastSibling();
 
             Image background = GetComponent<Image>();
             if (background == null)
@@ -110,28 +112,28 @@ namespace THUAI9.Unity.UI
             titleText.raycastTarget = false;
             EnsureTextShadow(titleText, new Color(0f, 0f, 0f, 0.7f), new Vector2(1.2f, -1.2f));
 
-            viewportRect = FindOrCreateRect(transform, "Viewport", typeof(Image), typeof(RectMask2D));
-            SetChildRect(viewportRect, Vector2.zero, Vector2.one, new Vector2(12f, 12f), new Vector2(-24f, -54f), Vector2.zero);
+            viewportRect = FindOrCreateRect(transform, "Viewport", typeof(Image), typeof(RectMask2D), typeof(EventLogScrollForwarder));
+            SetChildRect(viewportRect, Vector2.zero, Vector2.one, new Vector2(14f, 14f), new Vector2(-34f, -56f), Vector2.zero);
             Image viewportImage = viewportRect.GetComponent<Image>();
             viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
             viewportImage.raycastTarget = true;
+            EventLogScrollForwarder viewportForwarder = viewportRect.GetComponent<EventLogScrollForwarder>();
+            viewportForwarder.Owner = this;
 
-            contentRect = FindOrCreateRect(viewportRect, "Content", typeof(ContentSizeFitter));
+            contentRect = FindOrCreateRect(viewportRect, "Content");
             contentRect.anchorMin = new Vector2(0f, 1f);
             contentRect.anchorMax = new Vector2(1f, 1f);
             contentRect.pivot = new Vector2(0f, 1f);
             contentRect.anchoredPosition = Vector2.zero;
             contentRect.sizeDelta = new Vector2(0f, 1f);
 
-            ContentSizeFitter fitter = contentRect.GetComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            RemoveContentSizeFitter(contentRect);
 
             RectTransform contentTextRect = FindOrCreateRect(contentRect, "LogText", typeof(Text));
             SetChildRect(contentTextRect, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 1f), new Vector2(0f, 1f));
             contentText = contentTextRect.GetComponent<Text>();
             contentText.font = font;
-            contentText.fontSize = 15;
+            contentText.fontSize = 16;
             contentText.fontStyle = FontStyle.Normal;
             contentText.alignment = TextAnchor.UpperLeft;
             contentText.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -142,27 +144,74 @@ namespace THUAI9.Unity.UI
             contentText.color = new Color(0.86f, 0.94f, 0.98f, 1f);
             contentText.raycastTarget = false;
 
+            verticalScrollbar = EnsureVerticalScrollbar();
             scrollRect.viewport = viewportRect;
             scrollRect.content = contentRect;
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
+            scrollRect.verticalScrollbar = verticalScrollbar;
+            scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+            scrollRect.verticalScrollbarSpacing = 0f;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
             scrollRect.inertia = true;
-            scrollRect.scrollSensitivity = 34f;
+            scrollRect.scrollSensitivity = 44f;
+            scrollRect.onValueChanged.RemoveListener(OnScrollPositionChanged);
+            scrollRect.onValueChanged.AddListener(OnScrollPositionChanged);
         }
 
-        public void OnScroll(PointerEventData eventData)
+        internal void HandleScroll(PointerEventData eventData)
         {
-            if (scrollRect == null || contentRect == null || viewportRect == null)
+            if (scrollRect == null || contentRect == null || viewportRect == null || eventData == null)
             {
                 return;
             }
 
-            float scrollableHeight = Mathf.Max(1f, contentRect.rect.height - viewportRect.rect.height);
-            float normalizedDelta = eventData.scrollDelta.y * scrollRect.scrollSensitivity / scrollableHeight;
-            scrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollRect.verticalNormalizedPosition + normalizedDelta);
+            scrollRect.OnScroll(eventData);
             stickToBottom = scrollRect.verticalNormalizedPosition <= AutoScrollBottomThreshold;
             eventData.Use();
+        }
+
+        private void OnScrollPositionChanged(Vector2 normalizedPosition)
+        {
+            stickToBottom = normalizedPosition.y <= AutoScrollBottomThreshold;
+        }
+
+        private Scrollbar EnsureVerticalScrollbar()
+        {
+            RectTransform scrollbarRect = FindOrCreateRect(transform, "Scrollbar", typeof(Image), typeof(Scrollbar));
+            scrollbarRect.anchorMin = new Vector2(1f, 0f);
+            scrollbarRect.anchorMax = new Vector2(1f, 1f);
+            scrollbarRect.pivot = new Vector2(1f, 0.5f);
+            scrollbarRect.anchoredPosition = new Vector2(-10f, -22f);
+            scrollbarRect.sizeDelta = new Vector2(8f, -68f);
+
+            Image background = scrollbarRect.GetComponent<Image>() ?? scrollbarRect.gameObject.AddComponent<Image>();
+            background.color = new Color(0.10f, 0.16f, 0.22f, 0.72f);
+            background.raycastTarget = true;
+
+            RectTransform slidingArea = FindOrCreateRect(scrollbarRect, "Sliding Area");
+            slidingArea.anchorMin = Vector2.zero;
+            slidingArea.anchorMax = Vector2.one;
+            slidingArea.pivot = new Vector2(0.5f, 0.5f);
+            slidingArea.offsetMin = new Vector2(1f, 1f);
+            slidingArea.offsetMax = new Vector2(-1f, -1f);
+
+            RectTransform handle = FindOrCreateRect(slidingArea, "Handle", typeof(Image));
+            handle.anchorMin = Vector2.zero;
+            handle.anchorMax = Vector2.one;
+            handle.pivot = new Vector2(0.5f, 0.5f);
+            handle.offsetMin = Vector2.zero;
+            handle.offsetMax = Vector2.zero;
+
+            Image handleImage = handle.GetComponent<Image>() ?? handle.gameObject.AddComponent<Image>();
+            handleImage.color = new Color(0.30f, 0.88f, 0.98f, 0.95f);
+            handleImage.raycastTarget = true;
+
+            Scrollbar scrollbar = scrollbarRect.GetComponent<Scrollbar>() ?? scrollbarRect.gameObject.AddComponent<Scrollbar>();
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+            scrollbar.targetGraphic = handleImage;
+            scrollbar.handleRect = handle;
+            return scrollbar;
         }
 
         private void ProcessCurrentFrameIfNeeded()
@@ -364,6 +413,7 @@ namespace THUAI9.Unity.UI
             }
 
             bool shouldStickToBottom = stickToBottom || scrollRect.verticalNormalizedPosition <= AutoScrollBottomThreshold;
+            float previousNormalizedPosition = scrollRect.verticalNormalizedPosition;
             contentText.text = builder.ToString();
             float minHeight = viewportRect != null ? viewportRect.rect.height : 160f;
             float preferredHeight = Mathf.Max(minHeight, contentText.preferredHeight + 8f);
@@ -374,6 +424,10 @@ namespace THUAI9.Unity.UI
             {
                 scrollRect.verticalNormalizedPosition = 0f;
                 stickToBottom = true;
+            }
+            else
+            {
+                scrollRect.verticalNormalizedPosition = previousNormalizedPosition;
             }
 
             contentDirty = false;
@@ -441,7 +495,17 @@ namespace THUAI9.Unity.UI
             if (existing != null)
             {
                 RectTransform existingRect = existing.GetComponent<RectTransform>();
-                return existingRect != null ? existingRect : existing.gameObject.AddComponent<RectTransform>();
+                RectTransform rect = existingRect != null ? existingRect : existing.gameObject.AddComponent<RectTransform>();
+                for (int i = 0; i < components.Length; i++)
+                {
+                    Type componentType = components[i];
+                    if (componentType != null && existing.gameObject.GetComponent(componentType) == null)
+                    {
+                        existing.gameObject.AddComponent(componentType);
+                    }
+                }
+
+                return rect;
             }
 
             GameObject go = new GameObject(name, typeof(RectTransform));
@@ -513,6 +577,29 @@ namespace THUAI9.Unity.UI
             shadow.useGraphicAlpha = true;
         }
 
+        private static void RemoveContentSizeFitter(RectTransform rect)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            ContentSizeFitter fitter = rect.GetComponent<ContentSizeFitter>();
+            if (fitter == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(fitter);
+            }
+            else
+            {
+                DestroyImmediate(fitter);
+            }
+        }
+
         private readonly struct EventLogEntry
         {
             public EventLogEntry(DateTime timestamp, string level, string message)
@@ -575,6 +662,16 @@ namespace THUAI9.Unity.UI
             public int X { get; }
             public int Y { get; }
             public long OwnerTeamId { get; }
+        }
+    }
+
+    internal sealed class EventLogScrollForwarder : MonoBehaviour, IScrollHandler
+    {
+        public EventLogPanelController Owner { get; set; }
+
+        public void OnScroll(PointerEventData eventData)
+        {
+            Owner?.HandleScroll(eventData);
         }
     }
 }
