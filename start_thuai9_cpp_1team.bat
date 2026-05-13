@@ -33,10 +33,33 @@ if errorlevel 1 (
     exit /b 1
 )
 
-start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run"
+echo [THUAI9] Stopping previous smoke processes from this workspace...
+if not defined THUAI9_SKIP_SMOKE_CLEANUP (
+    call "%ROOT%stop_thuai9_smoke.bat"
+    if errorlevel 1 (
+        echo [ERROR] Failed to stop old smoke processes.
+        exit /b 1
+    )
+) else (
+    echo [THUAI9] THUAI9_SKIP_SMOKE_CLEANUP is set; keeping existing processes.
+)
+
+echo [THUAI9] Building UI and Server before launch...
+dotnet build "%ROOT%interface\AvaloniaUI\THUAI9_Avalonia.csproj"
+if errorlevel 1 (
+    echo [ERROR] UI build failed.
+    exit /b 1
+)
+dotnet build "%ROOT%logic\Server\Server.csproj"
+if errorlevel 1 (
+    echo [ERROR] Server build failed.
+    exit /b 1
+)
+
+start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run --no-build"
 timeout /t 2 /nobreak >nul
 
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port %SERVER_PORT% --teamCount 2"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run --no-build -- --port %SERVER_PORT% --teamCount 2"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Waiting for server to listen on 127.0.0.1:%SERVER_PORT%...

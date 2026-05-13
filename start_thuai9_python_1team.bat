@@ -45,6 +45,29 @@ if errorlevel 1 (
     )
 )
 
+echo [THUAI9] Stopping previous smoke processes from this workspace...
+if not defined THUAI9_SKIP_SMOKE_CLEANUP (
+    call "%ROOT%stop_thuai9_smoke.bat"
+    if errorlevel 1 (
+        echo [ERROR] Failed to stop old smoke processes.
+        exit /b 1
+    )
+) else (
+    echo [THUAI9] THUAI9_SKIP_SMOKE_CLEANUP is set; keeping existing processes.
+)
+
+echo [THUAI9] Building UI and Server before launch...
+dotnet build "%UI_PROJ%"
+if errorlevel 1 (
+    echo [ERROR] UI build failed.
+    exit /b 1
+)
+dotnet build "%SERVER_PROJ%"
+if errorlevel 1 (
+    echo [ERROR] Server build failed.
+    exit /b 1
+)
+
 echo [THUAI9] Generating Python proto files...
 pushd "%PY_ROOT%"
 call generate_proto.cmd
@@ -55,10 +78,10 @@ if errorlevel 1 (
 )
 popd
 
-start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run"
+start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run --no-build"
 timeout /t 2 /nobreak >nul
 
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port %SERVER_PORT% --teamCount 2"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run --no-build -- --port %SERVER_PORT% --teamCount 2"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Waiting for server to listen on %SERVER_IP%:%SERVER_PORT%...

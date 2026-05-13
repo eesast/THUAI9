@@ -293,7 +293,7 @@ namespace THUAI9.Unity.Render
 
             if (info.AllMessage != null)
             {
-                CoreParam.allMessage = info.AllMessage;
+                CoreParam.SetAllMessage(info.AllMessage, info.GameState);
             }
 
             CoreParam.frameCount++;
@@ -371,7 +371,7 @@ namespace THUAI9.Unity.Render
             {
                 int totalMilliseconds = CoreParam.playbackCurrentFrameIndex >= 0
                     ? CoreParam.playbackElapsedMilliseconds
-                    : (CoreParam.allMessage != null ? Mathf.Max(CoreParam.allMessage.GameTime, 0) : 0);
+                    : CoreParam.stableLiveGameMilliseconds;
                 gameTimeText.text = FormatPlaybackTime(totalMilliseconds);
             }
 

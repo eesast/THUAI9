@@ -52,6 +52,29 @@ if not exist "%UNITY_EXE%" (
     exit /b 1
 )
 
+echo [THUAI9] Stopping previous smoke processes from this workspace...
+if not defined THUAI9_SKIP_SMOKE_CLEANUP (
+    call "%ROOT%stop_thuai9_smoke.bat"
+    if errorlevel 1 (
+        echo [ERROR] Failed to stop old smoke processes.
+        exit /b 1
+    )
+) else (
+    echo [THUAI9] THUAI9_SKIP_SMOKE_CLEANUP is set; keeping existing processes.
+)
+
+echo [THUAI9] Building Server and ClientTest2 before launch...
+dotnet build "%ROOT%logic\Server\Server.csproj"
+if errorlevel 1 (
+    echo [ERROR] Server build failed.
+    exit /b 1
+)
+dotnet build "%ROOT%logic\ClientTest2\ClientTest2.csproj"
+if errorlevel 1 (
+    echo [ERROR] ClientTest2 build failed.
+    exit /b 1
+)
+
 echo [THUAI9] Starting Unity Editor MainGame Play Mode first...
 echo [THUAI9] Unity will auto-connect and retry while waiting for the server.
 start "THUAI9 Unity" "%UNITY_EXE%" -projectPath "%UNITY_PROJECT%" -executeMethod %UNITY_METHOD%
@@ -60,7 +83,7 @@ echo [THUAI9] Waiting %UNITY_WARMUP_SECONDS%s for Unity to load scene and enter 
 timeout /t %UNITY_WARMUP_SECONDS% /nobreak >nul
 
 echo [THUAI9] Starting Server after Unity warmup...
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run -- --port %SERVER_PORT% --teamCount 4 --gameTimeInSecond 180 --fileName unity_smoke"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run --no-build -- --port %SERVER_PORT% --teamCount 4 --gameTimeInSecond 180 --fileName unity_smoke"
 timeout /t 2 /nobreak >nul
 
 echo [THUAI9] Waiting for server to listen on %SERVER_IP%:%SERVER_PORT%...
@@ -72,7 +95,7 @@ if errorlevel 1 (
 
 echo [THUAI9] Starting ClientTest2 teams...
 for /L %%t in (1,1,4) do (
-    start "THUAI9 ClientTest2 %%t" cmd /k "cd /d ""%ROOT%"" && dotnet run --project logic\ClientTest2\ClientTest2.csproj -- 0 %%t"
+    start "THUAI9 ClientTest2 %%t" cmd /k "cd /d ""%ROOT%"" && dotnet run --no-build --project logic\ClientTest2\ClientTest2.csproj -- 0 %%t"
 )
 
 echo [THUAI9] Unity smoke launch requested.

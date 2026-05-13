@@ -206,7 +206,7 @@ class MyAgent(BaseAgent):
         不能访问 self.env.unit / self.env.board 等内部对象。
         """
         # ⚠️ 必须显式调用 action_masks()！
-        # MaskablePPO（sb3-contrib）会���动应用掩码，但自定义 Agent 没有自动机制。
+        # MaskablePPO（sb3-contrib）会自动应用掩码，但自定义 Agent 没有自动机制。
         mask = self.env.action_masks()       # (28,) bool 数组，True=有效
         valid = np.where(mask)[0]            # 当前允许的动作编号
         if len(valid) == 0:

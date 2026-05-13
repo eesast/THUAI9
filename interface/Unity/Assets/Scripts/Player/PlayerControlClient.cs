@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
@@ -58,6 +58,7 @@ namespace THUAI9.Unity.Player
         private bool isConnecting;
         private bool isConnected;
         private bool playerMode;
+        private bool isApplicationQuitting;
         private int sentActionCount;
         private int successfulActionCount;
         private int failedActionCount;
@@ -191,11 +192,16 @@ namespace THUAI9.Unity.Player
 
         public void DisconnectPlayer()
         {
+            DisconnectPlayer(waitForShutdown: false);
+        }
+
+        private void DisconnectPlayer(bool waitForShutdown)
+        {
             playerMode = false;
             isConnecting = false;
             isConnected = false;
             statusText = "玩家：已断开";
-            ReleaseConnectionResources();
+            ReleaseConnectionResources(waitForShutdown);
 #if UNITY_WEBGL && !UNITY_EDITOR
             DispatchWebPlayerAction("disconnect", BuildEnvelopeJson("disconnect", "DisconnectPlayer"), true, "web-player-disconnect");
 #endif
@@ -234,7 +240,7 @@ namespace THUAI9.Unity.Player
 
             try
             {
-                ReleaseConnectionResources();
+                ReleaseConnectionResources(waitForShutdown: false);
                 cancellation = new CancellationTokenSource();
                 LiveSpectatorClient.EnsureNativeGrpcSearchPath();
 
@@ -262,7 +268,7 @@ namespace THUAI9.Unity.Player
             {
                 statusText = $"玩家：连接失败，{ShortError(ex)}";
                 Debug.LogWarning(statusText, this);
-                ReleaseConnectionResources();
+                ReleaseConnectionResources(waitForShutdown: false);
             }
             finally
             {
@@ -307,7 +313,7 @@ namespace THUAI9.Unity.Player
                 {
                     statusText = "玩家：连接已断开";
                 }
-                ReleaseConnectionResources();
+                ReleaseConnectionResources(waitForShutdown: false);
             }
         }
 #endif
@@ -719,7 +725,7 @@ namespace THUAI9.Unity.Player
             return $"{uri.Host}:{port}";
         }
 
-        private void ReleaseConnectionResources()
+        private void ReleaseConnectionResources(bool waitForShutdown = false)
         {
 #if !UNITY_WEBGL || UNITY_EDITOR
             try { cancellation?.Cancel(); } catch { }
@@ -729,7 +735,7 @@ namespace THUAI9.Unity.Player
 
             if (channel != null)
             {
-                ShutdownChannelInBackground(channel);
+                ShutdownChannel(channel, waitForShutdown);
                 channel = null;
             }
 
@@ -739,15 +745,36 @@ namespace THUAI9.Unity.Player
         }
 
 #if !UNITY_WEBGL || UNITY_EDITOR
-        private static async void ShutdownChannelInBackground(Channel channelToShutdown)
+        private static void ShutdownChannel(Channel channelToShutdown, bool waitForShutdown)
         {
-            try
+            if (channelToShutdown == null)
             {
-                await channelToShutdown.ShutdownAsync().ConfigureAwait(false);
+                return;
             }
-            catch
+
+            if (waitForShutdown)
             {
+                try
+                {
+                    channelToShutdown.ShutdownAsync().Wait(TimeSpan.FromSeconds(1.5));
+                }
+                catch
+                {
+                }
+
+                return;
             }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await channelToShutdown.ShutdownAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                }
+            });
         }
 #endif
 
@@ -806,7 +833,13 @@ namespace THUAI9.Unity.Player
                 instance = null;
             }
 
-            DisconnectPlayer();
+            DisconnectPlayer(waitForShutdown: isApplicationQuitting);
+        }
+
+        private void OnApplicationQuit()
+        {
+            isApplicationQuitting = true;
+            DisconnectPlayer(waitForShutdown: true);
         }
 
         private readonly struct ActionResult
