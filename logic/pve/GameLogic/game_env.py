@@ -268,8 +268,8 @@ class GameEnvironment(gym.Env):
             mkt = self._market_at(*mkt_pos)
             if mkt is None or u.free_capacity < 1:
                 return False, 0.0
-            # Buy the currently cheapest product that fits budget
-            best_pid, best_cost = self._cheapest_buyable(mkt)
+            # Buy the product with highest profit margin (price - cost) we can afford
+            best_pid, best_cost = self._best_buyable(mkt)
             if best_pid is None:
                 return False, 0.0
             cost = best_cost
@@ -332,13 +332,19 @@ class GameEnvironment(gym.Env):
                 return m
         return None
 
-    def _cheapest_buyable(self, mkt: Market) -> Tuple[Optional[int], float]:
-        """Return (pid, cost) of cheapest product we can afford with space."""
-        best_pid, best_cost = None, float("inf")
+    def _best_buyable(self, mkt: Market) -> Tuple[Optional[int], float]:
+        """Return (pid, cost) of product with highest profit (price - cost) we can afford."""
+        best_pid, best_cost = None, None
+        best_profit = -float("inf")
+        mult = self._price_multiplier()
         for pid, pdef in PRODUCT_DEFS.items():
             cost = max(0, pdef["cost"] + self.factory.cost_delta)
-            if self.money >= cost and cost < best_cost:
-                best_cost, best_pid = cost, pid
+            if self.money < cost:
+                continue
+            price = mkt.get_price(pid, self.time, mult)
+            profit = price - cost
+            if profit > best_profit:
+                best_profit, best_cost, best_pid = profit, cost, pid
         return best_pid, best_cost
 
     def _price_multiplier(self) -> float:
