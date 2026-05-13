@@ -78,13 +78,13 @@ namespace Gaming
         private void InitTeams()
         {
             // 工厂位置应该对应地图中 PlaceType.FACTORY 的位置
-            // MapInfo 中 defaultMap 的工厂位置是 [3,3], [3,46], [45,3], [45,46]
+            // MapInfo 中 defaultMap 的工厂位置是 [3,3], [3,46], [46,3], [46,46]
             var corners = new (int cx, int cy)[]
             {
                 (3, 3),      // Team 1 工厂位置
                 (3, 46),     // Team 2 工厂位置
-                (45, 3),     // Team 3 工厂位置
-                (45, 46)     // Team 4 工厂位置
+                (46, 3),     // Team 3 工厂位置
+                (46, 46)     // Team 4 工厂位置
             };
             for (int i = 0; i < 4; i++)
             {
