@@ -129,7 +129,7 @@ def test_sell_empty_inventory_invalid(easy_env):
     u = easy_env.unit
     assert u.total_goods == 0
     _, _, _, _, info = easy_env.step(Action.SELL_0)
-    assert not info["action_valid"] or u.total_goods == 0
+    assert info["action_valid"] is False
 
 
 # ── Action mask ───────────────────────────────────────────────────────────────
