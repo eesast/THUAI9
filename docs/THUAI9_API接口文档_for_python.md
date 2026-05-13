@@ -174,6 +174,7 @@ class Character:
     hp: int
     carryCapacity: int
     currentLoad: int
+    goodsLoad: dict[GoodsType, int]
     harvestRatePerSec: int
 ```
 
@@ -194,6 +195,7 @@ class Character:
 - `carryCapacity`：负载上限
 - `currentLoad`：当前总负载
 - `harvestRatePerSec`：采集效率
+- `goodsLoad`: 当前装载的货物类型
 
 ### Team
 

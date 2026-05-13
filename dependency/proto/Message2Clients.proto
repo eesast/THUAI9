@@ -33,6 +33,13 @@ message MessageOfCharacter
     int32 carry_capacity = 15; // 负重上限，产品数量为单位
     int32 current_load = 16; // 当前负重
     int32 harvest_rate_per_sec = 17; // 每秒采集量
+    message GoodsStack
+    {
+        protobuf.GoodsType product_type = 1;
+        int32 quantity = 2;
+    }
+
+    repeated GoodsStack goods_load = 18;
 }
 
 

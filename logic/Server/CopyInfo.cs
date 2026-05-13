@@ -120,6 +120,17 @@ namespace Server
                     HarvestRatePerSec = (int)player.Efficiency.GetValue()
                 }
             };
+            for (int i = 1; i <= 5; i++)
+            {
+                Utility.GoodsType type = (Utility.GoodsType)i;
+                msg.CharacterMessage.GoodsLoad.Add(
+                    new MessageOfCharacter.Types.GoodsStack
+                    {
+                        ProductType = (Protobuf.GoodsType)i,
+                        Quantity = player.GoodsLoad.Get(type)
+                    }
+                );
+            }
             return msg;
         }
 
