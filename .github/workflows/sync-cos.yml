@@ -1,0 +1,55 @@
+name: Sync THUAI9 to Tencent COS
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: sync-thuai9-cos
+  cancel-in-progress: false
+
+jobs:
+  sync-cos:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Export tracked files
+        run: |
+          mkdir -p upload
+          git archive --format=tar HEAD | tar -xf - -C upload
+
+      - name: Install COSCLI
+        run: |
+          curl -L -o coscli https://cosbrowser.cloud.tencent.com/software/coscli/coscli-linux-amd64
+          chmod +x coscli
+          ./coscli --version
+
+      - name: Configure COSCLI
+        env:
+          TENCENT_COS_SECRET_ID: ${{ secrets.TENCENT_COS_SECRET_ID }}
+          TENCENT_COS_SECRET_KEY: ${{ secrets.TENCENT_COS_SECRET_KEY }}
+        run: |
+          cat > .cos.yaml <<EOF
+          cos:
+            base:
+              secretid: "${TENCENT_COS_SECRET_ID}"
+              secretkey: "${TENCENT_COS_SECRET_KEY}"
+              sessiontoken: ""
+              protocol: https
+            buckets:
+              - name: thuai9-1255334966
+                alias: thuai9
+                region: ap-beijing
+                endpoint: cos.ap-beijing.myqcloud.com
+                ofs: false
+          EOF
+
+      - name: Sync to Tencent COS
+        run: |
+          ./coscli sync upload cos://thuai9/ -r -c .cos.yaml
