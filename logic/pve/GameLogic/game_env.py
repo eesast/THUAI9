@@ -1,7 +1,7 @@
 """
 GameEnvironment: the main Gymnasium-compatible environment.
 
-Observation (44 floats, all in [-1, 1] or [0, 1]):
+Observation (58 floats, normalized to bounded ranges; some features may reach 2.0):
   [0-1]   unit position (x/H, y/W)
   [2]     unit HP ratio
   [3]     unit raw inventory / capacity
@@ -13,22 +13,25 @@ Observation (44 floats, all in [-1, 1] or [0, 1]):
   [13]    sin(2π t / period)
   [14]    cos(2π t / period)
   [15]    factory raw stock / storage_cap
-  [16]    factory product stock / storage_cap
-  [17]    factory production queue length / 10
-  [18-19] resource 0 (dx/H, dy/W)
-  [20]    resource 0 stock ratio
-  [21-22] resource 1 (dx/H, dy/W)
-  [23]    resource 1 stock ratio
-  [24-25] compute center 0 (dx/H, dy/W)
-  [26]    compute center 0 is_open
-  [27-28] compute center 1 (dx/H, dy/W)
-  [29]    compute center 1 is_open
-  [30-31] market 0 (dx/H, dy/W)
-  [32-36] market 0 prices for all 5 products (normalized by each product's val_range)
-  [37-38] market 1 (dx/H, dy/W)
-  [39-43] market 1 prices for all 5 products (normalized by each product's val_range)
+  [16-20] factory product stock by type (pid 0-4) / storage_cap
+  [21]    factory production queue length / 10
+  [22-23] resource 0 (dx/H, dy/W)
+  [24]    resource 0 stock ratio
+  [25-26] resource 1 (dx/H, dy/W)
+  [27]    resource 1 stock ratio
+  [28-29] compute center 0 (dx/H, dy/W)
+  [30]    compute center 0 is_open
+  [31]    compute center 0 occupy_progress / unit_occupy_time
+  [32-33] compute center 1 (dx/H, dy/W)
+  [34]    compute center 1 is_open
+  [35]    compute center 1 occupy_progress / unit_occupy_time
+  [36-37] market 0 (dx/H, dy/W)
+  [38-42] market 0 prices for all 5 products (normalized by each product's val_range)
+  [43-44] market 1 (dx/H, dy/W)
+  [45-49] market 1 prices for all 5 products (normalized by each product's val_range)
+  [50-57] techs owned: one-hot for each of the 8 tech slots (0/1)
 
-Action space: Discrete(12)  → see action_space.py
+Action space: Discrete(28)  → see action_space.py
 """
 from __future__ import annotations
 
@@ -40,11 +43,15 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 
-from .config import GameConfig, PRODUCT_DEFS, CELL_OBSTACLE
+from .config import GameConfig, PRODUCT_DEFS, TECH_TREE
 from .board import Board, ResourcePoint
 from .character import Unit
 from .market import Market, build_markets
-from .action_space import Action, N_ACTIONS, MOVE_DELTAS, SELL_ACTIONS, compute_action_mask
+from .action_space import (
+    Action, N_ACTIONS, MOVE_DELTAS,
+    SELL_ACTIONS, PRODUCE_ACTIONS, TECH_ACTIONS, TECH_KEYS,
+    compute_action_mask,
+)
 from .reward_calculator import RewardCalculator, RewardConfig
 
 # Per-product price normalisation: (lo, range) keyed by product id
@@ -80,10 +87,14 @@ class Factory:
         return len(self._queue)
 
     def enqueue(self, pid: int, time_step: float) -> bool:
-        """Add one product to the production queue if capacity allows."""
+        """Add one product to the production queue, consuming raw_stock. Returns False if can't."""
         pdef = PRODUCT_DEFS[pid]
+        raw_needed = pdef["raw_cost"]
+        if self.raw_stock < raw_needed:
+            return False
         if len(self._queue) >= self.production_lines * 5:
-            return False   # queue full
+            return False
+        self.raw_stock -= raw_needed
         produce_time = pdef["produce_time"] * self.time_multiplier
         remaining_ticks = produce_time / time_step
         self._queue.append((pid, remaining_ticks))
@@ -142,7 +153,7 @@ class GameEnvironment(gym.Env):
 
     metadata = {"render_modes": ["ansi"]}
 
-    OBS_DIM = 44
+    OBS_DIM = 58
 
     def __init__(
         self,
@@ -260,6 +271,9 @@ class GameEnvironment(gym.Env):
             if board.is_passable(nx, ny):
                 u.x, u.y = nx, ny
                 u.state = "moving"
+                # Default: 1 busy tick per move; path_optimization removes it
+                if "path_optimization" not in self._techs_owned:
+                    u.busy_ticks = 1
                 return True, 0.0
             return False, 0.0
 
@@ -312,7 +326,6 @@ class GameEnvironment(gym.Env):
             actual = rp.harvest(amount)
             if actual <= 0:
                 return False, 0.0
-            # Deposit immediately to factory if at factory, else carry
             if board.at_factory(u.x, u.y):
                 self.factory.deposit_raw(actual)
             else:
@@ -321,10 +334,89 @@ class GameEnvironment(gym.Env):
             u.state = "harvesting"
             return True, harvested
 
+        if action == Action.DEPOSIT:
+            if not board.at_factory(u.x, u.y) or u.raw_inv <= 0:
+                return False, 0.0
+            stored = self.factory.deposit_raw(u.raw_inv)
+            u.raw_inv -= stored
+            u.state = "depositing"
+            return True, 0.0
+
+        if action in PRODUCE_ACTIONS:
+            pid = int(action) - int(Action.PRODUCE_0)
+            if not board.at_factory(u.x, u.y):
+                return False, 0.0
+            if not self.factory.enqueue(pid, cfg.time_step):
+                return False, 0.0
+            u.state = "producing"
+            return True, 0.0
+
+        if action == Action.LOAD:
+            if not board.at_factory(u.x, u.y):
+                return False, 0.0
+            loaded = self.factory.load_products(u)
+            if loaded <= 0:
+                return False, 0.0
+            u.state = "loading"
+            u.busy_ticks = max(1, int(0.25 / cfg.time_step))
+            u.busy_action = "load_done"
+            return True, 0.0
+
+        if action == Action.OCCUPY:
+            cc = board.nearest_compute_center(u.x, u.y)
+            if cc is None or cc.is_open:
+                return False, 0.0
+            cc.occupy_progress += cfg.time_step
+            if cc.occupy_progress >= cfg.unit_occupy_time:
+                cc.is_open = True
+            u.state = "occupying"
+            return True, 0.0
+
+        if action in TECH_ACTIONS:
+            if not board.at_factory(u.x, u.y):
+                return False, 0.0
+            idx = int(action) - int(Action.TECH_0)
+            key = TECH_KEYS[idx]
+            tdef = TECH_TREE[key]
+            # Persistent tech: can only buy once
+            if tdef["persistent"] and key in self._techs_owned:
+                return False, 0.0
+            # Prerequisite check
+            prereq = tdef.get("prereq")
+            if prereq and prereq not in self._techs_owned:
+                return False, 0.0
+            if self.compute < tdef["cost"]:
+                return False, 0.0
+            self.compute -= tdef["cost"]
+            self._techs_owned.add(key)
+            self._apply_tech(key, tdef)
+            u.state = "researching"
+            return True, 0.0
+
         return False, 0.0
 
     def _complete_busy_action(self):
         pass   # busy_ticks already captured side-effects at action time
+
+    def _apply_tech(self, key: str, tdef: dict):
+        """Apply a tech upgrade's effect immediately."""
+        effect = tdef.get("effect", {})
+        if "product_cost_delta" in effect:
+            self.factory.cost_delta += effect["product_cost_delta"]
+        if "time_multiplier" in effect:
+            self.factory.time_multiplier *= effect["time_multiplier"]
+        if "price_multiplier" in effect:
+            self.factory.price_multiplier *= effect["price_multiplier"]
+        if "hp_bonus_pct" in effect:
+            bonus = int(self.unit.max_hp * effect["hp_bonus_pct"])
+            self.unit.max_hp += bonus
+            self.unit.hp = min(self.unit.hp + bonus, self.unit.max_hp)
+        if "extra_lines" in effect:
+            self.factory.production_lines += effect["extra_lines"]
+        if "move_factor" in effect:
+            self._move_factor = getattr(self, "_move_factor", 1.0) * effect["move_factor"]
+        # "reveal" (market_analysis) and "compute_rate_bonus" (compute_expansion)
+        # are handled at read time in _encode_obs / _accrue_compute
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -368,63 +460,71 @@ class GameEnvironment(gym.Env):
         f = self.factory
         obs = np.zeros(self.OBS_DIM, dtype=np.float32)
 
-        # Unit position + HP (0-2)
+        # Unit position + HP [0-2]
         obs[0] = u.x / max(1, cfg.map_height)
         obs[1] = u.y / max(1, cfg.map_width)
         obs[2] = u.hp / max(1, u.max_hp)
 
-        # Unit inventory: raw + per-product (3-8)
-        obs[3] = u.raw_inv / max(1, u.capacity)
+        # Unit inventory: raw + per-product [3-8]
         cap = max(1, u.capacity)
+        obs[3] = u.raw_inv / cap
         for pid in range(5):
             obs[4 + pid] = u.prod_inv.get(pid, 0.0) / cap
 
-        # Busy (9)
+        # Busy [9]
         obs[9] = min(u.busy_ticks / 10.0, 1.0)
 
-        # Economy (10-11)
+        # Economy [10-11]
         obs[10] = math.log10(max(1, self.money + 1)) / 5.0
         obs[11] = min(self.compute / 100.0, 2.0)
 
-        # Time (12-14)
+        # Time [12-14]
         obs[12] = self.time / max(1, cfg.max_game_time)
         obs[13] = math.sin(2 * math.pi * self.time / cfg.market_period)
         obs[14] = math.cos(2 * math.pi * self.time / cfg.market_period)
 
-        # Factory (15-17)
-        obs[15] = f.raw_stock / max(1, f.storage_cap)
-        obs[16] = f.total_product_stock / max(1, f.storage_cap)
-        obs[17] = min(f.queue_len / 10.0, 1.0)
+        # Factory: raw + per-product stock + queue [15-21]
+        scap = max(1, f.storage_cap)
+        obs[15] = f.raw_stock / scap
+        for pid in range(5):
+            obs[16 + pid] = f.products.get(pid, 0.0) / scap
+        obs[21] = min(f.queue_len / 10.0, 1.0)
 
-        # Resource points (18-23)
+        # Resource points [22-27]
         for i in range(2):
-            base = 18 + i * 3
+            base = 22 + i * 3
             if i < len(self.board.resource_points):
                 rp = self.board.resource_points[i]
                 obs[base]   = (rp.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (rp.y - u.y) / max(1, cfg.map_width)
                 obs[base+2] = rp.stock / max(1, rp.max_stock)
 
-        # Compute centers (24-29)
+        # Compute centers [28-35]: 2 × (dx, dy, is_open, occupy_progress)
+        occ_time = max(1.0, cfg.unit_occupy_time)
         for i in range(2):
-            base = 24 + i * 3
+            base = 28 + i * 4
             if i < len(self.board.compute_centers):
                 cc = self.board.compute_centers[i]
                 obs[base]   = (cc.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (cc.y - u.y) / max(1, cfg.map_width)
                 obs[base+2] = float(cc.is_open)
+                obs[base+3] = min(cc.occupy_progress / occ_time, 1.0)
 
-        # Markets (30-43): 2 markets × (2 pos + 5 prices) = 14 floats
+        # Markets [36-49]: 2 × (dx, dy, price×5)
+        mult = self._price_multiplier()
         for i in range(2):
-            base = 30 + i * 7
+            base = 36 + i * 7
             if i < len(self.markets):
                 m = self.markets[i]
                 obs[base]   = (m.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (m.y - u.y) / max(1, cfg.map_width)
-                mult = self._price_multiplier()
                 for pid in range(5):
                     lo, rng = _PRICE_NORM[pid]
                     obs[base + 2 + pid] = (m.get_price(pid, self.time, mult) - lo) / rng
+
+        # Techs owned [50-57]: one-hot per tech slot
+        for i, key in enumerate(TECH_KEYS):
+            obs[50 + i] = 1.0 if key in self._techs_owned else 0.0
 
         return obs
 

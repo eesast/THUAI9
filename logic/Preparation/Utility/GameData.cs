@@ -8,7 +8,7 @@ namespace Preparation.Utility
         public const int BaseCharacterSpeed = 5000;         // 角色基础移动速度
         public const int FrameDuration = 50;                // 每帧时长
         public const int CheckInterval = 10;                // 检查间隔
-        public const uint GameDurationInSecond = 2 * 60;   // 游戏时长
+        public const uint GameDurationInSecond = 10 * 60;  // 游戏时长
         public const int LimitOfStopAndMove = 15;           // 停止和移动的最大间隔
         public const int ProduceSpeedPerSecond = 200;       // 每秒生产值
         public const int KnockedBackTime = 50;
@@ -149,9 +149,9 @@ namespace Preparation.Utility
         public const int SpaceRadius = NumOfPosGridPerCell / 2;
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
-        public const string API_key = "sk-3775f695d231424ead3a1ef2138f0af5";
-        public const string API_url = "https://api.deepseek.com/v1/chat/completions";
-        public const string ModelName = "deepseek-chat";
+        public static string API_key = "<your-base64-uuid-token>";
+        public static string API_url = "http://eesast.com/llm/chat";
+        public static string ModelName = "deepseek-v4-pro";
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;
         public const int AskAITimeoutMs = 60_000;
