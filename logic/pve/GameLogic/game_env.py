@@ -234,12 +234,14 @@ class GameEnvironment(gym.Env):
         self.factory.tick()
         self._accrue_compute(dt)
 
-        # ── 5. Compute reward ──────────────────────────────────────────────
-        reward = self._reward_calc.compute(self, action_valid, harvested)
-
-        # ── 6. Termination / truncation ────────────────────────────────────
+        # ── 5. Termination / truncation (evaluated before reward so terminal bonus fires)
         terminated = self.money < 0
         truncated  = self._step >= cfg.max_steps
+
+        # ── 6. Compute reward ──────────────────────────────────────────────
+        reward = self._reward_calc.compute(
+            self, action_valid, harvested, terminated=(terminated or truncated)
+        )
 
         obs = self._encode_obs()
         info = {
@@ -284,13 +286,14 @@ class GameEnvironment(gym.Env):
             mkt = self._market_at(*mkt_pos)
             if mkt is None or u.free_capacity < 1:
                 return False, 0.0
-            # Buy the product with highest profit margin (price - cost) we can afford
+            # Buy at market price; select product with most upside for cross-market resale
             best_pid, best_cost = self._best_buyable(mkt)
             if best_pid is None:
                 return False, 0.0
-            cost = best_cost
-            self.money -= cost
+            self.money -= best_cost
             u.add_product(best_pid, 1.0)
+            # Record which market this product came from to enforce cross-market rule
+            u.prod_origin[best_pid] = mkt.id
             u.state = "loading"
             u.busy_ticks = max(1, int(0.25 / cfg.time_step))
             u.busy_action = "buy_done"
@@ -307,9 +310,14 @@ class GameEnvironment(gym.Env):
             qty = u.prod_inv.get(pid, 0.0)
             if qty <= 0:
                 return False, 0.0
+            # Strict same-location arbitrage prevention: block selling at the market
+            # where this product was purchased (requires cross-market movement to profit)
+            if u.prod_origin.get(pid) == mkt.id:
+                return False, 0.0
             mult = self._price_multiplier()
             revenue = mkt.get_price(pid, self.time, mult) * qty
             u.prod_inv[pid] = 0.0
+            u.prod_origin.pop(pid, None)
             self.money += revenue
             self.score += revenue * cfg.score_factor
             u.state = "selling"
@@ -354,9 +362,17 @@ class GameEnvironment(gym.Env):
         if action == Action.LOAD:
             if not board.at_factory(u.x, u.y):
                 return False, 0.0
+            # Snapshot inventory before loading to detect which slots were empty
+            pre_inv = {pid: u.prod_inv.get(pid, 0.0) for pid in PRODUCT_DEFS}
             loaded = self.factory.load_products(u)
             if loaded <= 0:
                 return False, 0.0
+            # Factory-loaded products get None origin (sellable anywhere) only when
+            # the slot was empty beforehand; if there are existing market-tainted units
+            # of that type, the taint persists to prevent mixing-based bypass.
+            for pid in PRODUCT_DEFS:
+                if u.prod_inv.get(pid, 0.0) > pre_inv[pid] and pre_inv[pid] == 0:
+                    u.prod_origin.pop(pid, None)  # None / absent means factory origin
             u.state = "loading"
             u.busy_ticks = max(1, int(0.25 / cfg.time_step))
             u.busy_action = "load_done"
@@ -427,19 +443,24 @@ class GameEnvironment(gym.Env):
         return None
 
     def _best_buyable(self, mkt: Market) -> Tuple[Optional[int], float]:
-        """Return (pid, cost) of product with highest profit (price - cost) we can afford."""
-        best_pid, best_cost = None, None
-        best_profit = -float("inf")
-        mult = self._price_multiplier()
+        """Return (pid, buy_price) of affordable product with most upside (hi - current_price).
+
+        Buying costs the current market price (not manufacturing cost), so same-location
+        buy-then-sell yields no profit. Cross-market arbitrage remains viable.
+        """
+        best_pid, best_price = None, None
+        best_upside = -float("inf")
         for pid, pdef in PRODUCT_DEFS.items():
-            cost = max(0, pdef["cost"] + self.factory.cost_delta)
-            if self.money < cost:
+            price = mkt.get_price(pid, self.time, 1.0)  # buy at market price, no marketing mult
+            if self.money < price:
                 continue
-            price = mkt.get_price(pid, self.time, mult)
-            profit = price - cost
-            if profit > best_profit:
-                best_profit, best_cost, best_pid = profit, cost, pid
-        return best_pid, best_cost
+            hi = pdef["val_range"][1]
+            upside = hi - price
+            if upside > best_upside:
+                best_upside = upside
+                best_pid = pid
+                best_price = price
+        return best_pid, best_price
 
     def _price_multiplier(self) -> float:
         return self.factory.price_multiplier

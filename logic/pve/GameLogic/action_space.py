@@ -133,17 +133,22 @@ def compute_action_mask(env: "GameEnvironment") -> np.ndarray:
         if board.is_passable(nx, ny):
             mask[act] = True
 
-    # BUY: adjacent market + capacity + money
-    mkt = board.nearest_market(u.x, u.y)
-    if mkt is not None:
-        best_cost = min(pdef["cost"] for pdef in PRODUCT_DEFS.values())
-        if u.free_capacity >= 1 and env.money >= best_cost:
+    # BUY: adjacent market + capacity + money (affordability checked against market price)
+    mkt_pos = board.nearest_market(u.x, u.y)
+    mkt_obj = None
+    if mkt_pos is not None:
+        mkt_obj = next((m for m in env.markets if m.x == mkt_pos[0] and m.y == mkt_pos[1]), None)
+    if mkt_obj is not None:
+        min_mkt_price = min(mkt_obj.get_price(pid, env.time, 1.0) for pid in PRODUCT_DEFS)
+        if u.free_capacity >= 1 and env.money >= min_mkt_price:
             mask[Action.BUY] = True
 
-        # SELL_pid: carrying that product type
+        # SELL_pid: carrying that product + not same-market-origin (arbitrage block)
         for sell_act in SELL_ACTIONS:
             pid = sell_act - Action.SELL_0
             if u.prod_inv.get(pid, 0.0) > 0:
+                if u.prod_origin.get(pid) == mkt_obj.id:
+                    continue  # blocked: bought here, must sell elsewhere
                 mask[sell_act] = True
 
     # HARVEST: nearby non-depleted resource + capacity

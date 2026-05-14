@@ -21,6 +21,10 @@ class Unit:
     raw_inv: float = field(default=0.0, init=False)
     prod_inv: Dict[int, float] = field(default_factory=dict, init=False)
 
+    # Tracks where each product type was last purchased (None = factory-produced).
+    # Used to enforce cross-market arbitrage: can't sell at the market where you bought.
+    prod_origin: Dict[int, int] = field(default_factory=dict, init=False)
+
     # Busy system: while busy_ticks > 0 the unit ignores new commands
     busy_ticks: int = field(default=0, init=False)
     busy_action: str = field(default="", init=False)  # tag for what's completing
@@ -30,6 +34,7 @@ class Unit:
     def __post_init__(self):
         self.hp = self.max_hp
         self.prod_inv = {}
+        self.prod_origin = {}
 
     # ── Inventory helpers ──────────────────────────────────────────────────────
     @property
