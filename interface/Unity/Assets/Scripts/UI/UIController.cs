@@ -5,6 +5,7 @@ using Protobuf;
 using THUAI9.Unity.Core;
 using THUAI9.Unity.Live;
 using THUAI9.Unity.Playback;
+using THUAI9.Unity.Render;
 using THUAI9.Unity.WebGL;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -28,8 +29,24 @@ namespace THUAI9.Unity.UI
         private const int EventPanelMaxCharsPerLine = 28;
         private const int AIEventPanelMaxLines = 4;
         private const int AIEffectPanelMaxLines = 3;
+        private const int HoverInfoMaxCharsPerLine = 32;
+        private const int HoverInfoMaxBodyLines = 11;
+        private const float HoverInfoWidth = 360f;
+        private const float HoverInfoHeight = 248f;
+        private static readonly Vector2 HoverInfoOffset = new Vector2(18f, -18f);
         private static readonly float[] PlaybackSpeedValues = { 0.5f, 1f, 2f, 4f };
         private static readonly string[] PlaybackSpeedLabels = { "0.5x", "1x", "2x", "4x" };
+        private static readonly string[] HoverBlockingUiNames =
+        {
+            "HUD_TopBar",
+            "HUD_SourcePanel",
+            "HUD_ControlPanel",
+            "HUD_ScorePanel",
+            "HUD_EventPanel",
+            "HUD_EventLogPanel",
+            "HUD_PlayerPanel",
+            "HUD_PlayerPanelToggle"
+        };
         private static readonly Color TeamStatusBodyColor = new Color(0.88f, 0.94f, 0.98f, 1f);
         private static Font cachedUiFont;
 
@@ -70,10 +87,26 @@ namespace THUAI9.Unity.UI
         [Header("自动按名称补全引用")]
         public bool autoBindSceneReferences = true;
 
+        [Header("实时观战")]
+        public bool autoConnectLiveOnStart = false;
+        public bool showWorldHoverInfo = true;
+
         private Playback.PlaybackController playbackController;
         private LiveSpectatorClient liveClient;
+        private WorldSelectionController worldSelectionController;
+        private EventLogPanelController eventLogPanelController;
+        private Canvas rootCanvas;
+        private RectTransform hoverInfoPanel;
+        private Text hoverInfoTitleText;
+        private Text hoverInfoBodyText;
+        private RectTransform[] hoverBlockingRects = Array.Empty<RectTransform>();
+        private WorldObjectInfo lastHoverInfo;
+        private int lastHoverFrame = -1;
+        private string lastHoverTitle;
+        private string lastHoverDetail;
         private bool suppressProgressCallback;
         private bool suppressRecentReplayCallback;
+        private bool hasAutoStartedLive;
         private readonly List<string> recentReplayPaths = new List<string>();
 
         private void Awake()
@@ -96,6 +129,10 @@ namespace THUAI9.Unity.UI
                 ApplyFontToSceneTexts();
                 RefreshRecentReplayDropdown();
             }
+
+            EnsureWorldSelectionController();
+            EnsureEventLogPanel();
+            EnsureHoverInfoPanel();
         }
 
         private void Start()
@@ -163,15 +200,17 @@ namespace THUAI9.Unity.UI
                 nextFrameButton.onClick.AddListener(OnNextFrameClicked);
             }
 
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
             UpdateStaticTextFallbacks();
             ApplyFontToSceneTexts();
+            StartLiveAutomatically();
         }
 
         private void Update()
         {
             UpdateScoreAndTimeUI();
             UpdateDebugUI();
+            UpdateWorldHoverInfoPanel();
         }
 
         private void AutoBindIfNeeded()
@@ -193,9 +232,6 @@ namespace THUAI9.Unity.UI
             speedDropdown ??= FindDropdownByName("SpeedDropdown");
             playbackPathInput ??= FindInputFieldByName("ReplayPathInput");
             loadPlaybackButton ??= FindButtonByName("LoadReplayButton");
-            serverAddressInput ??= FindInputFieldByName("ServerAddressInput");
-            connectLiveButton ??= FindButtonByName("ConnectLiveButton");
-            disconnectLiveButton ??= FindButtonByName("DisconnectLiveButton");
             progressSlider ??= FindSliderByName("ReplayProgressSlider") ?? FindSliderByName("ProgressSlider");
             previousFrameButton ??= FindButtonByName("PreviousFrameButton");
             nextFrameButton ??= FindButtonByName("NextFrameButton");
@@ -212,6 +248,8 @@ namespace THUAI9.Unity.UI
             {
                 serverAddressInput.text = liveClient.ServerAddress;
             }
+
+            DisableServerConnectionControls();
         }
 
         private void ConfigureSpeedDropdown()
@@ -341,8 +379,7 @@ namespace THUAI9.Unity.UI
 
         private static int GetCurrentLiveGameMilliseconds()
         {
-            MessageOfAll allMessage = CoreParam.currentFrame?.AllMessage ?? CoreParam.allMessage;
-            return allMessage != null ? Mathf.Max(allMessage.GameTime, 0) : 0;
+            return CoreParam.stableLiveGameMilliseconds;
         }
 
         private static string FormatPlaybackTime(int totalMilliseconds)
@@ -408,8 +445,8 @@ namespace THUAI9.Unity.UI
             {
                 if (liveClient != null && liveClient.HasCurrentEventStatus)
                 {
-                    string eventName = string.IsNullOrWhiteSpace(liveClient.CurrentEventName) ? "normal" : liveClient.CurrentEventName;
-                    string eventDescription = string.IsNullOrWhiteSpace(liveClient.CurrentEventDescription) ? "\u6682\u65e0\u4e8b\u4ef6\u63cf\u8ff0" : liveClient.CurrentEventDescription;
+                    string eventName = LocalizeLiveEventName(liveClient.CurrentEventName);
+                    string eventDescription = LocalizeLiveEventDescription(liveClient.CurrentEventName, liveClient.CurrentEventDescription);
                     aiEventText.text = BuildBoundedPanelText(
                         AIEventPanelMaxLines,
                         $"事件状态：{eventName}",
@@ -425,8 +462,8 @@ namespace THUAI9.Unity.UI
                     aiEventText.text = BuildBoundedPanelText(
                         AIEventPanelMaxLines,
                         $"AI事件：{TranslateAIEventCategory(e.Category)}",
-                        e.Title,
-                        e.Description);
+                        LocalizeEventPanelText(e.Title, "事件详情"),
+                        LocalizeEventPanelText(e.Description, "事件影响已生效"));
                 }
             }
 
@@ -912,7 +949,7 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             StopLiveIfNeeded();
             playbackController?.Play();
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnPauseClicked()
@@ -940,7 +977,7 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             StopLiveIfNeeded();
             playbackController?.Stop();
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnSpeedChanged(int index)
@@ -965,7 +1002,7 @@ namespace THUAI9.Unity.UI
             string path = playbackPathInput != null ? playbackPathInput.text : playbackController.playbackFilePath;
 
             LoadPlaybackPathFromUi(path, true);
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnBrowsePlaybackClicked()
@@ -1072,8 +1109,8 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             string address = serverAddressInput != null ? serverAddressInput.text : null;
             liveClient?.StartLive(address);
-            SetReplayHint("Live hint: for 4-team tests start Server with --teamCount 4.", false);
-            UpdatePauseButtonText("Pause");
+            SetReplayHint("实时观战：正在连接；若服务端尚未启动会自动重试。", false);
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnDisconnectLiveClicked()
@@ -1084,7 +1121,7 @@ namespace THUAI9.Unity.UI
             {
                 playbackController.Stop();
             }
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnPreviousFrameClicked()
@@ -1092,7 +1129,7 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             StopLiveIfNeeded();
             playbackController?.StepBackward();
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnNextFrameClicked()
@@ -1100,7 +1137,7 @@ namespace THUAI9.Unity.UI
             ClearCurrentUiSelection();
             StopLiveIfNeeded();
             playbackController?.StepForward();
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void OnProgressChanged(float value)
@@ -1112,7 +1149,7 @@ namespace THUAI9.Unity.UI
 
             StopLiveIfNeeded();
             playbackController.SeekToFrame(Mathf.RoundToInt(value));
-            UpdatePauseButtonText("Pause");
+            UpdatePauseButtonText("暂停");
         }
 
         private void StopLiveIfNeeded()
@@ -1123,15 +1160,389 @@ namespace THUAI9.Unity.UI
             }
         }
 
+        private void StartLiveAutomatically()
+        {
+            if (!autoConnectLiveOnStart || hasAutoStartedLive || liveClient == null)
+            {
+                return;
+            }
+
+            if (playbackController != null &&
+                (playbackController.PlaybackLoaded || !string.IsNullOrWhiteSpace(playbackController.playbackFilePath)))
+            {
+                SetReplayHint("已检测到启动回放配置，实时自动连接已跳过。", false);
+                return;
+            }
+
+            hasAutoStartedLive = true;
+            string address = serverAddressInput != null ? serverAddressInput.text : liveClient.ServerAddress;
+            liveClient.StartLive(address);
+            SetReplayHint("实时观战：启动后自动连接，连接失败会自动重试。", false);
+        }
+
+        private void EnsureWorldSelectionController()
+        {
+            if (worldSelectionController == null)
+            {
+                worldSelectionController = FindObjectOfType<WorldSelectionController>();
+            }
+
+            if (worldSelectionController == null)
+            {
+                Canvas canvas = rootCanvas != null ? rootCanvas : FindObjectOfType<Canvas>();
+                if (canvas != null)
+                {
+                    worldSelectionController = canvas.GetComponent<WorldSelectionController>() ?? canvas.gameObject.AddComponent<WorldSelectionController>();
+                }
+            }
+
+            if (worldSelectionController != null)
+            {
+                worldSelectionController.targetCamera = Camera.main;
+                worldSelectionController.enableHover = true;
+            }
+        }
+
+        private void EnsureHoverInfoPanel()
+        {
+            Canvas canvas = rootCanvas != null ? rootCanvas : FindObjectOfType<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            rootCanvas = canvas;
+            Font font = GetBuiltInUIFont();
+            hoverInfoPanel = GameObject.Find("HUD_HoverInfoPanel")?.GetComponent<RectTransform>();
+            if (hoverInfoPanel == null)
+            {
+                hoverInfoPanel = FindOrCreateRect(canvas.transform, "HUD_HoverInfoPanel", typeof(Image), typeof(CanvasGroup));
+            }
+            else
+            {
+                hoverInfoPanel.SetParent(canvas.transform, false);
+            }
+
+            hoverInfoPanel.anchorMin = Vector2.zero;
+            hoverInfoPanel.anchorMax = Vector2.zero;
+            hoverInfoPanel.pivot = new Vector2(0f, 1f);
+            hoverInfoPanel.sizeDelta = new Vector2(HoverInfoWidth, HoverInfoHeight);
+
+            Image image = hoverInfoPanel.GetComponent<Image>() ?? hoverInfoPanel.gameObject.AddComponent<Image>();
+            image.color = new Color(0.018f, 0.028f, 0.042f, 0.95f);
+            image.raycastTarget = false;
+
+            CanvasGroup group = hoverInfoPanel.GetComponent<CanvasGroup>() ?? hoverInfoPanel.gameObject.AddComponent<CanvasGroup>();
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            hoverInfoTitleText = FindOrCreateHoverText(hoverInfoPanel, "HUD_HoverInfoTitle", font);
+            SetChildRect(hoverInfoTitleText.rectTransform, Vector2.up, Vector2.up, new Vector2(14f, -12f), new Vector2(HoverInfoWidth - 28f, 32f), Vector2.up);
+            ConfigureHoverText(hoverInfoTitleText, 17, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f));
+
+            hoverInfoBodyText = FindOrCreateHoverText(hoverInfoPanel, "HUD_HoverInfoBody", font);
+            SetChildRect(hoverInfoBodyText.rectTransform, Vector2.up, Vector2.up, new Vector2(14f, -48f), new Vector2(HoverInfoWidth - 28f, HoverInfoHeight - 60f), Vector2.up);
+            ConfigureHoverText(hoverInfoBodyText, 14, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f));
+
+            hoverInfoPanel.gameObject.SetActive(false);
+            RefreshHoverBlockingRects();
+        }
+
+        private void EnsureEventLogPanel()
+        {
+            Canvas canvas = rootCanvas != null ? rootCanvas : FindObjectOfType<Canvas>();
+            if (canvas == null)
+            {
+                return;
+            }
+
+            rootCanvas = canvas;
+            eventLogPanelController = FindObjectOfType<EventLogPanelController>(true);
+            if (eventLogPanelController == null)
+            {
+                RectTransform panel = FindOrCreateRect(canvas.transform, "HUD_EventLogPanel", typeof(Image));
+                eventLogPanelController = panel.gameObject.AddComponent<EventLogPanelController>();
+            }
+
+            eventLogPanelController.Configure(canvas);
+            RefreshHoverBlockingRects();
+        }
+
+        private static Text FindOrCreateHoverText(RectTransform parent, string name, Font font)
+        {
+            Transform existing = parent.Find(name);
+            Text text = existing != null ? existing.GetComponent<Text>() : null;
+            if (text == null)
+            {
+                RectTransform rect = FindOrCreateRect(parent, name, typeof(Text));
+                text = rect.GetComponent<Text>();
+            }
+
+            text.font = font;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static void ConfigureHoverText(Text text, int fontSize, FontStyle fontStyle, Color color)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            text.fontSize = fontSize;
+            text.fontStyle = fontStyle;
+            text.color = color;
+            text.alignment = TextAnchor.UpperLeft;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.resizeTextForBestFit = false;
+            text.supportRichText = false;
+            text.lineSpacing = 1.04f;
+            EnsureTextShadow(text, new Color(0f, 0f, 0f, 0.62f), new Vector2(1f, -1f));
+        }
+
+        private void UpdateWorldHoverInfoPanel()
+        {
+            if (!showWorldHoverInfo)
+            {
+                lastHoverInfo = null;
+                SetHoverInfoVisible(false);
+                return;
+            }
+
+            if (hoverInfoPanel == null || hoverInfoTitleText == null || hoverInfoBodyText == null)
+            {
+                EnsureHoverInfoPanel();
+                if (hoverInfoPanel == null)
+                {
+                    return;
+                }
+            }
+
+            EnsureWorldSelectionController();
+            WorldObjectInfo info = worldSelectionController != null ? worldSelectionController.HoveredInfo : null;
+            if (info == null || IsPointerOverAnyUiControl())
+            {
+                lastHoverInfo = null;
+                SetHoverInfoVisible(false);
+                return;
+            }
+
+            UpdateHoverInfoTextIfNeeded(info);
+            PositionHoverInfoPanel();
+            SetHoverInfoVisible(true);
+        }
+
+        private void UpdateHoverInfoTextIfNeeded(WorldObjectInfo info)
+        {
+            string title = string.IsNullOrWhiteSpace(info.title) ? info.objectType : info.title;
+            string detail = info.detail ?? string.Empty;
+            if (ReferenceEquals(info, lastHoverInfo) &&
+                info.lastSeenFrame == lastHoverFrame &&
+                string.Equals(title, lastHoverTitle, StringComparison.Ordinal) &&
+                string.Equals(detail, lastHoverDetail, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lastHoverInfo = info;
+            lastHoverFrame = info.lastSeenFrame;
+            lastHoverTitle = title;
+            lastHoverDetail = detail;
+            hoverInfoTitleText.text = title;
+            hoverInfoBodyText.text = BuildHoverBodyText(info);
+        }
+
+        private static string BuildHoverBodyText(WorldObjectInfo info)
+        {
+            List<string> lines = new List<string>();
+            string teamLabel = FormatHoverTeamLabel(info.teamId);
+            if (!string.IsNullOrEmpty(teamLabel))
+            {
+                lines.Add($"队伍：{teamLabel}");
+            }
+
+            if (info.guid != 0)
+            {
+                lines.Add($"ID：{info.guid}");
+            }
+
+            if (info.gridX >= 0 && info.gridY >= 0)
+            {
+                lines.Add($"坐标：({info.gridX}, {info.gridY})");
+            }
+
+            if (info.lastSeenFrame > 0)
+            {
+                lines.Add($"最后更新帧：{info.lastSeenFrame}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(info.detail))
+            {
+                string[] detailLines = info.detail.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+                for (int i = 0; i < detailLines.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(detailLines[i]))
+                    {
+                        lines.Add(detailLines[i].Trim());
+                    }
+                }
+            }
+
+            return BuildBoundedHoverText(lines);
+        }
+
+        private static string FormatHoverTeamLabel(long teamId)
+        {
+            return teamId switch
+            {
+                >= 1 and <= 4 => teamId.ToString(),
+                0 => string.Empty,
+                long.MaxValue => "未归属",
+                _ => "未归属"
+            };
+        }
+
+        private static string BuildBoundedHoverText(IEnumerable<string> sourceLines)
+        {
+            List<string> output = new List<string>();
+            foreach (string rawLine in sourceLines)
+            {
+                foreach (string wrapped in WrapHoverLine(rawLine))
+                {
+                    if (output.Count >= HoverInfoMaxBodyLines)
+                    {
+                        output[HoverInfoMaxBodyLines - 1] = "…";
+                        return string.Join("\n", output);
+                    }
+
+                    output.Add(wrapped);
+                }
+            }
+
+            return string.Join("\n", output);
+        }
+
+        private static IEnumerable<string> WrapHoverLine(string line)
+        {
+            string safeLine = string.IsNullOrWhiteSpace(line) ? string.Empty : line.Trim();
+            if (safeLine.Length <= HoverInfoMaxCharsPerLine)
+            {
+                yield return safeLine;
+                yield break;
+            }
+
+            for (int start = 0; start < safeLine.Length; start += HoverInfoMaxCharsPerLine)
+            {
+                int length = Mathf.Min(HoverInfoMaxCharsPerLine, safeLine.Length - start);
+                yield return safeLine.Substring(start, length);
+            }
+        }
+
+        private void PositionHoverInfoPanel()
+        {
+            if (rootCanvas == null || hoverInfoPanel == null)
+            {
+                return;
+            }
+
+            RectTransform canvasRect = rootCanvas.transform as RectTransform;
+            if (canvasRect == null)
+            {
+                return;
+            }
+
+            Camera uiCamera = rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : rootCanvas.worldCamera;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, Input.mousePosition, uiCamera, out Vector2 localPoint))
+            {
+                return;
+            }
+
+            Vector2 canvasSize = canvasRect.rect.size;
+            Vector2 bottomLeftPoint = localPoint + new Vector2(canvasSize.x * canvasRect.pivot.x, canvasSize.y * canvasRect.pivot.y);
+            Vector2 position = bottomLeftPoint + HoverInfoOffset;
+            float margin = 10f;
+
+            if (position.x + HoverInfoWidth > canvasSize.x - margin)
+            {
+                position.x = bottomLeftPoint.x - HoverInfoWidth - HoverInfoOffset.x;
+            }
+
+            position.x = Mathf.Clamp(position.x, margin, Mathf.Max(margin, canvasSize.x - HoverInfoWidth - margin));
+            position.y = Mathf.Clamp(position.y, HoverInfoHeight + margin, Mathf.Max(HoverInfoHeight + margin, canvasSize.y - margin));
+            hoverInfoPanel.anchoredPosition = position;
+        }
+
+        private void SetHoverInfoVisible(bool visible)
+        {
+            if (hoverInfoPanel != null && hoverInfoPanel.gameObject.activeSelf != visible)
+            {
+                hoverInfoPanel.gameObject.SetActive(visible);
+            }
+        }
+
+        private bool IsPointerOverAnyUiControl()
+        {
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return true;
+            }
+
+            if (hoverBlockingRects == null || hoverBlockingRects.Length == 0)
+            {
+                RefreshHoverBlockingRects();
+            }
+
+            for (int i = 0; i < hoverBlockingRects.Length; i++)
+            {
+                RectTransform rect = hoverBlockingRects[i];
+                if (rect == null || !rect.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (IsScreenPointInsideRect(rect, Input.mousePosition))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void RefreshHoverBlockingRects()
+        {
+            List<RectTransform> rects = new List<RectTransform>(HoverBlockingUiNames.Length);
+            for (int i = 0; i < HoverBlockingUiNames.Length; i++)
+            {
+                GameObject go = GameObject.Find(HoverBlockingUiNames[i]);
+                RectTransform rect = go != null ? go.GetComponent<RectTransform>() : null;
+                if (rect != null)
+                {
+                    rects.Add(rect);
+                }
+            }
+
+            hoverBlockingRects = rects.ToArray();
+        }
+
+        private static bool IsScreenPointInsideRect(RectTransform rect, Vector2 screenPoint)
+        {
+            Canvas canvas = rect.GetComponentInParent<Canvas>();
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            return RectTransformUtility.RectangleContainsScreenPoint(rect, screenPoint, camera);
+        }
+
         private void UpdatePauseButtonVisualState()
         {
             if (playbackController == null)
             {
-                UpdatePauseButtonText("Pause");
+                UpdatePauseButtonText("暂停");
                 return;
             }
 
-            UpdatePauseButtonText(playbackController.isPlaying && playbackController.isPaused ? "Resume" : "Pause");
+            UpdatePauseButtonText(playbackController.isPlaying && playbackController.isPaused ? "继续" : "暂停");
         }
 
         private void UpdatePauseButtonText(string newText)
@@ -1175,6 +1586,10 @@ namespace THUAI9.Unity.UI
                 scaler.matchWidthOrHeight = 0.5f;
                 canvasObject.AddComponent<GraphicRaycaster>();
             }
+            else if (canvas.GetComponent<GraphicRaycaster>() == null)
+            {
+                canvas.gameObject.AddComponent<GraphicRaycaster>();
+            }
 
             EnsureEventSystem();
 
@@ -1189,16 +1604,16 @@ namespace THUAI9.Unity.UI
             RectTransform panelRect = panel.GetComponent<RectTransform>();
             if (panelRect != null)
             {
-                panelRect.anchorMin = new Vector2(0f, 0f);
-                panelRect.anchorMax = new Vector2(0f, 0f);
-                panelRect.pivot = new Vector2(0f, 0f);
-                panelRect.anchoredPosition = new Vector2(24f, 146f);
-                panelRect.sizeDelta = new Vector2(740f, 98f);
+                panelRect.anchorMin = new Vector2(0f, 1f);
+                panelRect.anchorMax = new Vector2(0f, 1f);
+                panelRect.pivot = new Vector2(0f, 1f);
+                panelRect.anchoredPosition = new Vector2(24f, -108f);
+                panelRect.sizeDelta = new Vector2(520f, 168f);
             }
 
             Image panelImage = panel.GetComponent<Image>() ?? panel.AddComponent<Image>();
             panelImage.color = new Color(0.026f, 0.043f, 0.065f, 0.94f);
-            panelImage.raycastTarget = false;
+            panelImage.raycastTarget = true;
 
             ConfigureSourcePanelControls(panel.transform, font);
         }
@@ -1206,7 +1621,7 @@ namespace THUAI9.Unity.UI
         private void ConfigureSourcePanelControls(Transform panel, Font font)
         {
             Text replayLabel = FindOrCreateLabel(panel, "HUD_ReplayPathLabel", "回放", font);
-            SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -16f), new Vector2(64f, 30f), new Vector2(0f, 1f));
+            SetChildRect(replayLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -14f), new Vector2(56f, 30f), new Vector2(0f, 1f));
 
             playbackPathInput = FindInputFieldByName("ReplayPathInput") ?? CreateInput(panel, "ReplayPathInput",
                 string.Empty,
@@ -1216,29 +1631,29 @@ namespace THUAI9.Unity.UI
             {
                 playbackPathInput.text = string.Empty;
             }
-            SetChildRect(playbackPathInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -16f), new Vector2(420f, 30f), new Vector2(0f, 1f));
+            SetChildRect(playbackPathInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(76f, -14f), new Vector2(282f, 30f), new Vector2(0f, 1f));
             StyleInputField(playbackPathInput, font);
 
             browsePlaybackButton = FindButtonByName("BrowseReplayButton") ?? CreateButton(panel, "BrowseReplayButton", "选择文件", font, Vector2.zero, new Vector2(94f, 30f), new Color(0.20f, 0.48f, 0.72f, 1f));
             browsePlaybackButton.transform.SetParent(panel, false);
-            SetChildRect(browsePlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(526f, -16f), new Vector2(94f, 30f), new Vector2(0f, 1f));
+            SetChildRect(browsePlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(368f, -14f), new Vector2(76f, 30f), new Vector2(0f, 1f));
             StyleButton(browsePlaybackButton, "选择文件", new Color(0.20f, 0.48f, 0.72f, 1f), font);
 
             loadPlaybackButton = FindButtonByName("LoadReplayButton") ?? CreateButton(panel, "LoadReplayButton", "加载", font, Vector2.zero, new Vector2(82f, 30f), new Color(0.18f, 0.36f, 0.58f, 1f));
             loadPlaybackButton.transform.SetParent(panel, false);
-            SetChildRect(loadPlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(630f, -16f), new Vector2(82f, 30f), new Vector2(0f, 1f));
+            SetChildRect(loadPlaybackButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(452f, -14f), new Vector2(50f, 30f), new Vector2(0f, 1f));
             StyleButton(loadPlaybackButton, "加载", new Color(0.18f, 0.36f, 0.58f, 1f), font);
 
             recentReplayDropdown = FindDropdownByName("RecentReplayDropdown") ?? CreateDropdown(panel, "RecentReplayDropdown", font, Vector2.zero, new Vector2(500f, 30f));
             recentReplayDropdown.transform.SetParent(panel, false);
-            SetChildRect(recentReplayDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(420f, 30f), new Vector2(0f, 1f));
+            SetChildRect(recentReplayDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(76f, -128f), new Vector2(282f, 28f), new Vector2(0f, 1f));
             StyleDropdown(recentReplayDropdown, font);
             SetNamedGameObjectActive("HUD_RecentReplayLabel", false);
             SetNamedGameObjectActive("RecentReplayDropdown", false);
 
             replayHintText = FindTextByName("ReplayHintText") ?? FindOrCreateLabel(panel, "ReplayHintText", string.Empty, font);
             replayHintText.transform.SetParent(panel, false);
-            SetChildRect(replayHintText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(602f, -52f), new Vector2(116f, 34f), new Vector2(0f, 1f));
+            SetChildRect(replayHintText.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -132f), new Vector2(-36f, 28f), new Vector2(0f, 1f));
             if (IsDefaultReplayHint(replayHintText.text))
             {
                 replayHintText.text = string.Empty;
@@ -1249,48 +1664,108 @@ namespace THUAI9.Unity.UI
             replayHintText.verticalOverflow = VerticalWrapMode.Truncate;
             replayHintText.color = new Color(0.74f, 0.86f, 0.92f, 1f);
 
-            Text liveLabel = FindOrCreateLabel(panel, "HUD_LiveAddressLabel", "Live", font);
-            SetChildRect(liveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -52f), new Vector2(64f, 30f), new Vector2(0f, 1f));
+            MovePlaybackControlsIntoSourcePanel(panel, font);
+            DisableServerConnectionControls();
+            SetNamedGameObjectActive("HUD_ControlPanel", false);
+        }
 
-            serverAddressInput = FindInputFieldByName("ServerAddressInput") ?? CreateInput(panel, "ServerAddressInput",
-                liveClient != null ? liveClient.ServerAddress : "127.0.0.1:8888",
-                "server:port", font, Vector2.zero, new Vector2(260f, 30f));
-            serverAddressInput.transform.SetParent(panel, false);
-            SetChildRect(serverAddressInput.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(92f, -52f), new Vector2(260f, 30f), new Vector2(0f, 1f));
-            StyleInputField(serverAddressInput, font);
+        private void MovePlaybackControlsIntoSourcePanel(Transform panel, Font font)
+        {
+            progressSlider = FindSliderByName("ReplayProgressSlider") ?? FindSliderByName("ProgressSlider");
+            if (progressSlider != null)
+            {
+                progressSlider.transform.SetParent(panel, false);
+                SetChildRect(progressSlider.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -56f), new Vector2(484f, 22f), new Vector2(0f, 1f));
+                StyleSlider(progressSlider);
+            }
 
-            connectLiveButton = FindButtonByName("ConnectLiveButton") ?? CreateButton(panel, "ConnectLiveButton", "连接", font, Vector2.zero, new Vector2(92f, 30f), new Color(0.12f, 0.48f, 0.32f, 1f));
-            connectLiveButton.transform.SetParent(panel, false);
-            SetChildRect(connectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(366f, -52f), new Vector2(92f, 30f), new Vector2(0f, 1f));
-            StyleButton(connectLiveButton, "连接", new Color(0.12f, 0.48f, 0.32f, 1f), font);
+            playButton = FindButtonByName("PlayButton") ?? CreateButton(panel, "PlayButton", "播放", font, Vector2.zero, new Vector2(82f, 34f), new Color(0.18f, 0.72f, 0.28f, 1f));
+            playButton.transform.SetParent(panel, false);
+            SetChildRect(playButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+            StyleButton(playButton, "播放", new Color(0.18f, 0.72f, 0.28f, 1f), font);
 
-            disconnectLiveButton = FindButtonByName("DisconnectLiveButton") ?? CreateButton(panel, "DisconnectLiveButton", "断开", font, Vector2.zero, new Vector2(118f, 30f), new Color(0.48f, 0.18f, 0.18f, 1f));
-            disconnectLiveButton.transform.SetParent(panel, false);
-            SetChildRect(disconnectLiveButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(470f, -52f), new Vector2(118f, 30f), new Vector2(0f, 1f));
-            StyleButton(disconnectLiveButton, "断开", new Color(0.48f, 0.18f, 0.18f, 1f), font);
+            pauseButton = FindButtonByName("PauseButton") ?? CreateButton(panel, "PauseButton", "暂停", font, Vector2.zero, new Vector2(82f, 34f), new Color(0.88f, 0.72f, 0.18f, 1f));
+            pauseButton.transform.SetParent(panel, false);
+            SetChildRect(pauseButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(108f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+            StyleButton(pauseButton, "暂停", new Color(0.88f, 0.72f, 0.18f, 1f), font);
+            pauseButtonText = pauseButton.GetComponentInChildren<Text>(true);
+
+            stopButton = FindButtonByName("StopButton") ?? CreateButton(panel, "StopButton", "停止", font, Vector2.zero, new Vector2(82f, 34f), new Color(0.82f, 0.18f, 0.18f, 1f));
+            stopButton.transform.SetParent(panel, false);
+            SetChildRect(stopButton.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(198f, -88f), new Vector2(82f, 34f), new Vector2(0f, 1f));
+            StyleButton(stopButton, "停止", new Color(0.82f, 0.18f, 0.18f, 1f), font);
+
+            speedDropdown = FindDropdownByName("SpeedDropdown");
+            if (speedDropdown != null)
+            {
+                speedDropdown.transform.SetParent(panel, false);
+                SetChildRect(speedDropdown.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(296f, -88f), new Vector2(112f, 34f), new Vector2(0f, 1f));
+                StyleDropdown(speedDropdown, font);
+            }
+        }
+
+        private void DisableServerConnectionControls()
+        {
+            SetNamedGameObjectActive("HUD_LiveAddressLabel", false);
+            SetNamedGameObjectActive("ServerAddressInput", false);
+            SetNamedGameObjectActive("ConnectLiveButton", false);
+            SetNamedGameObjectActive("DisconnectLiveButton", false);
+            serverAddressInput = null;
+            connectLiveButton = null;
+            disconnectLiveButton = null;
         }
 
         private void ConfigureHudVisualStyle()
         {
+            LayoutLeftInfoPanels();
             LayoutRightInfoPanels();
             StylePanel("HUD_TopBar", new Color(0.020f, 0.032f, 0.050f, 0.95f));
             StylePanel("HUD_ScorePanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_EventPanel", new Color(0.035f, 0.060f, 0.085f, 0.88f));
             StylePanel("HUD_ControlPanel", new Color(0.020f, 0.032f, 0.050f, 0.94f));
             StylePanel("HUD_SourcePanel", new Color(0.026f, 0.043f, 0.065f, 0.94f));
+            SetPanelRaycastTarget("HUD_SourcePanel", true);
+            EnsureEventLogPanel();
             StyleText("HUD_ScoreTitle", 22, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
             StyleText("HUD_EventTitle", 20, FontStyle.Bold, new Color(0.30f, 0.88f, 0.98f, 1f), TextAnchor.MiddleLeft);
             StyleText("HUD_TitleText", 30, FontStyle.Bold, new Color(1.00f, 0.78f, 0.34f, 1f), TextAnchor.MiddleLeft);
             StyleText("GameStateText", 18, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.MiddleRight);
             StyleText("AIEventText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
             StyleText("AIEffectText", 16, FontStyle.Normal, new Color(0.88f, 0.94f, 0.98f, 1f), TextAnchor.UpperLeft);
-            ConfigureEventInfoText(aiEventText, new Vector2(18f, -48f), new Vector2(-36f, 78f));
-            ConfigureEventInfoText(aiEffectText, new Vector2(18f, -128f), new Vector2(-36f, 50f));
+            ConfigureEventInfoText(aiEventText, new Vector2(18f, -44f), new Vector2(-36f, 66f));
+            ConfigureEventInfoText(aiEffectText, new Vector2(18f, -112f), new Vector2(-36f, 38f));
+        }
+
+        private static void LayoutLeftInfoPanels()
+        {
+            LayoutTopLeftPanel("HUD_SourcePanel", new Vector2(24f, -108f), new Vector2(520f, 168f));
+            LayoutTopLeftPanel("HUD_EventPanel", new Vector2(24f, -296f), new Vector2(430f, 148f));
         }
 
         private static void LayoutRightInfoPanels()
         {
             LayoutTopRightPanel("HUD_ScorePanel", new Vector2(-24f, -108f), new Vector2(620f, 430f));
+        }
+
+        private static void LayoutTopLeftPanel(string objectName, Vector2 anchoredPosition, Vector2 size)
+        {
+            GameObject go = GameObject.Find(objectName);
+            if (go == null)
+            {
+                return;
+            }
+
+            RectTransform rect = go.GetComponent<RectTransform>();
+            if (rect == null)
+            {
+                return;
+            }
+
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
         }
 
         private static void LayoutTopRightPanel(string objectName, Vector2 anchoredPosition, Vector2 size)
@@ -1330,6 +1805,16 @@ namespace THUAI9.Unity.UI
 
             image.color = color;
             image.raycastTarget = false;
+        }
+
+        private static void SetPanelRaycastTarget(string objectName, bool raycastTarget)
+        {
+            GameObject go = GameObject.Find(objectName);
+            Image image = go != null ? go.GetComponent<Image>() : null;
+            if (image != null)
+            {
+                image.raycastTarget = raycastTarget;
+            }
         }
 
         private static void StyleText(string objectName, int fontSize, FontStyle fontStyle, Color color, TextAnchor alignment)
@@ -2056,6 +2541,28 @@ namespace THUAI9.Unity.UI
             }
         }
 
+        private static void StyleSlider(Slider slider)
+        {
+            if (slider == null)
+            {
+                return;
+            }
+
+            if (slider.fillRect != null)
+            {
+                Image fill = slider.fillRect.GetComponent<Image>();
+                if (fill != null)
+                {
+                    fill.color = new Color(0.18f, 0.88f, 0.96f, 1f);
+                }
+            }
+
+            if (slider.targetGraphic != null)
+            {
+                slider.targetGraphic.color = new Color(1.00f, 0.72f, 0.22f, 1f);
+            }
+        }
+
         private static void EnsureTextShadow(Text text, Color color, Vector2 distance)
         {
             if (text == null)
@@ -2159,6 +2666,118 @@ namespace THUAI9.Unity.UI
                 AIEventCategory.CombatEvent => "战斗修正",
                 _ => "未知"
             };
+        }
+
+        private static string LocalizeLiveEventName(string rawName)
+        {
+            string name = NormalizePanelLine(rawName);
+            if (string.IsNullOrEmpty(name) || IsNormalEventName(name))
+            {
+                return "正常";
+            }
+
+            if (ContainsIgnoreCase(name, "festival of lights"))
+            {
+                return "灯火节";
+            }
+
+            if (ContainsIgnoreCase(name, "festival") || ContainsIgnoreCase(name, "celebration"))
+            {
+                return "庆典活动";
+            }
+
+            if (ContainsIgnoreCase(name, "storm") || ContainsIgnoreCase(name, "rain") || ContainsIgnoreCase(name, "weather"))
+            {
+                return "天气波动";
+            }
+
+            if (ContainsIgnoreCase(name, "chip") || ContainsIgnoreCase(name, "shortage") || ContainsIgnoreCase(name, "supply"))
+            {
+                return "供应波动";
+            }
+
+            if (ContainsIgnoreCase(name, "market") || ContainsIgnoreCase(name, "price"))
+            {
+                return "市场波动";
+            }
+
+            return ContainsAsciiLetter(name) ? "特殊事件" : name;
+        }
+
+        private static string LocalizeLiveEventDescription(string rawName, string rawDescription)
+        {
+            string description = NormalizePanelLine(rawDescription);
+            if (string.IsNullOrEmpty(description))
+            {
+                return "暂无事件描述";
+            }
+
+            if (!ContainsAsciiLetter(description))
+            {
+                return description;
+            }
+
+            string name = NormalizePanelLine(rawName);
+            if (ContainsIgnoreCase(name, "festival of lights") || ContainsIgnoreCase(description, "festival of lights"))
+            {
+                return "一年一度的灯火节庆典正在提升市场活跃度。";
+            }
+
+            if (ContainsIgnoreCase(description, "boost") || ContainsIgnoreCase(description, "increase"))
+            {
+                return "当前事件正在提高部分局内收益或效率。";
+            }
+
+            if (ContainsIgnoreCase(description, "reduce") || ContainsIgnoreCase(description, "decrease"))
+            {
+                return "当前事件正在降低部分局内收益或效率。";
+            }
+
+            return "当前事件影响已生效，具体效果请以世界修正和局内状态为准。";
+        }
+
+        private static string LocalizeEventPanelText(string rawText, string fallback)
+        {
+            string text = NormalizePanelLine(rawText);
+            if (string.IsNullOrEmpty(text))
+            {
+                return fallback;
+            }
+
+            return ContainsAsciiLetter(text) ? fallback : text;
+        }
+
+        private static bool IsNormalEventName(string name)
+        {
+            return string.Equals(name, "normal", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "none", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "no event", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ContainsIgnoreCase(string text, string value)
+        {
+            return !string.IsNullOrEmpty(text) &&
+                   !string.IsNullOrEmpty(value) &&
+                   text.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool ContainsAsciiLetter(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+                if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string FormatAIEffect(AIWorldEffect effect)

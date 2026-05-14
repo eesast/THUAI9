@@ -59,7 +59,7 @@ from my_agent import DQNAgent                                  # ❌ 禁止（�
 
 ## 比赛目标
 
-你需要编写一个智能体，在 PvE 经济环境中通过买卖商品和采集资源，尽可能积累高分。
+你需要编写一个智能体，在 PvE 经济环境中通过买卖商品、采集原材料并生产高价值商品，尽可能积累高分。
 
 **得分 = 所有卖出收入之和 × 10**。比赛终止时（资金归零或时间耗尽），得分越高排名越靠前。
 
@@ -78,13 +78,13 @@ from my_agent import DQNAgent                                  # ❌ 禁止（�
 
 共 5 类商品，市场价格由正弦函数驱动，不同市场的相位随机不同步：
 
-| ID | 名称 | 购买成本 | 市场价格范围 | 生产时间 |
-| ---: | --- | ---: | --- | ---: |
-| 0 | 半导体 | 10 | 40–120 | 5.0 s |
-| 1 | 药品 | 5 | 20–60 | 4.0 s |
-| 2 | 小商品 | 1 | 4–12 | 2.0 s |
-| 3 | 服饰 | 8 | 32–96 | 6.0 s |
-| 4 | 食品 | 3 | 12–24 | 1.0 s |
+| ID | 名称 | 购买成本 | 原材料消耗 | 市场价格范围 | 生产时间 |
+| ---: | --- | ---: | ---: | --- | ---: |
+| 0 | 半导体 | 10 | 5 | 40–120 | 5.0 s |
+| 1 | 药品 | 5 | 3 | 20–60 | 4.0 s |
+| 2 | 小商品 | 1 | 1 | 4–12 | 2.0 s |
+| 3 | 服饰 | 8 | 4 | 32–96 | 6.0 s |
+| 4 | 食品 | 3 | 2 | 12–24 | 1.0 s |
 
 价格公式：
 
@@ -94,29 +94,97 @@ price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
 
 不同市场的价格相位不同步，因此套利窗口会随时间移动。
 
+## 完整玩法流程
+
+游戏支持两种盈利路线，可结合使用：
+
+### 路线一：低买高卖（市场套利）
+
+```
+移动到市场 → BUY（购买利润最高商品）→ 移动到高价市场 → SELL_pid（卖出特定商品）
+```
+
+### 路线二：生产链（原材料 → 成品）
+
+```
+HARVEST（采集原材料）→ 移动回工厂 → DEPOSIT（存入工厂）→ PRODUCE_pid（开始生产）
+→ 等待工厂生产完成 → LOAD（装载成品）→ 移动到市场 → SELL_pid（卖出）
+```
+
+### 路线三：算力科技加速
+
+```
+OCCUPY（占领算力中心，每次调用推进进度）→ 算力中心开放后每 tick 积累算力
+→ 移动回工厂 → TECH_x（购买科技升级，消耗算力）
+```
+
 ## 动作空间
 
-动作是离散整数，共 8 个：
+动作是离散整数，共 **28** 个（`N_ACTIONS = 28`）：
+
+### 基础动作（0–5）
 
 | 动作编号 | 名称 | 含义 |
 | ---: | --- | --- |
 | `0` | WAIT | 等待一个 tick |
-| `1` | MOVE_UP | 向上移动（x−1） |
-| `2` | MOVE_DOWN | 向下移动（x+1） |
-| `3` | MOVE_LEFT | 向左移动（y−1） |
-| `4` | MOVE_RIGHT | 向右移动（y+1） |
+| `1` | MOVE_UP | 向上移动（x−1），消耗 1 busy_tick |
+| `2` | MOVE_DOWN | 向下移动（x+1），消耗 1 busy_tick |
+| `3` | MOVE_LEFT | 向左移动（y−1），消耗 1 busy_tick |
+| `4` | MOVE_RIGHT | 向右移动（y+1），消耗 1 busy_tick |
 | `5` | BUY | 在相邻市场购买当前利润最高（市价−成本）的可负担商品 |
-| `6` | SELL | 在相邻市场卖出背包内所有商品，获得当前市场价格 |
-| `7` | HARVEST | 从附近资源点采集原材料 |
+
+### 卖出动作（6–10，按商品类型分）
+
+| 动作编号 | 名称 | 含义 |
+| ---: | --- | --- |
+| `6` | SELL_0 | 在相邻市场卖出背包内所有**半导体**（商品0） |
+| `7` | SELL_1 | 在相邻市场卖出背包内所有**药品**（商品1） |
+| `8` | SELL_2 | 在相邻市场卖出背包内所有**小商品**（商品2） |
+| `9` | SELL_3 | 在相邻市场卖出背包内所有**服饰**（商品3） |
+| `10` | SELL_4 | 在相邻市场卖出背包内所有**食品**（商品4） |
+
+### 生产链动作（11–18）
+
+| 动作编号 | 名称 | 含义 |
+| ---: | --- | --- |
+| `11` | HARVEST | 从附近资源点采集原材料，存入背包 |
+| `12` | DEPOSIT | 将背包中的原材料存入工厂（需在工厂格） |
+| `13` | PRODUCE_0 | 工厂开始生产半导体（消耗 5 原材料） |
+| `14` | PRODUCE_1 | 工厂开始生产药品（消耗 3 原材料） |
+| `15` | PRODUCE_2 | 工厂开始生产小商品（消耗 1 原材料） |
+| `16` | PRODUCE_3 | 工厂开始生产服饰（消耗 4 原材料） |
+| `17` | PRODUCE_4 | 工厂开始生产食品（消耗 2 原材料） |
+| `18` | LOAD | 从工厂仓库装载已完成的成品到背包 |
+
+### 算力动作（19–27）
+
+| 动作编号 | 名称 | 含义 |
+| ---: | --- | --- |
+| `19` | OCCUPY | 推进相邻算力中心的占领进度（需持续执行直到开放） |
+| `20` | TECH_0 | 购买**降低成本**科技（50 算力）：买商品每件便宜 2 |
+| `21` | TECH_1 | 购买**效率提升**科技（40 算力）：生产时间 ×0.5 |
+| `22` | TECH_2 | 购买**市场营销**科技（80 算力）：所有商品卖价 ×1.1 |
+| `23` | TECH_3 | 购买**耐久强化**科技（30 算力）：单位最大 HP +50% |
+| `24` | TECH_4 | 购买**多产线**科技（60 算力）：工厂增加 1 条生产线 |
+| `25` | TECH_5 | 购买**路径优化**科技（50 算力，需先买效率提升）：移动变为即时（0 busy_tick） |
+| `26` | TECH_6 | 购买**市场分析**科技（40 算力，可重复购买）：obs[50–57] 中标记已拥有 |
+| `27` | TECH_7 | 购买**算力扩张**科技（70 算力）：算力积累速率 +30% |
+
+> 科技动作必须在工厂格执行，且持久科技（TECH_0~5, TECH_7）每种只能购买一次。
 
 **动作有效性规则**：
 
-- 移动：目标格必须可通行，且单位不处于 busy 状态。
-- BUY：当前格 Manhattan 距离 ≤ 1 内有市场；背包有空余容量；现金 ≥ 最低商品成本。
-- SELL：当前格 Manhattan 距离 ≤ 1 内有市场；背包内有成品。
-- HARVEST：当前格 Manhattan 距离 ≤ 2 内有未耗尽资源点；背包有空余容量。
+- **移动**：目标格可通行，且 busy_ticks = 0。
+- **BUY**：相邻（Manhattan ≤ 1）有市场；背包有空余；现金 ≥ 最低商品成本。
+- **SELL_pid**：相邻有市场；背包中该商品数量 > 0。
+- **HARVEST**：相邻（≤ 2）有未耗尽资源点；背包有空余容量。
+- **DEPOSIT**：在工厂格；背包 raw_inv > 0。
+- **PRODUCE_pid**：在工厂格；工厂 raw_stock ≥ 该商品原材料消耗；生产队列未满。
+- **LOAD**：在工厂格；工厂有已生产成品；背包有空余容量。
+- **OCCUPY**：相邻有算力中心且尚未开放。
+- **TECH_x**：在工厂格；算力 ≥ 科技成本；持久科技未重复购买；前置科技已满足。
 
-执行无效动作不会报错，但会受到惩罚并浪费步数。
+执行无效动作不会报错，但会受到 −0.05 的奖励惩罚并浪费步数。
 
 ## 自定义模型开发（必须自己写）
 
@@ -134,13 +202,12 @@ import numpy as np
 class MyAgent(BaseAgent):
     def get_action(self, observation: np.ndarray) -> int:
         """
-        observation → action id.
+        observation → action id (0–27).
         不能访问 self.env.unit / self.env.board 等内部对象。
         """
         # ⚠️ 必须显式调用 action_masks()！
         # MaskablePPO（sb3-contrib）会自动应用掩码，但自定义 Agent 没有自动机制。
-        # 不调用此方法 → 无掩码过滤 → 网络会执行大量无效动作，训练效率极低。
-        mask = self.env.action_masks()       # (8,) bool 数组，True=有效
+        mask = self.env.action_masks()       # (28,) bool 数组，True=有效
         valid = np.where(mask)[0]            # 当前允许的动作编号
         if len(valid) == 0:
             return 0                         # fallback: WAIT
@@ -155,10 +222,6 @@ class MyAgent(BaseAgent):
         return int(np.argmax(q_values))
 
     def train(self, total_timesteps: int, **kwargs) -> dict:
-        """
-        训练循环。只能通过 self.reset() / self.step() 与环境交互。
-        get_action() 内部已经调用了 action_masks()，这里无需额外处理。
-        """
         obs = self.reset()
         for _ in range(total_timesteps):
             action = self.get_action(obs)
@@ -166,21 +229,17 @@ class MyAgent(BaseAgent):
             if terminated or truncated:
                 obs = self.reset()
             # 在这里更新你的网络……
-        return {"total_timesteps": total_timesteps, ...}
+        return {"total_timesteps": total_timesteps}
 
     def save(self, path: str):
-        """持久化模型权重。"""
         ...
 
     @classmethod
     def load(cls, path: str, env) -> "MyAgent":
-        """从文件加载模型。评测机将调用此方法。"""
         ...
 ```
 
 ### MaskablePPO 与自定义 Agent 的区别（重要）
-
-这一点经常被忽略，请务必理解：
 
 | | MaskablePPO（SB3 方案） | 自定义 Agent（你的实现） |
 |---|---|---|
@@ -195,12 +254,12 @@ class MyAgent(BaseAgent):
 你自己实现的 Agent 类必须满足以下要求：
 
 1. **继承 `BaseAgent`** — 这是评测机加载的唯一入口。
-2. **实现 `get_action()`** — 给定 32 维 observation 向量，返回一个 `int` 动作编号（0–7）。
+2. **实现 `get_action()`** — 给定 58 维 observation 向量，返回一个 `int` 动作编号（0–27）。
 3. **实现 `train()`** — 完整的训练循环，内部只能通过 `self.reset()` / `self.step()` 与环境交互。
 4. **实现 `save(path)` 和 `load(cls, path, env)`** — 保存/加载模型权重。评测机会调用 `YourAgent.load(path, env)` 加载你的模型。
 5. **不能访问 `self.env` 的内部属性** — `self.env.unit`、`self.env.board`、`self.env.money` 等都是禁止的。状态信息只能从 `observation` 和 `info` 字典中获得。
 6. **必须用 `self.reset()` / `self.step()`** — 不要直接调用 `self.env.reset()` 或 `self.env.step()`，用 `BaseAgent` 提供的包装方法。
-7. **必须在 `get_action()` 中显式调用 `self.env.action_masks()`** — MaskablePPO 会自动应用掩码，但自定义 Agent 不会。不调用则没有任何无效动作过滤，网络会频繁执行无效动作，训练效率极低。
+7. **必须在 `get_action()` 中显式调用 `self.env.action_masks()`** — MaskablePPO 会自动应用掩码，但自定义 Agent 不会。不调用则没有任何无效动作过滤，训练效率极低。
 
 ### 参考示例（学习用，禁止直接使用）
 
@@ -252,7 +311,7 @@ from GameLogic import GameEnvironment, GameConfig
 env = GameEnvironment(cfg=GameConfig.easy())
 obs, info = env.reset(seed=0)
 obs, reward, terminated, truncated, info = env.step(action)
-mask = env.action_masks()  # shape (8,) bool 数组
+mask = env.action_masks()  # shape (28,) bool 数组
 ```
 
 `step()` 返回的 `info` 字典：
@@ -268,37 +327,97 @@ mask = env.action_masks()  # shape (8,) bool 数组
 
 ## 观测向量
 
-观测是长度为 **32** 的 `float32` 数组：
+观测是长度为 **58** 的 `float32` 数组：
+
+### 单位状态（[0–9]）
 
 | 索引 | 含义 | 归一化方式 |
 | ---: | --- | --- |
 | 0–1 | 单位位置 (x, y) | / (地图高, 地图宽) |
 | 2 | 单位 HP | / max_hp |
-| 3 | 原材料背包占比 | raw_inv / capacity |
-| 4 | 成品背包占比 | prod_inv / capacity |
-| 5 | busy 倒计时 | busy_ticks / 10，截断到 1 |
-| 6 | 现金（对数） | log10(money+1) / 5 |
-| 7 | 算力点 | compute / 100，最大 2 |
-| 8 | 游戏进度 | time / max_game_time |
-| 9 | 价格相位正弦 | sin(2π·t / market_period) |
-| 10 | 价格相位余弦 | cos(2π·t / market_period) |
-| 11 | 工厂原材料库存 | / factory_storage_cap |
-| 12 | 工厂成品库存 | / factory_storage_cap |
-| 13 | 工厂生产队列长度 | / 10，截断到 1 |
-| 14–16 | 资源点 0 | 相对位置 (dx/H, dy/W) + 库存比例 |
-| 17–19 | 资源点 1 | 同上 |
-| 20–22 | 算力中心 0 | 相对位置 (dx/H, dy/W) + 是否开放 |
-| 23–25 | 算力中心 1 | 同上 |
-| 26–28 | 市场 0 | 相对位置 (dx/H, dy/W) + 当前最高卖价（归一化） |
-| 29–31 | 市场 1 | 同上 |
+| 3 | 原材料背包 | raw_inv / capacity |
+| 4 | 半导体背包数量 | prod_inv[0] / capacity |
+| 5 | 药品背包数量 | prod_inv[1] / capacity |
+| 6 | 小商品背包数量 | prod_inv[2] / capacity |
+| 7 | 服饰背包数量 | prod_inv[3] / capacity |
+| 8 | 食品背包数量 | prod_inv[4] / capacity |
+| 9 | busy 倒计时 | busy_ticks / 10，截断到 1 |
 
-如果实体数量不足（如配置只有 2 个市场），多余索引保持 0。
+### 经济状态（[10–14]）
+
+| 索引 | 含义 | 归一化方式 |
+| ---: | --- | --- |
+| 10 | 现金（对数） | log10(money+1) / 5 |
+| 11 | 算力点 | compute / 100，最大 2 |
+| 12 | 游戏进度 | time / max_game_time |
+| 13 | 价格相位正弦 | sin(2π·t / market_period) |
+| 14 | 价格相位余弦 | cos(2π·t / market_period) |
+
+### 工厂状态（[15–21]）
+
+| 索引 | 含义 | 归一化方式 |
+| ---: | --- | --- |
+| 15 | 工厂原材料库存 | / factory_storage_cap |
+| 16 | 工厂半导体库存 | / factory_storage_cap |
+| 17 | 工厂药品库存 | / factory_storage_cap |
+| 18 | 工厂小商品库存 | / factory_storage_cap |
+| 19 | 工厂服饰库存 | / factory_storage_cap |
+| 20 | 工厂食品库存 | / factory_storage_cap |
+| 21 | 工厂生产队列长度 | / 10，截断到 1 |
+
+### 资源点（[22–27]）
+
+| 索引 | 含义 | 归一化方式 |
+| ---: | --- | --- |
+| 22–23 | 资源点 0 相对位置 (dx, dy) | / (H, W) |
+| 24 | 资源点 0 库存比例 | stock / max_stock |
+| 25–26 | 资源点 1 相对位置 (dx, dy) | / (H, W) |
+| 27 | 资源点 1 库存比例 | stock / max_stock |
+
+### 算力中心（[28–35]）
+
+| 索引 | 含义 | 归一化方式 |
+| ---: | --- | --- |
+| 28–29 | 算力中心 0 相对位置 (dx, dy) | / (H, W) |
+| 30 | 算力中心 0 是否开放 | 0 或 1 |
+| 31 | 算力中心 0 占领进度 | / unit_occupy_time |
+| 32–33 | 算力中心 1 相对位置 (dx, dy) | / (H, W) |
+| 34 | 算力中心 1 是否开放 | 0 或 1 |
+| 35 | 算力中心 1 占领进度 | / unit_occupy_time |
+
+### 市场（[36–49]）
+
+| 索引 | 含义 | 归一化方式 |
+| ---: | --- | --- |
+| 36–37 | 市场 0 相对位置 (dx, dy) | / (H, W) |
+| 38 | 市场 0 当前半导体价格 | 按各商品 val_range 归一化 |
+| 39 | 市场 0 当前药品价格 | 同上 |
+| 40 | 市场 0 当前小商品价格 | 同上 |
+| 41 | 市场 0 当前服饰价格 | 同上 |
+| 42 | 市场 0 当前食品价格 | 同上 |
+| 43–44 | 市场 1 相对位置 (dx, dy) | / (H, W) |
+| 45–49 | 市场 1 五种商品当前价格 | 同上 |
+
+### 科技状态（[50–57]）
+
+| 索引 | 含义 |
+| ---: | --- |
+| 50 | 是否已购买 cost_reduction |
+| 51 | 是否已购买 efficiency |
+| 52 | 是否已购买 marketing |
+| 53 | 是否已购买 durability |
+| 54 | 是否已购买 multi_line |
+| 55 | 是否已购买 path_optimization |
+| 56 | 是否已购买 market_analysis（非持久，可重复） |
+| 57 | 是否已购买 compute_expansion |
+
+如果实体数量不足（如配置只有 1 个算力中心），多余索引保持 0。
 
 如果你编写规则型策略，建议直接读取 `info` 字典中的字段，而不是尝试解析原始向量。
 
 ## 动作掩码
 
-`env.action_masks()` 返回 `(8,)` 布尔数组，`True` 表示该动作当前有效。
+`env.action_masks()` 返回 `(28,)` 布尔数组，`True` 表示该动作当前有效。
 
 使用 `sb3-contrib` 中的 `MaskablePPO` 可自动利用动作掩码，避免探索无效动作：
 
@@ -332,7 +451,7 @@ model = MaskablePPO("MlpPolicy", masked_env)
 奖励是训练辅助信号，最终**排名依据是多 seed 下的平均总得分**（`info["score"]`），不是累计奖励。
 
 注意：
-- 得分 = 每次卖出收入 × 10，只有 SELL 动作成功时才增加。
+- 得分 = 每次卖出收入 × 10，只有 SELL_pid 动作成功时才增加。
 - `terminated=True`：现金 < 0（破产）；`truncated=True`：步数耗尽（正常结束）。
 
 ## 本地运行
@@ -370,10 +489,13 @@ python my_agent/evaluate.py --model models/dqn_custom.pt --config easy --episode
 
 可尝试的方向：
 
-- 使用 `action_masks()` 做动作掩码，过滤无效动作。
+- 使用 `action_masks()` 做动作掩码，过滤无效动作（强烈建议）。
 - 对地图做 BFS / A\* 路径规划，寻找最优路线。
 - 建模市场价格正弦周期（利用观测向量中的 sin/cos 相位），预测高价时机再卖出。
 - 选择高利润商品：半导体（40–120）和服饰（32–96）利润空间大，但购买成本也较高。
+- 利用生产链：食品（1.0 s 生产，成本 2 原材料）适合快速周转；半导体利润率最高但生产慢。
+- 优先占领算力中心以积累算力，然后购买 efficiency（生产×0.5）或 marketing（卖价×1.1）科技。
+- 购买 path_optimization 科技后移动变为即时，大幅提升地图探索效率。
 - 结合规则策略与强化学习（Hybrid Policy）。
 - 用课程学习先在 easy 地图上训练，再迁移到 medium / hard。
 - 使用 Recurrent Policy 识别价格周期相位。
@@ -418,7 +540,7 @@ from RLInterfaces import BaseAgent
 
 class Agent(BaseAgent):               # ← 类名必须是 Agent
     def get_action(self, observation: np.ndarray) -> int:
-        ...                            # 你的推理逻辑
+        ...                            # 你的推理逻辑（返回 0–27）
 
     def train(self, total_timesteps: int, **kwargs) -> dict:
         ...                            # 你的训练逻辑

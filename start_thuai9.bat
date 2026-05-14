@@ -20,14 +20,48 @@ if not exist "%ROOT%logic\ClientTest\ClientTest.csproj" (
     exit /b 1
 )
 
-start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run"
+where dotnet >nul 2>nul
+if errorlevel 1 (
+    echo [ERROR] dotnet not found.
+    exit /b 1
+)
+
+echo [THUAI9] Stopping previous smoke processes from this workspace...
+if not defined THUAI9_SKIP_SMOKE_CLEANUP (
+    call "%ROOT%stop_thuai9_smoke.bat"
+    if errorlevel 1 (
+        echo [ERROR] Failed to stop old smoke processes.
+        exit /b 1
+    )
+) else (
+    echo [THUAI9] THUAI9_SKIP_SMOKE_CLEANUP is set; keeping existing processes.
+)
+
+echo [THUAI9] Building UI, Server, and ClientTest before launch...
+dotnet build "%ROOT%interface\AvaloniaUI\THUAI9_Avalonia.csproj"
+if errorlevel 1 (
+    echo [ERROR] UI build failed.
+    exit /b 1
+)
+dotnet build "%ROOT%logic\Server\Server.csproj"
+if errorlevel 1 (
+    echo [ERROR] Server build failed.
+    exit /b 1
+)
+dotnet build "%ROOT%logic\ClientTest\ClientTest.csproj"
+if errorlevel 1 (
+    echo [ERROR] Client build failed.
+    exit /b 1
+)
+
+start "THUAI9 UI" cmd /k "cd /d ""%ROOT%interface\AvaloniaUI"" && dotnet run --no-build"
 timeout /t 2 /nobreak >nul
 
-start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run"
+start "THUAI9 Server" cmd /k "cd /d ""%ROOT%logic\Server"" && dotnet run --no-build"
 timeout /t 2 /nobreak >nul
 
 for /L %%i in (1,1,4) do (
-    start "THUAI9 Client %%i" cmd /k "cd /d ""%ROOT%logic\ClientTest"" && dotnet run -- 0 %%i"
+    start "THUAI9 Client %%i" cmd /k "cd /d ""%ROOT%logic\ClientTest"" && dotnet run --no-build -- 0 %%i"
 )
 
 echo [THUAI9] All processes launched.

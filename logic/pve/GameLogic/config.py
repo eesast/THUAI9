@@ -10,11 +10,12 @@ import math
 PRODUCT_IDS = list(range(5))
 
 PRODUCT_DEFS: Dict[int, dict] = {
-    0: {"name": "semiconductor", "zh": "半导体", "cost": 10, "val_range": (40, 120), "produce_time": 5.0},
-    1: {"name": "medicine",      "zh": "药品",   "cost": 5,  "val_range": (20, 60),  "produce_time": 4.0},
-    2: {"name": "small_goods",   "zh": "小商品", "cost": 1,  "val_range": (4,  12),  "produce_time": 2.0},
-    3: {"name": "clothing",      "zh": "服饰",   "cost": 8,  "val_range": (32, 96),  "produce_time": 6.0},
-    4: {"name": "food",          "zh": "食品",   "cost": 3,  "val_range": (12, 24),  "produce_time": 1.0},
+    # raw_cost: units of raw material consumed per item produced at factory
+    0: {"name": "semiconductor", "zh": "半导体", "cost": 10, "raw_cost": 5, "val_range": (40, 120), "produce_time": 5.0},
+    1: {"name": "medicine",      "zh": "药品",   "cost": 5,  "raw_cost": 3, "val_range": (20, 60),  "produce_time": 4.0},
+    2: {"name": "small_goods",   "zh": "小商品", "cost": 1,  "raw_cost": 1, "val_range": (4,  12),  "produce_time": 2.0},
+    3: {"name": "clothing",      "zh": "服饰",   "cost": 8,  "raw_cost": 4, "val_range": (32, 96),  "produce_time": 6.0},
+    4: {"name": "food",          "zh": "食品",   "cost": 3,  "raw_cost": 2, "val_range": (12, 24),  "produce_time": 1.0},
 }
 
 # ── Tech tree ──────────────────────────────────────────────────────────────────

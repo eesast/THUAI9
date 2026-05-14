@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using THUAI9_Avalonia.Models;
@@ -21,7 +22,8 @@ namespace THUAI9_Avalonia.ViewModels
         private const string DefaultServerAddress = "127.0.0.1:8888";
         private const long SpectatorTeamId = 0;
         private const int SpectatorSideFlag = 0;
-        private static readonly TimeSpan AutoReconnectInterval = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan AutoReconnectInterval = TimeSpan.FromSeconds(1);
+        private const string AvaloniaReadyFileEnvironmentVariable = "THUAI9_AVALONIA_READY_FILE";
 
         [ObservableProperty]
         private ObservableCollection<int> teamScores = new() { 0, 0, 0, 0 };
@@ -84,8 +86,12 @@ namespace THUAI9_Avalonia.ViewModels
         private bool _hasReceivedFirstFrame;
         private bool _hasLoggedRetrying;
         private bool _playbackModeActive;
+        private int _liveFrameCount;
+        private int _liveUiUpdateScheduled;
         private readonly object _drawPicLock = new();
+        private readonly object _pendingLiveMessageLock = new();
         private readonly CancellationTokenSource _autoConnectCts = new();
+        private MessageToClient? _pendingLiveMessage;
         private Task? _autoConnectTask;
         private Views.MapView? _mapView;
 
@@ -282,6 +288,7 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void ReleaseConnectionResources()
         {
+            ClearPendingLiveMessage();
             _stream?.Dispose();
             _stream = null;
             _client = null;
@@ -317,6 +324,7 @@ namespace THUAI9_Avalonia.ViewModels
                 LogConsoleVM.AddLog($"已发起实时观战流注册：SpectatorId={_spectatorPlayerId}", "INFO");
                 _ = ReceiveMessagesAsync();
                 await Task.Yield();
+                MarkAvaloniaReadyForSmokeScript();
                 return true;
             }
             catch (RpcException ex)
@@ -332,6 +340,31 @@ namespace THUAI9_Avalonia.ViewModels
                 _stream?.Dispose();
                 _stream = null;
                 return false;
+            }
+        }
+
+        private void MarkAvaloniaReadyForSmokeScript()
+        {
+            string? readyFile = Environment.GetEnvironmentVariable(AvaloniaReadyFileEnvironmentVariable);
+            if (string.IsNullOrWhiteSpace(readyFile))
+            {
+                return;
+            }
+
+            try
+            {
+                string? directory = Path.GetDirectoryName(readyFile);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                string content = $"{DateTimeOffset.Now:O}{Environment.NewLine}SpectatorId={_spectatorPlayerId}{Environment.NewLine}";
+                File.WriteAllText(readyFile, content, Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                LogConsoleVM.AddLog($"写入 Avalonia 观战就绪标记失败：{ex.Message}", "WARNING");
             }
         }
 
@@ -355,7 +388,7 @@ namespace THUAI9_Avalonia.ViewModels
                     }
 
                     var message = _stream.ResponseStream.Current;
-                    await Dispatcher.UIThread.InvokeAsync(() => ProcessMessage(message));
+                    QueueLiveMessage(message);
                 }
             }
             catch (Exception ex)
@@ -370,9 +403,60 @@ namespace THUAI9_Avalonia.ViewModels
             }
         }
 
+        private void QueueLiveMessage(MessageToClient message)
+        {
+            lock (_pendingLiveMessageLock)
+            {
+                _pendingLiveMessage = message;
+            }
+
+            if (Interlocked.Exchange(ref _liveUiUpdateScheduled, 1) == 0)
+            {
+                Dispatcher.UIThread.Post(ProcessQueuedLiveMessage, DispatcherPriority.Render);
+            }
+        }
+
+        private void ProcessQueuedLiveMessage()
+        {
+            MessageToClient? message;
+            lock (_pendingLiveMessageLock)
+            {
+                message = _pendingLiveMessage;
+                _pendingLiveMessage = null;
+            }
+
+            if (message != null)
+            {
+                ProcessMessage(message);
+            }
+
+            Interlocked.Exchange(ref _liveUiUpdateScheduled, 0);
+
+            bool hasPendingMessage;
+            lock (_pendingLiveMessageLock)
+            {
+                hasPendingMessage = _pendingLiveMessage != null;
+            }
+
+            if (hasPendingMessage && Interlocked.Exchange(ref _liveUiUpdateScheduled, 1) == 0)
+            {
+                Dispatcher.UIThread.Post(ProcessQueuedLiveMessage, DispatcherPriority.Render);
+            }
+        }
+
+        private void ClearPendingLiveMessage()
+        {
+            lock (_pendingLiveMessageLock)
+            {
+                _pendingLiveMessage = null;
+            }
+
+            Interlocked.Exchange(ref _liveUiUpdateScheduled, 0);
+        }
+
         private void ProcessMessage(MessageToClient message)
         {
-            if (_playbackModeActive)
+            if (_playbackModeActive || !_isConnected)
             {
                 return;
             }
@@ -386,6 +470,8 @@ namespace THUAI9_Avalonia.ViewModels
                     LogConsoleVM.AddLog("已收到首帧实时游戏消息", "SUCCESS");
                 }
 
+                _liveFrameCount++;
+                PlaybackVM.UpdateLiveProgress(message, _liveFrameCount);
                 UpdateCharacters(message);
                 UpdateGameStatus(message);
                 UpdateMapElements(message);
@@ -621,6 +707,9 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void ResetMatchVisualizationState(bool resetBaseMap)
         {
+            _liveFrameCount = 0;
+            ClearPendingLiveMessage();
+            PlaybackVM.UpdateLiveProgress(null, _liveFrameCount);
             ClearCharacterState();
             _dynamicStateManager.Reset(resetBaseMap);
             ResetSummaryState();

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -63,6 +63,7 @@ namespace THUAI9.Unity.Live
         private bool eventStatusPollInFlight;
         private float nextEventStatusPollTime;
 #endif
+        private bool isApplicationQuitting;
         private int receivedFrameCount;
         private int lastReceivedObjectCount;
         private int lastReceivedTeamCount;
@@ -188,14 +189,22 @@ namespace THUAI9.Unity.Live
 
         public void StopLive()
         {
+            StopLive(resetFrameSource: true, waitForShutdown: false);
+        }
+
+        private void StopLive(bool resetFrameSource, bool waitForShutdown)
+        {
             liveRequested = false;
             externalLiveMode = false;
             liveEndedCleanly = false;
             hasReceivedFirstFrame = false;
             ResetReceiveCounters();
             statusText = "实时：已断开";
-            ReleaseConnectionResources();
-            FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", statusText);
+            ReleaseConnectionResources(waitForShutdown);
+            if (resetFrameSource)
+            {
+                FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", statusText);
+            }
         }
 
         public void StartExternalLive(string sourceName = null)
@@ -207,7 +216,7 @@ namespace THUAI9.Unity.Live
 
             playbackController ??= FindObjectOfType<PlaybackController>();
             playbackController?.Stop();
-            ReleaseConnectionResources();
+            ReleaseConnectionResources(waitForShutdown: false);
 
             liveRequested = true;
             externalLiveMode = true;
@@ -268,7 +277,7 @@ namespace THUAI9.Unity.Live
 
             try
             {
-                ReleaseConnectionResources();
+                ReleaseConnectionResources(waitForShutdown: false);
                 cancellation = new CancellationTokenSource();
                 EnsureNativeGrpcSearchPath();
 
@@ -299,8 +308,8 @@ namespace THUAI9.Unity.Live
             {
                 statusText = $"实时：连接失败，{ShortError(ex)}";
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
-                ReleaseConnectionResources();
-                ScheduleReconnect();
+                ReleaseConnectionResources(waitForShutdown: false);
+                ScheduleReconnect($"连接失败，{ShortError(ex)}");
             }
             finally
             {
@@ -320,9 +329,10 @@ namespace THUAI9.Unity.Live
                     bool hasMessage = await stream.ResponseStream.MoveNext(token).ConfigureAwait(false);
                     if (!hasMessage)
                     {
-                        statusText = hasReceivedFirstFrame
-                            ? "实时：服务器消息流已结束"
-                            : "实时：服务器消息流结束，未收到首帧";
+                        string streamEndReason = hasReceivedFirstFrame
+                            ? "服务器消息流已结束"
+                            : "服务器消息流结束，未收到首帧";
+                        statusText = $"实时：{streamEndReason}";
                         FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                         liveEndedCleanly = hasReceivedFirstFrame;
                         shouldReconnect = !hasReceivedFirstFrame;
@@ -365,10 +375,12 @@ namespace THUAI9.Unity.Live
             finally
             {
                 isConnected = false;
-                ReleaseConnectionResources();
+                ReleaseConnectionResources(waitForShutdown: false);
                 if (liveRequested && shouldReconnect)
                 {
-                    ScheduleReconnect();
+                    ScheduleReconnect(statusText.StartsWith("实时：", StringComparison.Ordinal)
+                        ? statusText.Substring("实时：".Length)
+                        : "等待服务器");
                 }
             }
         }
@@ -488,17 +500,21 @@ namespace THUAI9.Unity.Live
             maxReceivedCharacterCount = Math.Max(maxReceivedCharacterCount, lastReceivedCharacterCount);
         }
 
-        private void ScheduleReconnect()
+        private void ScheduleReconnect(string reason = null)
         {
             if (!liveRequested || !autoReconnect)
             {
                 return;
             }
 
-            nextConnectUtc = DateTime.UtcNow.AddSeconds(Mathf.Max(0.5f, reconnectIntervalSeconds));
+            float delaySeconds = Mathf.Max(0.5f, reconnectIntervalSeconds);
+            nextConnectUtc = DateTime.UtcNow.AddSeconds(delaySeconds);
+            string reasonText = string.IsNullOrWhiteSpace(reason) ? "等待服务器" : reason.Trim();
+            statusText = $"实时：{reasonText}，{delaySeconds:0.#}s 后自动重试";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
         }
 
-        private void ReleaseConnectionResources()
+        private void ReleaseConnectionResources(bool waitForShutdown = false)
         {
 #if !UNITY_WEBGL || UNITY_EDITOR
             try
@@ -521,7 +537,7 @@ namespace THUAI9.Unity.Live
 
             if (channel != null)
             {
-                ShutdownChannelInBackground(channel);
+                ShutdownChannel(channel, waitForShutdown);
                 channel = null;
             }
 
@@ -532,15 +548,36 @@ namespace THUAI9.Unity.Live
         }
 
 #if !UNITY_WEBGL || UNITY_EDITOR
-        private static async void ShutdownChannelInBackground(Channel channelToShutdown)
+        private static void ShutdownChannel(Channel channelToShutdown, bool waitForShutdown)
         {
-            try
+            if (channelToShutdown == null)
             {
-                await channelToShutdown.ShutdownAsync().ConfigureAwait(false);
+                return;
             }
-            catch
+
+            if (waitForShutdown)
             {
+                try
+                {
+                    channelToShutdown.ShutdownAsync().Wait(TimeSpan.FromSeconds(1.5));
+                }
+                catch
+                {
+                }
+
+                return;
             }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await channelToShutdown.ShutdownAsync().ConfigureAwait(false);
+                }
+                catch
+                {
+                }
+            });
         }
 
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
@@ -641,7 +678,13 @@ namespace THUAI9.Unity.Live
 
         private void OnDestroy()
         {
-            StopLive();
+            StopLive(resetFrameSource: !isApplicationQuitting, waitForShutdown: isApplicationQuitting);
+        }
+
+        private void OnApplicationQuit()
+        {
+            isApplicationQuitting = true;
+            StopLive(resetFrameSource: false, waitForShutdown: true);
         }
     }
 }

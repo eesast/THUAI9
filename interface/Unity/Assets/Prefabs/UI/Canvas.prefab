@@ -646,6 +646,9 @@ MonoBehaviour:
   stopButton: {fileID: 8887391342105321805}
   speedDropdown: {fileID: 6302523608592133539}
   isPlaying: 0
+  autoBindSceneReferences: 1
+  autoConnectLiveOnStart: 1
+  showWorldHoverInfo: 1
 --- !u!114 &5050759536737098967
 MonoBehaviour:
   m_ObjectHideFlags: 0

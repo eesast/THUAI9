@@ -66,7 +66,7 @@ logic/pve/
 ```python
 env.reset(seed: int | None, options: dict | None) -> (obs, info)
 env.step(action: int)  -> (obs, reward, terminated, truncated, info)
-env.action_masks()     -> np.ndarray[bool, (8,)]
+env.action_masks()     -> np.ndarray[bool, (28,)]
 env.render()           -> str   # ANSI 单行状态摘要
 ```
 
@@ -86,7 +86,7 @@ env.render()           -> str   # ANSI 单行状态摘要
 - `terminated = True`：`money < 0`（破产）
 - `truncated = True`：`step >= cfg.max_steps`（时间耗尽）
 
-得分计算：每次 SELL 成功后 `score += revenue × cfg.score_factor`（默认 × 10）。
+得分计算：每次 SELL_pid 成功后 `score += revenue × cfg.score_factor`（默认 × 10）。
 
 ### 内部对象
 
@@ -94,24 +94,69 @@ env.render()           -> str   # ANSI 单行状态摘要
 
 | 对象              | 来源文件         | 职责                                    |
 | ----------------- | ---------------- | --------------------------------------- |
-| `Unit`          | `character.py` | 单位背包、HP、busy 状态机               |
+| `Unit`          | `character.py` | 单位背包（raw_inv + prod_inv[5]）、HP、busy 状态机 |
 | `Market`        | `market.py`    | 正弦价格函数，per-product per-market    |
 | `ResourcePoint` | `board.py`     | 资源库存与再生速率                      |
-| `ComputeCenter` | `board.py`     | 算力中心占领进度                        |
+| `ComputeCenter` | `board.py`     | 算力中心占领进度（occupy_progress）     |
 | `Board`         | `board.py`     | 地图网格、实体查询（nearest_market 等） |
-| `Factory`       | `game_env.py`  | 仓库（raw_stock + products）、生产队列  |
+| `Factory`       | `game_env.py`  | 仓库（raw_stock + products[5]）、生产队列、科技乘数 |
 
 ### 商品定义（`GameLogic/config.py`）
 
-`PRODUCT_DEFS` 中定义 5 类商品：
+`PRODUCT_DEFS` 中定义 5 类商品，每条包含 `raw_cost`（生产时消耗的原材料数量）：
 
-| ID | 名称   | 购买成本 | 市场价格范围 | 生产时间 |
-| -: | ------ | -------: | ------------ | -------: |
-|  0 | 半导体 |       10 | 40–120      |    5.0 s |
-|  1 | 药品   |        5 | 20–60       |    4.0 s |
-|  2 | 小商品 |        1 | 4–12        |    2.0 s |
-|  3 | 服饰   |        8 | 32–96       |    6.0 s |
-|  4 | 食品   |        3 | 12–24       |    1.0 s |
+| ID | 名称   | 购买成本 | 原材料消耗 | 市场价格范围 | 生产时间 |
+| -: | ------ | -------: | ---------: | ------------ | -------: |
+|  0 | 半导体 |       10 |          5 | 40–120      |    5.0 s |
+|  1 | 药品   |        5 |          3 | 20–60       |    4.0 s |
+|  2 | 小商品 |        1 |          1 | 4–12        |    2.0 s |
+|  3 | 服饰   |        8 |          4 | 32–96       |    6.0 s |
+|  4 | 食品   |        3 |          2 | 12–24       |    1.0 s |
+
+### 科技树（`GameLogic/config.py`）
+
+`TECH_TREE` 中定义 8 项科技，由 TECH_x 动作在工厂处消耗算力购买：
+
+| 键名               | 算力消耗 | 前置 | 持久 | 效果 |
+| ------------------ | -------: | ---- | ---- | ---- |
+| `cost_reduction`  |       50 | —   | ✓   | factory.cost_delta -= 2 |
+| `efficiency`      |       40 | —   | ✓   | factory.time_multiplier *= 0.5 |
+| `marketing`       |       80 | —   | ✓   | factory.price_multiplier *= 1.1 |
+| `durability`      |       30 | —   | ✓   | unit.max_hp += 50% |
+| `multi_line`      |       60 | —   | ✓   | factory.production_lines += 1 |
+| `path_optimization` |     50 | efficiency | ✓ | 移动 busy_ticks 变为 0 |
+| `market_analysis` |       40 | —   | ✗   | 非持久，可重复购买；obs[56]=1 |
+| `compute_expansion` |     70 | —   | ✓   | 算力积累速率 +30% |
+
+持久科技（persistent=True）每种只能购买一次；`market_analysis` 为非持久，可多次购买。
+
+### 生产链（`game_env.py`）
+
+完整生产链由以下动作依次执行：
+
+```
+HARVEST → DEPOSIT → PRODUCE_pid → (工厂 tick 自动推进) → LOAD → SELL_pid
+```
+
+关键实现细节：
+- `factory.tick()` 在每个 step 的被动更新阶段自动调用，与单位动作无关。
+- `enqueue(pid)` 检查并扣除 `raw_stock`（`PRODUCT_DEFS[pid]["raw_cost"]`），然后按 `time_multiplier` 计算剩余 tick 数。
+- `load_products(unit)` 将 `factory.products` 中的成品按先入先出顺序装入单位背包，受单位剩余容量限制。
+- 工厂总库存（`raw_stock + total_product_stock`）不超过 `factory_storage_cap`。
+
+### 算力系统（`game_env.py`）
+
+算力由 `_accrue_compute(dt)` 在每个 step 积累：
+
+```python
+# 每个已开放的算力中心每 tick 贡献算力
+rate = cfg.base_compute_rate + (0.3 if "compute_expansion" in _techs_owned else 0.0)
+compute += rate * dt
+```
+
+消耗：TECH_x 动作在工厂处执行时扣除 `TECH_TREE[key]["cost"]` 算力。
+
+科技效果由 `_apply_tech(key, tdef)` 立即写入 Factory / Unit 字段，无延迟。
 
 ### 市场价格（`GameLogic/market.py`）
 
@@ -126,60 +171,75 @@ price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
 - `phase`：每市场随机偏移，防止各市场同步
 - `period`：`market_period × random(0.7, 1.5)`
 
-BUY 动作执行时购买"当前可负担商品中利润最高的"（见 `_best_buyable`），即市价 − 成本的差值最大的商品。不同市场的价格不同，因此同一时刻在不同市场 BUY 会买到不同商品。
+BUY 动作执行时购买"当前可负担商品中利润最高的"（见 `_best_buyable`），即市价 − 成本的差值最大的商品。
 
-如果修改价格范围或新增商品，需同步更新 `game_env.py` 顶部的归一化常量：
+卖价还会乘以 `factory.price_multiplier`（默认 1.0，购买 marketing 科技后变为 1.1）。
 
-```python
-_PRICE_MIN, _PRICE_MAX = 4.0, 120.0
-```
+价格归一化使用每种商品各自的 val_range（`_PRICE_NORM` 字典），不再使用全局 `_PRICE_MIN/_PRICE_MAX`。
 
 ### 动作空间（`GameLogic/action_space.py`）
 
-动作由 `Action` 枚举定义：
+`N_ACTIONS = 28`，动作由 `Action` 枚举定义：
 
 ```python
 class Action(IntEnum):
-    WAIT       = 0
-    MOVE_UP    = 1
-    MOVE_DOWN  = 2
-    MOVE_LEFT  = 3
-    MOVE_RIGHT = 4
-    BUY        = 5
-    SELL       = 6
-    HARVEST    = 7
+    WAIT=0, MOVE_UP=1, MOVE_DOWN=2, MOVE_LEFT=3, MOVE_RIGHT=4,
+    BUY=5,
+    SELL_0=6, SELL_1=7, SELL_2=8, SELL_3=9, SELL_4=10,
+    HARVEST=11, DEPOSIT=12,
+    PRODUCE_0=13, PRODUCE_1=14, PRODUCE_2=15, PRODUCE_3=16, PRODUCE_4=17,
+    LOAD=18, OCCUPY=19,
+    TECH_0=20, TECH_1=21, TECH_2=22, TECH_3=23,
+    TECH_4=24, TECH_5=25, TECH_6=26, TECH_7=27
 ```
+
+便利列表：
+- `SELL_ACTIONS`：`[SELL_0, ..., SELL_4]`（index = pid）
+- `PRODUCE_ACTIONS`：`[PRODUCE_0, ..., PRODUCE_4]`（index = pid）
+- `TECH_ACTIONS`：`[TECH_0, ..., TECH_7]`（index = tech slot）
+- `TECH_KEYS`：`["cost_reduction", "efficiency", ...]`（index = tech slot，与 TECH_ACTIONS 对齐）
 
 动作掩码由 `compute_action_mask(env)` 生成，关键规则：
 
-- BUY / SELL：需 Manhattan 距离 ≤ 1 的市场
-- HARVEST：需 Manhattan 距离 ≤ 2 的未耗尽资源点
-- 移动 / BUY / SELL / HARVEST：unit.busy_ticks 必须为 0
+| 动作 | 有效条件 |
+| --- | --- |
+| 移动 | 目标格可通行，busy_ticks = 0 |
+| BUY | Manhattan ≤ 1 有市场；容量 ≥ 1；money ≥ 最低成本 |
+| SELL_pid | Manhattan ≤ 1 有市场；prod_inv[pid] > 0 |
+| HARVEST | Manhattan ≤ 2 有未耗尽资源点；容量 ≥ 1 |
+| DEPOSIT | 在工厂格；raw_inv > 0 |
+| PRODUCE_pid | 在工厂格；raw_stock ≥ raw_cost；队列未满 |
+| LOAD | 在工厂格；工厂有成品；容量 ≥ 1 |
+| OCCUPY | 相邻有算力中心且 not is_open |
+| TECH_x | 在工厂格；compute ≥ cost；持久科技未重购；前置已满足 |
+
+**移动 busy_tick**：默认每次移动设置 `unit.busy_ticks = 1`，购买 `path_optimization` 后跳过（即时移动）。
 
 ## 观测向量契约
 
-当前维度 `OBS_DIM = 32`，由 `_encode_obs()` 生成：
+当前维度 `OBS_DIM = 58`，由 `_encode_obs()` 生成：
 
-|   索引 | 含义            | 归一化                           |
-| -----: | --------------- | -------------------------------- |
-|   0–1 | 单位位置 (x, y) | / (H, W)                         |
-|      2 | 单位 HP         | / max_hp                         |
-|      3 | 原材料背包      | raw_inv / capacity               |
-|      4 | 成品背包        | prod_inv / capacity              |
-|      5 | busy_ticks      | / 10，截断到 1                   |
-|      6 | money           | log10(money+1) / 5               |
-|      7 | compute         | / 100，截断到 2                  |
-|      8 | time            | / max_game_time                  |
-|  9–10 | 价格相位        | sin / cos（用于识别周期）        |
-|     11 | 工厂原材料库存  | / storage_cap                    |
-|     12 | 工厂成品库存    | / storage_cap                    |
-|     13 | 生产队列长度    | / 10，截断到 1                   |
-| 14–16 | 资源点 0        | dx/H, dy/W, stock ratio          |
-| 17–19 | 资源点 1        | 同上                             |
-| 20–22 | 算力中心 0      | dx/H, dy/W, is_open              |
-| 23–25 | 算力中心 1      | 同上                             |
-| 26–28 | 市场 0          | dx/H, dy/W, best_price（归一化） |
-| 29–31 | 市场 1          | 同上                             |
+| 索引 | 含义 | 归一化 |
+| ---: | --- | --- |
+| 0–1 | 单位位置 (x, y) | / (H, W) |
+| 2 | 单位 HP | / max_hp |
+| 3 | 原材料背包 | raw_inv / capacity |
+| 4–8 | 成品背包（pid 0–4） | prod_inv[pid] / capacity |
+| 9 | busy_ticks | / 10，截断到 1 |
+| 10 | money | log10(money+1) / 5 |
+| 11 | compute | / 100，截断到 2 |
+| 12 | time | / max_game_time |
+| 13–14 | 价格相位 | sin / cos（用于识别周期） |
+| 15 | 工厂原材料库存 | / storage_cap |
+| 16–20 | 工厂成品库存（pid 0–4） | products[pid] / storage_cap |
+| 21 | 生产队列长度 | / 10，截断到 1 |
+| 22–24 | 资源点 0 | dx/H, dy/W, stock ratio |
+| 25–27 | 资源点 1 | 同上 |
+| 28–31 | 算力中心 0 | dx/H, dy/W, is_open, occupy_progress/unit_occupy_time |
+| 32–35 | 算力中心 1 | 同上 |
+| 36–42 | 市场 0 | dx/H, dy/W, 5 种商品价格（各自 val_range 归一化） |
+| 43–49 | 市场 1 | 同上 |
+| 50–57 | 科技 one-hot（8 个科技槽） | 0 或 1 |
 
 当前只编码前 2 个市场和前 2 个资源点。如果修改观测结构，必须同步更新：
 
@@ -290,6 +350,15 @@ ASCII 渲染轨迹和奖励曲线，用于调试策略行为。
 4. 确认规则没有变成无解（简单规则策略仍能盈利）。
 5. 确认规则没有被 vanilla PPO 轻松解决。
 6. 更新本文档和 `docs/CONTESTANT_GUIDE.md`。
+
+## 扩展动作空间注意事项
+
+增加/删除动作时，需同步修改：
+
+1. `action_space.py`：`Action` 枚举、`N_ACTIONS`、便利列表、`compute_action_mask()`
+2. `game_env.py`：`_execute_action()` 的 if/elif 分支、`action_space = spaces.Discrete(N_ACTIONS)`
+3. `tests/test_game_logic.py`：所有引用具体动作编号的测试
+4. 两份文档（动作表、掩码描述）
 
 ## 调整规则时的判断标准
 

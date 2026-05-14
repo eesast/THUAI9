@@ -1,26 +1,45 @@
 """
 Action space definitions and validity masks.
 
-Phase 1 action space (8 discrete actions):
+Phase 1 action space (20 discrete actions):
   0  WAIT          – pass one tick
   1  MOVE_UP       – x - 1
   2  MOVE_DOWN     – x + 1
   3  MOVE_LEFT     – y - 1
   4  MOVE_RIGHT    – y + 1
-  5  BUY           – buy best product at adjacent market
-  6  SELL          – sell all carried products at adjacent market
-  7  HARVEST       – harvest from nearby resource point
+  5  BUY           – buy cheapest product at adjacent market
+  6  SELL_0        – sell all carried product-0 (semiconductor) at adjacent market
+  7  SELL_1        – sell all carried product-1 (medicine)
+  8  SELL_2        – sell all carried product-2 (small_goods)
+  9  SELL_3        – sell all carried product-3 (clothing)
+  10 SELL_4        – sell all carried product-4 (food)
+  11 HARVEST       – harvest raw materials from nearby resource point
+  12 DEPOSIT       – deposit unit's raw_inv into factory (must be at factory)
+  13 PRODUCE_0     – queue product-0 for production (at factory, costs raw_stock)
+  14 PRODUCE_1     – queue product-1
+  15 PRODUCE_2     – queue product-2
+  16 PRODUCE_3     – queue product-3
+  17 PRODUCE_4     – queue product-4
+  18 LOAD          – load produced goods from factory into unit inventory
+  19 OCCUPY        – progress occupation of adjacent compute center
 
-Future (Phase 2+):
-  8  PRODUCE       – queue 1 product at factory (consumes raw_inv)
-  9  OCCUPY        – start/continue occupying adjacent compute center
-  10 RECRUIT       – recruit new unit (costs compute pts)
-  11-18  TECH_x   – purchase tech upgrade
+Phase 2 action space (8 tech upgrades, cost compute pts, must be at factory):
+  20 TECH_0        – cost_reduction    (50 pts): product buy cost -2
+  21 TECH_1        – efficiency        (40 pts): production time ×0.5
+  22 TECH_2        – marketing         (80 pts): sell price ×1.1
+  23 TECH_3        – durability        (30 pts): unit max HP +50%
+  24 TECH_4        – multi_line        (60 pts): +1 production line
+  25 TECH_5        – path_optimization (50 pts, needs TECH_1): move costs -1 busy tick
+  26 TECH_6        – market_analysis   (40 pts, non-persistent): reveal best price in obs
+  27 TECH_7        – compute_expansion (70 pts): compute accrual rate +30%
 """
 from __future__ import annotations
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
+
 import numpy as np
+
+from .config import PRODUCT_DEFS, TECH_TREE
 
 if TYPE_CHECKING:
     from .game_env import GameEnvironment
@@ -33,11 +52,55 @@ class Action(IntEnum):
     MOVE_LEFT  = 3
     MOVE_RIGHT = 4
     BUY        = 5
-    SELL       = 6
-    HARVEST    = 7
+    SELL_0     = 6
+    SELL_1     = 7
+    SELL_2     = 8
+    SELL_3     = 9
+    SELL_4     = 10
+    HARVEST    = 11
+    DEPOSIT    = 12
+    PRODUCE_0  = 13
+    PRODUCE_1  = 14
+    PRODUCE_2  = 15
+    PRODUCE_3  = 16
+    PRODUCE_4  = 17
+    LOAD       = 18
+    OCCUPY     = 19
+    TECH_0     = 20
+    TECH_1     = 21
+    TECH_2     = 22
+    TECH_3     = 23
+    TECH_4     = 24
+    TECH_5     = 25
+    TECH_6     = 26
+    TECH_7     = 27
 
 
-N_ACTIONS = len(Action)
+N_ACTIONS = len(Action)  # 28
+
+# Ordered list of tech keys matching TECH_0..7
+TECH_KEYS: List[str] = [
+    "cost_reduction",    # TECH_0
+    "efficiency",        # TECH_1
+    "marketing",         # TECH_2
+    "durability",        # TECH_3
+    "multi_line",        # TECH_4
+    "path_optimization", # TECH_5
+    "market_analysis",   # TECH_6
+    "compute_expansion", # TECH_7
+]
+
+# Convenience lists (index within list == product id)
+SELL_ACTIONS: List[Action] = [
+    Action.SELL_0, Action.SELL_1, Action.SELL_2, Action.SELL_3, Action.SELL_4
+]
+PRODUCE_ACTIONS: List[Action] = [
+    Action.PRODUCE_0, Action.PRODUCE_1, Action.PRODUCE_2, Action.PRODUCE_3, Action.PRODUCE_4
+]
+TECH_ACTIONS: List[Action] = [
+    Action.TECH_0, Action.TECH_1, Action.TECH_2, Action.TECH_3,
+    Action.TECH_4, Action.TECH_5, Action.TECH_6, Action.TECH_7,
+]
 
 MOVE_DELTAS = {
     Action.MOVE_UP:    (-1,  0),
@@ -53,47 +116,82 @@ def compute_action_mask(env: "GameEnvironment") -> np.ndarray:
     """
     Return a boolean mask of shape (N_ACTIONS,) indicating which actions
     are currently valid for the primary unit.
-
-    Invalid action execution is still allowed (returns a small penalty),
-    but the mask is used by action-masking PPO variants.
     """
     mask = np.zeros(N_ACTIONS, dtype=bool)
     u = env.unit
     board = env.board
+    factory = env.factory
 
-    # WAIT is always valid
     mask[Action.WAIT] = True
 
-    # Movement: target cell must be passable and unit must not be busy
-    if u.busy_ticks == 0:
-        for act, (dx, dy) in MOVE_DELTAS.items():
-            nx, ny = u.x + dx, u.y + dy
-            if board.is_passable(nx, ny):
-                mask[act] = True
+    if u.busy_ticks > 0:
+        return mask  # busy: only WAIT is valid
 
-    # BUY: adjacent market + have capacity + have money
-    if u.busy_ticks == 0:
-        mkt = board.nearest_market(u.x, u.y)
-        if mkt is not None:
-            best_cost = min(PRODUCT_DEFS_COSTS)
-            if u.free_capacity >= 1 and env.money >= best_cost:
-                mask[Action.BUY] = True
+    # Movement
+    for act, (dx, dy) in MOVE_DELTAS.items():
+        nx, ny = u.x + dx, u.y + dy
+        if board.is_passable(nx, ny):
+            mask[act] = True
 
-    # SELL: adjacent market + carrying something
-    if u.busy_ticks == 0:
-        mkt = board.nearest_market(u.x, u.y)
-        if mkt is not None and u.total_goods > 0:
-            mask[Action.SELL] = True
+    # BUY: adjacent market + capacity + money
+    mkt = board.nearest_market(u.x, u.y)
+    if mkt is not None:
+        best_cost = min(pdef["cost"] for pdef in PRODUCT_DEFS.values())
+        if u.free_capacity >= 1 and env.money >= best_cost:
+            mask[Action.BUY] = True
 
-    # HARVEST: nearby non-depleted resource + have capacity
-    if u.busy_ticks == 0:
-        rp = board.nearest_resource(u.x, u.y)
-        if rp is not None and u.free_capacity >= 1:
-            mask[Action.HARVEST] = True
+        # SELL_pid: carrying that product type
+        for sell_act in SELL_ACTIONS:
+            pid = sell_act - Action.SELL_0
+            if u.prod_inv.get(pid, 0.0) > 0:
+                mask[sell_act] = True
+
+    # HARVEST: nearby non-depleted resource + capacity
+    rp = board.nearest_resource(u.x, u.y)
+    if rp is not None and u.free_capacity >= 1:
+        mask[Action.HARVEST] = True
+
+    # Factory actions (must be standing on factory cell)
+    if board.at_factory(u.x, u.y):
+        # DEPOSIT: unit carrying raw materials
+        if u.raw_inv > 0:
+            mask[Action.DEPOSIT] = True
+
+        # PRODUCE_pid: enough raw_stock + queue not full
+        max_queue = factory.production_lines * 5
+        if factory.queue_len < max_queue:
+            for prod_act in PRODUCE_ACTIONS:
+                pid = prod_act - Action.PRODUCE_0
+                if factory.raw_stock >= PRODUCT_DEFS[pid]["raw_cost"]:
+                    mask[prod_act] = True
+
+        # LOAD: factory has products + unit has free capacity
+        if factory.total_product_stock > 0 and u.free_capacity >= 1:
+            mask[Action.LOAD] = True
+
+        # TECH_x: at factory + enough compute + not already owned (or non-persistent)
+        for i, tech_act in enumerate(TECH_ACTIONS):
+            key = TECH_KEYS[i]
+            tdef = TECH_TREE[key]
+            # Persistent techs can only be bought once
+            if tdef["persistent"] and key in env._techs_owned:
+                continue
+            # Check compute cost
+            if env.compute < tdef["cost"]:
+                continue
+            # Check prerequisite
+            prereq = tdef.get("prereq")
+            if prereq and prereq not in env._techs_owned:
+                continue
+            mask[tech_act] = True
+
+    # OCCUPY: adjacent to a compute center that is not yet open
+    cc = board.nearest_compute_center(u.x, u.y)
+    if cc is not None and not cc.is_open:
+        mask[Action.OCCUPY] = True
 
     return mask
 
 
-# Exported for use by the mask function without importing PRODUCT_DEFS
-from .config import PRODUCT_DEFS
+# Exported for backward compatibility
 PRODUCT_DEFS_COSTS = [pdef["cost"] for pdef in PRODUCT_DEFS.values()]
