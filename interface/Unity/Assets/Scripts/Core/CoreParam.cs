@@ -69,8 +69,11 @@ namespace THUAI9.Unity.Core
 
         // Server GameEnd frames can report an overflowed timer after the match timer stops.
         // Keep the UI clock on the last sane live value instead of rendering 500+ minutes.
-        private const int MaximumReasonableLiveGameMilliseconds = 2 * 60 * 60 * 1000;
-        private const int MaximumSingleLiveTimeJumpMilliseconds = 10 * 60 * 1000;
+        public const int OfficialMatchDurationMilliseconds = 10 * 60 * 1000;
+        public const int GameTimeGuardSlackMilliseconds = 5 * 60 * 1000;
+        public const int MaximumDisplayGameMilliseconds =
+            OfficialMatchDurationMilliseconds + GameTimeGuardSlackMilliseconds;
+        private const int MaximumSingleLiveTimeJumpMilliseconds = MaximumDisplayGameMilliseconds;
         private static bool hasStableLiveGameTime;
 
         public static Dictionary<long, MessageOfCharacter> characters = new Dictionary<long, MessageOfCharacter>();
@@ -147,7 +150,7 @@ namespace THUAI9.Unity.Core
             }
 
             int rawTime = message.GameTime;
-            bool rawLooksValid = rawTime >= 0 && rawTime <= MaximumReasonableLiveGameMilliseconds;
+            bool rawLooksValid = rawTime >= 0 && rawTime <= MaximumDisplayGameMilliseconds;
             if (!rawLooksValid)
             {
                 return;
@@ -171,6 +174,11 @@ namespace THUAI9.Unity.Core
             }
 
             stableLiveGameMilliseconds = Math.Max(rawTime, stableLiveGameMilliseconds);
+        }
+
+        public static int ClampDisplayGameMilliseconds(int totalMilliseconds)
+        {
+            return Math.Max(0, Math.Min(totalMilliseconds, MaximumDisplayGameMilliseconds));
         }
 
         private static void DestroyAll<TKey>(Dictionary<TKey, GameObject> objects)

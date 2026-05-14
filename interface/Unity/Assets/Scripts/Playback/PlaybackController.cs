@@ -617,13 +617,17 @@ namespace THUAI9.Unity.Playback
             if (firstFrameGameTimeMs >= 0 && gameTimeMs >= firstFrameGameTimeMs)
             {
                 int elapsed = gameTimeMs - firstFrameGameTimeMs;
-                int fallbackElapsed = Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS);
+                int fallbackElapsed = CoreParam.ClampDisplayGameMilliseconds(
+                    Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS));
                 int reasonableUpperBound = Mathf.RoundToInt((Mathf.Max(frameIndex, 0) + 1) * PlayBackConstant.MAX_REASONABLE_FRAME_DELTA_MS);
 
-                return elapsed <= reasonableUpperBound ? elapsed : fallbackElapsed;
+                return elapsed <= reasonableUpperBound && elapsed <= CoreParam.MaximumDisplayGameMilliseconds
+                    ? elapsed
+                    : fallbackElapsed;
             }
 
-            return Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS);
+            return CoreParam.ClampDisplayGameMilliseconds(
+                Mathf.RoundToInt(Mathf.Max(frameIndex, 0) * PlayBackConstant.SERVER_FRAME_INTERVAL_MS));
         }
 
         private static int GetFrameGameTimeMs(MessageToClient frame)

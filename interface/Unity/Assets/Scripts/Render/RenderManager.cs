@@ -1449,7 +1449,7 @@ namespace THUAI9.Unity.Render
 
         private static string FormatPlaybackTime(int totalMilliseconds)
         {
-            totalMilliseconds = Mathf.Max(totalMilliseconds, 0);
+            totalMilliseconds = CoreParam.ClampDisplayGameMilliseconds(totalMilliseconds);
             int minutes = totalMilliseconds / 60000;
             int seconds = totalMilliseconds / 1000 % 60;
             return $"{minutes:D2}:{seconds:D2}";
