@@ -393,7 +393,7 @@ namespace Gaming
         internal void ResetEventSchedule()
         {
             marketEvent.InitDefault();
-            nextEventTriggerMs = GameData.MarketEventIntervalMs;
+            nextEventTriggerMs = 0;  // 游戏开始后立即触发首次事件
         }
 
         internal void TryTriggerPeriodicEvent(int nowTimeMs)

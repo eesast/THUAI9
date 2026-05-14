@@ -1,14 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dotnet build *)",
-      "Bash(pip install *)",
-      "Bash(dotnet format:*)",
-      "Bash(powershell:*)",
-      "Bash(python my_agent/train.py --config easy --timesteps 10000 --save models/test_dqn.pt --batch-size 64 --buffer-capacity 20000 --learning-starts 1000)",
-      "Bash(mkdir -p test_submission)",
-      "Bash(cp models/test_dqn.pt test_submission/model.pt)",
-      "Bash(python official_evaluator.py --submission test_submission --config easy --episodes 20 --seeds 0 42 123)"
+      "Bash(find \"D:/THUthu/THUAI9\" -type f \\\\\\( -name \"*.cs\" -o -name \"*.cpp\" -o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.py\" -o -name \"*.proto\" \\\\\\) ! -path \"*/.vs/*\" ! -path \"*/obj/*\" ! -path \"*/bin/*\" ! -path \"*/grpc/*\" ! -path \"*/spdlog/*\" ! -path \"*/protobuf/*\" ! -path \"*/x64/*\" ! -path \"*/.git/*\" ! -path \"*/playback/obj/*\" ! -path \"*/playback/bin/*\" -exec grep -l \"Event\" {} \\\\;)"
     ]
   }
 }
