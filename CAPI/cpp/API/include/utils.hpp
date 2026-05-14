@@ -215,6 +215,12 @@ namespace Proto2THUAI9
         character->carryCapacity = characterMsg.carry_capacity();
         character->currentLoad = characterMsg.current_load();
         character->harvestRatePerSec = characterMsg.harvest_rate_per_sec();
+        for (const auto& goods : characterMsg.goods_load())
+        {
+            auto it = goodsTypeDict.find(goods.product_type());
+            auto type = (it != goodsTypeDict.end()) ? it->second : THUAI9::GoodsType::NullGoodsType;
+            character->goodsLoad[type] = goods.quantity();
+        }
 
         return character;
     }
