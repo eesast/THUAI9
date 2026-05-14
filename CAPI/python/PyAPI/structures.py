@@ -185,6 +185,7 @@ class Character:
     hp: int = 0
     carryCapacity: int = 0
     currentLoad: int = 0
+    goodsLoad: Dict[GoodsType, int] = field(default_factory=dict)
     harvestRatePerSec: int = 0
 
 

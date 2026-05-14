@@ -224,6 +224,7 @@ namespace THUAI9
 
         int32_t carryCapacity;
         int32_t currentLoad;
+        std::map<GoodsType, int32_t> goodsLoad;
 
         int32_t harvestRatePerSec;
     };

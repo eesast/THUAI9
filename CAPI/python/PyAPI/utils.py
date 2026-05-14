@@ -204,7 +204,7 @@ class Proto2THUAI9:
     def Protobuf2THUAI9Character(
         characterMsg: Message2Clients.MessageOfCharacter,
     ) -> THUAI9.Character:
-        return THUAI9.Character(
+        character = THUAI9.Character(
             guid=characterMsg.guid,
             teamID=characterMsg.team_id,
             playerID=characterMsg.player_id,
@@ -231,6 +231,14 @@ class Proto2THUAI9:
             currentLoad=characterMsg.current_load,
             harvestRatePerSec=characterMsg.harvest_rate_per_sec,
         )
+        for goods in characterMsg.goods_load:
+            goodsType = _map_lookup(
+                Proto2THUAI9.goodsTypeDict,
+                goods.product_type,
+                THUAI9.GoodsType.NullGoodsType,
+            )
+            character.goodsLoad[goodsType] = goods.quantity
+        return character
 
     @staticmethod
     def Protobuf2THUAI9Team(teamMsg: Message2Clients.MessageOfTeam) -> THUAI9.Team:
