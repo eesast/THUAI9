@@ -104,35 +104,24 @@ struct MoveResDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MoveResDefaultTypeInternal _MoveRes_default_instance_;
-
-inline constexpr MessageOfTeam::Impl_::Impl_(
-    ::_pbi::ConstantInitialized) noexcept
-      : team_id_{::int64_t{0}},
-        player_id_{::int64_t{0}},
-        score_{0},
-        material_{0},
-        compute_power_{0},
-        _cached_size_{0} {}
-
-template <typename>
-PROTOBUF_CONSTEXPR MessageOfTeam::MessageOfTeam(::_pbi::ConstantInitialized)
+              template <typename>
+PROTOBUF_CONSTEXPR MessageOfTeam_TechLevelsEntry_DoNotUse::MessageOfTeam_TechLevelsEntry_DoNotUse(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-    : ::google::protobuf::Message(_class_data_.base()),
+    : MessageOfTeam_TechLevelsEntry_DoNotUse::MapEntry(_class_data_.base()){}
 #else   // PROTOBUF_CUSTOM_VTABLE
-    : ::google::protobuf::Message(),
-#endif  // PROTOBUF_CUSTOM_VTABLE
-      _impl_(::_pbi::ConstantInitialized()) {
+    : MessageOfTeam_TechLevelsEntry_DoNotUse::MapEntry() {
 }
-struct MessageOfTeamDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR MessageOfTeamDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~MessageOfTeamDefaultTypeInternal() {}
+#endif  // PROTOBUF_CUSTOM_VTABLE
+struct MessageOfTeam_TechLevelsEntry_DoNotUseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfTeam_TechLevelsEntry_DoNotUseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfTeam_TechLevelsEntry_DoNotUseDefaultTypeInternal() {}
   union {
-    MessageOfTeam _instance;
+    MessageOfTeam_TechLevelsEntry_DoNotUse _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfTeamDefaultTypeInternal _MessageOfTeam_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfTeam_TechLevelsEntry_DoNotUseDefaultTypeInternal _MessageOfTeam_TechLevelsEntry_DoNotUse_default_instance_;
 
 inline constexpr MessageOfResource::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -302,29 +291,14 @@ struct MessageOfComputeCenterDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfComputeCenterDefaultTypeInternal _MessageOfComputeCenter_default_instance_;
 
-inline constexpr MessageOfCharacter::Impl_::Impl_(
+inline constexpr MessageOfCharacter_GoodsStack::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
-      : guid_{::int64_t{0}},
-        team_id_{::int64_t{0}},
-        player_id_{::int64_t{0}},
-        character_type_{static_cast< ::protobuf::CharacterType >(0)},
-        character_active_state_{static_cast< ::protobuf::CharacterState >(0)},
-        x_{0},
-        y_{0},
-        facing_direction_{0},
-        speed_{0},
-        view_range_{0},
-        common_attack_cd_{::int64_t{0}},
-        common_attack_{0},
-        common_attack_range_{0},
-        hp_{0},
-        carry_capacity_{0},
-        current_load_{0},
-        harvest_rate_per_sec_{0},
+      : product_type_{static_cast< ::protobuf::GoodsType >(0)},
+        quantity_{0},
         _cached_size_{0} {}
 
 template <typename>
-PROTOBUF_CONSTEXPR MessageOfCharacter::MessageOfCharacter(::_pbi::ConstantInitialized)
+PROTOBUF_CONSTEXPR MessageOfCharacter_GoodsStack::MessageOfCharacter_GoodsStack(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(_class_data_.base()),
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -332,16 +306,16 @@ PROTOBUF_CONSTEXPR MessageOfCharacter::MessageOfCharacter(::_pbi::ConstantInitia
 #endif  // PROTOBUF_CUSTOM_VTABLE
       _impl_(::_pbi::ConstantInitialized()) {
 }
-struct MessageOfCharacterDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR MessageOfCharacterDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~MessageOfCharacterDefaultTypeInternal() {}
+struct MessageOfCharacter_GoodsStackDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfCharacter_GoodsStackDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfCharacter_GoodsStackDefaultTypeInternal() {}
   union {
-    MessageOfCharacter _instance;
+    MessageOfCharacter_GoodsStack _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfCharacterDefaultTypeInternal _MessageOfCharacter_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfCharacter_GoodsStackDefaultTypeInternal _MessageOfCharacter_GoodsStack_default_instance_;
 
 inline constexpr MessageOfBush::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -397,34 +371,24 @@ struct MessageOfBarrierDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfBarrierDefaultTypeInternal _MessageOfBarrier_default_instance_;
-
-inline constexpr MessageOfAll_TeamInfo::Impl_::Impl_(
-    ::_pbi::ConstantInitialized) noexcept
-      : score_{0},
-        material_{0},
-        compute_power_{0},
-        factory_hp_{0},
-        _cached_size_{0} {}
-
-template <typename>
-PROTOBUF_CONSTEXPR MessageOfAll_TeamInfo::MessageOfAll_TeamInfo(::_pbi::ConstantInitialized)
+              template <typename>
+PROTOBUF_CONSTEXPR MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-    : ::google::protobuf::Message(_class_data_.base()),
+    : MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MapEntry(_class_data_.base()){}
 #else   // PROTOBUF_CUSTOM_VTABLE
-    : ::google::protobuf::Message(),
-#endif  // PROTOBUF_CUSTOM_VTABLE
-      _impl_(::_pbi::ConstantInitialized()) {
+    : MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MapEntry() {
 }
-struct MessageOfAll_TeamInfoDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR MessageOfAll_TeamInfoDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~MessageOfAll_TeamInfoDefaultTypeInternal() {}
+#endif  // PROTOBUF_CUSTOM_VTABLE
+struct MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUseDefaultTypeInternal() {}
   union {
-    MessageOfAll_TeamInfo _instance;
+    MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfAll_TeamInfoDefaultTypeInternal _MessageOfAll_TeamInfo_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUseDefaultTypeInternal _MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse_default_instance_;
 
 inline constexpr GlobalAIEvent::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -563,6 +527,36 @@ struct BoolResDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 BoolResDefaultTypeInternal _BoolRes_default_instance_;
 
+inline constexpr MessageOfTeam::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : tech_levels_{},
+        team_id_{::int64_t{0}},
+        player_id_{::int64_t{0}},
+        score_{0},
+        material_{0},
+        compute_power_{0},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR MessageOfTeam::MessageOfTeam(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct MessageOfTeamDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfTeamDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfTeamDefaultTypeInternal() {}
+  union {
+    MessageOfTeam _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfTeamDefaultTypeInternal _MessageOfTeam_default_instance_;
+
 inline constexpr MessageOfMarket::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : price_list_{},
@@ -656,14 +650,30 @@ struct MessageOfFactoryDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfFactoryDefaultTypeInternal _MessageOfFactory_default_instance_;
 
-inline constexpr MessageOfAll::Impl_::Impl_(
+inline constexpr MessageOfCharacter::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
-      : teams_{},
-        game_time_{0},
+      : goods_load_{},
+        guid_{::int64_t{0}},
+        team_id_{::int64_t{0}},
+        player_id_{::int64_t{0}},
+        character_type_{static_cast< ::protobuf::CharacterType >(0)},
+        character_active_state_{static_cast< ::protobuf::CharacterState >(0)},
+        x_{0},
+        y_{0},
+        facing_direction_{0},
+        speed_{0},
+        view_range_{0},
+        common_attack_cd_{::int64_t{0}},
+        common_attack_{0},
+        common_attack_range_{0},
+        hp_{0},
+        carry_capacity_{0},
+        current_load_{0},
+        harvest_rate_per_sec_{0},
         _cached_size_{0} {}
 
 template <typename>
-PROTOBUF_CONSTEXPR MessageOfAll::MessageOfAll(::_pbi::ConstantInitialized)
+PROTOBUF_CONSTEXPR MessageOfCharacter::MessageOfCharacter(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(_class_data_.base()),
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -671,24 +681,28 @@ PROTOBUF_CONSTEXPR MessageOfAll::MessageOfAll(::_pbi::ConstantInitialized)
 #endif  // PROTOBUF_CUSTOM_VTABLE
       _impl_(::_pbi::ConstantInitialized()) {
 }
-struct MessageOfAllDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR MessageOfAllDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~MessageOfAllDefaultTypeInternal() {}
+struct MessageOfCharacterDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfCharacterDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfCharacterDefaultTypeInternal() {}
   union {
-    MessageOfAll _instance;
+    MessageOfCharacter _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfAllDefaultTypeInternal _MessageOfAll_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfCharacterDefaultTypeInternal _MessageOfCharacter_default_instance_;
 
-inline constexpr CharacterInfoRes::Impl_::Impl_(
+inline constexpr MessageOfAll_TeamInfo::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
-      : character_info_{},
+      : tech_levels_{},
+        score_{0},
+        material_{0},
+        compute_power_{0},
+        factory_hp_{0},
         _cached_size_{0} {}
 
 template <typename>
-PROTOBUF_CONSTEXPR CharacterInfoRes::CharacterInfoRes(::_pbi::ConstantInitialized)
+PROTOBUF_CONSTEXPR MessageOfAll_TeamInfo::MessageOfAll_TeamInfo(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(_class_data_.base()),
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -696,16 +710,16 @@ PROTOBUF_CONSTEXPR CharacterInfoRes::CharacterInfoRes(::_pbi::ConstantInitialize
 #endif  // PROTOBUF_CUSTOM_VTABLE
       _impl_(::_pbi::ConstantInitialized()) {
 }
-struct CharacterInfoResDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR CharacterInfoResDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~CharacterInfoResDefaultTypeInternal() {}
+struct MessageOfAll_TeamInfoDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfAll_TeamInfoDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfAll_TeamInfoDefaultTypeInternal() {}
   union {
-    CharacterInfoRes _instance;
+    MessageOfAll_TeamInfo _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CharacterInfoResDefaultTypeInternal _CharacterInfoRes_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfAll_TeamInfoDefaultTypeInternal _MessageOfAll_TeamInfo_default_instance_;
 
 inline constexpr AIWorldEffect::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -762,6 +776,57 @@ struct MessageOfObjDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfObjDefaultTypeInternal _MessageOfObj_default_instance_;
 
+inline constexpr MessageOfAll::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : teams_{},
+        game_time_{0},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR MessageOfAll::MessageOfAll(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct MessageOfAllDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MessageOfAllDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MessageOfAllDefaultTypeInternal() {}
+  union {
+    MessageOfAll _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MessageOfAllDefaultTypeInternal _MessageOfAll_default_instance_;
+
+inline constexpr CharacterInfoRes::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : character_info_{},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR CharacterInfoRes::CharacterInfoRes(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct CharacterInfoResDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR CharacterInfoResDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~CharacterInfoResDefaultTypeInternal() {}
+  union {
+    CharacterInfoRes _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CharacterInfoResDefaultTypeInternal _CharacterInfoRes_default_instance_;
+
 inline constexpr MessageToClient::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -797,6 +862,16 @@ const ::uint32_t
     TableStruct_Message2Clients_2eproto::offsets[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
         protodesc_cold) = {
         ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter_GoodsStack, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter_GoodsStack, _impl_.product_type_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter_GoodsStack, _impl_.quantity_),
+        ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter, _internal_metadata_),
         ~0u,  // no _extensions_
         ~0u,  // no _oneof_case_
@@ -821,6 +896,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter, _impl_.carry_capacity_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter, _impl_.current_load_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter, _impl_.harvest_rate_per_sec_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfCharacter, _impl_.goods_load_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfResource, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -856,6 +932,18 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfMap, _impl_.height_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfMap, _impl_.width_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfMap, _impl_.rows_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.key_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.value_),
+        0,
+        1,
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -869,6 +957,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam, _impl_.score_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam, _impl_.material_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam, _impl_.compute_power_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfTeam, _impl_.tech_levels_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfFactory_GoodsStack, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1037,6 +1126,18 @@ const ::uint32_t
         ::_pbi::kInvalidFieldOffsetTag,
         ::_pbi::kInvalidFieldOffsetTag,
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfObj, _impl_.message_of_obj_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.key_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.value_),
+        0,
+        1,
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1049,6 +1150,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo, _impl_.material_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo, _impl_.compute_power_),
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo, _impl_.factory_hp_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll_TeamInfo, _impl_.tech_levels_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::MessageOfAll, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1139,39 +1241,44 @@ const ::uint32_t
 
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-        {0, -1, -1, sizeof(::protobuf::MessageOfCharacter)},
-        {25, -1, -1, sizeof(::protobuf::MessageOfResource)},
-        {40, -1, -1, sizeof(::protobuf::MessageOfMap_Row)},
-        {49, -1, -1, sizeof(::protobuf::MessageOfMap)},
-        {60, -1, -1, sizeof(::protobuf::MessageOfTeam)},
-        {73, -1, -1, sizeof(::protobuf::MessageOfFactory_GoodsStack)},
-        {83, -1, -1, sizeof(::protobuf::MessageOfFactory)},
-        {104, -1, -1, sizeof(::protobuf::MessageOfMarket_PriceEntry)},
-        {115, -1, -1, sizeof(::protobuf::MessageOfMarket)},
-        {128, -1, -1, sizeof(::protobuf::MessageOfComputeCenter)},
-        {141, -1, -1, sizeof(::protobuf::MessageOfBarrier)},
-        {152, -1, -1, sizeof(::protobuf::MessageOfBush)},
-        {164, -1, -1, sizeof(::protobuf::GlobalAIEvent)},
-        {177, -1, -1, sizeof(::protobuf::AIWorldEffect)},
-        {190, -1, -1, sizeof(::protobuf::ProductPriceModifier)},
-        {200, -1, -1, sizeof(::protobuf::CharacterAttributeModifier)},
-        {212, -1, -1, sizeof(::protobuf::TaskTimeModifier)},
-        {222, -1, -1, sizeof(::protobuf::MessageOfObj)},
-        {241, -1, -1, sizeof(::protobuf::MessageOfAll_TeamInfo)},
-        {253, -1, -1, sizeof(::protobuf::MessageOfAll)},
-        {263, 274, -1, sizeof(::protobuf::MessageToClient)},
-        {277, -1, -1, sizeof(::protobuf::MoveRes)},
-        {288, -1, -1, sizeof(::protobuf::CreatCharacterRes)},
-        {298, -1, -1, sizeof(::protobuf::BoolRes)},
-        {307, -1, -1, sizeof(::protobuf::CharacterInfoRes)},
-        {316, -1, -1, sizeof(::protobuf::EcoRes)},
-        {325, -1, -1, sizeof(::protobuf::MessageOfNews)},
+        {0, -1, -1, sizeof(::protobuf::MessageOfCharacter_GoodsStack)},
+        {10, -1, -1, sizeof(::protobuf::MessageOfCharacter)},
+        {36, -1, -1, sizeof(::protobuf::MessageOfResource)},
+        {51, -1, -1, sizeof(::protobuf::MessageOfMap_Row)},
+        {60, -1, -1, sizeof(::protobuf::MessageOfMap)},
+        {71, 81, -1, sizeof(::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse)},
+        {83, -1, -1, sizeof(::protobuf::MessageOfTeam)},
+        {97, -1, -1, sizeof(::protobuf::MessageOfFactory_GoodsStack)},
+        {107, -1, -1, sizeof(::protobuf::MessageOfFactory)},
+        {128, -1, -1, sizeof(::protobuf::MessageOfMarket_PriceEntry)},
+        {139, -1, -1, sizeof(::protobuf::MessageOfMarket)},
+        {152, -1, -1, sizeof(::protobuf::MessageOfComputeCenter)},
+        {165, -1, -1, sizeof(::protobuf::MessageOfBarrier)},
+        {176, -1, -1, sizeof(::protobuf::MessageOfBush)},
+        {188, -1, -1, sizeof(::protobuf::GlobalAIEvent)},
+        {201, -1, -1, sizeof(::protobuf::AIWorldEffect)},
+        {214, -1, -1, sizeof(::protobuf::ProductPriceModifier)},
+        {224, -1, -1, sizeof(::protobuf::CharacterAttributeModifier)},
+        {236, -1, -1, sizeof(::protobuf::TaskTimeModifier)},
+        {246, -1, -1, sizeof(::protobuf::MessageOfObj)},
+        {265, 275, -1, sizeof(::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse)},
+        {277, -1, -1, sizeof(::protobuf::MessageOfAll_TeamInfo)},
+        {290, -1, -1, sizeof(::protobuf::MessageOfAll)},
+        {300, 311, -1, sizeof(::protobuf::MessageToClient)},
+        {314, -1, -1, sizeof(::protobuf::MoveRes)},
+        {325, -1, -1, sizeof(::protobuf::CreatCharacterRes)},
+        {335, -1, -1, sizeof(::protobuf::BoolRes)},
+        {344, -1, -1, sizeof(::protobuf::CharacterInfoRes)},
+        {353, -1, -1, sizeof(::protobuf::EcoRes)},
+        {362, -1, -1, sizeof(::protobuf::MessageOfNews)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
+    &::protobuf::_MessageOfCharacter_GoodsStack_default_instance_._instance,
     &::protobuf::_MessageOfCharacter_default_instance_._instance,
     &::protobuf::_MessageOfResource_default_instance_._instance,
     &::protobuf::_MessageOfMap_Row_default_instance_._instance,
     &::protobuf::_MessageOfMap_default_instance_._instance,
+    &::protobuf::_MessageOfTeam_TechLevelsEntry_DoNotUse_default_instance_._instance,
     &::protobuf::_MessageOfTeam_default_instance_._instance,
     &::protobuf::_MessageOfFactory_GoodsStack_default_instance_._instance,
     &::protobuf::_MessageOfFactory_default_instance_._instance,
@@ -1186,6 +1293,7 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::protobuf::_CharacterAttributeModifier_default_instance_._instance,
     &::protobuf::_TaskTimeModifier_default_instance_._instance,
     &::protobuf::_MessageOfObj_default_instance_._instance,
+    &::protobuf::_MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse_default_instance_._instance,
     &::protobuf::_MessageOfAll_TeamInfo_default_instance_._instance,
     &::protobuf::_MessageOfAll_default_instance_._instance,
     &::protobuf::_MessageToClient_default_instance_._instance,
@@ -1199,7 +1307,7 @@ static const ::_pb::Message* const file_default_instances[] = {
 const char descriptor_table_protodef_Message2Clients_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
     "\n\025Message2Clients.proto\022\010protobuf\032\021Messa"
-    "geType.proto\"\252\003\n\022MessageOfCharacter\022\014\n\004g"
+    "geType.proto\"\262\004\n\022MessageOfCharacter\022\014\n\004g"
     "uid\030\001 \001(\003\022\017\n\007team_id\030\002 \001(\003\022\021\n\tplayer_id\030"
     "\003 \001(\003\022/\n\016character_type\030\004 \001(\0162\027.protobuf"
     ".CharacterType\0228\n\026character_active_state"
@@ -1210,89 +1318,99 @@ const char descriptor_table_protodef_Message2Clients_2eproto[] ABSL_ATTRIBUTE_SE
     " \001(\003\022\033\n\023common_attack_range\030\r \001(\005\022\n\n\002hp\030"
     "\016 \001(\005\022\026\n\016carry_capacity\030\017 \001(\005\022\024\n\014current"
     "_load\030\020 \001(\005\022\034\n\024harvest_rate_per_sec\030\021 \001("
-    "\005\"\303\001\n\021MessageOfResource\022-\n\rresource_type"
-    "\030\001 \001(\0162\026.protobuf.ResourceType\022/\n\016resour"
-    "ce_state\030\002 \001(\0162\027.protobuf.ResourceState\022"
-    "\t\n\001x\030\003 \001(\005\022\t\n\001y\030\004 \001(\005\022\030\n\020remaining_amoun"
-    "t\030\005 \001(\005\022\n\n\002id\030\006 \001(\005\022\022\n\nmax_amount\030\007 \001(\005\""
-    "\201\001\n\014MessageOfMap\022\016\n\006height\030\001 \001(\r\022\r\n\005widt"
-    "h\030\002 \001(\r\022(\n\004rows\030\003 \003(\0132\032.protobuf.Message"
-    "OfMap.Row\032(\n\003Row\022!\n\004cols\030\001 \003(\0162\023.protobu"
-    "f.PlaceType\"k\n\rMessageOfTeam\022\017\n\007team_id\030"
-    "\001 \001(\003\022\021\n\tplayer_id\030\002 \001(\003\022\r\n\005score\030\003 \001(\005\022"
-    "\020\n\010material\030\004 \001(\005\022\025\n\rcompute_power\030\005 \001(\005"
-    "\"\356\002\n\020MessageOfFactory\022\022\n\nfactory_id\030\001 \001("
-    "\003\022\017\n\007team_id\030\002 \001(\003\022\t\n\001x\030\003 \001(\005\022\t\n\001y\030\004 \001(\005"
-    "\022\n\n\002hp\030\005 \001(\005\022\016\n\006robust\030\006 \001(\005\022\017\n\007storage\030"
-    "\007 \001(\005\022\022\n\nefficiency\030\010 \001(\005\022\016\n\006source\030\t \001("
-    "\003\022\027\n\017computing_power\030\n \001(\003\022\023\n\013can_produc"
-    "e\030\013 \001(\010\022\023\n\013can_recruit\030\014 \001(\010\022@\n\021product_"
-    "inventory\030\r \003(\0132%.protobuf.MessageOfFact"
-    "ory.GoodsStack\032I\n\nGoodsStack\022)\n\014product_"
-    "type\030\001 \001(\0162\023.protobuf.GoodsType\022\020\n\010quant"
-    "ity\030\002 \001(\005\"\376\001\n\017MessageOfMarket\022\021\n\tmarket_"
-    "id\030\001 \001(\003\022\t\n\001x\030\002 \001(\005\022\t\n\001y\030\003 \001(\005\022)\n\013market"
-    "_type\030\004 \001(\0162\024.protobuf.MarketType\0228\n\npri"
-    "ce_list\030\005 \003(\0132$.protobuf.MessageOfMarket"
-    ".PriceEntry\032]\n\nPriceEntry\022\'\n\ngoods_type\030"
-    "\001 \001(\0162\023.protobuf.GoodsType\022\r\n\005price\030\002 \001("
-    "\005\022\027\n\017traded_quantity\030\003 \001(\005\"q\n\026MessageOfC"
-    "omputeCenter\022\021\n\tcenter_id\030\001 \001(\003\022\t\n\001x\030\002 \001"
-    "(\005\022\t\n\001y\030\003 \001(\005\022\025\n\rowner_team_id\030\004 \001(\003\022\027\n\017"
-    "occupy_progress\030\005 \001(\005\"<\n\020MessageOfBarrie"
-    "r\022\022\n\nbarrier_id\030\001 \001(\003\022\t\n\001x\030\002 \001(\005\022\t\n\001y\030\003 "
-    "\001(\005\"F\n\rMessageOfBush\022\017\n\007bush_id\030\001 \001(\003\022\t\n"
-    "\001x\030\002 \001(\005\022\t\n\001y\030\003 \001(\005\022\016\n\006radius\030\004 \001(\005\"\213\001\n\r"
-    "GlobalAIEvent\022\020\n\010event_id\030\001 \001(\003\022\027\n\017trigg"
-    "er_time_ms\030\002 \001(\003\022+\n\010category\030\003 \001(\0162\031.pro"
-    "tobuf.AIEventCategory\022\r\n\005title\030\004 \001(\t\022\023\n\013"
-    "description\030\005 \001(\t\"\346\001\n\rAIWorldEffect\022\020\n\010e"
-    "vent_id\030\001 \001(\003\022\023\n\013duration_ms\030\002 \001(\003\0227\n\017pr"
-    "ice_modifiers\030\003 \003(\0132\036.protobuf.ProductPr"
-    "iceModifier\022A\n\023character_modifiers\030\004 \003(\013"
-    "2$.protobuf.CharacterAttributeModifier\0222"
-    "\n\016task_modifiers\030\005 \003(\0132\032.protobuf.TaskTi"
-    "meModifier\"S\n\024ProductPriceModifier\022\'\n\ngo"
-    "ods_type\030\001 \001(\0162\023.protobuf.GoodsType\022\022\n\nm"
-    "ultiplier\030\002 \001(\001\"\231\001\n\032CharacterAttributeMo"
-    "difier\022/\n\016character_type\030\001 \001(\0162\027.protobu"
-    "f.CharacterType\022\030\n\020speed_multiplier\030\002 \001("
-    "\001\022\031\n\021damage_multiplier\030\003 \001(\001\022\025\n\rhp_multi"
-    "plier\030\004 \001(\001\"R\n\020TaskTimeModifier\022%\n\ttask_"
-    "type\030\001 \001(\0162\022.protobuf.TaskType\022\027\n\017time_m"
-    "ultiplier\030\002 \001(\001\"\275\004\n\014MessageOfObj\0225\n\017fact"
-    "ory_message\030\001 \001(\0132\032.protobuf.MessageOfFa"
-    "ctoryH\000\0229\n\021character_message\030\002 \001(\0132\034.pro"
-    "tobuf.MessageOfCharacterH\000\0227\n\020resource_m"
-    "essage\030\003 \001(\0132\033.protobuf.MessageOfResourc"
-    "eH\000\0223\n\016market_message\030\004 \001(\0132\031.protobuf.M"
-    "essageOfMarketH\000\022B\n\026compute_center_messa"
-    "ge\030\005 \001(\0132 .protobuf.MessageOfComputeCent"
-    "erH\000\022-\n\013map_message\030\006 \001(\0132\026.protobuf.Mes"
-    "sageOfMapH\000\022/\n\014news_message\030\007 \001(\0132\027.prot"
-    "obuf.MessageOfNewsH\000\022/\n\014team_message\030\010 \001"
-    "(\0132\027.protobuf.MessageOfTeamH\000\0225\n\017barrier"
-    "_message\030\t \001(\0132\032.protobuf.MessageOfBarri"
-    "erH\000\022/\n\014bush_message\030\n \001(\0132\027.protobuf.Me"
-    "ssageOfBushH\000B\020\n\016message_of_obj\"\251\001\n\014Mess"
-    "ageOfAll\022\021\n\tgame_time\030\001 \001(\005\022.\n\005teams\030\002 \003"
-    "(\0132\037.protobuf.MessageOfAll.TeamInfo\032V\n\010T"
-    "eamInfo\022\r\n\005score\030\001 \001(\005\022\020\n\010material\030\002 \001(\005"
-    "\022\025\n\rcompute_power\030\003 \001(\005\022\022\n\nfactory_hp\030\004 "
-    "\001(\005\"\224\001\n\017MessageToClient\022+\n\013obj_message\030\001"
-    " \003(\0132\026.protobuf.MessageOfObj\022\'\n\ngame_sta"
-    "te\030\002 \001(\0162\023.protobuf.GameState\022+\n\013all_mes"
-    "sage\030\003 \001(\0132\026.protobuf.MessageOfAll\"J\n\007Mo"
-    "veRes\022\024\n\014actual_speed\030\001 \001(\003\022\024\n\014actual_an"
-    "gle\030\002 \001(\001\022\023\n\013act_success\030\003 \001(\010\";\n\021CreatC"
-    "haracterRes\022\023\n\013act_success\030\001 \001(\010\022\021\n\tplay"
-    "er_id\030\002 \001(\003\"\036\n\007BoolRes\022\023\n\013act_success\030\001 "
-    "\001(\010\"H\n\020CharacterInfoRes\0224\n\016Character_inf"
-    "o\030\001 \003(\0132\034.protobuf.MessageOfCharacter\"\031\n"
-    "\006EcoRes\022\017\n\007economy\030\001 \001(\003\"z\n\rMessageOfNew"
-    "s\022\026\n\014text_message\030\001 \001(\tH\000\022\030\n\016binary_mess"
-    "age\030\002 \001(\014H\000\022\017\n\007from_id\030\003 \001(\003\022\r\n\005to_id\030\004 "
-    "\001(\003\022\017\n\007team_id\030\005 \001(\003B\006\n\004newsb\006proto3"
+    "\005\022;\n\ngoods_load\030\022 \003(\0132\'.protobuf.Message"
+    "OfCharacter.GoodsStack\032I\n\nGoodsStack\022)\n\014"
+    "product_type\030\001 \001(\0162\023.protobuf.GoodsType\022"
+    "\020\n\010quantity\030\002 \001(\005\"\303\001\n\021MessageOfResource\022"
+    "-\n\rresource_type\030\001 \001(\0162\026.protobuf.Resour"
+    "ceType\022/\n\016resource_state\030\002 \001(\0162\027.protobu"
+    "f.ResourceState\022\t\n\001x\030\003 \001(\005\022\t\n\001y\030\004 \001(\005\022\030\n"
+    "\020remaining_amount\030\005 \001(\005\022\n\n\002id\030\006 \001(\005\022\022\n\nm"
+    "ax_amount\030\007 \001(\005\"\201\001\n\014MessageOfMap\022\016\n\006heig"
+    "ht\030\001 \001(\r\022\r\n\005width\030\002 \001(\r\022(\n\004rows\030\003 \003(\0132\032."
+    "protobuf.MessageOfMap.Row\032(\n\003Row\022!\n\004cols"
+    "\030\001 \003(\0162\023.protobuf.PlaceType\"\334\001\n\rMessageO"
+    "fTeam\022\017\n\007team_id\030\001 \001(\003\022\021\n\tplayer_id\030\002 \001("
+    "\003\022\r\n\005score\030\003 \001(\005\022\020\n\010material\030\004 \001(\005\022\025\n\rco"
+    "mpute_power\030\005 \001(\005\022<\n\013tech_levels\030\006 \003(\0132\'"
+    ".protobuf.MessageOfTeam.TechLevelsEntry\032"
+    "1\n\017TechLevelsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005value"
+    "\030\002 \001(\005:\0028\001\"\356\002\n\020MessageOfFactory\022\022\n\nfacto"
+    "ry_id\030\001 \001(\003\022\017\n\007team_id\030\002 \001(\003\022\t\n\001x\030\003 \001(\005\022"
+    "\t\n\001y\030\004 \001(\005\022\n\n\002hp\030\005 \001(\005\022\016\n\006robust\030\006 \001(\005\022\017"
+    "\n\007storage\030\007 \001(\005\022\022\n\nefficiency\030\010 \001(\005\022\016\n\006s"
+    "ource\030\t \001(\003\022\027\n\017computing_power\030\n \001(\003\022\023\n\013"
+    "can_produce\030\013 \001(\010\022\023\n\013can_recruit\030\014 \001(\010\022@"
+    "\n\021product_inventory\030\r \003(\0132%.protobuf.Mes"
+    "sageOfFactory.GoodsStack\032I\n\nGoodsStack\022)"
+    "\n\014product_type\030\001 \001(\0162\023.protobuf.GoodsTyp"
+    "e\022\020\n\010quantity\030\002 \001(\005\"\376\001\n\017MessageOfMarket\022"
+    "\021\n\tmarket_id\030\001 \001(\003\022\t\n\001x\030\002 \001(\005\022\t\n\001y\030\003 \001(\005"
+    "\022)\n\013market_type\030\004 \001(\0162\024.protobuf.MarketT"
+    "ype\0228\n\nprice_list\030\005 \003(\0132$.protobuf.Messa"
+    "geOfMarket.PriceEntry\032]\n\nPriceEntry\022\'\n\ng"
+    "oods_type\030\001 \001(\0162\023.protobuf.GoodsType\022\r\n\005"
+    "price\030\002 \001(\005\022\027\n\017traded_quantity\030\003 \001(\005\"q\n\026"
+    "MessageOfComputeCenter\022\021\n\tcenter_id\030\001 \001("
+    "\003\022\t\n\001x\030\002 \001(\005\022\t\n\001y\030\003 \001(\005\022\025\n\rowner_team_id"
+    "\030\004 \001(\003\022\027\n\017occupy_progress\030\005 \001(\005\"<\n\020Messa"
+    "geOfBarrier\022\022\n\nbarrier_id\030\001 \001(\003\022\t\n\001x\030\002 \001"
+    "(\005\022\t\n\001y\030\003 \001(\005\"F\n\rMessageOfBush\022\017\n\007bush_i"
+    "d\030\001 \001(\003\022\t\n\001x\030\002 \001(\005\022\t\n\001y\030\003 \001(\005\022\016\n\006radius\030"
+    "\004 \001(\005\"\213\001\n\rGlobalAIEvent\022\020\n\010event_id\030\001 \001("
+    "\003\022\027\n\017trigger_time_ms\030\002 \001(\003\022+\n\010category\030\003"
+    " \001(\0162\031.protobuf.AIEventCategory\022\r\n\005title"
+    "\030\004 \001(\t\022\023\n\013description\030\005 \001(\t\"\346\001\n\rAIWorldE"
+    "ffect\022\020\n\010event_id\030\001 \001(\003\022\023\n\013duration_ms\030\002"
+    " \001(\003\0227\n\017price_modifiers\030\003 \003(\0132\036.protobuf"
+    ".ProductPriceModifier\022A\n\023character_modif"
+    "iers\030\004 \003(\0132$.protobuf.CharacterAttribute"
+    "Modifier\0222\n\016task_modifiers\030\005 \003(\0132\032.proto"
+    "buf.TaskTimeModifier\"S\n\024ProductPriceModi"
+    "fier\022\'\n\ngoods_type\030\001 \001(\0162\023.protobuf.Good"
+    "sType\022\022\n\nmultiplier\030\002 \001(\001\"\231\001\n\032CharacterA"
+    "ttributeModifier\022/\n\016character_type\030\001 \001(\016"
+    "2\027.protobuf.CharacterType\022\030\n\020speed_multi"
+    "plier\030\002 \001(\001\022\031\n\021damage_multiplier\030\003 \001(\001\022\025"
+    "\n\rhp_multiplier\030\004 \001(\001\"R\n\020TaskTimeModifie"
+    "r\022%\n\ttask_type\030\001 \001(\0162\022.protobuf.TaskType"
+    "\022\027\n\017time_multiplier\030\002 \001(\001\"\275\004\n\014MessageOfO"
+    "bj\0225\n\017factory_message\030\001 \001(\0132\032.protobuf.M"
+    "essageOfFactoryH\000\0229\n\021character_message\030\002"
+    " \001(\0132\034.protobuf.MessageOfCharacterH\000\0227\n\020"
+    "resource_message\030\003 \001(\0132\033.protobuf.Messag"
+    "eOfResourceH\000\0223\n\016market_message\030\004 \001(\0132\031."
+    "protobuf.MessageOfMarketH\000\022B\n\026compute_ce"
+    "nter_message\030\005 \001(\0132 .protobuf.MessageOfC"
+    "omputeCenterH\000\022-\n\013map_message\030\006 \001(\0132\026.pr"
+    "otobuf.MessageOfMapH\000\022/\n\014news_message\030\007 "
+    "\001(\0132\027.protobuf.MessageOfNewsH\000\022/\n\014team_m"
+    "essage\030\010 \001(\0132\027.protobuf.MessageOfTeamH\000\022"
+    "5\n\017barrier_message\030\t \001(\0132\032.protobuf.Mess"
+    "ageOfBarrierH\000\022/\n\014bush_message\030\n \001(\0132\027.p"
+    "rotobuf.MessageOfBushH\000B\020\n\016message_of_ob"
+    "j\"\243\002\n\014MessageOfAll\022\021\n\tgame_time\030\001 \001(\005\022.\n"
+    "\005teams\030\002 \003(\0132\037.protobuf.MessageOfAll.Tea"
+    "mInfo\032\317\001\n\010TeamInfo\022\r\n\005score\030\001 \001(\005\022\020\n\010mat"
+    "erial\030\002 \001(\005\022\025\n\rcompute_power\030\003 \001(\005\022\022\n\nfa"
+    "ctory_hp\030\004 \001(\005\022D\n\013tech_levels\030\005 \003(\0132/.pr"
+    "otobuf.MessageOfAll.TeamInfo.TechLevelsE"
+    "ntry\0321\n\017TechLevelsEntry\022\013\n\003key\030\001 \001(\t\022\r\n\005"
+    "value\030\002 \001(\005:\0028\001\"\224\001\n\017MessageToClient\022+\n\013o"
+    "bj_message\030\001 \003(\0132\026.protobuf.MessageOfObj"
+    "\022\'\n\ngame_state\030\002 \001(\0162\023.protobuf.GameStat"
+    "e\022+\n\013all_message\030\003 \001(\0132\026.protobuf.Messag"
+    "eOfAll\"J\n\007MoveRes\022\024\n\014actual_speed\030\001 \001(\003\022"
+    "\024\n\014actual_angle\030\002 \001(\001\022\023\n\013act_success\030\003 \001"
+    "(\010\";\n\021CreatCharacterRes\022\023\n\013act_success\030\001"
+    " \001(\010\022\021\n\tplayer_id\030\002 \001(\003\"\036\n\007BoolRes\022\023\n\013ac"
+    "t_success\030\001 \001(\010\"H\n\020CharacterInfoRes\0224\n\016C"
+    "haracter_info\030\001 \003(\0132\034.protobuf.MessageOf"
+    "Character\"\031\n\006EcoRes\022\017\n\007economy\030\001 \001(\003\"z\n\r"
+    "MessageOfNews\022\026\n\014text_message\030\001 \001(\tH\000\022\030\n"
+    "\016binary_message\030\002 \001(\014H\000\022\017\n\007from_id\030\003 \001(\003"
+    "\022\r\n\005to_id\030\004 \001(\003\022\017\n\007team_id\030\005 \001(\003B\006\n\004news"
+    "b\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_Message2Clients_2eproto_deps[1] =
     {
@@ -1302,13 +1420,13 @@ static ::absl::once_flag descriptor_table_Message2Clients_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_Message2Clients_2eproto = {
     false,
     false,
-    3796,
+    4168,
     descriptor_table_protodef_Message2Clients_2eproto,
     "Message2Clients.proto",
     &descriptor_table_Message2Clients_2eproto_once,
     descriptor_table_Message2Clients_2eproto_deps,
     1,
-    27,
+    30,
     schemas,
     file_default_instances,
     TableStruct_Message2Clients_2eproto::offsets,
@@ -1316,6 +1434,247 @@ PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_Message2Client
     file_level_service_descriptors_Message2Clients_2eproto,
 };
 namespace protobuf {
+// ===================================================================
+
+class MessageOfCharacter_GoodsStack::_Internal {
+ public:
+};
+
+MessageOfCharacter_GoodsStack::MessageOfCharacter_GoodsStack(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:protobuf.MessageOfCharacter.GoodsStack)
+}
+MessageOfCharacter_GoodsStack::MessageOfCharacter_GoodsStack(
+    ::google::protobuf::Arena* arena, const MessageOfCharacter_GoodsStack& from)
+    : MessageOfCharacter_GoodsStack(arena) {
+  MergeFrom(from);
+}
+inline PROTOBUF_NDEBUG_INLINE MessageOfCharacter_GoodsStack::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
+inline void MessageOfCharacter_GoodsStack::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, product_type_),
+           0,
+           offsetof(Impl_, quantity_) -
+               offsetof(Impl_, product_type_) +
+               sizeof(Impl_::quantity_));
+}
+MessageOfCharacter_GoodsStack::~MessageOfCharacter_GoodsStack() {
+  // @@protoc_insertion_point(destructor:protobuf.MessageOfCharacter.GoodsStack)
+  SharedDtor(*this);
+}
+inline void MessageOfCharacter_GoodsStack::SharedDtor(MessageLite& self) {
+  MessageOfCharacter_GoodsStack& this_ = static_cast<MessageOfCharacter_GoodsStack&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* MessageOfCharacter_GoodsStack::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) MessageOfCharacter_GoodsStack(arena);
+}
+constexpr auto MessageOfCharacter_GoodsStack::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(MessageOfCharacter_GoodsStack),
+                                            alignof(MessageOfCharacter_GoodsStack));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull MessageOfCharacter_GoodsStack::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_MessageOfCharacter_GoodsStack_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &MessageOfCharacter_GoodsStack::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<MessageOfCharacter_GoodsStack>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &MessageOfCharacter_GoodsStack::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<MessageOfCharacter_GoodsStack>(), &MessageOfCharacter_GoodsStack::ByteSizeLong,
+            &MessageOfCharacter_GoodsStack::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_._cached_size_),
+        false,
+    },
+    &MessageOfCharacter_GoodsStack::kDescriptorMethods,
+    &descriptor_table_Message2Clients_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* MessageOfCharacter_GoodsStack::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 0, 2> MessageOfCharacter_GoodsStack::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::protobuf::MessageOfCharacter_GoodsStack>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 quantity = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(MessageOfCharacter_GoodsStack, _impl_.quantity_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.quantity_)}},
+    // .protobuf.GoodsType product_type = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(MessageOfCharacter_GoodsStack, _impl_.product_type_), 63>(),
+     {8, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.product_type_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .protobuf.GoodsType product_type = 1;
+    {PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.product_type_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kOpenEnum)},
+    // int32 quantity = 2;
+    {PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.quantity_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+
+PROTOBUF_NOINLINE void MessageOfCharacter_GoodsStack::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.MessageOfCharacter.GoodsStack)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.product_type_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.quantity_) -
+      reinterpret_cast<char*>(&_impl_.product_type_)) + sizeof(_impl_.quantity_));
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* MessageOfCharacter_GoodsStack::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const MessageOfCharacter_GoodsStack& this_ = static_cast<const MessageOfCharacter_GoodsStack&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* MessageOfCharacter_GoodsStack::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const MessageOfCharacter_GoodsStack& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:protobuf.MessageOfCharacter.GoodsStack)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          // .protobuf.GoodsType product_type = 1;
+          if (this_._internal_product_type() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteEnumToArray(
+                1, this_._internal_product_type(), target);
+          }
+
+          // int32 quantity = 2;
+          if (this_._internal_quantity() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<2>(
+                    stream, this_._internal_quantity(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:protobuf.MessageOfCharacter.GoodsStack)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t MessageOfCharacter_GoodsStack::ByteSizeLong(const MessageLite& base) {
+          const MessageOfCharacter_GoodsStack& this_ = static_cast<const MessageOfCharacter_GoodsStack&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t MessageOfCharacter_GoodsStack::ByteSizeLong() const {
+          const MessageOfCharacter_GoodsStack& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:protobuf.MessageOfCharacter.GoodsStack)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // .protobuf.GoodsType product_type = 1;
+            if (this_._internal_product_type() != 0) {
+              total_size += 1 +
+                            ::_pbi::WireFormatLite::EnumSize(this_._internal_product_type());
+            }
+            // int32 quantity = 2;
+            if (this_._internal_quantity() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_quantity());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void MessageOfCharacter_GoodsStack::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<MessageOfCharacter_GoodsStack*>(&to_msg);
+  auto& from = static_cast<const MessageOfCharacter_GoodsStack&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.MessageOfCharacter.GoodsStack)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_product_type() != 0) {
+    _this->_impl_.product_type_ = from._impl_.product_type_;
+  }
+  if (from._internal_quantity() != 0) {
+    _this->_impl_.quantity_ = from._impl_.quantity_;
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void MessageOfCharacter_GoodsStack::CopyFrom(const MessageOfCharacter_GoodsStack& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.MessageOfCharacter.GoodsStack)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void MessageOfCharacter_GoodsStack::InternalSwap(MessageOfCharacter_GoodsStack* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.quantity_)
+      + sizeof(MessageOfCharacter_GoodsStack::_impl_.quantity_)
+      - PROTOBUF_FIELD_OFFSET(MessageOfCharacter_GoodsStack, _impl_.product_type_)>(
+          reinterpret_cast<char*>(&_impl_.product_type_),
+          reinterpret_cast<char*>(&other->_impl_.product_type_));
+}
+
+::google::protobuf::Metadata MessageOfCharacter_GoodsStack::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
 // ===================================================================
 
 class MessageOfCharacter::_Internal {
@@ -1331,15 +1690,40 @@ MessageOfCharacter::MessageOfCharacter(::google::protobuf::Arena* arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:protobuf.MessageOfCharacter)
 }
+inline PROTOBUF_NDEBUG_INLINE MessageOfCharacter::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::protobuf::MessageOfCharacter& from_msg)
+      : goods_load_{visibility, arena, from.goods_load_},
+        _cached_size_{0} {}
+
 MessageOfCharacter::MessageOfCharacter(
-    ::google::protobuf::Arena* arena, const MessageOfCharacter& from)
-    : MessageOfCharacter(arena) {
-  MergeFrom(from);
+    ::google::protobuf::Arena* arena,
+    const MessageOfCharacter& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  MessageOfCharacter* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, guid_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, guid_),
+           offsetof(Impl_, harvest_rate_per_sec_) -
+               offsetof(Impl_, guid_) +
+               sizeof(Impl_::harvest_rate_per_sec_));
+
+  // @@protoc_insertion_point(copy_constructor:protobuf.MessageOfCharacter)
 }
 inline PROTOBUF_NDEBUG_INLINE MessageOfCharacter::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : _cached_size_{0} {}
+      : goods_load_{visibility, arena},
+        _cached_size_{0} {}
 
 inline void MessageOfCharacter::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -1366,8 +1750,20 @@ inline void* MessageOfCharacter::PlacementNew_(const void*, void* mem,
   return ::new (mem) MessageOfCharacter(arena);
 }
 constexpr auto MessageOfCharacter::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(MessageOfCharacter),
-                                            alignof(MessageOfCharacter));
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.goods_load_) +
+          decltype(MessageOfCharacter::_impl_.goods_load_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::ZeroInit(
+        sizeof(MessageOfCharacter), alignof(MessageOfCharacter), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&MessageOfCharacter::PlacementNew_,
+                                 sizeof(MessageOfCharacter),
+                                 alignof(MessageOfCharacter));
+  }
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
@@ -1397,17 +1793,17 @@ const ::google::protobuf::internal::ClassData* MessageOfCharacter::GetClassData(
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<5, 17, 0, 0, 2> MessageOfCharacter::_table_ = {
+const ::_pbi::TcParseTable<5, 18, 1, 0, 2> MessageOfCharacter::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    17, 248,  // max_field_number, fast_idx_mask
+    18, 248,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294836224,  // skipmap
+    4294705152,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    17,  // num_field_entries
-    0,  // num_aux_entries
-    offsetof(decltype(_table_), field_names),  // no aux_entries
+    18,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
@@ -1467,7 +1863,9 @@ const ::_pbi::TcParseTable<5, 17, 0, 0, 2> MessageOfCharacter::_table_ = {
     // int32 harvest_rate_per_sec = 17;
     {::_pbi::TcParser::FastV32S2,
      {392, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.harvest_rate_per_sec_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // repeated .protobuf.MessageOfCharacter.GoodsStack goods_load = 18;
+    {::_pbi::TcParser::FastMtR2,
+     {402, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.goods_load_)}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
@@ -1535,9 +1933,12 @@ const ::_pbi::TcParseTable<5, 17, 0, 0, 2> MessageOfCharacter::_table_ = {
     // int32 harvest_rate_per_sec = 17;
     {PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.harvest_rate_per_sec_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
-  }},
-  // no aux_entries
-  {{
+    // repeated .protobuf.MessageOfCharacter.GoodsStack goods_load = 18;
+    {PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.goods_load_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::protobuf::MessageOfCharacter_GoodsStack>()},
+  }}, {{
   }},
 };
 
@@ -1548,6 +1949,7 @@ PROTOBUF_NOINLINE void MessageOfCharacter::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  _impl_.goods_load_.Clear();
   ::memset(&_impl_.guid_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.harvest_rate_per_sec_) -
       reinterpret_cast<char*>(&_impl_.guid_)) + sizeof(_impl_.harvest_rate_per_sec_));
@@ -1688,6 +2090,17 @@ PROTOBUF_NOINLINE void MessageOfCharacter::Clear() {
                 17, this_._internal_harvest_rate_per_sec(), target);
           }
 
+          // repeated .protobuf.MessageOfCharacter.GoodsStack goods_load = 18;
+          for (unsigned i = 0, n = static_cast<unsigned>(
+                                   this_._internal_goods_load_size());
+               i < n; i++) {
+            const auto& repfield = this_._internal_goods_load().Get(i);
+            target =
+                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                    18, repfield, repfield.GetCachedSize(),
+                    target, stream);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1712,6 +2125,15 @@ PROTOBUF_NOINLINE void MessageOfCharacter::Clear() {
           (void)cached_has_bits;
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // repeated .protobuf.MessageOfCharacter.GoodsStack goods_load = 18;
+            {
+              total_size += 2UL * this_._internal_goods_load_size();
+              for (const auto& msg : this_._internal_goods_load()) {
+                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+              }
+            }
+          }
            {
             // int64 guid = 1;
             if (this_._internal_guid() != 0) {
@@ -1810,6 +2232,8 @@ void MessageOfCharacter::MergeImpl(::google::protobuf::MessageLite& to_msg, cons
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  _this->_internal_mutable_goods_load()->MergeFrom(
+      from._internal_goods_load());
   if (from._internal_guid() != 0) {
     _this->_impl_.guid_ = from._impl_.guid_;
   }
@@ -1875,6 +2299,7 @@ void MessageOfCharacter::CopyFrom(const MessageOfCharacter& from) {
 void MessageOfCharacter::InternalSwap(MessageOfCharacter* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.goods_load_.InternalSwap(&other->_impl_.goods_load_);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(MessageOfCharacter, _impl_.harvest_rate_per_sec_)
       + sizeof(MessageOfCharacter::_impl_.harvest_rate_per_sec_)
@@ -2784,6 +3209,96 @@ void MessageOfMap::InternalSwap(MessageOfMap* PROTOBUF_RESTRICT other) {
 }
 // ===================================================================
 
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+              MessageOfTeam_TechLevelsEntry_DoNotUse::MessageOfTeam_TechLevelsEntry_DoNotUse() : SuperType(_class_data_.base()) {}
+              MessageOfTeam_TechLevelsEntry_DoNotUse::MessageOfTeam_TechLevelsEntry_DoNotUse(::google::protobuf::Arena* arena)
+                  : SuperType(arena, _class_data_.base()) {}
+#else   // PROTOBUF_CUSTOM_VTABLE
+              MessageOfTeam_TechLevelsEntry_DoNotUse::MessageOfTeam_TechLevelsEntry_DoNotUse() : SuperType() {}
+              MessageOfTeam_TechLevelsEntry_DoNotUse::MessageOfTeam_TechLevelsEntry_DoNotUse(::google::protobuf::Arena* arena) : SuperType(arena) {}
+#endif  // PROTOBUF_CUSTOM_VTABLE
+              inline void* MessageOfTeam_TechLevelsEntry_DoNotUse::PlacementNew_(const void*, void* mem,
+                                                      ::google::protobuf::Arena* arena) {
+                return ::new (mem) MessageOfTeam_TechLevelsEntry_DoNotUse(arena);
+              }
+              constexpr auto MessageOfTeam_TechLevelsEntry_DoNotUse::InternalNewImpl_() {
+                return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(MessageOfTeam_TechLevelsEntry_DoNotUse),
+                                                          alignof(MessageOfTeam_TechLevelsEntry_DoNotUse));
+              }
+              PROTOBUF_CONSTINIT
+              PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+              const ::google::protobuf::internal::ClassDataFull MessageOfTeam_TechLevelsEntry_DoNotUse::_class_data_ = {
+                  ::google::protobuf::internal::ClassData{
+                      &_MessageOfTeam_TechLevelsEntry_DoNotUse_default_instance_._instance,
+                      &_table_.header,
+                      nullptr,  // OnDemandRegisterArenaDtor
+                      nullptr,  // IsInitialized
+                      &MessageOfTeam_TechLevelsEntry_DoNotUse::MergeImpl,
+                      ::google::protobuf::Message::GetNewImpl<MessageOfTeam_TechLevelsEntry_DoNotUse>(),
+              #if defined(PROTOBUF_CUSTOM_VTABLE)
+                      &MessageOfTeam_TechLevelsEntry_DoNotUse::SharedDtor,
+                      static_cast<void (::google::protobuf::MessageLite::*)()>(
+                          &MessageOfTeam_TechLevelsEntry_DoNotUse::ClearImpl),
+                          ::google::protobuf::Message::ByteSizeLongImpl, ::google::protobuf::Message::_InternalSerializeImpl
+                          ,
+              #endif  // PROTOBUF_CUSTOM_VTABLE
+                      PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_._cached_size_),
+                      false,
+                  },
+                  &MessageOfTeam_TechLevelsEntry_DoNotUse::kDescriptorMethods,
+                  &descriptor_table_Message2Clients_2eproto,
+                  nullptr,  // tracker
+              };
+              const ::google::protobuf::internal::ClassData* MessageOfTeam_TechLevelsEntry_DoNotUse::GetClassData() const {
+                ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+                ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+                return _class_data_.base();
+              }
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 50, 2> MessageOfTeam_TechLevelsEntry_DoNotUse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::DiscardEverythingFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::protobuf::MessageOfTeam_TechLevelsEntry_DoNotUse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 value = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.value_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.value_)}},
+    // string key = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.key_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string key = 1;
+    {PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.key_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int32 value = 2;
+    {PROTOBUF_FIELD_OFFSET(MessageOfTeam_TechLevelsEntry_DoNotUse, _impl_.value_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+    "\46\3\0\0\0\0\0\0"
+    "protobuf.MessageOfTeam.TechLevelsEntry"
+    "key"
+  }},
+};
+
+// ===================================================================
+
 class MessageOfTeam::_Internal {
  public:
 };
@@ -2797,15 +3312,40 @@ MessageOfTeam::MessageOfTeam(::google::protobuf::Arena* arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:protobuf.MessageOfTeam)
 }
+inline PROTOBUF_NDEBUG_INLINE MessageOfTeam::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::protobuf::MessageOfTeam& from_msg)
+      : tech_levels_{visibility, arena, from.tech_levels_},
+        _cached_size_{0} {}
+
 MessageOfTeam::MessageOfTeam(
-    ::google::protobuf::Arena* arena, const MessageOfTeam& from)
-    : MessageOfTeam(arena) {
-  MergeFrom(from);
+    ::google::protobuf::Arena* arena,
+    const MessageOfTeam& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  MessageOfTeam* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, team_id_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, team_id_),
+           offsetof(Impl_, compute_power_) -
+               offsetof(Impl_, team_id_) +
+               sizeof(Impl_::compute_power_));
+
+  // @@protoc_insertion_point(copy_constructor:protobuf.MessageOfTeam)
 }
 inline PROTOBUF_NDEBUG_INLINE MessageOfTeam::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : _cached_size_{0} {}
+      : tech_levels_{visibility, arena},
+        _cached_size_{0} {}
 
 inline void MessageOfTeam::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -2832,8 +3372,24 @@ inline void* MessageOfTeam::PlacementNew_(const void*, void* mem,
   return ::new (mem) MessageOfTeam(arena);
 }
 constexpr auto MessageOfTeam::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(MessageOfTeam),
-                                            alignof(MessageOfTeam));
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(MessageOfTeam, _impl_.tech_levels_) +
+          decltype(MessageOfTeam::_impl_.tech_levels_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+      PROTOBUF_FIELD_OFFSET(MessageOfTeam, _impl_.tech_levels_) +
+          decltype(MessageOfTeam::_impl_.tech_levels_)::
+              InternalGetArenaOffsetAlt(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::CopyInit(
+        sizeof(MessageOfTeam), alignof(MessageOfTeam), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&MessageOfTeam::PlacementNew_,
+                                 sizeof(MessageOfTeam),
+                                 alignof(MessageOfTeam));
+  }
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
@@ -2863,17 +3419,17 @@ const ::google::protobuf::internal::ClassData* MessageOfTeam::GetClassData() con
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 5, 0, 0, 2> MessageOfTeam::_table_ = {
+const ::_pbi::TcParseTable<3, 6, 1, 42, 2> MessageOfTeam::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    5, 56,  // max_field_number, fast_idx_mask
+    6, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967264,  // skipmap
+    4294967232,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    5,  // num_field_entries
-    0,  // num_aux_entries
-    offsetof(decltype(_table_), field_names),  // no aux_entries
+    6,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
@@ -2917,9 +3473,18 @@ const ::_pbi::TcParseTable<3, 5, 0, 0, 2> MessageOfTeam::_table_ = {
     // int32 compute_power = 5;
     {PROTOBUF_FIELD_OFFSET(MessageOfTeam, _impl_.compute_power_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
-  }},
-  // no aux_entries
-  {{
+    // map<string, int32> tech_levels = 6;
+    {PROTOBUF_FIELD_OFFSET(MessageOfTeam, _impl_.tech_levels_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
+  }}, {{
+    {::_pbi::TcParser::GetMapAuxInfo<
+        decltype(MessageOfTeam()._impl_.tech_levels_)>(
+        1, 0, 0, 9,
+        5)},
+  }}, {{
+    "\26\0\0\0\0\0\13\0"
+    "protobuf.MessageOfTeam"
+    "tech_levels"
   }},
 };
 
@@ -2930,6 +3495,7 @@ PROTOBUF_NOINLINE void MessageOfTeam::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  _impl_.tech_levels_.Clear();
   ::memset(&_impl_.team_id_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.compute_power_) -
       reinterpret_cast<char*>(&_impl_.team_id_)) + sizeof(_impl_.compute_power_));
@@ -2986,6 +3552,33 @@ PROTOBUF_NOINLINE void MessageOfTeam::Clear() {
                     stream, this_._internal_compute_power(), target);
           }
 
+          // map<string, int32> tech_levels = 6;
+          if (!this_._internal_tech_levels().empty()) {
+            using MapType = ::google::protobuf::Map<std::string, ::int32_t>;
+            using WireHelper = _pbi::MapEntryFuncs<std::string, ::int32_t,
+                                           _pbi::WireFormatLite::TYPE_STRING,
+                                           _pbi::WireFormatLite::TYPE_INT32>;
+            const auto& field = this_._internal_tech_levels();
+
+            if (stream->IsSerializationDeterministic() && field.size() > 1) {
+              for (const auto& entry : ::google::protobuf::internal::MapSorterPtr<MapType>(field)) {
+                target = WireHelper::InternalSerialize(
+                    6, entry.first, entry.second, target, stream);
+                ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                    entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.MessageOfTeam.tech_levels");
+              }
+            } else {
+              for (const auto& entry : field) {
+                target = WireHelper::InternalSerialize(
+                    6, entry.first, entry.second, target, stream);
+                ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                    entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.MessageOfTeam.tech_levels");
+              }
+            }
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -3010,6 +3603,18 @@ PROTOBUF_NOINLINE void MessageOfTeam::Clear() {
           (void)cached_has_bits;
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // map<string, int32> tech_levels = 6;
+            {
+              total_size +=
+                  1 * ::google::protobuf::internal::FromIntSize(this_._internal_tech_levels_size());
+              for (const auto& entry : this_._internal_tech_levels()) {
+                total_size += _pbi::MapEntryFuncs<std::string, ::int32_t,
+                                               _pbi::WireFormatLite::TYPE_STRING,
+                                               _pbi::WireFormatLite::TYPE_INT32>::ByteSizeLong(entry.first, entry.second);
+              }
+            }
+          }
            {
             // int64 team_id = 1;
             if (this_._internal_team_id() != 0) {
@@ -3049,6 +3654,7 @@ void MessageOfTeam::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::g
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  _this->_impl_.tech_levels_.MergeFrom(from._impl_.tech_levels_);
   if (from._internal_team_id() != 0) {
     _this->_impl_.team_id_ = from._impl_.team_id_;
   }
@@ -3078,6 +3684,7 @@ void MessageOfTeam::CopyFrom(const MessageOfTeam& from) {
 void MessageOfTeam::InternalSwap(MessageOfTeam* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.tech_levels_.InternalSwap(&other->_impl_.tech_levels_);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(MessageOfTeam, _impl_.compute_power_)
       + sizeof(MessageOfTeam::_impl_.compute_power_)
@@ -7549,6 +8156,96 @@ void MessageOfObj::InternalSwap(MessageOfObj* PROTOBUF_RESTRICT other) {
 }
 // ===================================================================
 
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+              MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse() : SuperType(_class_data_.base()) {}
+              MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse(::google::protobuf::Arena* arena)
+                  : SuperType(arena, _class_data_.base()) {}
+#else   // PROTOBUF_CUSTOM_VTABLE
+              MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse() : SuperType() {}
+              MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse(::google::protobuf::Arena* arena) : SuperType(arena) {}
+#endif  // PROTOBUF_CUSTOM_VTABLE
+              inline void* MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::PlacementNew_(const void*, void* mem,
+                                                      ::google::protobuf::Arena* arena) {
+                return ::new (mem) MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse(arena);
+              }
+              constexpr auto MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::InternalNewImpl_() {
+                return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse),
+                                                          alignof(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse));
+              }
+              PROTOBUF_CONSTINIT
+              PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+              const ::google::protobuf::internal::ClassDataFull MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::_class_data_ = {
+                  ::google::protobuf::internal::ClassData{
+                      &_MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse_default_instance_._instance,
+                      &_table_.header,
+                      nullptr,  // OnDemandRegisterArenaDtor
+                      nullptr,  // IsInitialized
+                      &MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::MergeImpl,
+                      ::google::protobuf::Message::GetNewImpl<MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse>(),
+              #if defined(PROTOBUF_CUSTOM_VTABLE)
+                      &MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::SharedDtor,
+                      static_cast<void (::google::protobuf::MessageLite::*)()>(
+                          &MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::ClearImpl),
+                          ::google::protobuf::Message::ByteSizeLongImpl, ::google::protobuf::Message::_InternalSerializeImpl
+                          ,
+              #endif  // PROTOBUF_CUSTOM_VTABLE
+                      PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_._cached_size_),
+                      false,
+                  },
+                  &MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::kDescriptorMethods,
+                  &descriptor_table_Message2Clients_2eproto,
+                  nullptr,  // tracker
+              };
+              const ::google::protobuf::internal::ClassData* MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::GetClassData() const {
+                ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+                ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+                return _class_data_.base();
+              }
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 58, 2> MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::DiscardEverythingFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::protobuf::MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 value = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.value_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.value_)}},
+    // string key = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.key_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string key = 1;
+    {PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.key_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int32 value = 2;
+    {PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo_TechLevelsEntry_DoNotUse, _impl_.value_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+    "\56\3\0\0\0\0\0\0"
+    "protobuf.MessageOfAll.TeamInfo.TechLevelsEntry"
+    "key"
+  }},
+};
+
+// ===================================================================
+
 class MessageOfAll_TeamInfo::_Internal {
  public:
 };
@@ -7562,15 +8259,40 @@ MessageOfAll_TeamInfo::MessageOfAll_TeamInfo(::google::protobuf::Arena* arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:protobuf.MessageOfAll.TeamInfo)
 }
+inline PROTOBUF_NDEBUG_INLINE MessageOfAll_TeamInfo::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::protobuf::MessageOfAll_TeamInfo& from_msg)
+      : tech_levels_{visibility, arena, from.tech_levels_},
+        _cached_size_{0} {}
+
 MessageOfAll_TeamInfo::MessageOfAll_TeamInfo(
-    ::google::protobuf::Arena* arena, const MessageOfAll_TeamInfo& from)
-    : MessageOfAll_TeamInfo(arena) {
-  MergeFrom(from);
+    ::google::protobuf::Arena* arena,
+    const MessageOfAll_TeamInfo& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  MessageOfAll_TeamInfo* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, score_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, score_),
+           offsetof(Impl_, factory_hp_) -
+               offsetof(Impl_, score_) +
+               sizeof(Impl_::factory_hp_));
+
+  // @@protoc_insertion_point(copy_constructor:protobuf.MessageOfAll.TeamInfo)
 }
 inline PROTOBUF_NDEBUG_INLINE MessageOfAll_TeamInfo::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : _cached_size_{0} {}
+      : tech_levels_{visibility, arena},
+        _cached_size_{0} {}
 
 inline void MessageOfAll_TeamInfo::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -7597,8 +8319,24 @@ inline void* MessageOfAll_TeamInfo::PlacementNew_(const void*, void* mem,
   return ::new (mem) MessageOfAll_TeamInfo(arena);
 }
 constexpr auto MessageOfAll_TeamInfo::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(MessageOfAll_TeamInfo),
-                                            alignof(MessageOfAll_TeamInfo));
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo, _impl_.tech_levels_) +
+          decltype(MessageOfAll_TeamInfo::_impl_.tech_levels_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+      PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo, _impl_.tech_levels_) +
+          decltype(MessageOfAll_TeamInfo::_impl_.tech_levels_)::
+              InternalGetArenaOffsetAlt(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::CopyInit(
+        sizeof(MessageOfAll_TeamInfo), alignof(MessageOfAll_TeamInfo), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&MessageOfAll_TeamInfo::PlacementNew_,
+                                 sizeof(MessageOfAll_TeamInfo),
+                                 alignof(MessageOfAll_TeamInfo));
+  }
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
@@ -7628,17 +8366,17 @@ const ::google::protobuf::internal::ClassData* MessageOfAll_TeamInfo::GetClassDa
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 4, 0, 0, 2> MessageOfAll_TeamInfo::_table_ = {
+const ::_pbi::TcParseTable<2, 5, 1, 50, 2> MessageOfAll_TeamInfo::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    4, 24,  // max_field_number, fast_idx_mask
+    5, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967280,  // skipmap
+    4294967264,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
-    0,  // num_aux_entries
-    offsetof(decltype(_table_), field_names),  // no aux_entries
+    5,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
@@ -7673,9 +8411,18 @@ const ::_pbi::TcParseTable<2, 4, 0, 0, 2> MessageOfAll_TeamInfo::_table_ = {
     // int32 factory_hp = 4;
     {PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo, _impl_.factory_hp_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
-  }},
-  // no aux_entries
-  {{
+    // map<string, int32> tech_levels = 5;
+    {PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo, _impl_.tech_levels_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
+  }}, {{
+    {::_pbi::TcParser::GetMapAuxInfo<
+        decltype(MessageOfAll_TeamInfo()._impl_.tech_levels_)>(
+        1, 0, 0, 9,
+        5)},
+  }}, {{
+    "\36\0\0\0\0\13\0\0"
+    "protobuf.MessageOfAll.TeamInfo"
+    "tech_levels"
   }},
 };
 
@@ -7686,6 +8433,7 @@ PROTOBUF_NOINLINE void MessageOfAll_TeamInfo::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  _impl_.tech_levels_.Clear();
   ::memset(&_impl_.score_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.factory_hp_) -
       reinterpret_cast<char*>(&_impl_.score_)) + sizeof(_impl_.factory_hp_));
@@ -7735,6 +8483,33 @@ PROTOBUF_NOINLINE void MessageOfAll_TeamInfo::Clear() {
                     stream, this_._internal_factory_hp(), target);
           }
 
+          // map<string, int32> tech_levels = 5;
+          if (!this_._internal_tech_levels().empty()) {
+            using MapType = ::google::protobuf::Map<std::string, ::int32_t>;
+            using WireHelper = _pbi::MapEntryFuncs<std::string, ::int32_t,
+                                           _pbi::WireFormatLite::TYPE_STRING,
+                                           _pbi::WireFormatLite::TYPE_INT32>;
+            const auto& field = this_._internal_tech_levels();
+
+            if (stream->IsSerializationDeterministic() && field.size() > 1) {
+              for (const auto& entry : ::google::protobuf::internal::MapSorterPtr<MapType>(field)) {
+                target = WireHelper::InternalSerialize(
+                    5, entry.first, entry.second, target, stream);
+                ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                    entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.MessageOfAll.TeamInfo.tech_levels");
+              }
+            } else {
+              for (const auto& entry : field) {
+                target = WireHelper::InternalSerialize(
+                    5, entry.first, entry.second, target, stream);
+                ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                    entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.MessageOfAll.TeamInfo.tech_levels");
+              }
+            }
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -7759,6 +8534,18 @@ PROTOBUF_NOINLINE void MessageOfAll_TeamInfo::Clear() {
           (void)cached_has_bits;
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // map<string, int32> tech_levels = 5;
+            {
+              total_size +=
+                  1 * ::google::protobuf::internal::FromIntSize(this_._internal_tech_levels_size());
+              for (const auto& entry : this_._internal_tech_levels()) {
+                total_size += _pbi::MapEntryFuncs<std::string, ::int32_t,
+                                               _pbi::WireFormatLite::TYPE_STRING,
+                                               _pbi::WireFormatLite::TYPE_INT32>::ByteSizeLong(entry.first, entry.second);
+              }
+            }
+          }
            {
             // int32 score = 1;
             if (this_._internal_score() != 0) {
@@ -7793,6 +8580,7 @@ void MessageOfAll_TeamInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, c
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  _this->_impl_.tech_levels_.MergeFrom(from._impl_.tech_levels_);
   if (from._internal_score() != 0) {
     _this->_impl_.score_ = from._impl_.score_;
   }
@@ -7819,6 +8607,7 @@ void MessageOfAll_TeamInfo::CopyFrom(const MessageOfAll_TeamInfo& from) {
 void MessageOfAll_TeamInfo::InternalSwap(MessageOfAll_TeamInfo* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.tech_levels_.InternalSwap(&other->_impl_.tech_levels_);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(MessageOfAll_TeamInfo, _impl_.factory_hp_)
       + sizeof(MessageOfAll_TeamInfo::_impl_.factory_hp_)

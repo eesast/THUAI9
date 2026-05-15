@@ -18,13 +18,19 @@ namespace THUAI9_Avalonia.ViewModels
     public partial class PlaybackViewModel : ViewModelBase
     {
         private const double FrameIntervalMs = 100;
-        private const int MaximumReasonableLiveGameMilliseconds = 2 * 60 * 60 * 1000;
-        private const int MaximumSingleLiveTimeJumpMilliseconds = 10 * 60 * 1000;
+        private const int OfficialMatchDurationMilliseconds = 10 * 60 * 1000;
+        private const int TimelineGameTimeGuardSlackMilliseconds = 5 * 60 * 1000;
+        private const int MaximumReasonableTimelineGameMilliseconds =
+            OfficialMatchDurationMilliseconds + TimelineGameTimeGuardSlackMilliseconds;
+        private const int MaximumSingleTimelineTimeJumpMilliseconds =
+            OfficialMatchDurationMilliseconds + TimelineGameTimeGuardSlackMilliseconds;
         private static readonly double[] PlaybackSpeeds = { 0.5, 1, 2, 4 };
         private readonly PlaybackReader _reader = new();
         private DispatcherTimer? _playbackTimer;
         private int _currentFrame;
         private int _totalFrames;
+        private int _stablePlaybackGameTimeMs;
+        private bool _hasStablePlaybackGameTime;
         private int _stableLiveGameTimeMs;
         private bool _hasStableLiveGameTime;
         private Action<MessageToClient>? _onMessageReceived;
@@ -71,6 +77,7 @@ namespace THUAI9_Avalonia.ViewModels
                 IsFileLoaded = true;
                 _totalFrames = CountTotalFrames();
                 _currentFrame = 0;
+                ResetStablePlaybackGameTime();
                 State = PlaybackState.Stopped;
                 UpdatePlaybackProgress(null);
             }
@@ -80,6 +87,7 @@ namespace THUAI9_Avalonia.ViewModels
                 FilePath = string.Empty;
                 _currentFrame = 0;
                 _totalFrames = 0;
+                ResetStablePlaybackGameTime();
                 UpdatePlaybackProgress(null);
                 System.Diagnostics.Debug.WriteLine($"加载回放失败：{ex.Message}");
                 throw;
@@ -127,6 +135,7 @@ namespace THUAI9_Avalonia.ViewModels
             StopPlaybackTimer();
             _reader.Reset();
             _currentFrame = 0;
+            ResetStablePlaybackGameTime();
             State = PlaybackState.Stopped;
             UpdatePlaybackProgress(null);
         }
@@ -173,9 +182,30 @@ namespace THUAI9_Avalonia.ViewModels
 
         private void UpdatePlaybackProgress(MessageToClient? message)
         {
-            int gameTimeMs = message?.AllMessage?.GameTime ?? (int)Math.Round(_currentFrame * FrameIntervalMs);
+            int gameTimeMs = ResolveStablePlaybackGameTime(message, _currentFrame);
             PlaybackTimeText = FormatGameTime(gameTimeMs);
             FrameProgressText = IsFileLoaded ? $"帧 {_currentFrame}/{_totalFrames}" : "帧 0/0";
+        }
+
+        private int ResolveStablePlaybackGameTime(MessageToClient? message, int frameIndex)
+        {
+            int estimatedGameTimeMs = EstimateTimelineGameTime(frameIndex);
+
+            if (message?.AllMessage == null)
+            {
+                return _hasStablePlaybackGameTime ? _stablePlaybackGameTimeMs : estimatedGameTimeMs;
+            }
+
+            int rawGameTimeMs = message.AllMessage.GameTime;
+            if (AcceptTimelineGameTime(rawGameTimeMs, message.GameState, _hasStablePlaybackGameTime, _stablePlaybackGameTimeMs))
+            {
+                _stablePlaybackGameTimeMs = _hasStablePlaybackGameTime
+                    ? Math.Max(_stablePlaybackGameTimeMs, rawGameTimeMs)
+                    : rawGameTimeMs;
+                _hasStablePlaybackGameTime = true;
+            }
+
+            return _hasStablePlaybackGameTime ? _stablePlaybackGameTimeMs : estimatedGameTimeMs;
         }
 
         public void UpdateLiveProgress(MessageToClient? message, int liveFrameCount)
@@ -188,7 +218,7 @@ namespace THUAI9_Avalonia.ViewModels
 
         private int ResolveStableLiveGameTime(MessageToClient? message, int liveFrameCount)
         {
-            int estimatedGameTimeMs = EstimateLiveGameTime(liveFrameCount);
+            int estimatedGameTimeMs = EstimateTimelineGameTime(liveFrameCount);
 
             if (message?.AllMessage == null)
             {
@@ -201,7 +231,7 @@ namespace THUAI9_Avalonia.ViewModels
             }
 
             int rawGameTimeMs = message.AllMessage.GameTime;
-            if (AcceptLiveGameTime(rawGameTimeMs, message.GameState))
+            if (AcceptTimelineGameTime(rawGameTimeMs, message.GameState, _hasStableLiveGameTime, _stableLiveGameTimeMs))
             {
                 _stableLiveGameTimeMs = _hasStableLiveGameTime
                     ? Math.Max(_stableLiveGameTimeMs, rawGameTimeMs)
@@ -212,29 +242,41 @@ namespace THUAI9_Avalonia.ViewModels
             return _hasStableLiveGameTime ? _stableLiveGameTimeMs : estimatedGameTimeMs;
         }
 
-        private bool AcceptLiveGameTime(int rawGameTimeMs, GameState gameState)
+        private static bool AcceptTimelineGameTime(
+            int rawGameTimeMs,
+            GameState gameState,
+            bool hasStableGameTime,
+            int stableGameTimeMs)
         {
-            if (rawGameTimeMs < 0 || rawGameTimeMs > MaximumReasonableLiveGameMilliseconds)
+            if (rawGameTimeMs < 0 || rawGameTimeMs > MaximumReasonableTimelineGameMilliseconds)
             {
                 return false;
             }
 
-            if (!_hasStableLiveGameTime)
+            if (!hasStableGameTime)
             {
                 return true;
             }
 
-            if (gameState == GameState.GameEnd && rawGameTimeMs > _stableLiveGameTimeMs + MaximumSingleLiveTimeJumpMilliseconds)
+            if (gameState == GameState.GameEnd &&
+                rawGameTimeMs > stableGameTimeMs + MaximumSingleTimelineTimeJumpMilliseconds)
             {
                 return false;
             }
 
-            return rawGameTimeMs <= _stableLiveGameTimeMs + MaximumSingleLiveTimeJumpMilliseconds;
+            return rawGameTimeMs <= stableGameTimeMs + MaximumSingleTimelineTimeJumpMilliseconds;
         }
 
-        private static int EstimateLiveGameTime(int liveFrameCount)
+        private static int EstimateTimelineGameTime(int frameCount)
         {
-            return (int)Math.Round(Math.Max(liveFrameCount, 0) * FrameIntervalMs);
+            int estimatedGameTimeMs = (int)Math.Round(Math.Max(frameCount, 0) * FrameIntervalMs);
+            return Math.Min(estimatedGameTimeMs, MaximumReasonableTimelineGameMilliseconds);
+        }
+
+        private void ResetStablePlaybackGameTime()
+        {
+            _stablePlaybackGameTimeMs = 0;
+            _hasStablePlaybackGameTime = false;
         }
 
         private void ResetStableLiveGameTime()
@@ -250,6 +292,7 @@ namespace THUAI9_Avalonia.ViewModels
                 gameTimeMs = 0;
             }
 
+            gameTimeMs = Math.Min(gameTimeMs, MaximumReasonableTimelineGameMilliseconds);
             var time = TimeSpan.FromMilliseconds(gameTimeMs);
             return time.TotalHours >= 1
                 ? $"{(int)time.TotalHours:00}:{time.Minutes:00}:{time.Seconds:00}"
