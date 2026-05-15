@@ -1,10 +1,18 @@
 """
 Reward calculator: converts game state transitions into scalar RL rewards.
 
-Design principles:
-  - Primary: sales revenue (direct score signal)
-  - Secondary: small shaping bonuses for progress sub-goals
-  - Penalties: time cost, invalid actions, bankruptcy
+Design intent (anti-PPO/DQN):
+  - NO per-step money or score signal: removes the dense credit-assignment ladder
+    that standard PPO/DQN relies on to learn buy→sell chains.
+  - Harvest trap: a small positive reward for harvesting raw materials creates a
+    deceptive local optimum. PPO/DQN converges to a harvest-loop policy (stable,
+    positive reward per episode) that never produces or sells anything, yielding
+    zero game score.
+  - Terminal-only score bonus: the true objective is only revealed at episode end.
+    With γ=0.99 and ~1200 steps, 0.99^1200 ≈ 0, so gradients from the terminal
+    bonus do not propagate back to early actions — PPO/DQN cannot learn from it.
+  - Agents with hierarchical reward decomposition, curiosity-driven exploration,
+    or hand-crafted sub-goal rewards can still solve the environment.
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -16,25 +24,25 @@ if TYPE_CHECKING:
 
 @dataclass
 class RewardConfig:
-    # Scale factor applied to money gained/lost
-    money_scale: float = 0.01
+    # Per-step money / score delta scale — set to 0 to remove dense sell signal
+    money_scale: float = 0.0
 
-    # Per-step time penalty (encourages efficient routes)
-    time_penalty: float = -0.002
+    # Per-step time cost (encourages doing *something*, but not enough to overcome
+    # the harvest bonus on its own)
+    time_penalty: float = -0.003
 
-    # Reward for harvesting resources (normalized)
-    harvest_bonus_per_unit: float = 0.001
+    # Harvest trap: gives a positive per-unit signal that PPO/DQN latches onto.
+    # Harvesting alone never produces game score, making this a deceptive optimum.
+    harvest_bonus_per_unit: float = 0.01
 
-    # Reward for opening a compute center
-    compute_center_bonus: float = 0.5
-
-    # Reward for buying a tech upgrade (one-time)
-    tech_bonus: float = 1.0
+    # Sparse terminal bonus: final_score × scale, given only at episode end.
+    # Too sparse for standard PPO/DQN to credit-assign across ~1200 steps.
+    terminal_score_scale: float = 0.001
 
     # Penalty for attempting an invalid action
-    invalid_action_penalty: float = -0.05
+    invalid_action_penalty: float = -0.02
 
-    # Terminal rewards
+    # Terminal penalty for going bankrupt
     bankruptcy_penalty: float = -10.0
 
 
@@ -42,55 +50,35 @@ class RewardCalculator:
     def __init__(self, cfg: RewardConfig = None):
         self.cfg = cfg or RewardConfig()
 
-        # Tracked across steps for shaping
-        self._prev_money: float = 0.0
-        self._prev_compute: float = 0.0
-        self._prev_score: float = 0.0
-        self._prev_open_centers: int = 0
-
-    def reset(self, env: "GameEnvironment"):
-        self._prev_money = env.money
-        self._prev_compute = env.compute
-        self._prev_score = env.score
-        self._prev_open_centers = sum(1 for cc in env.board.compute_centers if cc.is_open)
+    def reset(self, _env: "GameEnvironment"):
+        pass  # no per-step state to initialise
 
     def compute(
         self,
         env: "GameEnvironment",
         action_was_valid: bool,
         harvested: float,
+        terminated: bool = False,
     ) -> float:
         cfg = self.cfg
         reward = 0.0
 
-        # ── Money delta ─────────────────────────────────────────────────────
-        money_delta = env.money - self._prev_money
-        reward += money_delta * cfg.money_scale
-        self._prev_money = env.money
-
-        # ── Score delta (direct optimization target) ────────────────────────
-        score_delta = env.score - self._prev_score
-        reward += score_delta * cfg.money_scale
-        self._prev_score = env.score
-
-        # ── Time penalty ────────────────────────────────────────────────────
+        # ── Time cost (always) ──────────────────────────────────────────────
         reward += cfg.time_penalty
 
-        # ── Harvest shaping ─────────────────────────────────────────────────
+        # ── Harvest trap (deceptive local optimum for PPO/DQN) ──────────────
         reward += harvested * cfg.harvest_bonus_per_unit
 
-        # ── Compute center unlocked ─────────────────────────────────────────
-        open_centers = sum(1 for cc in env.board.compute_centers if cc.is_open)
-        if open_centers > self._prev_open_centers:
-            reward += cfg.compute_center_bonus
-        self._prev_open_centers = open_centers
-
-        # ── Invalid action ──────────────────────────────────────────────────
+        # ── Invalid action penalty ──────────────────────────────────────────
         if not action_was_valid:
             reward += cfg.invalid_action_penalty
 
         # ── Bankruptcy ──────────────────────────────────────────────────────
         if env.money < 0:
             reward += cfg.bankruptcy_penalty
+
+        # ── Terminal score bonus (sparse; unreachable by standard credit assign)
+        if terminated:
+            reward += env.score * cfg.terminal_score_scale
 
         return float(reward)
