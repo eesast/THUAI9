@@ -50,7 +50,7 @@ namespace Preparation.Utility
         public const int FactoryRobust = 20;
         public const int FactoryEfficiency = 1;
         // initial computing power for newly created factories
-        public const int FactoryInitialComputingPower = 1000;
+        public const int FactoryInitialComputingPower = 100;
 
         public const int FactoryEfficiencyMax = 2; // maximum efficiency for factory
         public const int FactoryInitialSource = 0; // initial source stored in factory
@@ -149,7 +149,7 @@ namespace Preparation.Utility
         public const int SpaceRadius = NumOfPosGridPerCell / 2;
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
-        public static string API_key = "<your-base64-uuid-token>";
+        public static string API_key = "Mzg2MDU0MmEtNjcxZS00NjVkLTkxY2QtYTI3NzdjY2NhODU4";
         public static string API_url = "http://eesast.com/llm/chat";
         public static string ModelName = "deepseek-v4-pro";
         public const int AskAICostComputingPower = 10;
