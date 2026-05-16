@@ -196,7 +196,7 @@ class GameEnvironment(gym.Env):
         self.unit = Unit(uid=0, x=cfg.factory_x, y=cfg.factory_y,
                          max_hp=cfg.unit_hp, capacity=cfg.unit_capacity)
         self.factory = Factory(cfg)
-        self.markets = build_markets(self.board.market_positions, cfg)
+        self.markets = build_markets(self.board.market_positions, cfg, env_seed=rng_seed)
         self._market_by_pos = {(m.x, m.y): m for m in self.markets}
 
         self.money = cfg.initial_money
@@ -234,6 +234,8 @@ class GameEnvironment(gym.Env):
         for rp in self.board.resource_points:
             rp.regen(dt, self.time)
         self.factory.tick()
+        for mkt in self.markets:
+            mkt.tick(dt)
         self._accrue_compute(dt)
 
         # ── 5. Termination / truncation (evaluated before reward so terminal bonus fires)
@@ -317,7 +319,7 @@ class GameEnvironment(gym.Env):
             if sell_qty <= 0:
                 return False, 0.0
             mult = self._price_multiplier()
-            revenue = mkt.get_price(pid, self.time, mult) * sell_qty
+            revenue = mkt.get_price(pid, mult) * sell_qty
             if blocked > 0:
                 u.prod_inv[pid] = blocked
                 u.prod_origin[pid] = {mkt.id: blocked}
@@ -449,10 +451,10 @@ class GameEnvironment(gym.Env):
         if not other_markets:
             return None, None
         for pid in PRODUCT_DEFS:
-            price = mkt.get_price(pid, self.time, 1.0)  # buy at market price, no marketing mult
+            price = mkt.get_price(pid)
             if self.money < price:
                 continue
-            best_sell = max(om.get_price(pid, self.time, sell_mult) for om in other_markets)
+            best_sell = max(om.get_price(pid, sell_mult) for om in other_markets)
             upside = best_sell - price
             if upside > best_upside:
                 best_upside = upside
@@ -539,7 +541,7 @@ class GameEnvironment(gym.Env):
                 obs[base+1] = (m.y - u.y) / max(1, cfg.map_width)
                 for pid in range(5):
                     lo, rng = _PRICE_NORM[pid]
-                    obs[base + 2 + pid] = (m.get_price(pid, self.time, mult) - lo) / rng
+                    obs[base + 2 + pid] = (m.get_price(pid, mult) - lo) / rng
 
         # Techs owned [50-57]: one-hot per tech slot
         for i, key in enumerate(TECH_KEYS):
