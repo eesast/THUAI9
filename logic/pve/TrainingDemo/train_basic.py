@@ -42,6 +42,11 @@ def main():
     parser.add_argument("--save-dir", default="models/",
                         help="Directory to save model checkpoints")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--n-steps", type=int, default=2048)
+    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--gamma", type=float, default=0.99)
+    parser.add_argument("--ent-coef", type=float, default=0.01)
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -50,11 +55,11 @@ def main():
     env = GameEnvironment(cfg=cfg, seed=args.seed)
     agent = PPOAgent(
         env,
-        learning_rate=3e-4,
-        n_steps=2048,
-        batch_size=64,
-        gamma=0.99,
-        ent_coef=0.01,
+        learning_rate=args.learning_rate,
+        n_steps=args.n_steps,
+        batch_size=args.batch_size,
+        gamma=args.gamma,
+        ent_coef=args.ent_coef,
         verbose=1,
     )
 

@@ -176,6 +176,7 @@ class GameEnvironment(gym.Env):
         self.unit: Unit = None
         self.factory: Factory = None
         self.markets: List[Market] = []
+        self._market_by_pos: Dict[Tuple[int, int], Market] = {}
         self.money: float = 0.0
         self.compute: float = 0.0
         self.score: float = 0.0
@@ -195,7 +196,8 @@ class GameEnvironment(gym.Env):
         self.unit = Unit(uid=0, x=cfg.factory_x, y=cfg.factory_y,
                          max_hp=cfg.unit_hp, capacity=cfg.unit_capacity)
         self.factory = Factory(cfg)
-        self.markets = build_markets(self.board.market_positions, cfg)
+        self.markets = build_markets(self.board.market_positions, cfg, env_seed=rng_seed)
+        self._market_by_pos = {(m.x, m.y): m for m in self.markets}
 
         self.money = cfg.initial_money
         self.compute = cfg.initial_compute
@@ -232,6 +234,8 @@ class GameEnvironment(gym.Env):
         for rp in self.board.resource_points:
             rp.regen(dt, self.time)
         self.factory.tick()
+        for mkt in self.markets:
+            mkt.tick(dt)
         self._accrue_compute(dt)
 
         # ── 5. Termination / truncation (evaluated before reward so terminal bonus fires)
@@ -291,9 +295,7 @@ class GameEnvironment(gym.Env):
             if best_pid is None:
                 return False, 0.0
             self.money -= best_cost
-            u.add_product(best_pid, 1.0)
-            # Record which market this product came from to enforce cross-market rule
-            u.prod_origin[best_pid] = mkt.id
+            u.add_product(best_pid, 1.0, origin_market=mkt.id)
             u.state = "loading"
             u.busy_ticks = max(1, int(0.25 / cfg.time_step))
             u.busy_action = "buy_done"
@@ -312,12 +314,18 @@ class GameEnvironment(gym.Env):
                 return False, 0.0
             # Strict same-location arbitrage prevention: block selling at the market
             # where this product was purchased (requires cross-market movement to profit)
-            if u.prod_origin.get(pid) == mkt.id:
+            blocked = u.origin_qty(pid, mkt.id)
+            sell_qty = qty - blocked
+            if sell_qty <= 0:
                 return False, 0.0
             mult = self._price_multiplier()
-            revenue = mkt.get_price(pid, self.time, mult) * qty
-            u.prod_inv[pid] = 0.0
-            u.prod_origin.pop(pid, None)
+            revenue = mkt.get_price(pid, mult) * sell_qty
+            if blocked > 0:
+                u.prod_inv[pid] = blocked
+                u.prod_origin[pid] = {mkt.id: blocked}
+            else:
+                u.prod_inv.pop(pid, None)
+                u.prod_origin.pop(pid, None)
             self.money += revenue
             self.score += revenue * cfg.score_factor
             u.state = "selling"
@@ -362,17 +370,9 @@ class GameEnvironment(gym.Env):
         if action == Action.LOAD:
             if not board.at_factory(u.x, u.y):
                 return False, 0.0
-            # Snapshot inventory before loading to detect which slots were empty
-            pre_inv = {pid: u.prod_inv.get(pid, 0.0) for pid in PRODUCT_DEFS}
             loaded = self.factory.load_products(u)
             if loaded <= 0:
                 return False, 0.0
-            # Factory-loaded products get None origin (sellable anywhere) only when
-            # the slot was empty beforehand; if there are existing market-tainted units
-            # of that type, the taint persists to prevent mixing-based bypass.
-            for pid in PRODUCT_DEFS:
-                if u.prod_inv.get(pid, 0.0) > pre_inv[pid] and pre_inv[pid] == 0:
-                    u.prod_origin.pop(pid, None)  # None / absent means factory origin
             u.state = "loading"
             u.busy_ticks = max(1, int(0.25 / cfg.time_step))
             u.busy_action = "load_done"
@@ -436,26 +436,26 @@ class GameEnvironment(gym.Env):
 
     # ── Helpers ────────────────────────────────────────────────────────────────
 
+    def market_at(self, x: int, y: int) -> Optional[Market]:
+        return self._market_by_pos.get((x, y))
+
     def _market_at(self, x: int, y: int) -> Optional[Market]:
-        for m in self.markets:
-            if m.x == x and m.y == y:
-                return m
-        return None
+        return self.market_at(x, y)
 
     def _best_buyable(self, mkt: Market) -> Tuple[Optional[int], float]:
-        """Return (pid, buy_price) of affordable product with most upside (hi - current_price).
-
-        Buying costs the current market price (not manufacturing cost), so same-location
-        buy-then-sell yields no profit. Cross-market arbitrage remains viable.
-        """
+        """Return (pid, buy_price) of affordable product with best cross-market upside."""
         best_pid, best_price = None, None
-        best_upside = -float("inf")
-        for pid, pdef in PRODUCT_DEFS.items():
-            price = mkt.get_price(pid, self.time, 1.0)  # buy at market price, no marketing mult
+        best_upside = 0.0
+        sell_mult = self._price_multiplier()
+        other_markets = [om for om in self.markets if om.id != mkt.id]
+        if not other_markets:
+            return None, None
+        for pid in PRODUCT_DEFS:
+            price = mkt.get_price(pid)
             if self.money < price:
                 continue
-            hi = pdef["val_range"][1]
-            upside = hi - price
+            best_sell = max(om.get_price(pid, sell_mult) for om in other_markets)
+            upside = best_sell - price
             if upside > best_upside:
                 best_upside = upside
                 best_pid = pid
@@ -541,7 +541,7 @@ class GameEnvironment(gym.Env):
                 obs[base+1] = (m.y - u.y) / max(1, cfg.map_width)
                 for pid in range(5):
                     lo, rng = _PRICE_NORM[pid]
-                    obs[base + 2 + pid] = (m.get_price(pid, self.time, mult) - lo) / rng
+                    obs[base + 2 + pid] = (m.get_price(pid, mult) - lo) / rng
 
         # Techs owned [50-57]: one-hot per tech slot
         for i, key in enumerate(TECH_KEYS):
