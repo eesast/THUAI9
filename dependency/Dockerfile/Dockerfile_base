@@ -1,0 +1,49 @@
+# =============================================================================
+# THUAI9 Base Image — gRPC + protobuf C++ libraries
+#
+# gRPC version 1.71.0 — matches CAPI/cpp pre-compiled libs
+# =============================================================================
+FROM python:3.11-slim-bookworm
+LABEL maintainer="eesast"
+LABEL description="THUAI9 base image with gRPC v1.71.0"
+
+WORKDIR /tmp
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    gcc g++ make cmake autoconf automake libtool pkg-config \
+    ca-certificates curl unzip git wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Build gRPC + protobuf from source ─────────────────────────────────
+# gRPC v1.71.0 matches CAPI/cpp pre-compiled libs (grpcpp/version_info.h)
+# CMake FetchContent automatically downloads abseil, protobuf, etc.
+RUN git clone -b v1.71.0 --depth 1 \
+    https://github.com/grpc/grpc.git /tmp/grpc
+
+WORKDIR /tmp/grpc
+RUN mkdir -p cmake/build
+
+WORKDIR /tmp/grpc/cmake/build
+RUN cmake -DgRPC_INSTALL=ON \
+    -DgRPC_BUILD_TESTS=OFF \
+    -DgRPC_BUILD_CSHARP_EXT=OFF \
+    -DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+    ../.. \
+    && make -j"$(nproc)" \
+    && make install \
+    && ldconfig
+
+# ── Verify ────────────────────────────────────────────────────────────
+RUN protoc --version
+RUN which protoc && which grpc_cpp_plugin
+
+# ── Cleanup ────────────────────────────────────────────────────────────
+RUN rm -rf /tmp/grpc
+
+WORKDIR /usr/local
+
+CMD [ "/bin/bash" ]

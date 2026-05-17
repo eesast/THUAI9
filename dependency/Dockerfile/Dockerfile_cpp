@@ -1,0 +1,50 @@
+# =============================================================================
+# THUAI9 C++ Player Image — compiles and runs C++ player AI
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_cpp \
+#     -t thuai9_cpp_team1 .
+#
+# Run:
+#   docker run -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     thuai9_cpp_team1
+# =============================================================================
+FROM eesast/thuai9_base:base
+LABEL maintainer="eesast"
+LABEL description="THUAI9 C++ player runner"
+
+WORKDIR /usr/local
+
+# Copy source and dependencies
+COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
+COPY ./CAPI/python       ./PlayerCode/CAPI/python
+COPY ./dependency/proto  ./PlayerCode/dependency/proto
+COPY ./dependency/shell  ./PlayerCode/dependency/shell
+
+# Generate C++ protobuf stubs from proto files
+WORKDIR /usr/local/PlayerCode/dependency/proto
+RUN bash ../shell/cpp_output.sh
+
+# Fix case-sensitive find_package for Linux (protobuf uses lowercase)
+RUN sed -i 's/find_package(Protobuf/find_package(protobuf/' \
+    /usr/local/PlayerCode/CAPI/cpp/CMakeLists.txt
+
+# Compile C++ code with CMake
+WORKDIR /usr/local/PlayerCode/CAPI/cpp
+RUN mkdir -p build && \
+    cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17 && \
+    cmake --build build --config Release --parallel "$(nproc)" && \
+    mkdir -p install/bin && \
+    (cp build/capi install/bin/capi 2>/dev/null || \
+     cp build/Release/capi install/bin/capi 2>/dev/null || true)
+
+# Entrypoint
+WORKDIR /usr/local
+COPY ./dependency/shell/run.sh .
+
+ENV TERMINAL=CLIENT
+ENV PLAYER_LANG=cpp
+
+ENTRYPOINT ["bash", "./run.sh"]

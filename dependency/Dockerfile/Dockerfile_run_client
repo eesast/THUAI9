@@ -1,0 +1,37 @@
+# =============================================================================
+# THUAI9 Client Image — runs Python (or C++) player AI
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_run_client \
+#     -t thuai9_client_team1 .
+#
+# Run:
+#   docker run -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -e PLAYER_LANG=python thuai9_client_team1
+#
+# For C++ teams, build Dockerfile_cpp first, then set PLAYER_LANG=cpp
+# =============================================================================
+FROM eesast/thuai9_base:base
+LABEL maintainer="eesast"
+LABEL description="THUAI9 player client runner"
+
+# Copy player code
+COPY ./CAPI/python       ./PlayerCode/CAPI/python
+COPY ./dependency/proto  ./PlayerCode/dependency/proto
+COPY ./dependency/shell  ./PlayerCode/dependency/shell
+
+# Copy C++ CAPI (compiled separately via Dockerfile_cpp or pre-built)
+COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
+
+# Generate Python protobuf stubs
+WORKDIR /usr/local/PlayerCode/CAPI/python
+RUN bash ../../dependency/shell/generate_proto.sh
+
+# Copy entrypoint
+WORKDIR /usr/local
+COPY ./dependency/shell/run.sh .
+
+ENV TERMINAL=CLIENT
+ENV PLAYER_LANG=python
+
+ENTRYPOINT ["bash", "./run.sh"]
