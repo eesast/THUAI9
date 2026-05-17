@@ -9,7 +9,8 @@
 #   docker run -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
 #     thuai9_cpp_team1
 # =============================================================================
-FROM eesast/thuai9_base:base
+ARG BASE_IMAGE=eesast/thuai9_base:base
+FROM ${BASE_IMAGE}
 LABEL maintainer="eesast"
 LABEL description="THUAI9 C++ player runner"
 

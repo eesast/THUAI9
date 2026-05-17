@@ -11,7 +11,8 @@
 #
 # For C++ teams, build Dockerfile_cpp first, then set PLAYER_LANG=cpp
 # =============================================================================
-FROM eesast/thuai9_base:base
+ARG BASE_IMAGE=eesast/thuai9_base:base
+FROM ${BASE_IMAGE}
 LABEL maintainer="eesast"
 LABEL description="THUAI9 player client runner"
 
