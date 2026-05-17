@@ -36,7 +36,7 @@ RUN cmake -DgRPC_INSTALL=ON \
     -DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
     -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
     ../.. \
-    && make -j"$(nproc)" \
+    && make -j2 \
     && make install \
     && ldconfig
 
