@@ -1,18 +1,7 @@
-"""
-Reward calculator: converts game state transitions into scalar RL rewards.
+"""Reward calculator: converts game state transitions into scalar RL rewards.
 
-Design intent (anti-PPO/DQN):
-  - NO per-step money or score signal: removes the dense credit-assignment ladder
-    that standard PPO/DQN relies on to learn buy→sell chains.
-  - Harvest trap: a small positive reward for harvesting raw materials creates a
-    deceptive local optimum. PPO/DQN converges to a harvest-loop policy (stable,
-    positive reward per episode) that never produces or sells anything, yielding
-    zero game score.
-  - Terminal-only score bonus: the true objective is only revealed at episode end.
-    With γ=0.99 and ~1200 steps, 0.99^1200 ≈ 0, so gradients from the terminal
-    bonus do not propagate back to early actions — PPO/DQN cannot learn from it.
-  - Agents with hierarchical reward decomposition, curiosity-driven exploration,
-    or hand-crafted sub-goal rewards can still solve the environment.
+Default mode is a dense, learnable signal for PPO/DQN. The adversarial
+"harvest trap" design remains available via RewardConfig(mode="adversarial").
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -24,20 +13,24 @@ if TYPE_CHECKING:
 
 @dataclass
 class RewardConfig:
-    # Per-step money / score delta scale — set to 0 to remove dense sell signal
-    money_scale: float = 0.0
+    # Reward mode: "standard" (learnable) or "adversarial" (harvest trap)
+    mode: str = "standard"
+
+    # Per-step money delta scale
+    money_scale: float = 0.02
 
     # Per-step time cost (encourages doing *something*, but not enough to overcome
     # the harvest bonus on its own)
-    time_penalty: float = -0.003
+    time_penalty: float = -0.001
 
-    # Harvest trap: gives a positive per-unit signal that PPO/DQN latches onto.
-    # Harvesting alone never produces game score, making this a deceptive optimum.
-    harvest_bonus_per_unit: float = 0.01
+    # Harvest bonus per unit (standard default 0; adversarial uses small positive trap)
+    harvest_bonus_per_unit: float = 0.0
 
-    # Sparse terminal bonus: final_score × scale, given only at episode end.
-    # Too sparse for standard PPO/DQN to credit-assign across ~1200 steps.
-    terminal_score_scale: float = 0.001
+    # Terminal bonus: final_score × scale, given only at episode end.
+    terminal_score_scale: float = 0.0
+
+    # Extra dense signal for selling: score_delta × scale
+    sell_bonus_scale: float = 0.001
 
     # Penalty for attempting an invalid action
     invalid_action_penalty: float = -0.02
@@ -45,13 +38,24 @@ class RewardConfig:
     # Terminal penalty for going bankrupt
     bankruptcy_penalty: float = -10.0
 
+    # One-off bonuses for game progress (kept for backward compatibility)
+    compute_center_bonus: float = 1.0
+    tech_bonus: float = 1.0
+
 
 class RewardCalculator:
     def __init__(self, cfg: RewardConfig = None):
         self.cfg = cfg or RewardConfig()
+        self._prev_money = 0.0
+        self._prev_score = 0.0
+        self._prev_open_centers = 0
+        self._prev_techs = 0
 
-    def reset(self, _env: "GameEnvironment"):
-        pass  # no per-step state to initialise
+    def reset(self, env: "GameEnvironment"):
+        self._prev_money = env.money
+        self._prev_score = env.score
+        self._prev_open_centers = sum(1 for cc in env.board.compute_centers if cc.is_open)
+        self._prev_techs = len(env._techs_owned)
 
     def compute(
         self,
@@ -66,7 +70,7 @@ class RewardCalculator:
         # ── Time cost (always) ──────────────────────────────────────────────
         reward += cfg.time_penalty
 
-        # ── Harvest trap (deceptive local optimum for PPO/DQN) ──────────────
+        # ── Harvest bonus ───────────────────────────────────────────────────
         reward += harvested * cfg.harvest_bonus_per_unit
 
         # ── Invalid action penalty ──────────────────────────────────────────
@@ -77,8 +81,33 @@ class RewardCalculator:
         if env.money < 0:
             reward += cfg.bankruptcy_penalty
 
-        # ── Terminal score bonus (sparse; unreachable by standard credit assign)
-        if terminated:
+        if cfg.mode == "adversarial":
+            if terminated:
+                reward += env.score * cfg.terminal_score_scale
+            return float(reward)
+
+        # ── Standard learnable signal ───────────────────────────────────────
+        money_delta = env.money - self._prev_money
+        reward += money_delta * cfg.money_scale
+
+        score_delta = env.score - self._prev_score
+        if score_delta > 0:
+            reward += score_delta * cfg.sell_bonus_scale
+
+        opened = sum(1 for cc in env.board.compute_centers if cc.is_open)
+        if opened > self._prev_open_centers:
+            reward += (opened - self._prev_open_centers) * cfg.compute_center_bonus
+
+        techs = len(env._techs_owned)
+        if techs > self._prev_techs:
+            reward += (techs - self._prev_techs) * cfg.tech_bonus
+
+        if terminated and cfg.terminal_score_scale != 0.0:
             reward += env.score * cfg.terminal_score_scale
+
+        self._prev_money = env.money
+        self._prev_score = env.score
+        self._prev_open_centers = opened
+        self._prev_techs = techs
 
         return float(reward)
