@@ -3,21 +3,24 @@
 #
 # gRPC version 1.71.0 — matches CAPI/cpp pre-compiled libs
 # =============================================================================
-FROM python:3.11-slim-bookworm
+FROM ubuntu:latest
 LABEL maintainer="eesast"
 LABEL description="THUAI9 base image with gRPC v1.71.0"
 
 WORKDIR /tmp
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update && apt-get install --no-install-recommends -y \
     gcc g++ make cmake autoconf automake libtool pkg-config \
     ca-certificates curl unzip git wget \
+    python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Build gRPC + protobuf from source ─────────────────────────────────
 # gRPC v1.71.0 matches CAPI/cpp pre-compiled libs (grpcpp/version_info.h)
 # CMake FetchContent automatically downloads abseil, protobuf, etc.
-RUN git clone -b v1.71.0 --depth 1 \
+RUN git clone -b v1.71.0 --depth 1 --recurse-submodules --shallow-submodules \
     https://github.com/grpc/grpc.git /tmp/grpc
 
 WORKDIR /tmp/grpc
