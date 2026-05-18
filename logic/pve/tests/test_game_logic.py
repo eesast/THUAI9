@@ -170,6 +170,84 @@ def test_board_has_correct_entity_counts():
     assert len(env.board.compute_centers) == 2
 
 
+# ── Difficulty entity counts ──────────────────────────────────────────────────
+
+@pytest.mark.parametrize("cfg_fn,expect_markets,expect_resources,expect_compute", [
+    (GameConfig.easy,   3, 2, 1),
+    (GameConfig.medium, 3, 2, 2),
+    (GameConfig.hard,   4, 4, 3),
+])
+def test_difficulty_entity_counts(cfg_fn, expect_markets, expect_resources, expect_compute):
+    env = GameEnvironment(cfg=cfg_fn(), seed=0)
+    env.reset()
+    assert len(env.board.market_positions) == expect_markets,   f"markets mismatch"
+    assert len(env.board.resource_points)  == expect_resources, f"resource points mismatch"
+    assert len(env.board.compute_centers)  == expect_compute,   f"compute centers mismatch"
+
+
+# ── Tech effects ──────────────────────────────────────────────────────────────
+
+def _make_env(seed=0):
+    env = GameEnvironment(cfg=GameConfig.medium(), seed=seed)
+    env.reset()
+    env.compute = 500.0  # ensure enough compute for any tech
+    return env
+
+
+def test_tech0_cost_reduction_lowers_buy_price():
+    env = _make_env()
+    mkt = env.markets[0]
+    from GameLogic.config import PRODUCT_DEFS
+    # Find a product the agent can afford and that has cross-market upside
+    _, price_before = env._best_buyable(mkt)
+    if price_before is None:
+        pytest.skip("no buyable product in this seed")
+    from GameLogic.config import TECH_TREE
+    env._apply_tech("cost_reduction", TECH_TREE["cost_reduction"])
+    env._techs_owned.add("cost_reduction")
+    _, price_after = env._best_buyable(mkt)
+    assert price_after is not None, "should still be a buyable product"
+    assert price_after < price_before, (
+        f"effective price should decrease after cost_reduction: {price_before} → {price_after}"
+    )
+    assert abs((price_before - price_after) - 2.0) < 1e-6, (
+        f"price reduction should be exactly 2 (cost_delta=-2), got {price_before - price_after:.4f}"
+    )
+
+
+def test_tech3_durability_increases_capacity():
+    env = _make_env()
+    cap_before = env.unit.capacity
+    from GameLogic.config import TECH_TREE
+    env._apply_tech("durability", TECH_TREE["durability"])
+    cap_after = env.unit.capacity
+    assert cap_after == int(cap_before * 1.5), (
+        f"capacity should be cap*1.5={int(cap_before*1.5)}, got {cap_after}"
+    )
+
+
+def test_tech6_market_analysis_reveals_extra_market_prices():
+    """Markets 2-3 prices in obs must be zero without the tech and non-zero with it."""
+    env = GameEnvironment(cfg=GameConfig.hard(), seed=42)
+    env.reset()
+    if len(env.markets) < 3:
+        pytest.skip("need at least 3 markets (hard mode)")
+
+    obs_without = env._encode_obs()
+    # market 2 starts at obs index 46 + 2*7 = 60; prices are at +2..+6
+    price_slots_mkt2 = obs_without[62:67]
+    assert np.all(price_slots_mkt2 == 0.0), (
+        f"market 2 prices should be hidden without market_analysis: {price_slots_mkt2}"
+    )
+
+    env._techs_owned.add("market_analysis")
+    obs_with = env._encode_obs()
+    price_slots_mkt2_revealed = obs_with[62:67]
+    assert not np.all(price_slots_mkt2_revealed == 0.0), (
+        "market 2 prices should be revealed after buying market_analysis"
+    )
+
+
 def test_random_map_differs_between_seeds():
     cfg = GameConfig(random_map=True)
     env1 = GameEnvironment(cfg=cfg, seed=1)

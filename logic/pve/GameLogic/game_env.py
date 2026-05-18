@@ -1,7 +1,7 @@
 """
 GameEnvironment: the main Gymnasium-compatible environment.
 
-Observation (58 floats, normalized to bounded ranges; some features may reach 2.0):
+Observation (82 floats, normalized to bounded ranges; some features may reach 2.0):
   [0-1]   unit position (x/H, y/W)
   [2]     unit HP ratio
   [3]     unit raw inventory / capacity
@@ -15,21 +15,11 @@ Observation (58 floats, normalized to bounded ranges; some features may reach 2.
   [15]    factory raw stock / storage_cap
   [16-20] factory product stock by type (pid 0-4) / storage_cap
   [21]    factory production queue length / 10
-  [22-23] resource 0 (dx/H, dy/W)
-  [24]    resource 0 stock ratio
-  [25-26] resource 1 (dx/H, dy/W)
-  [27]    resource 1 stock ratio
-  [28-29] compute center 0 (dx/H, dy/W)
-  [30]    compute center 0 is_open
-  [31]    compute center 0 occupy_progress / unit_occupy_time
-  [32-33] compute center 1 (dx/H, dy/W)
-  [34]    compute center 1 is_open
-  [35]    compute center 1 occupy_progress / unit_occupy_time
-  [36-37] market 0 (dx/H, dy/W)
-  [38-42] market 0 prices for all 5 products (normalized by each product's val_range)
-  [43-44] market 1 (dx/H, dy/W)
-  [45-49] market 1 prices for all 5 products (normalized by each product's val_range)
-  [50-57] techs owned: one-hot for each of the 8 tech slots (0/1)
+  [22-33] resource points 0-3: 4 × (dx/H, dy/W, stock_ratio); unused slots = 0
+  [34-45] compute centers 0-2: 3 × (dx/H, dy/W, is_open, progress); unused = 0
+  [46-73] markets 0-3: 4 × (dx/H, dy/W, price×5); markets 2-3 prices only revealed
+          when market_analysis tech is owned (positions always visible); unused = 0
+  [74-81] techs owned: one-hot for each of the 8 tech slots (0/1)
 
 Action space: Discrete(28)  → see action_space.py
 """
@@ -153,7 +143,7 @@ class GameEnvironment(gym.Env):
 
     metadata = {"render_modes": ["ansi"]}
 
-    OBS_DIM = 58
+    OBS_DIM = 82
 
     def __init__(
         self,
@@ -423,10 +413,8 @@ class GameEnvironment(gym.Env):
             self.factory.time_multiplier *= effect["time_multiplier"]
         if "price_multiplier" in effect:
             self.factory.price_multiplier *= effect["price_multiplier"]
-        if "hp_bonus_pct" in effect:
-            bonus = int(self.unit.max_hp * effect["hp_bonus_pct"])
-            self.unit.max_hp += bonus
-            self.unit.hp = min(self.unit.hp + bonus, self.unit.max_hp)
+        if "capacity_pct" in effect:
+            self.unit.capacity = int(self.unit.capacity * (1.0 + effect["capacity_pct"]))
         if "extra_lines" in effect:
             self.factory.production_lines += effect["extra_lines"]
         if "move_factor" in effect:
@@ -443,7 +431,10 @@ class GameEnvironment(gym.Env):
         return self.market_at(x, y)
 
     def _best_buyable(self, mkt: Market) -> Tuple[Optional[int], float]:
-        """Return (pid, buy_price) of affordable product with best cross-market upside."""
+        """Return (pid, effective_buy_price) of affordable product with best cross-market upside.
+
+        effective_buy_price applies factory.cost_delta (negative after cost_reduction tech).
+        """
         best_pid, best_price = None, None
         best_upside = 0.0
         sell_mult = self._price_multiplier()
@@ -451,15 +442,16 @@ class GameEnvironment(gym.Env):
         if not other_markets:
             return None, None
         for pid in PRODUCT_DEFS:
-            price = mkt.get_price(pid)
-            if self.money < price:
+            raw_price = mkt.get_price(pid)
+            effective_price = max(0.0, raw_price + self.factory.cost_delta)
+            if self.money < effective_price:
                 continue
             best_sell = max(om.get_price(pid, sell_mult) for om in other_markets)
-            upside = best_sell - price
+            upside = best_sell - effective_price
             if upside > best_upside:
                 best_upside = upside
                 best_pid = pid
-                best_price = price
+                best_price = effective_price
         return best_pid, best_price
 
     def _price_multiplier(self) -> float:
@@ -511,8 +503,8 @@ class GameEnvironment(gym.Env):
             obs[16 + pid] = f.products.get(pid, 0.0) / scap
         obs[21] = min(f.queue_len / 10.0, 1.0)
 
-        # Resource points [22-27]
-        for i in range(2):
+        # Resource points [22-33]: up to 4 × (dx/H, dy/W, stock_ratio)
+        for i in range(4):
             base = 22 + i * 3
             if i < len(self.board.resource_points):
                 rp = self.board.resource_points[i]
@@ -520,10 +512,10 @@ class GameEnvironment(gym.Env):
                 obs[base+1] = (rp.y - u.y) / max(1, cfg.map_width)
                 obs[base+2] = rp.stock / max(1, rp.max_stock)
 
-        # Compute centers [28-35]: 2 × (dx, dy, is_open, occupy_progress)
+        # Compute centers [34-45]: up to 3 × (dx, dy, is_open, occupy_progress)
         occ_time = max(1.0, cfg.unit_occupy_time)
-        for i in range(2):
-            base = 28 + i * 4
+        for i in range(3):
+            base = 34 + i * 4
             if i < len(self.board.compute_centers):
                 cc = self.board.compute_centers[i]
                 obs[base]   = (cc.x - u.x) / max(1, cfg.map_height)
@@ -531,21 +523,24 @@ class GameEnvironment(gym.Env):
                 obs[base+2] = float(cc.is_open)
                 obs[base+3] = min(cc.occupy_progress / occ_time, 1.0)
 
-        # Markets [36-49]: 2 × (dx, dy, price×5)
+        # Markets [46-73]: up to 4 × (dx, dy, price×5)
+        # Markets 2-3 prices are only revealed when market_analysis tech is owned.
         mult = self._price_multiplier()
-        for i in range(2):
-            base = 36 + i * 7
+        analysis_owned = "market_analysis" in self._techs_owned
+        for i in range(4):
+            base = 46 + i * 7
             if i < len(self.markets):
                 m = self.markets[i]
                 obs[base]   = (m.x - u.x) / max(1, cfg.map_height)
                 obs[base+1] = (m.y - u.y) / max(1, cfg.map_width)
-                for pid in range(5):
-                    lo, rng = _PRICE_NORM[pid]
-                    obs[base + 2 + pid] = (m.get_price(pid, mult) - lo) / rng
+                if i < 2 or analysis_owned:
+                    for pid in range(5):
+                        lo, rng = _PRICE_NORM[pid]
+                        obs[base + 2 + pid] = (m.get_price(pid, mult) - lo) / rng
 
-        # Techs owned [50-57]: one-hot per tech slot
+        # Techs owned [74-81]: one-hot per tech slot
         for i, key in enumerate(TECH_KEYS):
-            obs[50 + i] = 1.0 if key in self._techs_owned else 0.0
+            obs[74 + i] = 1.0 if key in self._techs_owned else 0.0
 
         return obs
 
