@@ -1,23 +1,34 @@
 # =============================================================================
 # THUAI9 Base Image — gRPC + protobuf C++ libraries
 #
-# gRPC version 1.71.0 — matches CAPI/cpp pre-compiled libs
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_base -t eesast/thuai9_base:base .
+#
+# For China users (if GitHub is slow/blocked):
+#   Replace github.com/grpc/grpc.git with gitee.com/mirrors/grpc.git
+#   and remove --recurse-submodules (download third_party separately)
 # =============================================================================
 FROM python:3.11-slim-bookworm
 LABEL maintainer="eesast"
 LABEL description="THUAI9 base image with gRPC v1.71.0"
 
+# Proxy support (optional — set via docker build --build-arg HTTP_PROXY=...)
+ARG HTTP_PROXY=
+ARG HTTPS_PROXY=
+ARG http_proxy=
+ARG https_proxy=
+ARG no_proxy=
+
 WORKDIR /tmp
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     gcc g++ make cmake autoconf automake libtool pkg-config \
-    ca-certificates curl unzip git wget \
+    ca-certificates curl unzip git wget openssl libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Build gRPC + protobuf from source ─────────────────────────────────
 # gRPC v1.71.0 matches CAPI/cpp pre-compiled libs (grpcpp/version_info.h)
-# CMake FetchContent automatically downloads abseil, protobuf, etc.
-RUN git clone -b v1.71.0 --depth 1 \
+RUN git clone -b v1.71.0 --depth 1 --recurse-submodules \
     https://github.com/grpc/grpc.git /tmp/grpc
 
 WORKDIR /tmp/grpc

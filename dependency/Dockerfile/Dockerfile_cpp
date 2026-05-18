@@ -1,17 +1,25 @@
 # =============================================================================
-# THUAI9 C++ Player Image — compiles and runs C++ player AI
+# THUAI9 C++ Player Image — compiles C++ player AI at runtime
 #
 # Build:
 #   docker build -f dependency/Dockerfile/Dockerfile_cpp \
-#     -t thuai9_cpp_team1 .
+#     -t eesast/thuai9_cpp:latest .
 #
-# Run:
-#   docker run -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
-#     thuai9_cpp_team1
+# Compile (mount player code):
+#   docker run --rm \
+#     -v "$(pwd)/code:/usr/local/code" \
+#     -v "$(pwd)/output:/usr/local/output" \
+#     eesast/thuai9_cpp:latest
+#
+# Run (after compile):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -v "$(pwd)/output/capi:/usr/local/PlayerCode/CAPI/cpp/build/capi" \
+#     thuai9_client_team1
 # =============================================================================
 FROM eesast/thuai9_base:base
 LABEL maintainer="eesast"
-LABEL description="THUAI9 C++ player runner"
+LABEL description="THUAI9 C++ player compiler"
 
 WORKDIR /usr/local
 
@@ -29,22 +37,13 @@ RUN bash ../shell/cpp_output.sh
 RUN sed -i 's/find_package(Protobuf/find_package(protobuf/' \
     /usr/local/PlayerCode/CAPI/cpp/CMakeLists.txt
 
-# Compile C++ code with CMake
+# Pre-configure CMake (find deps once), actual build happens at runtime
 WORKDIR /usr/local/PlayerCode/CAPI/cpp
 RUN mkdir -p build && \
     cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=17 && \
-    cmake --build build --config Release --parallel "$(nproc)" && \
-    mkdir -p install/bin && \
-    (cp build/capi install/bin/capi 2>/dev/null || \
-     cp build/Release/capi install/bin/capi 2>/dev/null || true)
+    -DCMAKE_CXX_STANDARD=17
 
-# Entrypoint
-WORKDIR /usr/local
-COPY ./dependency/shell/run.sh .
-
-ENV TERMINAL=CLIENT
-ENV PLAYER_LANG=cpp
-
-ENTRYPOINT ["bash", "./run.sh"]
+# Entrypoint: compile user code from /usr/local/code
+COPY ./dependency/shell/compile.sh .
+ENTRYPOINT ["bash", "./compile.sh"]

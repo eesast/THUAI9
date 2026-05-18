@@ -1,0 +1,37 @@
+# ── IDE / editor ──────────────────────────────────────────────────────
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ── THUAI8 legacy (not used in THUAI9) ────────────────────────────────
+/Dockerfile/
+/shell/
+
+# ── CAPI pre-compiled libs (Windows, useless in Linux containers) ─────
+/CAPI/cpp/lib/
+/CAPI/cpp/grpc/
+/CAPI/cpp/x64/
+/CAPI/cpp/out/
+/CAPI/cpp/build/
+
+# ── .NET build outputs ────────────────────────────────────────────────
+**/[Bb]in/
+**/[Oo]bj/
+
+# ── Native build artifacts ────────────────────────────────────────────
+*.ilk
+*.pdb
+*.VC.db
+*.opendb
+*.Iscache
+*.lscache
+*.cache
+
+# ── Playback / runtime artifacts ──────────────────────────────────────
+*.thuaipb
+mygame.thuaipb
+
+# ── Git ───────────────────────────────────────────────────────────────
+.git/

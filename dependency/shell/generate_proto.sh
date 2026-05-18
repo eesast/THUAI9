@@ -9,9 +9,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROTO_DIR="$SCRIPT_DIR/../proto"
 OUTPUT_DIR="$SCRIPT_DIR/../../CAPI/python/proto"
+REQUIREMENTS="$SCRIPT_DIR/../../CAPI/python/requirements.txt"
 
 echo "[generate_proto] Installing Python dependencies..."
-python3 -m pip install --quiet grpcio==1.74.0 grpcio-tools==1.74.0
+python3 -m pip install --quiet -r "$REQUIREMENTS"
 
 echo "[generate_proto] Generating Python stubs..."
 mkdir -p "$OUTPUT_DIR"

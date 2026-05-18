@@ -32,6 +32,31 @@ PLAYBACK_FILE="${PLAYBACK_FILE:-/usr/local/playback/mygame}"
 RUN_DIR="/usr/local"
 PLAYER_DIR="$RUN_DIR/PlayerCode"
 
+# ── Retry helper ────────────────────────────────────────────────────────
+retry_command() {
+    local cmd="$1"
+    local max_attempts="${2:-10}"
+    local sleep_seconds="${3:-6}"
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "[retry] Attempt $attempt/$max_attempts: $cmd"
+        eval "$cmd" &
+        local pid=$!
+        sleep "$sleep_seconds"
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "[retry] Process exited — connected successfully."
+            return 0
+        fi
+        echo "[retry] Still running after ${sleep_seconds}s — retrying..."
+        kill "$pid" 2>/dev/null || true
+        wait "$pid" 2>/dev/null || true
+        ((attempt++))
+    done
+    echo "[retry] Failed after $max_attempts attempts." >&2
+    return 1
+}
+
 # ──────────────────────────────────────────────
 # SERVER
 # ──────────────────────────────────────────────
@@ -78,7 +103,7 @@ if [ "$TERMINAL" = "CLIENT" ]; then
         sleep 2
         echo "[client] Still waiting..."
     done
-    echo "[client] Server is reachable. Starting Team process..."
+    echo "[client] Server is reachable. Starting player..."
 
     if [ "$PLAYER_LANG" = "cpp" ]; then
         CAPI_BIN="$PLAYER_DIR/CAPI/cpp/install/bin/capi"
@@ -98,11 +123,9 @@ if [ "$TERMINAL" = "CLIENT" ]; then
     elif [ "$PLAYER_LANG" = "python" ]; then
         cd "$PLAYER_DIR/CAPI/python"
         export PYTHONPATH="$PLAYER_DIR/CAPI/python:$PLAYER_DIR/dependency/proto:${PYTHONPATH:-}"
-        echo "[client] Running: python -m PyAPI.main -t $TEAM_ID -p 0 -I $SERVER_IP -P $SERVER_PORT --aiModule $AI_MODULE"
-        exec python3 -m PyAPI.main \
-            -t "$TEAM_ID" -p 0 \
-            -I "$SERVER_IP" -P "$SERVER_PORT" \
-            --aiModule "$AI_MODULE"
+        CMD="python3 -m PyAPI.main -t $TEAM_ID -p 0 -I $SERVER_IP -P $SERVER_PORT --aiModule $AI_MODULE"
+        echo "[client] Running: $CMD"
+        exec $CMD
 
     else
         echo "ERROR: Unknown PLAYER_LANG=$PLAYER_LANG. Use 'cpp' or 'python'." >&2

@@ -1,15 +1,22 @@
 # =============================================================================
-# THUAI9 Client Image — runs Python (or C++) player AI
+# THUAI9 Client Image — runs player AI (Python or C++)
 #
 # Build:
 #   docker build -f dependency/Dockerfile/Dockerfile_run_client \
-#     -t thuai9_client_team1 .
+#     -t eesast/thuai9_client:latest .
 #
-# Run:
-#   docker run -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
-#     -e PLAYER_LANG=python thuai9_client_team1
+# Run (Python):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -e PLAYER_LANG=python \
+#     eesast/thuai9_client:latest
 #
-# For C++ teams, build Dockerfile_cpp first, then set PLAYER_LANG=cpp
+# Run (C++ — mount compiled binary):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -e PLAYER_LANG=cpp \
+#     -v "$(pwd)/output/capi:/usr/local/PlayerCode/CAPI/cpp/build/capi" \
+#     eesast/thuai9_client:latest
 # =============================================================================
 FROM eesast/thuai9_base:base
 LABEL maintainer="eesast"
@@ -20,7 +27,7 @@ COPY ./CAPI/python       ./PlayerCode/CAPI/python
 COPY ./dependency/proto  ./PlayerCode/dependency/proto
 COPY ./dependency/shell  ./PlayerCode/dependency/shell
 
-# Copy C++ CAPI (compiled separately via Dockerfile_cpp or pre-built)
+# Copy C++ CAPI (binary mounted at runtime, source for reference)
 COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
 
 # Generate Python protobuf stubs

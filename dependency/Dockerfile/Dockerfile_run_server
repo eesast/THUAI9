@@ -1,5 +1,14 @@
 # =============================================================================
 # THUAI9 Server Image — C# game server runner
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_run_server \
+#     -t eesast/thuai9_server:latest .
+#
+# Run:
+#   docker run --rm -p 8888:8888 \
+#     -e TEAM_COUNT=4 -e GAME_TIME_SEC=600 \
+#     eesast/thuai9_server:latest
 # =============================================================================
 FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
 LABEL maintainer="eesast"
@@ -24,7 +33,7 @@ WORKDIR /usr/local
 
 COPY --from=build /usr/local/Server ./Server
 
-# Prepare team directories and playback directory
+# Prepare team and playback directories
 RUN mkdir -p /usr/local/team1 /usr/local/team2 \
     /usr/local/team3 /usr/local/team4 \
     /usr/local/playback
