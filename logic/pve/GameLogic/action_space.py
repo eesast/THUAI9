@@ -27,10 +27,10 @@ Phase 2 action space (8 tech upgrades, cost compute pts, must be at factory):
   20 TECH_0        – cost_reduction    (50 pts): product buy cost -2
   21 TECH_1        – efficiency        (40 pts): production time ×0.5
   22 TECH_2        – marketing         (80 pts): sell price ×1.1
-  23 TECH_3        – durability        (30 pts): unit max HP +50%
+  23 TECH_3        – durability        (30 pts): unit carry capacity +50%
   24 TECH_4        – multi_line        (60 pts): +1 production line
   25 TECH_5        – path_optimization (50 pts, needs TECH_1): move costs -1 busy tick
-  26 TECH_6        – market_analysis   (40 pts, non-persistent): reveal best price in obs
+  26 TECH_6        – market_analysis   (40 pts, non-persistent): reveal market 2-3 prices in obs
   27 TECH_7        – compute_expansion (70 pts): compute accrual rate +30%
 """
 from __future__ import annotations
