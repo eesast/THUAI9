@@ -95,7 +95,7 @@ env.render()           -> str   # ANSI 单行状态摘要
 | 对象              | 来源文件         | 职责                                    |
 | ----------------- | ---------------- | --------------------------------------- |
 | `Unit`          | `character.py` | 单位背包（raw_inv + prod_inv[5]）、HP、busy 状态机 |
-| `Market`        | `market.py`    | 正弦价格函数，per-product per-market    |
+| `Market`        | `market.py`    | OU 随机游走价格，per-product per-market |
 | `ResourcePoint` | `board.py`     | 资源库存与再生速率                      |
 | `ComputeCenter` | `board.py`     | 算力中心占领进度（occupy_progress）     |
 | `Board`         | `board.py`     | 地图网格、实体查询（nearest_market 等） |
@@ -160,22 +160,26 @@ compute += rate * dt
 
 ### 市场价格（`GameLogic/market.py`）
 
-每个市场对每种商品维护独立的正弦参数：
+每个市场对每种商品维护独立的 **Ornstein-Uhlenbeck 随机游走**价格：
 
 ```
-price(t) = base + amplitude × (1 + sin(2π·t / period + phase)) / 2
+dP = θ(μ − P)·dt + σ·√dt · N(0,1)
 ```
 
-- `base`：`val_range[0]`
-- `amplitude`：`(val_range[1] - val_range[0]) × price_volatility`
-- `phase`：每市场随机偏移，防止各市场同步
-- `period`：`market_period × random(0.7, 1.5)`
+- `θ = 0.05` 均值回归速度（相关时间 ≈ 20s）
+- `σ = amplitude × 0.12` 波动率（`_SIGMA_SCALE`）
+- `μ = lo + amplitude × 0.5` 长期均值
+- 价格被夹在 `[lo, lo + amplitude]` 之间
+- 每个市场独立初始化随机起点
+- `Market.tick(dt)` 在环境 step 的被动阶段被调用
 
-BUY 动作执行时购买"当前可负担商品中利润最高的"（见 `_best_buyable`），即市价 − 成本的差值最大的商品。
+BUY 动作执行时购买"跨市场套利空间最大"的可负担商品（见 `_best_buyable`），即在其他市场的卖价 − 当前市场买价差值最大的商品。
 
-卖价还会乘以 `factory.price_multiplier`（默认 1.0，购买 marketing 科技后变为 1.1）。
+**套利防护**：单位追踪每件商品的购买来源市场（`prod_origin[pid][market_id]`）。卖出时阻止在同一市场卖出从该市场购买的商品——必须移动到其他市场才能套利。
 
-价格归一化使用每种商品各自的 val_range（`_PRICE_NORM` 字典），不再使用全局 `_PRICE_MIN/_PRICE_MAX`。
+卖价乘以 `factory.price_multiplier`（默认 1.0，购买 marketing 科技后变为 1.1）。
+
+价格归一化使用每种商品各自的 val_range（`_PRICE_NORM` 字典）。
 
 ### 动作空间（`GameLogic/action_space.py`）
 
@@ -249,19 +253,20 @@ class Action(IntEnum):
 
 ## 奖励计算（`GameLogic/reward_calculator.py`）
 
-奖励由 `RewardCalculator` 按 `RewardConfig` 权重计算：
+奖励由 `RewardCalculator` 按 `RewardConfig` 权重计算（默认 `mode="standard"`）：
 
 | 来源                   | 默认参数                   | 默认值              |
 | ---------------------- | -------------------------- | ------------------- |
-| 现金变化 `Δmoney`   | `money_scale = 0.01`     | `Δmoney × 0.01` |
-| 得分变化 `Δscore`   | `money_scale = 0.01`     | `Δscore × 0.01` |
-| 时间惩罚（每步）       | `time_penalty`           | `−0.002`         |
-| 采集奖励（每单位）     | `harvest_bonus_per_unit` | `+0.001`          |
-| 算力中心解锁（一次性） | `compute_center_bonus`   | `+0.5`            |
-| 无效动作               | `invalid_action_penalty` | `−0.05`          |
+| 时间惩罚（每步）       | `time_penalty`           | `−0.001`         |
+| 采集奖励（每单位）     | `harvest_bonus_per_unit` | `+0.0`（默认关闭） |
+| 无效动作               | `invalid_action_penalty` | `−0.02`          |
 | 破产（终止时）         | `bankruptcy_penalty`     | `−10.0`          |
+| 现金变化 `Δmoney`   | `money_scale = 0.02`     | `Δmoney × 0.02`（仅 standard） |
+| 卖出得分 `Δscore`   | `sell_bonus_scale = 0.001` | `Δscore × 0.001`（仅 standard） |
+| 算力中心解锁（每个）   | `compute_center_bonus`   | `+1.0`（仅 standard） |
+| 科技购买（每个）       | `tech_bonus`             | `+1.0`（仅 standard） |
 
-奖励是训练辅助信号，比赛排名以 `score` 为准。调整 `RewardConfig` 权重时不影响 `score` 的计算。
+`RewardConfig` 支持 `"standard"` 和 `"adversarial"` 两种模式。奖励是训练辅助信号，比赛排名以 `score` 为准。调整 `RewardConfig` 权重时不影响 `score` 的计算。
 
 ## 难度配置（`GameLogic/config.py`）
 
