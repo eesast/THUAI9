@@ -31,6 +31,11 @@ COPY ./dependency/shell  ./PlayerCode/dependency/shell
 # Copy C++ CAPI (binary mounted at runtime, source for reference)
 COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
 
+# Install Python (base image is ubuntu:24.04, no Python by default)
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
 # Generate Python protobuf stubs
 WORKDIR /usr/local/PlayerCode/CAPI/python
 RUN bash ../../dependency/shell/generate_proto.sh

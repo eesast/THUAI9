@@ -11,10 +11,11 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
-    - name: Setup dotnet-script
-      run: dotnet tool install --global dotnet-script
-    - name: Pre-Process
-      run: dotnet script .github/preProcess/AvaloniaEnvConfig.csx
+    # FIXME: .github/preProcess/AvaloniaEnvConfig.csx not yet ported from THUAI8
+    # - name: Setup dotnet-script
+    #   run: dotnet tool install --global dotnet-script
+    # - name: Pre-Process
+    #   run: dotnet script .github/preProcess/AvaloniaEnvConfig.csx
     - name: Install Workloads
       run: dotnet workload install maui-windows
     - name: Create Folders
