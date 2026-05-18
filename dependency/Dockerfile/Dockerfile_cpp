@@ -1,0 +1,50 @@
+# =============================================================================
+# THUAI9 C++ Player Image — compiles C++ player AI at runtime
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_cpp \
+#     -t eesast/thuai9_cpp:latest .
+#
+# Compile (mount player code):
+#   docker run --rm \
+#     -v "$(pwd)/code:/usr/local/code" \
+#     -v "$(pwd)/output:/usr/local/output" \
+#     eesast/thuai9_cpp:latest
+#
+# Run (after compile):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -v "$(pwd)/output/capi:/usr/local/PlayerCode/CAPI/cpp/build/capi" \
+#     thuai9_client_team1
+# =============================================================================
+ARG BASE_IMAGE=eesast/thuai9_base:base
+FROM ${BASE_IMAGE}
+LABEL maintainer="eesast"
+LABEL description="THUAI9 C++ player compiler"
+
+WORKDIR /usr/local
+
+# Copy source and dependencies
+COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
+COPY ./CAPI/python       ./PlayerCode/CAPI/python
+COPY ./dependency/proto  ./PlayerCode/dependency/proto
+COPY ./dependency/shell  ./PlayerCode/dependency/shell
+
+# Generate C++ protobuf stubs from proto files
+WORKDIR /usr/local/PlayerCode/dependency/proto
+RUN bash ../shell/cpp_output.sh
+
+# Fix case-sensitive find_package for Linux (protobuf uses lowercase)
+RUN sed -i 's/find_package(Protobuf/find_package(protobuf/' \
+    /usr/local/PlayerCode/CAPI/cpp/CMakeLists.txt
+
+# Pre-configure CMake (find deps once), actual build happens at runtime
+WORKDIR /usr/local/PlayerCode/CAPI/cpp
+RUN mkdir -p build && \
+    cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=17
+
+# Entrypoint: compile user code from /usr/local/code
+COPY ./dependency/shell/compile.sh .
+ENTRYPOINT ["bash", "./compile.sh"]

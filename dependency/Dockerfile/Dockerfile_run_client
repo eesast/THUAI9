@@ -1,0 +1,50 @@
+# =============================================================================
+# THUAI9 Client Image — runs player AI (Python or C++)
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_run_client \
+#     -t eesast/thuai9_client:latest .
+#
+# Run (Python):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -e PLAYER_LANG=python \
+#     eesast/thuai9_client:latest
+#
+# Run (C++ — mount compiled binary):
+#   docker run --rm \
+#     -e TEAM_ID=1 -e SERVER_IP=host.docker.internal \
+#     -e PLAYER_LANG=cpp \
+#     -v "$(pwd)/output/capi:/usr/local/PlayerCode/CAPI/cpp/build/capi" \
+#     eesast/thuai9_client:latest
+# =============================================================================
+ARG BASE_IMAGE=eesast/thuai9_base:base
+FROM ${BASE_IMAGE}
+LABEL maintainer="eesast"
+LABEL description="THUAI9 player client runner"
+
+# Copy player code
+COPY ./CAPI/python       ./PlayerCode/CAPI/python
+COPY ./dependency/proto  ./PlayerCode/dependency/proto
+COPY ./dependency/shell  ./PlayerCode/dependency/shell
+
+# Copy C++ CAPI (binary mounted at runtime, source for reference)
+COPY ./CAPI/cpp          ./PlayerCode/CAPI/cpp
+
+# Install Python (base image is ubuntu:24.04, no Python by default)
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+# Generate Python protobuf stubs
+WORKDIR /usr/local/PlayerCode/CAPI/python
+RUN bash ../../dependency/shell/generate_proto.sh
+
+# Copy entrypoint
+WORKDIR /usr/local
+COPY ./dependency/shell/run.sh .
+
+ENV TERMINAL=CLIENT
+ENV PLAYER_LANG=python
+
+ENTRYPOINT ["bash", "./run.sh"]

@@ -14,7 +14,7 @@ jobs:
           source: "."
           extensions: "c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx,i,ixx,ipp,i++"
           clangFormatVersion: 14
-          exclude: "./CAPI/cpp/grpc/include ./CAPI/cpp/proto ./CAPI/cpp/tclap/include/tclap ./dependency/proto ./CAPI/cpp/spdlog/include/spdlog ./CAPI/cpp/fmt ./CAPI/cpp/out"
+          exclude: "./CAPI/cpp/grpc/include ./CAPI/cpp/proto ./dependency/proto ./CAPI/cpp/spdlog/include/spdlog ./CAPI/cpp/fmt ./CAPI/cpp/out"
           inplace: False
 
   dotnet-format-checking:
@@ -40,3 +40,7 @@ jobs:
         run: |
           dotnet restore "./playback/playback.sln"
           dotnet format "./playback/playback.sln" --severity error --no-restore --verify-no-changes
+
+      - name: Check Interface (Unity)
+        run: |
+          dotnet format whitespace "./interface/Unity/Assets/Scripts/" --folder --verify-no-changes
