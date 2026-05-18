@@ -1,0 +1,53 @@
+name: docker-release
+
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  publish-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Pull base image
+        run: docker pull "${{ secrets.DOCKER_USERNAME }}/thuai9_base:base"
+
+      - name: Build and push server image
+        run: |
+          docker build \
+            -f dependency/Dockerfile/Dockerfile_run_server \
+            -t "${{ secrets.DOCKER_USERNAME }}/thuai9_run_server:latest" \
+            .
+          docker push "${{ secrets.DOCKER_USERNAME }}/thuai9_run_server:latest"
+
+      - name: Build and push Python client image
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE="${{ secrets.DOCKER_USERNAME }}/thuai9_base:base" \
+            -f dependency/Dockerfile/Dockerfile_run_client \
+            -t "${{ secrets.DOCKER_USERNAME }}/thuai9_run_client:latest" \
+            .
+          docker push "${{ secrets.DOCKER_USERNAME }}/thuai9_run_client:latest"
+
+      - name: Build and push C++ client image
+        run: |
+          docker build \
+            --build-arg BASE_IMAGE="${{ secrets.DOCKER_USERNAME }}/thuai9_base:base" \
+            -f dependency/Dockerfile/Dockerfile_cpp \
+            -t "${{ secrets.DOCKER_USERNAME }}/thuai9_cpp:latest" \
+            .
+          docker push "${{ secrets.DOCKER_USERNAME }}/thuai9_cpp:latest"

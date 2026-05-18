@@ -1,0 +1,63 @@
+# =============================================================================
+# THUAI9 Base Image — gRPC + protobuf C++ libraries
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_base -t eesast/thuai9_base:base .
+#
+# For China users (if GitHub is slow/blocked):
+#   Replace github.com/grpc/grpc.git with gitee.com/mirrors/grpc.git
+#   and remove --recurse-submodules (download third_party separately)
+# =============================================================================
+FROM ubuntu:24.04
+LABEL maintainer="eesast"
+LABEL description="THUAI9 base image with gRPC v1.71.0"
+
+# Proxy support (optional — set via docker build --build-arg HTTP_PROXY=...)
+ARG HTTP_PROXY=
+ARG HTTPS_PROXY=
+ARG http_proxy=
+ARG https_proxy=
+ARG no_proxy=
+
+WORKDIR /tmp
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install --no-install-recommends -y \
+    gcc g++ make cmake autoconf automake libtool pkg-config \
+    ca-certificates curl unzip git wget openssl libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Build gRPC + protobuf from source ─────────────────────────────────
+# gRPC v1.71.0 matches CAPI/cpp pre-compiled libs (grpcpp/version_info.h)
+RUN git clone -b v1.71.0 --depth 1 --recurse-submodules \
+    https://github.com/grpc/grpc.git /tmp/grpc
+
+WORKDIR /tmp/grpc
+RUN mkdir -p cmake/build
+
+WORKDIR /tmp/grpc/cmake/build
+RUN cmake -DgRPC_INSTALL=ON \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DgRPC_BUILD_TESTS=OFF \
+    -DgRPC_BUILD_CSHARP_EXT=OFF \
+    -DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_OBJECTIVE_C_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_PHP_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
+    -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
+    ../.. \
+    && make -j2 \
+    && make install \
+    && ldconfig
+
+# ── Verify ────────────────────────────────────────────────────────────
+RUN protoc --version
+RUN which protoc && which grpc_cpp_plugin
+
+# ── Cleanup ────────────────────────────────────────────────────────────
+RUN rm -rf /tmp/grpc
+
+WORKDIR /usr/local
+
+CMD [ "/bin/bash" ]

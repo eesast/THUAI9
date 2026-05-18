@@ -24,6 +24,10 @@ logs/
 *.pdb
 *.VC.db
 *.VC.VC.opendb
+*.Iscache
+*.lscache
+*.cache
+*.claude
 
 # Playback / runtime artifacts
 *.thuaipb

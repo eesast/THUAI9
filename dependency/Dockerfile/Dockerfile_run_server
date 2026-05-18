@@ -1,0 +1,46 @@
+# =============================================================================
+# THUAI9 Server Image — C# game server runner
+#
+# Build:
+#   docker build -f dependency/Dockerfile/Dockerfile_run_server \
+#     -t eesast/thuai9_server:latest .
+#
+# Run:
+#   docker run --rm -p 8888:8888 \
+#     -e TEAM_COUNT=4 -e GAME_TIME_SEC=600 \
+#     eesast/thuai9_server:latest
+# =============================================================================
+FROM mcr.microsoft.com/dotnet/sdk:8.0-jammy AS build
+LABEL maintainer="eesast"
+WORKDIR /usr/local/src
+
+# Copy the entire repo (for logic/ + dependency/)
+COPY . .
+
+# Publish the server as a self-contained linux-x64 binary
+RUN dotnet publish logic/Server/Server.csproj \
+    -c Release \
+    -o /usr/local/Server \
+    --self-contained true \
+    -r linux-x64
+
+# ── Runtime stage ────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/runtime:8.0-jammy
+LABEL maintainer="eesast"
+LABEL description="THUAI9 game server"
+
+WORKDIR /usr/local
+
+COPY --from=build /usr/local/Server ./Server
+
+# Prepare team and playback directories
+RUN mkdir -p /usr/local/team1 /usr/local/team2 \
+    /usr/local/team3 /usr/local/team4 \
+    /usr/local/playback
+
+# Copy entrypoint script
+COPY ./dependency/shell/run.sh .
+
+ENV TERMINAL=SERVER
+
+ENTRYPOINT ["bash", "./run.sh"]
