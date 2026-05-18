@@ -12,7 +12,7 @@ OUTPUT_DIR="$SCRIPT_DIR/../../CAPI/python/proto"
 REQUIREMENTS="$SCRIPT_DIR/../../CAPI/python/requirements.txt"
 
 echo "[generate_proto] Installing Python dependencies..."
-python3 -m pip install --quiet grpcio==1.74.0 grpcio-tools==1.74.0
+python3 -m pip install --quiet --break-system-packages grpcio==1.74.0 grpcio-tools==1.74.0
 
 echo "[generate_proto] Generating Python stubs..."
 mkdir -p "$OUTPUT_DIR"
