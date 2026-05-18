@@ -8,7 +8,7 @@
 #   Replace github.com/grpc/grpc.git with gitee.com/mirrors/grpc.git
 #   and remove --recurse-submodules (download third_party separately)
 # =============================================================================
-FROM python:3.11-slim-bookworm
+FROM ubuntu:24.04
 LABEL maintainer="eesast"
 LABEL description="THUAI9 base image with gRPC v1.71.0"
 
@@ -20,6 +20,8 @@ ARG https_proxy=
 ARG no_proxy=
 
 WORKDIR /tmp
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     gcc g++ make cmake autoconf automake libtool pkg-config \
@@ -36,6 +38,7 @@ RUN mkdir -p cmake/build
 
 WORKDIR /tmp/grpc/cmake/build
 RUN cmake -DgRPC_INSTALL=ON \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DgRPC_BUILD_TESTS=OFF \
     -DgRPC_BUILD_CSHARP_EXT=OFF \
     -DgRPC_BUILD_GRPC_NODE_PLUGIN=OFF \
@@ -44,7 +47,7 @@ RUN cmake -DgRPC_INSTALL=ON \
     -DgRPC_BUILD_GRPC_PYTHON_PLUGIN=OFF \
     -DgRPC_BUILD_GRPC_RUBY_PLUGIN=OFF \
     ../.. \
-    && make -j"$(nproc)" \
+    && make -j2 \
     && make install \
     && ldconfig
 

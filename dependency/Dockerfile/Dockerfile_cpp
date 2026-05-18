@@ -17,7 +17,8 @@
 #     -v "$(pwd)/output/capi:/usr/local/PlayerCode/CAPI/cpp/build/capi" \
 #     thuai9_client_team1
 # =============================================================================
-FROM eesast/thuai9_base:base
+ARG BASE_IMAGE=eesast/thuai9_base:base
+FROM ${BASE_IMAGE}
 LABEL maintainer="eesast"
 LABEL description="THUAI9 C++ player compiler"
 
