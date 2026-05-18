@@ -2,7 +2,7 @@ name: docker-base
 
 on:
   push:
-    branches: [dev, main, master]
+    branches: [main, master]
     paths:
       - dependency/Dockerfile/Dockerfile_base
   workflow_dispatch:
