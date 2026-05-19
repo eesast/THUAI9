@@ -28,6 +28,7 @@ namespace Gaming
                 Tech.TryAdd("Market", new AtomicLong(0));
                 Tech.TryAdd("Robust", new AtomicLong(0));
                 Tech.TryAdd("Warrior", new AtomicLong(0));
+                Tech.TryAdd("AttackSize", new AtomicLong(0));
                 Tech.TryAdd("Production", new AtomicLong(0));
                 Tech.TryAdd("Storage", new AtomicLong(0));
                 Tech.TryAdd("MoveSpeed", new AtomicLong(0));
