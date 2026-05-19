@@ -27,7 +27,7 @@ TECH_TREE: Dict[str, dict] = {
     "marketing":         {"cost": 80, "prereq": None,         "persistent": True,
                           "effect": {"price_multiplier": 1.1}},
     "durability":        {"cost": 30, "prereq": None,         "persistent": True,
-                          "effect": {"hp_bonus_pct": 0.5}},
+                          "effect": {"capacity_pct": 0.5}},
     "multi_line":        {"cost": 60, "prereq": None,         "persistent": True,
                           "effect": {"extra_lines": 1}},
     "path_optimization": {"cost": 50, "prereq": "efficiency", "persistent": True,

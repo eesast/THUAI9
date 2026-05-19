@@ -119,13 +119,13 @@ env.render()           -> str   # ANSI 单行状态摘要
 
 | 键名               | 算力消耗 | 前置 | 持久 | 效果 |
 | ------------------ | -------: | ---- | ---- | ---- |
-| `cost_reduction`  |       50 | —   | ✓   | factory.cost_delta -= 2 |
+| `cost_reduction`  |       50 | —   | ✓   | 市场购买商品时每件少付 2 金钱（factory.cost_delta -= 2） |
 | `efficiency`      |       40 | —   | ✓   | factory.time_multiplier *= 0.5 |
 | `marketing`       |       80 | —   | ✓   | factory.price_multiplier *= 1.1 |
-| `durability`      |       30 | —   | ✓   | unit.max_hp += 50% |
+| `durability`      |       30 | —   | ✓   | unit.capacity *= 1.5（携带上限 +50%） |
 | `multi_line`      |       60 | —   | ✓   | factory.production_lines += 1 |
 | `path_optimization` |     50 | efficiency | ✓ | 移动 busy_ticks 变为 0 |
-| `market_analysis` |       40 | —   | ✗   | 非持久，可重复购买；obs[56]=1 |
+| `market_analysis` |       40 | —   | ✗   | 非持久，可重复购买；obs 中市场 2-3 的价格信息开放 |
 | `compute_expansion` |     70 | —   | ✓   | 算力积累速率 +30% |
 
 持久科技（persistent=True）每种只能购买一次；`market_analysis` 为非持久，可多次购买。
@@ -221,7 +221,7 @@ class Action(IntEnum):
 
 ## 观测向量契约
 
-当前维度 `OBS_DIM = 58`，由 `_encode_obs()` 生成：
+当前维度 `OBS_DIM = 82`，由 `_encode_obs()` 生成：
 
 | 索引 | 含义 | 归一化 |
 | ---: | --- | --- |
@@ -237,15 +237,12 @@ class Action(IntEnum):
 | 15 | 工厂原材料库存 | / storage_cap |
 | 16–20 | 工厂成品库存（pid 0–4） | products[pid] / storage_cap |
 | 21 | 生产队列长度 | / 10，截断到 1 |
-| 22–24 | 资源点 0 | dx/H, dy/W, stock ratio |
-| 25–27 | 资源点 1 | 同上 |
-| 28–31 | 算力中心 0 | dx/H, dy/W, is_open, occupy_progress/unit_occupy_time |
-| 32–35 | 算力中心 1 | 同上 |
-| 36–42 | 市场 0 | dx/H, dy/W, 5 种商品价格（各自 val_range 归一化） |
-| 43–49 | 市场 1 | 同上 |
-| 50–57 | 科技 one-hot（8 个科技槽） | 0 或 1 |
+| 22–33 | 资源点 0–3（最多 4 个） | 每个：dx/H, dy/W, stock_ratio；未使用槽为 0 |
+| 34–45 | 算力中心 0–2（最多 3 个） | 每个：dx/H, dy/W, is_open, progress/occ_time；未使用槽为 0 |
+| 46–73 | 市场 0–3（最多 4 个） | 每个：dx/H, dy/W, 5 种价格；市场 2-3 价格仅在购买 `market_analysis` 后可见 |
+| 74–81 | 科技 one-hot（8 个科技槽） | 0 或 1 |
 
-当前只编码前 2 个市场和前 2 个资源点。如果修改观测结构，必须同步更新：
+如果修改观测结构，必须同步更新：
 
 - `GameEnvironment.OBS_DIM`
 - `observation_space` 定义
