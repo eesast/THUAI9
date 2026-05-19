@@ -1,41 +1,31 @@
-# THUAI9 Web 启动说明
+# THUAI9 Unity WebGL 启动说明
 
-## 启动方法
+本目录用于放置三套互相解耦的 WebGL 发布产物：
 
-1. 确认电脑已安装 Python 3。
-2. 打开 PowerShell，进入本目录：
+- `trial/`：本地试玩
+- `live/`：直播观战
+- `playback/`：回放播放
 
-```powershell
-cd D:\MyPro\THUAI\THUAI9\interface\Unity-WebGL
-```
+## 本地启动
 
-3. 启动本地网页服务：
+先进入仓库里的 `interface/Unity-WebGL` 目录，再启动本地网页服务：
 
 ```powershell
 python -m http.server 18089 --bind 127.0.0.1
 ```
 
-4. 在浏览器打开：
-
-```text
-http://127.0.0.1:18089/
-```
-
-5. 等待 Unity 页面加载完成后即可使用。
-
-## 注意事项
-
-- 不要直接双击 `index.html` 打开，请使用上面的本地网页服务。
-- 如果 `18089` 端口被占用，可以换成其他端口，例如：
-
-```powershell
-python -m http.server 18090 --bind 127.0.0.1
-```
-
 然后打开：
 
 ```text
-http://127.0.0.1:18090/
+http://127.0.0.1:18089/trial/index.html
+http://127.0.0.1:18089/live/index.html
+http://127.0.0.1:18089/playback/index.html
 ```
 
-- 停止网页服务：回到 PowerShell 窗口，按 `Ctrl + C`。
+## 参数
+
+- 直播：`/live/index.html?ws=ws://127.0.0.1:xxxx/live`
+- 回放：`/playback/index.html?url=http://.../xxx.thuaipb`
+- 试玩：`/trial/index.html` 会自动启动本地试玩。
+
+不要直接双击 HTML 文件，请使用本地 HTTP 服务启动。
