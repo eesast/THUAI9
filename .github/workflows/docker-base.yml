@@ -27,9 +27,11 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push base image
-        run: |
-          docker build \
-            -f dependency/Dockerfile/Dockerfile_base \
-            -t "${{ secrets.DOCKER_USERNAME }}/thuai9_base:base" \
-            .
-          docker push "${{ secrets.DOCKER_USERNAME }}/thuai9_base:base"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: dependency/Dockerfile/Dockerfile_base
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/thuai9_base:base
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
