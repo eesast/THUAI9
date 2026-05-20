@@ -175,7 +175,39 @@ namespace THUAI9.Unity.UI
                 }
             }
 
+            if (best == null && TryGetMapTileAt(worldPosition, out Vector2Int tile))
+            {
+                int bestPriority = int.MaxValue;
+                foreach (WorldObjectInfo info in WorldObjectInfo.ActiveInfos)
+                {
+                    if (info == null || !info.isActiveAndEnabled || info.gridX != tile.x || info.gridY != tile.y)
+                    {
+                        continue;
+                    }
+
+                    int priority = GetSelectionPriority(info);
+                    if (priority < bestPriority)
+                    {
+                        best = info;
+                        bestPriority = priority;
+                    }
+                }
+            }
+
             return best;
+        }
+
+        private static int GetSelectionPriority(WorldObjectInfo info)
+        {
+            return info.objectType switch
+            {
+                "Character" => 0,
+                "Factory" => 1,
+                "Resource" => 2,
+                "ComputeCenter" => 3,
+                "Market" => 4,
+                _ => 10
+            };
         }
 
         private static bool TryGetMapTileAt(Vector3 worldPosition, out Vector2Int tile)

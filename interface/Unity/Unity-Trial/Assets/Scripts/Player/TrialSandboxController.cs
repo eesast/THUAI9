@@ -21,14 +21,16 @@ namespace THUAI9.Unity.Player
         private const int TrialTeamCount = 2;
         private const int FrameDurationMs = 50;
         private const int CharacterHp = 150;
-        private const int CharacterAttack = 32;
+        private const int DroneHp = 100;
+        private const int CarHp = 100;
         private const int CharacterAttackRange = 1000;
         private const int CharacterSpeed = 5200;
-        private const int CharacterLoad = 8;
         private const int ResourceMaxAmount = 500;
         private const int FactoryHp = 100;
-        private const int InitialMaterial = 120;
+        private const int InitialMaterial = 0;
         private const int InitialComputePower = 100;
+        private const int MaxCharactersPerTeam = 3;
+        private const int CharacterCreateCost = 50;
         private const int ProduceCost = 45;
         private const int TechCost = 60;
         private const int RecoveryCost = 20;
@@ -94,6 +96,7 @@ namespace THUAI9.Unity.Player
         private readonly Dictionary<long, TrialFactory> factories = new Dictionary<long, TrialFactory>();
         private readonly Dictionary<long, TrialResource> resources = new Dictionary<long, TrialResource>();
         private readonly Dictionary<long, TrialComputeCenter> computeCenters = new Dictionary<long, TrialComputeCenter>();
+        private readonly Dictionary<long, TrialMarket> markets = new Dictionary<long, TrialMarket>();
         private readonly Dictionary<long, TrialCharacter> characters = new Dictionary<long, TrialCharacter>();
         private readonly HashSet<long> activeFactoryCells = new HashSet<long>();
         private TrialSelection currentSelection = TrialSelection.None;
@@ -143,9 +146,9 @@ namespace THUAI9.Unity.Player
             ApplyOptions(optionsJson);
             ResetState();
             BuildWorld();
-            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Trial, "本地试玩", "试玩已启动：请选择对象或右键移动");
+            StatusText = "试玩已启动：请选择队伍工厂创建角色";
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.Trial, "本地试玩", "试玩已启动：请选择队伍工厂创建角色");
             running = true;
-            CreateCharacter();
             SubmitFrame();
         }
 
@@ -164,7 +167,7 @@ namespace THUAI9.Unity.Player
         public void SetSelection(WorldObjectInfo info, Vector2Int? tile)
         {
             currentSelection = BuildSelection(info, tile);
-            if (currentSelection.Kind == TrialObjectKind.Character && currentSelection.TeamId == playerTeamId && characters.ContainsKey(currentSelection.Guid))
+            if (currentSelection.Kind == TrialObjectKind.Character && characters.ContainsKey(currentSelection.Guid))
             {
                 activeCharacterGuid = currentSelection.Guid;
             }
@@ -178,7 +181,7 @@ namespace THUAI9.Unity.Player
                 case TrialObjectKind.Character:
                     if (characters.TryGetValue(selection.Guid, out TrialCharacter character))
                     {
-                        return $"选中角色：队伍 {character.TeamId} / 玩家 {character.PlayerId}\n生命：{character.Hp}/{CharacterHp}  状态：{FormatCharacterState(character.State)}\n位置：({character.Row}, {character.Col})";
+                        return $"选中角色：队伍 {character.TeamId} / 玩家 {character.PlayerId}\n类型：{FormatCharacterType(character.Type)}  生命：{character.Hp}/{GetCharacterMaxHp(character.Type)}\n状态：{FormatCharacterState(character.State)}  位置：({character.Row}, {character.Col})";
                     }
                     return $"选中角色：队伍 {selection.TeamId}\n位置：({selection.Row}, {selection.Col})";
                 case TrialObjectKind.Factory:
@@ -200,10 +203,16 @@ namespace THUAI9.Unity.Player
                         return $"选中算力中心\n归属：{owner}  进度：{center.OccupyProgress}%\n位置：({center.Row}, {center.Col})";
                     }
                     return $"选中算力中心：({selection.Row}, {selection.Col})";
+                case TrialObjectKind.Market:
+                    if (markets.TryGetValue(selection.Guid, out TrialMarket market))
+                    {
+                        return $"选中市场：{FormatMarketType(market.MarketType)}\n位置：({market.Row}, {market.Col})\n当前 Trial 先展示市场对象与价格，交易闭环后续接入。";
+                    }
+                    return $"选中市场：({selection.Row}, {selection.Col})";
                 case TrialObjectKind.Tile:
                     return $"选中地图格：({selection.Row}, {selection.Col})\n类型：{FormatPlaceType(GetPlaceType(selection.Row, selection.Col))}";
                 default:
-                    return "未选中对象\n左键选择角色、工厂、资源点或算力中心；右键地图移动当前角色。";
+                    return "未选中对象\n左键选择队伍工厂创建角色；选中角色后可用 WASD / 方向键单格移动。";
             }
         }
 
@@ -251,6 +260,7 @@ namespace THUAI9.Unity.Player
             factories.Clear();
             resources.Clear();
             computeCenters.Clear();
+            markets.Clear();
             characters.Clear();
             activeFactoryCells.Clear();
             StatusText = "试玩：初始化中";
@@ -316,6 +326,11 @@ namespace THUAI9.Unity.Player
                         long centerId = NextGuid();
                         computeCenters[centerId] = new TrialComputeCenter(centerId, row, col);
                     }
+                    else if (place == PlaceType.Market)
+                    {
+                        long marketId = NextGuid();
+                        markets[marketId] = new TrialMarket(marketId, row, col, GetDefaultMarketType(row, col));
+                    }
                 }
             }
 
@@ -323,7 +338,6 @@ namespace THUAI9.Unity.Player
             Vector2Int teamTwoFactory = factoryCells.Count > 1 ? factoryCells[factoryCells.Count - 1] : new Vector2Int(MapRows - 4, MapCols - 4);
             AddFactory(1, 1, teamOneFactory);
             AddFactory(2, 2, teamTwoFactory);
-            AddNpcCharacter(2, 1, CharacterType.AutonomousCar);
         }
 
         private void AddFactory(long factoryId, long teamId, Vector2Int cell)
@@ -332,46 +346,61 @@ namespace THUAI9.Unity.Player
             activeFactoryCells.Add(CellKey(cell.x, cell.y));
         }
 
-        private void AddNpcCharacter(long teamId, long npcPlayerId, CharacterType type)
-        {
-            TrialFactory factory = GetTeamFactory(teamId);
-            if (factory == null)
-            {
-                return;
-            }
-
-            Vector2Int spawn = FindNearestFreeCell(factory.Row, factory.Col, teamId == 1 ? 1 : -1);
-            long characterId = NextGuid();
-            characters[characterId] = new TrialCharacter(characterId, teamId, npcPlayerId, type, spawn.x, spawn.y)
-            {
-                Hp = CharacterHp,
-                State = CharacterState.Idle
-            };
-        }
-
         public void CreateCharacter()
         {
-            TrialFactory factory = GetPlayerFactory();
+            CreateCharacter(CharacterType.Robot, currentSelection);
+        }
+
+        public void CreateCharacter(CharacterType type)
+        {
+            CreateCharacter(type, currentSelection);
+        }
+
+        private void CreateCharacter(CharacterType type, TrialSelection selection)
+        {
+            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: false);
             if (factory == null)
             {
-                StatusText = "试玩：没有可用工厂，无法创建角色";
+                StatusText = "请先左键选中队伍工厂，再创建角色";
                 return;
             }
 
-            if (activeCharacterGuid != 0 && characters.ContainsKey(activeCharacterGuid))
+            if (!teams.TryGetValue(factory.TeamId, out TrialTeam team))
             {
-                characters.Remove(activeCharacterGuid);
+                StatusText = "试玩：该工厂不属于当前双队伍试玩";
+                return;
             }
 
-            Vector2Int spawn = FindNearestFreeCell(factory.Row, factory.Col, sideFlag >= 0 ? 1 : -1);
-            activeCharacterGuid = NextGuid();
-            characters[activeCharacterGuid] = new TrialCharacter(activeCharacterGuid, playerTeamId, playerId, CharacterType.Robot, spawn.x, spawn.y)
+            int existingCount = characters.Values.Count(c => c.TeamId == factory.TeamId && c.Hp > 0);
+            if (existingCount >= MaxCharactersPerTeam)
             {
-                Hp = CharacterHp,
+                StatusText = $"队伍 {factory.TeamId} 已有 {MaxCharactersPerTeam} 个角色，达到试玩上限";
+                return;
+            }
+
+            if (team.ComputePower < CharacterCreateCost)
+            {
+                StatusText = $"队伍 {factory.TeamId} 算力不足：创建角色需要 {CharacterCreateCost}";
+                return;
+            }
+
+            long nextPlayerId = NextAvailablePlayerId(factory.TeamId);
+            if (nextPlayerId <= 0)
+            {
+                StatusText = $"队伍 {factory.TeamId} 没有可用 PlayerID";
+                return;
+            }
+
+            Vector2Int spawn = FindSpawnCellNearFactory(factory);
+            activeCharacterGuid = NextGuid();
+            characters[activeCharacterGuid] = new TrialCharacter(activeCharacterGuid, factory.TeamId, nextPlayerId, type, spawn.x, spawn.y)
+            {
+                Hp = GetCharacterMaxHp(type),
                 State = CharacterState.Idle
             };
-            teams[playerTeamId].Score += 20;
-            StatusText = $"已创建队伍 {playerTeamId} 的试玩角色";
+            team.ComputePower -= CharacterCreateCost;
+            team.Score += 20;
+            StatusText = $"已在队伍 {factory.TeamId} 工厂创建 {FormatCharacterType(type)}（PlayerID {nextPlayerId}）";
             SubmitFrame();
         }
 
@@ -385,8 +414,15 @@ namespace THUAI9.Unity.Player
             string action = NormalizeAction(rawAction);
             switch (action)
             {
+                case "create-drone":
+                    CreateCharacter(CharacterType.Drone, selection);
+                    break;
                 case "create":
-                    CreateCharacter();
+                case "create-robot":
+                    CreateCharacter(CharacterType.Robot, selection);
+                    break;
+                case "create-car":
+                    CreateCharacter(CharacterType.AutonomousCar, selection);
                     break;
                 case "move":
                     ExecuteMove(selection);
@@ -446,9 +482,9 @@ namespace THUAI9.Unity.Player
 
         private void MoveBy(int dRow, int dCol)
         {
-            if (!TryGetActiveCharacter(out TrialCharacter character))
+            if (!TryGetSelectedCharacter(out TrialCharacter character))
             {
-                StatusText = "请先创建角色";
+                StatusText = "请先左键选中一个已创建角色";
                 return;
             }
 
@@ -475,7 +511,7 @@ namespace THUAI9.Unity.Player
         {
             if (!TryGetActiveCharacter(out TrialCharacter character))
             {
-                StatusText = "请先创建角色再采集";
+                StatusText = "请先创建并选中角色再采集";
                 return;
             }
 
@@ -492,9 +528,9 @@ namespace THUAI9.Unity.Player
                 return;
             }
 
-            int amount = Mathf.Min(HarvestAmount + GetTechLevel(playerTeamId, "Carry") * 10, resource.Amount);
+            int amount = Mathf.Min(HarvestAmount + GetTechLevel(character.TeamId, "Carry") * 10, resource.Amount);
             resource.Amount -= amount;
-            if (teams.TryGetValue(playerTeamId, out TrialTeam team))
+            if (teams.TryGetValue(character.TeamId, out TrialTeam team))
             {
                 team.Material += amount;
                 team.Score += amount * 2;
@@ -508,7 +544,13 @@ namespace THUAI9.Unity.Player
         {
             if (!TryGetActiveCharacter(out TrialCharacter character))
             {
-                StatusText = "请先创建角色再占领算力中心";
+                StatusText = "请先创建并选中角色再占领算力中心";
+                return;
+            }
+
+            if (character.Type == CharacterType.AutonomousCar)
+            {
+                StatusText = "THUAI9 规则：无人车不能占领算力中心，请使用无人机或机器人";
                 return;
             }
 
@@ -525,24 +567,24 @@ namespace THUAI9.Unity.Player
                 return;
             }
 
-            center.OwnerTeamId = playerTeamId;
+            center.OwnerTeamId = character.TeamId;
             center.OccupyProgress = 100;
-            if (teams.TryGetValue(playerTeamId, out TrialTeam team))
+            if (teams.TryGetValue(character.TeamId, out TrialTeam team))
             {
                 team.ComputePower += 50;
                 team.Score += OccupyScore;
             }
 
             character.State = CharacterState.Ocuppying;
-            StatusText = $"占领成功：算力中心归属队伍 {playerTeamId}";
+            StatusText = $"占领成功：算力中心归属队伍 {character.TeamId}";
         }
 
         private void Produce(TrialSelection selection)
         {
-            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: true) ?? GetPlayerFactory();
+            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: false);
             if (factory == null)
             {
-                StatusText = "请先选择我方工厂";
+                StatusText = "请先选择队伍工厂";
                 return;
             }
 
@@ -567,10 +609,10 @@ namespace THUAI9.Unity.Player
 
         private void UpgradeTech(TrialSelection selection)
         {
-            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: true) ?? GetPlayerFactory();
+            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: false);
             if (factory == null)
             {
-                StatusText = "请先选择我方工厂";
+                StatusText = "请先选择队伍工厂";
                 return;
             }
 
@@ -594,12 +636,12 @@ namespace THUAI9.Unity.Player
         {
             if (!TryGetActiveCharacter(out TrialCharacter attacker))
             {
-                StatusText = "请先创建角色再攻击";
+                StatusText = "请先创建并选中角色再攻击";
                 return;
             }
 
-            TrialCharacter targetCharacter = ResolveEnemyCharacter(selection);
-            TrialFactory targetFactory = targetCharacter == null ? ResolveEnemyFactory(selection) : null;
+            TrialCharacter targetCharacter = ResolveEnemyCharacter(selection, attacker.TeamId);
+            TrialFactory targetFactory = targetCharacter == null ? ResolveEnemyFactory(selection, attacker.TeamId) : null;
             if (targetCharacter == null && targetFactory == null)
             {
                 targetCharacter = FindNearestEnemyCharacter(attacker);
@@ -613,11 +655,11 @@ namespace THUAI9.Unity.Player
                     return;
                 }
 
-                int damage = CharacterAttack + GetTechLevel(playerTeamId, "Attack") * 8;
+                int damage = GetCharacterAttack(attacker.Type) + GetTechLevel(attacker.TeamId, "Attack") * 8;
                 targetCharacter.Hp = Mathf.Max(0, targetCharacter.Hp - damage);
                 targetCharacter.State = targetCharacter.Hp <= 0 ? CharacterState.Deceased : CharacterState.KnockedBack;
                 attacker.State = CharacterState.Attacking;
-                teams[playerTeamId].Score += damage * 2;
+                teams[attacker.TeamId].Score += damage * 2;
                 StatusText = targetCharacter.Hp <= 0
                     ? "攻击反馈：敌方角色已失去行动能力"
                     : $"攻击反馈：造成 {damage} 伤害，目标剩余 {targetCharacter.Hp}";
@@ -632,10 +674,10 @@ namespace THUAI9.Unity.Player
                     return;
                 }
 
-                int damage = CharacterAttack;
+                int damage = GetCharacterAttack(attacker.Type);
                 targetFactory.Hp = Mathf.Max(0, targetFactory.Hp - damage);
                 attacker.State = CharacterState.Attacking;
-                teams[playerTeamId].Score += damage;
+                teams[attacker.TeamId].Score += damage;
                 StatusText = $"攻击反馈：敌方工厂剩余血量 {targetFactory.Hp}";
                 return;
             }
@@ -647,12 +689,13 @@ namespace THUAI9.Unity.Player
         {
             if (!TryGetActiveCharacter(out TrialCharacter character))
             {
-                StatusText = "请先创建角色再恢复";
+                StatusText = "请先创建并选中角色再恢复";
                 return;
             }
 
-            TrialTeam team = teams[playerTeamId];
-            if (character.Hp >= CharacterHp)
+            TrialTeam team = teams[character.TeamId];
+            int maxHp = GetCharacterMaxHp(character.Type);
+            if (character.Hp >= maxHp)
             {
                 StatusText = "当前角色生命值已满";
                 return;
@@ -665,9 +708,9 @@ namespace THUAI9.Unity.Player
             }
 
             team.Material -= RecoveryCost;
-            character.Hp = Mathf.Min(CharacterHp, character.Hp + 50);
+            character.Hp = Mathf.Min(maxHp, character.Hp + 50);
             character.State = CharacterState.Idle;
-            StatusText = $"恢复完成：生命值 {character.Hp}/{CharacterHp}";
+            StatusText = $"恢复完成：生命值 {character.Hp}/{maxHp}";
         }
 
         private void StopCurrentAction()
@@ -742,8 +785,11 @@ namespace THUAI9.Unity.Player
             string action = NormalizeAction(rawAction);
             switch (action)
             {
+                case "create-drone":
+                case "create-robot":
+                case "create-car":
                 case "create":
-                    return selection.Kind == TrialObjectKind.None || selection.Kind == TrialObjectKind.Factory && selection.TeamId == playerTeamId;
+                    return CanCreateCharacter(selection);
                 case "move":
                     return TryGetActiveCharacter(out _) && selection.HasPosition;
                 case "harvest":
@@ -751,11 +797,14 @@ namespace THUAI9.Unity.Player
                 case "occupy":
                     return TryGetActiveCharacter(out _) && (selection.Kind == TrialObjectKind.ComputeCenter || computeCenters.Count > 0);
                 case "produce":
-                    return ResolveFactory(selection, requirePlayerTeam: true) != null || GetPlayerFactory() != null;
+                    return ResolveFactory(selection, requirePlayerTeam: false) != null;
                 case "upgrade":
-                    return (ResolveFactory(selection, requirePlayerTeam: true) != null || GetPlayerFactory() != null) && teams.ContainsKey(playerTeamId);
+                    return ResolveFactory(selection, requirePlayerTeam: false) != null;
                 case "attack":
-                    return TryGetActiveCharacter(out _) && (ResolveEnemyCharacter(selection) != null || ResolveEnemyFactory(selection) != null || characters.Values.Any(c => c.TeamId != playerTeamId && c.Hp > 0));
+                    return TryGetActiveCharacter(out TrialCharacter attacker)
+                        && (ResolveEnemyCharacter(selection, attacker.TeamId) != null
+                            || ResolveEnemyFactory(selection, attacker.TeamId) != null
+                            || characters.Values.Any(c => c.TeamId != attacker.TeamId && c.Hp > 0));
                 case "recover":
                 case "stop":
                     return TryGetActiveCharacter(out _);
@@ -807,6 +856,8 @@ namespace THUAI9.Unity.Player
                     return TrialObjectKind.Resource;
                 case "ComputeCenter":
                     return TrialObjectKind.ComputeCenter;
+                case "Market":
+                    return TrialObjectKind.Market;
                 default:
                     return TrialObjectKind.Tile;
             }
@@ -822,6 +873,20 @@ namespace THUAI9.Unity.Player
             string normalized = action.Trim().ToLowerInvariant();
             switch (normalized)
             {
+                case "create-drone":
+                case "create_robot_drone":
+                case "drone":
+                    return "create-drone";
+                case "create-robot":
+                case "create_robot":
+                case "robot":
+                    return "create-robot";
+                case "create-car":
+                case "create-autonomous-car":
+                case "create_autonomous_car":
+                case "autonomous-car":
+                case "car":
+                    return "create-car";
                 case "create-character":
                 case "create_character":
                 case "createcharacter":
@@ -869,17 +934,23 @@ namespace THUAI9.Unity.Player
 
             foreach (TrialComputeCenter center in computeCenters.Values.OrderBy(c => c.CenterId))
             {
+                Vector2Int gamePosition = GridToGameCell(center.Row, center.Col);
                 frame.ObjMessage.Add(new MessageOfObj
                 {
                     ComputeCenterMessage = new MessageOfComputeCenter
                     {
                         CenterId = center.CenterId,
-                        X = center.Row,
-                        Y = center.Col,
+                        X = gamePosition.x,
+                        Y = gamePosition.y,
                         OwnerTeamId = center.OwnerTeamId,
                         OccupyProgress = center.OccupyProgress
                     }
                 });
+            }
+
+            foreach (TrialMarket market in markets.Values.OrderBy(m => m.MarketId))
+            {
+                frame.ObjMessage.Add(new MessageOfObj { MarketMessage = BuildMarketMessage(market) });
             }
 
             foreach (TrialCharacter character in characters.Values.OrderBy(c => c.Guid))
@@ -963,20 +1034,21 @@ namespace THUAI9.Unity.Player
 
         private MessageOfFactory BuildFactoryMessage(TrialFactory factory)
         {
+            Vector2Int gamePosition = GridToGameCell(factory.Row, factory.Col);
             MessageOfFactory message = new MessageOfFactory
             {
                 FactoryId = factory.FactoryId,
                 TeamId = factory.TeamId,
-                X = factory.Row,
-                Y = factory.Col,
+                X = gamePosition.x,
+                Y = gamePosition.y,
                 Hp = factory.Hp,
                 Robust = 1,
                 Storage = 100,
                 Efficiency = 100 + GetTechLevel(factory.TeamId, "Production") * 15,
                 Source = factory.Source,
                 ComputingPower = factory.ComputingPower,
-                CanProduce = factory.TeamId == playerTeamId,
-                CanRecruit = factory.TeamId == playerTeamId
+                CanProduce = true,
+                CanRecruit = true
             };
 
             foreach (KeyValuePair<GoodsType, int> pair in factory.ProductInventory)
@@ -993,15 +1065,45 @@ namespace THUAI9.Unity.Player
 
         private static MessageOfResource BuildResourceMessage(TrialResource resource)
         {
+            Vector2Int gamePosition = GridToGameCell(resource.Row, resource.Col);
             return new MessageOfResource
             {
                 Id = Mathf.Clamp((int)resource.Id, 0, int.MaxValue),
-                X = resource.Row,
-                Y = resource.Col,
+                X = gamePosition.x,
+                Y = gamePosition.y,
                 ResourceType = ResourceType.LargeResource,
                 RemainingAmount = resource.Amount,
                 MaxAmount = ResourceMaxAmount,
                 ResourceState = resource.Amount > 0 ? ResourceState.Harvestable : ResourceState.Harvested
+            };
+        }
+
+        private static MessageOfMarket BuildMarketMessage(TrialMarket market)
+        {
+            Vector2Int gamePosition = GridToGameCell(market.Row, market.Col);
+            MessageOfMarket message = new MessageOfMarket
+            {
+                MarketId = market.MarketId,
+                X = gamePosition.x,
+                Y = gamePosition.y,
+                MarketType = market.MarketType
+            };
+
+            message.PriceList.Add(BuildPriceEntry(GoodsType.Semiconductor, 80));
+            message.PriceList.Add(BuildPriceEntry(GoodsType.Medicine, 60));
+            message.PriceList.Add(BuildPriceEntry(GoodsType.Toys, 40));
+            message.PriceList.Add(BuildPriceEntry(GoodsType.Clothes, 50));
+            message.PriceList.Add(BuildPriceEntry(GoodsType.Food, 30));
+            return message;
+        }
+
+        private static MessageOfMarket.Types.PriceEntry BuildPriceEntry(GoodsType goodsType, int basePrice)
+        {
+            return new MessageOfMarket.Types.PriceEntry
+            {
+                GoodsType = goodsType,
+                Price = basePrice,
+                TradedQuantity = 0
             };
         }
 
@@ -1021,13 +1123,13 @@ namespace THUAI9.Unity.Player
                 CharacterType = character.Type,
                 CharacterActiveState = character.State,
                 Hp = character.Hp,
-                CommonAttack = CharacterAttack,
-                CommonAttackCd = 1000,
+                CommonAttack = GetCharacterAttack(character.Type),
+                CommonAttackCd = character.State == CharacterState.Attacking ? 1500 : 1000,
                 CommonAttackRange = CharacterAttackRange,
                 Speed = CharacterSpeed,
-                CurrentLoad = 0,
-                CarryCapacity = CharacterLoad,
-                ViewRange = 9000,
+                CurrentLoad = character.State == CharacterState.Harvesting ? GetCharacterCarry(character.Type) : 0,
+                CarryCapacity = GetCharacterCarry(character.Type),
+                ViewRange = GetCharacterViewRange(character.Type),
                 HarvestRatePerSec = 20
             };
         }
@@ -1065,9 +1167,9 @@ namespace THUAI9.Unity.Player
             return null;
         }
 
-        private TrialCharacter ResolveEnemyCharacter(TrialSelection selection)
+        private TrialCharacter ResolveEnemyCharacter(TrialSelection selection, long attackerTeamId)
         {
-            if (selection.Kind == TrialObjectKind.Character && characters.TryGetValue(selection.Guid, out TrialCharacter character) && character.TeamId != playerTeamId && character.Hp > 0)
+            if (selection.Kind == TrialObjectKind.Character && characters.TryGetValue(selection.Guid, out TrialCharacter character) && character.TeamId != attackerTeamId && character.Hp > 0)
             {
                 return character;
             }
@@ -1075,9 +1177,9 @@ namespace THUAI9.Unity.Player
             return null;
         }
 
-        private TrialFactory ResolveEnemyFactory(TrialSelection selection)
+        private TrialFactory ResolveEnemyFactory(TrialSelection selection, long attackerTeamId)
         {
-            if (selection.Kind == TrialObjectKind.Factory && factories.TryGetValue(selection.Guid, out TrialFactory factory) && factory.TeamId != playerTeamId && factory.Hp > 0)
+            if (selection.Kind == TrialObjectKind.Factory && factories.TryGetValue(selection.Guid, out TrialFactory factory) && factory.TeamId != attackerTeamId && factory.Hp > 0)
             {
                 return factory;
             }
@@ -1095,6 +1197,31 @@ namespace THUAI9.Unity.Player
             return factories.Values.FirstOrDefault(factory => factory.TeamId == teamId);
         }
 
+        private bool CanCreateCharacter(TrialSelection selection)
+        {
+            TrialFactory factory = ResolveFactory(selection, requirePlayerTeam: false);
+            if (factory == null || !teams.TryGetValue(factory.TeamId, out TrialTeam team))
+            {
+                return false;
+            }
+
+            int existingCount = characters.Values.Count(c => c.TeamId == factory.TeamId && c.Hp > 0);
+            return existingCount < MaxCharactersPerTeam && team.ComputePower >= CharacterCreateCost;
+        }
+
+        private long NextAvailablePlayerId(long teamId)
+        {
+            for (long candidate = 1; candidate <= MaxCharactersPerTeam; candidate++)
+            {
+                if (characters.Values.All(c => c.TeamId != teamId || c.PlayerId != candidate || c.Hp <= 0))
+                {
+                    return candidate;
+                }
+            }
+
+            return 0;
+        }
+
         private bool TryGetActiveCharacter(out TrialCharacter character)
         {
             if (activeCharacterGuid != 0 && characters.TryGetValue(activeCharacterGuid, out character) && character.Hp > 0)
@@ -1102,13 +1229,21 @@ namespace THUAI9.Unity.Player
                 return true;
             }
 
-            character = characters.Values.FirstOrDefault(c => c.TeamId == playerTeamId && c.Hp > 0);
-            if (character != null)
+            character = null;
+            return false;
+        }
+
+        private bool TryGetSelectedCharacter(out TrialCharacter character)
+        {
+            if (currentSelection.Kind == TrialObjectKind.Character
+                && characters.TryGetValue(currentSelection.Guid, out character)
+                && character.Hp > 0)
             {
                 activeCharacterGuid = character.Guid;
                 return true;
             }
 
+            character = null;
             return false;
         }
 
@@ -1157,7 +1292,7 @@ namespace THUAI9.Unity.Player
             int bestDistance = int.MaxValue;
             foreach (TrialCharacter character in characters.Values)
             {
-                if (character.TeamId == playerTeamId || character.Hp <= 0)
+                if (character.TeamId == attacker.TeamId || character.Hp <= 0)
                 {
                     continue;
                 }
@@ -1182,28 +1317,58 @@ namespace THUAI9.Unity.Player
             StatusText = status;
         }
 
+        private Vector2Int FindSpawnCellNearFactory(TrialFactory factory)
+        {
+            int rowStep = factory.Row < MapRows / 2 ? 1 : -1;
+            int colStep = factory.Col < MapCols / 2 ? 1 : -1;
+            for (int radius = 2; radius <= 6; radius++)
+            {
+                Vector2Int[] candidates =
+                {
+                    new Vector2Int(factory.Row + rowStep * radius, factory.Col + colStep * radius),
+                    new Vector2Int(factory.Row + rowStep * radius, factory.Col),
+                    new Vector2Int(factory.Row, factory.Col + colStep * radius),
+                    new Vector2Int(factory.Row + rowStep * radius, factory.Col - colStep * radius),
+                    new Vector2Int(factory.Row - rowStep * radius, factory.Col + colStep * radius)
+                };
+
+                foreach (Vector2Int candidate in candidates)
+                {
+                    if (IsCellAvailable(candidate.x, candidate.y))
+                    {
+                        return candidate;
+                    }
+                }
+            }
+
+            return FindNearestFreeCell(factory.Row, factory.Col, rowStep);
+        }
+
         private Vector2Int FindNearestFreeCell(int row, int col, int preferredDirection)
         {
             int direction = preferredDirection == 0 ? 1 : Math.Sign(preferredDirection);
-            Vector2Int[] offsets =
+            for (int radius = 1; radius <= 6; radius++)
             {
-                new Vector2Int(0, direction),
-                new Vector2Int(direction, 0),
-                new Vector2Int(0, -direction),
-                new Vector2Int(-direction, 0),
-                new Vector2Int(1, 1),
-                new Vector2Int(-1, -1),
-                new Vector2Int(1, -1),
-                new Vector2Int(-1, 1)
-            };
-
-            foreach (Vector2Int offset in offsets)
-            {
-                int candidateRow = Mathf.Clamp(row + offset.x, 0, MapRows - 1);
-                int candidateCol = Mathf.Clamp(col + offset.y, 0, MapCols - 1);
-                if (!IsBlocked(candidateRow, candidateCol))
+                Vector2Int[] offsets =
                 {
-                    return new Vector2Int(candidateRow, candidateCol);
+                    new Vector2Int(0, direction * radius),
+                    new Vector2Int(direction * radius, 0),
+                    new Vector2Int(0, -direction * radius),
+                    new Vector2Int(-direction * radius, 0),
+                    new Vector2Int(radius, radius),
+                    new Vector2Int(-radius, -radius),
+                    new Vector2Int(radius, -radius),
+                    new Vector2Int(-radius, radius)
+                };
+
+                foreach (Vector2Int offset in offsets)
+                {
+                    int candidateRow = Mathf.Clamp(row + offset.x, 0, MapRows - 1);
+                    int candidateCol = Mathf.Clamp(col + offset.y, 0, MapCols - 1);
+                    if (IsCellAvailable(candidateRow, candidateCol))
+                    {
+                        return new Vector2Int(candidateRow, candidateCol);
+                    }
                 }
             }
 
@@ -1212,7 +1377,7 @@ namespace THUAI9.Unity.Player
 
         private bool IsNear(TrialCharacter character, int row, int col, int range)
         {
-            return Manhattan(character.Row, character.Col, row, col) <= range + 1;
+            return Mathf.Max(Mathf.Abs(character.Row - row), Mathf.Abs(character.Col - col)) <= range;
         }
 
         private static int Manhattan(int rowA, int colA, int rowB, int colB)
@@ -1228,12 +1393,12 @@ namespace THUAI9.Unity.Player
             }
 
             PlaceType place = GetPlaceType(row, col);
-            if (place == PlaceType.Barrier)
-            {
-                return true;
-            }
+            return place != PlaceType.Space && place != PlaceType.Bush;
+        }
 
-            return place == PlaceType.Factory && !activeFactoryCells.Contains(CellKey(row, col));
+        private bool IsCellAvailable(int row, int col)
+        {
+            return !IsBlocked(row, col) && !characters.Values.Any(c => c.Hp > 0 && c.Row == row && c.Col == col);
         }
 
         private static PlaceType GetPlaceType(int row, int col)
@@ -1264,6 +1429,62 @@ namespace THUAI9.Unity.Player
         private static long CellKey(int row, int col)
         {
             return ((long)row << 32) | (uint)col;
+        }
+
+        private static Vector2Int GridToGameCell(int row, int col)
+        {
+            Vector2 gamePosition = Tool.GridToGame(row, col);
+            return new Vector2Int(Mathf.RoundToInt(gamePosition.x), Mathf.RoundToInt(gamePosition.y));
+        }
+
+        private static int GetCharacterMaxHp(CharacterType type)
+        {
+            switch (type)
+            {
+                case CharacterType.Drone:
+                    return DroneHp;
+                case CharacterType.AutonomousCar:
+                    return CarHp;
+                default:
+                    return CharacterHp;
+            }
+        }
+
+        private static int GetCharacterAttack(CharacterType type)
+        {
+            switch (type)
+            {
+                case CharacterType.Drone:
+                    return 40;
+                case CharacterType.AutonomousCar:
+                    return 18;
+                default:
+                    return 30;
+            }
+        }
+
+        private static int GetCharacterCarry(CharacterType type)
+        {
+            return 5;
+        }
+
+        private static int GetCharacterViewRange(CharacterType type)
+        {
+            return type == CharacterType.Drone ? 7000 : 5000;
+        }
+
+        private static MarketType GetDefaultMarketType(int row, int col)
+        {
+            int variant = Mathf.Abs(row * 31 + col * 17) % 3;
+            switch (variant)
+            {
+                case 0:
+                    return MarketType.SmallMarket;
+                case 1:
+                    return MarketType.MediumMarket;
+                default:
+                    return MarketType.LargeMarket;
+            }
         }
 
         private static string FormatPlaceType(PlaceType place)
@@ -1305,6 +1526,36 @@ namespace THUAI9.Unity.Player
                     return "失去行动能力";
                 default:
                     return "空闲";
+            }
+        }
+
+        private static string FormatCharacterType(CharacterType type)
+        {
+            switch (type)
+            {
+                case CharacterType.Drone:
+                    return "无人机";
+                case CharacterType.Robot:
+                    return "机器人";
+                case CharacterType.AutonomousCar:
+                    return "无人车";
+                default:
+                    return "未知角色";
+            }
+        }
+
+        private static string FormatMarketType(MarketType type)
+        {
+            switch (type)
+            {
+                case MarketType.SmallMarket:
+                    return "小型市场";
+                case MarketType.MediumMarket:
+                    return "中型市场";
+                case MarketType.LargeMarket:
+                    return "大型市场";
+                default:
+                    return "未知市场";
             }
         }
 
@@ -1352,7 +1603,8 @@ namespace THUAI9.Unity.Player
             Character,
             Factory,
             Resource,
-            ComputeCenter
+            ComputeCenter,
+            Market
         }
 
         private struct TrialSelection
@@ -1433,6 +1685,22 @@ namespace THUAI9.Unity.Player
             public int Col { get; }
             public long OwnerTeamId;
             public int OccupyProgress;
+        }
+
+        private sealed class TrialMarket
+        {
+            public TrialMarket(long marketId, int row, int col, MarketType marketType)
+            {
+                MarketId = marketId;
+                Row = row;
+                Col = col;
+                MarketType = marketType;
+            }
+
+            public long MarketId { get; }
+            public int Row { get; }
+            public int Col { get; }
+            public MarketType MarketType { get; }
         }
 
         private sealed class TrialCharacter

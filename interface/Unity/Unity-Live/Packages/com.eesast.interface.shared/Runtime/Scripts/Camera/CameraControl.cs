@@ -36,6 +36,9 @@ namespace THUAI9.Unity.CameraControlNS
         [Header("是否在首帧自动适配地图")]
         public bool autoFitOnFirstFrame = true;
 
+        [Header("是否启用 WASD 键盘平移")]
+        public bool enableKeyboardMove = true;
+
         private Camera _mainCamera;
         private Vector3 _lastMousePosition;
         private bool _hasFittedToMap;
@@ -125,6 +128,11 @@ namespace THUAI9.Unity.CameraControlNS
 
         private void HandleKeyboardMove()
         {
+            if (!enableKeyboardMove)
+            {
+                return;
+            }
+
             float moveX = 0f;
             float moveY = 0f;
             float currentMoveSpeed = moveSpeed * Mathf.Max(_mainCamera.orthographicSize / 20f, 0.5f);
