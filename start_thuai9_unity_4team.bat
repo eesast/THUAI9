@@ -4,11 +4,11 @@ setlocal
 set "ROOT=%~dp0"
 set "SERVER_PORT=8888"
 set "SERVER_IP=127.0.0.1"
-set "UNITY_PROJECT=%ROOT%interface\Unity"
-set "UNITY_METHOD=SmokeTestLauncher.StartMainGameLiveSmoke"
+set "UNITY_PROJECT=%ROOT%interface\Unity\Unity-Live"
+set "UNITY_METHOD=SmokeTestLauncher.StartLiveSmoke"
 if not defined UNITY_WARMUP_SECONDS set "UNITY_WARMUP_SECONDS=12"
 
-echo [THUAI9] Launching Unity MainGame live smoke, then Server and 4 ClientTest2 teams...
+echo [THUAI9] Launching Unity-Live smoke, then Server and 4 ClientTest2 teams...
 
 if not exist "%ROOT%logic\Server\Server.csproj" (
     echo [ERROR] Server project not found: logic\Server\Server.csproj
@@ -20,8 +20,8 @@ if not exist "%ROOT%logic\ClientTest2\ClientTest2.csproj" (
     exit /b 1
 )
 
-if not exist "%UNITY_PROJECT%\Assets\Scenes\MainGame.unity" (
-    echo [ERROR] Unity MainGame scene not found: interface\Unity\Assets\Scenes\MainGame.unity
+if not exist "%UNITY_PROJECT%\Assets\Scenes\Live.unity" (
+    echo [ERROR] Unity Live scene not found: interface\Unity\Unity-Live\Assets\Scenes\Live.unity
     exit /b 1
 )
 
@@ -75,7 +75,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [THUAI9] Starting Unity Editor MainGame Play Mode first...
+echo [THUAI9] Starting Unity Editor Live Play Mode first...
 echo [THUAI9] Unity will auto-connect and retry while waiting for the server.
 start "THUAI9 Unity" "%UNITY_EXE%" -projectPath "%UNITY_PROJECT%" -executeMethod %UNITY_METHOD%
 

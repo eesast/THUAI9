@@ -11,6 +11,11 @@ set "WEB_PORT=18089"
 set "WS_PORT=18091"
 set "WEBGL_ROOT=%ROOT%interface\Unity\Unity-WebGL"
 set "BRIDGE_PROJECT=%WEBGL_ROOT%\tools\LiveWebSocketBridge\LiveWebSocketBridge.csproj"
+set "BRIDGE_SOURCE=%WEBGL_ROOT%\tools\LiveWebSocketBridge\Program.cs"
+set "BRIDGE_PROTO_ROOT=%ROOT%dependency\proto"
+set "BRIDGE_BUILD_DIR=%TEMP%\THUAI9-LiveWebSocketBridge"
+set "BRIDGE_BUILD_PROJECT=%BRIDGE_BUILD_DIR%\LiveWebSocketBridge.csproj"
+set "BRIDGE_DLL=%BRIDGE_BUILD_DIR%\bin\Debug\net8.0\LiveWebSocketBridge.dll"
 set "SERVER_LOG=%ROOT%logic\Server\logs\GameServer.log"
 if not defined THUAI9_SPECTATOR_WAIT_SECONDS set "THUAI9_SPECTATOR_WAIT_SECONDS=180"
 
@@ -40,6 +45,16 @@ if not exist "%BRIDGE_PROJECT%" (
     exit /b 1
 )
 
+if not exist "%BRIDGE_SOURCE%" (
+    echo [ERROR] Live WebSocket bridge source not found: %BRIDGE_SOURCE%
+    exit /b 1
+)
+
+if not exist "%BRIDGE_PROTO_ROOT%\Services.proto" (
+    echo [ERROR] Proto files not found: %BRIDGE_PROTO_ROOT%
+    exit /b 1
+)
+
 where dotnet >nul 2>nul
 if errorlevel 1 (
     echo [ERROR] dotnet not found.
@@ -65,10 +80,10 @@ if not defined THUAI9_SKIP_SMOKE_CLEANUP (
         echo [ERROR] Failed to stop old smoke processes.
         exit /b 1
     )
-    call :StopWebPorts
 ) else (
     echo [THUAI9] THUAI9_SKIP_SMOKE_CLEANUP is set; keeping existing processes.
 )
+call :StopWebPorts
 
 echo [THUAI9] Building Server, ClientTest2, and WebGL Live bridge before launch...
 dotnet build "%ROOT%logic\Server\Server.csproj"
@@ -81,9 +96,18 @@ if errorlevel 1 (
     echo [ERROR] ClientTest2 build failed.
     exit /b 1
 )
-dotnet build "%BRIDGE_PROJECT%"
+call :PrepareBridgeBuildProject
+if errorlevel 1 (
+    echo [ERROR] Failed to prepare WebGL Live bridge build project.
+    exit /b 1
+)
+dotnet build "%BRIDGE_BUILD_PROJECT%"
 if errorlevel 1 (
     echo [ERROR] WebGL Live bridge build failed.
+    exit /b 1
+)
+if not exist "%BRIDGE_DLL%" (
+    echo [ERROR] WebGL Live bridge output not found: %BRIDGE_DLL%
     exit /b 1
 )
 
@@ -103,14 +127,19 @@ echo [THUAI9] Starting WebGL static server on http://127.0.0.1:%WEB_PORT% from i
 start "THUAI9 WebGL HTTP" cmd /k "cd /d ""%WEBGL_ROOT%"" && %PYTHON_CMD% -m http.server %WEB_PORT% --bind 127.0.0.1"
 
 echo [THUAI9] Waiting for WebGL static server...
-powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $r = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:%WEB_PORT%/live/index.html' -TimeoutSec 2; if($r.StatusCode -eq 200){ exit 0 } } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $base = 'http://127.0.0.1:%WEB_PORT%'; $root = Invoke-WebRequest -UseBasicParsing ($base + '/') -TimeoutSec 2; $trial = Invoke-WebRequest -UseBasicParsing ($base + '/trial/') -TimeoutSec 2; $live = Invoke-WebRequest -UseBasicParsing ($base + '/live/') -TimeoutSec 2; $playback = Invoke-WebRequest -UseBasicParsing ($base + '/playback/') -TimeoutSec 2; if($root.Content -match 'Directory listing for /' -or $root.Content -match '\.git|logic/|tasks/'){ exit 2 }; if($trial.StatusCode -eq 200 -and $live.StatusCode -eq 200 -and $playback.StatusCode -eq 200){ exit 0 } } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+if errorlevel 2 (
+    echo [ERROR] WebGL static server is serving the repository root, not interface\Unity\Unity-WebGL.
+    echo [HINT] The script already stopped old listeners; check the "THUAI9 WebGL HTTP" window and port %WEB_PORT%.
+    exit /b 1
+)
 if errorlevel 1 (
     echo [ERROR] WebGL static server did not become ready on 127.0.0.1:%WEB_PORT%
     exit /b 1
 )
 
 echo [THUAI9] Starting gRPC spectator to WebSocket bridge on ws://127.0.0.1:%WS_PORT%/live ...
-start "THUAI9 WebGL Live Bridge" cmd /k "cd /d ""%ROOT%"" && dotnet run --no-build --project ""%BRIDGE_PROJECT%"" -- --server %SERVER_IP%:%SERVER_PORT% --port %WS_PORT%"
+start "THUAI9 WebGL Live Bridge" cmd /k "cd /d ""%ROOT%"" && dotnet ""%BRIDGE_DLL%"" --server %SERVER_IP%:%SERVER_PORT% --port %WS_PORT%"
 
 echo [THUAI9] Opening browser WebGL Live page. The page auto-connects through ?ws=...
 if not defined THUAI9_SKIP_BROWSER_LAUNCH (
@@ -140,5 +169,9 @@ endlocal
 exit /b 0
 
 :StopWebPorts
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ports=@(%WEB_PORT%,%WS_PORT%); foreach($port in $ports){ $conns=Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $port -State Listen -ErrorAction SilentlyContinue; foreach($conn in $conns){ $owner=$conn.OwningProcess; if($owner -and $owner -ne $PID){ $p=Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -eq $owner }; if($p.CommandLine -match 'http.server|LiveWebSocketBridge'){ Stop-Process -Id $owner -Force -ErrorAction SilentlyContinue } } } }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ports=@(%WEB_PORT%,%WS_PORT%); foreach($port in $ports){ $conns=Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue; foreach($conn in $conns){ $owner=$conn.OwningProcess; if($owner -and $owner -ne $PID){ Stop-Process -Id $owner -Force -ErrorAction SilentlyContinue } } }"
+exit /b 0
+
+:PrepareBridgeBuildProject
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $dir=$env:BRIDGE_BUILD_DIR; $project=$env:BRIDGE_BUILD_PROJECT; $proto=$env:BRIDGE_PROTO_ROOT; New-Item -ItemType Directory -Force -Path $dir | Out-Null; Copy-Item -LiteralPath $env:BRIDGE_SOURCE -Destination (Join-Path $dir 'Program.cs') -Force; Copy-Item -LiteralPath $env:BRIDGE_PROJECT -Destination $project -Force; $text = Get-Content -LiteralPath $project -Raw; $text = $text.Replace('..\..\..\..\dependency\proto\*.proto', ($proto + '\*.proto')).Replace('..\..\..\..\dependency\proto', $proto); Set-Content -LiteralPath $project -Value $text -Encoding utf8"
 exit /b 0

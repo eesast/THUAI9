@@ -53,6 +53,21 @@ foreach ($process in $allProcesses) {
         $targets += $process
     }
 }
+$webglPorts = @(18089, 18091)
+foreach ($port in $webglPorts) {
+    $connections = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+    foreach ($connection in $connections) {
+        $owner = $connection.OwningProcess
+        if (-not $owner -or $owner -eq $currentPid) {
+            continue
+        }
+
+        $process = $allProcesses | Where-Object { $_.ProcessId -eq $owner } | Select-Object -First 1
+        if ($process -and (Test-ContainsMarker $process.CommandLine @('http.server', 'LiveWebSocketBridge'))) {
+            $targets += $process
+        }
+    }
+}
 $targets = @($targets | Sort-Object ProcessId -Unique)
 if ($targets.Count -eq 0) {
     if (-not $Quiet) {
