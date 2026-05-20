@@ -190,6 +190,7 @@ namespace Gaming
                 int effLevel = t.GetTech("Efficiency");
                 int robustLevel = t.GetTech("Robust");
                 int warriorLevel = t.GetTech("Warrior");
+                int attackSizeLevel = t.GetTech("AttackSize");
 
                 if (effLevel > 0)
                 {
@@ -214,6 +215,12 @@ namespace Gaming
                         ch.AttackPower.AddPositiveV(extra);
                         ch.AttackPower.SetMaxV(ch.AttackPower + extra);
                     }
+                }
+
+                if (attackSizeLevel > 0)
+                {
+                    ch.AttackSize.SetPositiveMaxV(ch.AttackSize.GetMaxV() + GameData.TechAttackSizeAddPerLevel * attackSizeLevel);
+                    ch.AttackSize.AddPositiveV(GameData.TechAttackSizeAddPerLevel * attackSizeLevel);
                 }
             }
 
