@@ -21,7 +21,7 @@ namespace THUAI9.Unity.UI.Shared
         private const float TeamStatusRightMargin = 24f;
         private const float TeamStatusTopMargin = 108f;
         private const float TeamStatusWidth = 292f;
-        private const float TeamStatusHeight = 122f;
+        private const float TeamStatusHeight = 156f;
         private const float TeamStatusGap = 12f;
         private const float TeamStatusContentHeight = 430f;
 

@@ -20,6 +20,18 @@ namespace THUAI9.Unity.UI
         private RectTransform helpPanel;
         private WorldHoverInfoPanel hoverInfoPanel;
 
+        private const float ActionPanelTopY = -108f;
+        private const float ActionPanelWidth = 480f;
+        private const float ActionPanelHeight = 560f;
+        private const float ActionContentWidth = ActionPanelWidth - 44f;
+        private const int ActionButtonColumns = 3;
+        private const float ActionButtonStartX = 18f;
+        private const float ActionButtonStartY = -168f;
+        private const float ActionButtonWidth = 138f;
+        private const float ActionButtonHeight = 30f;
+        private const float ActionButtonColumnStep = 150f;
+        private const float ActionButtonRowStep = 34f;
+
         private void Awake()
         {
             trial = FindObjectOfType<TrialSandboxController>() ?? new GameObject("TrialSandboxController").AddComponent<TrialSandboxController>();
@@ -55,14 +67,14 @@ namespace THUAI9.Unity.UI
 
         private void BuildActionPanel()
         {
-            RectTransform panel = hud.AddPanel("HUD_TrialActionPanel", new Vector2(24f, -108f), new Vector2(620f, 508f));
-            hud.Label(panel, "TrialActionTitle", "本地试玩 / 上下文操作", new Vector2(18f, -12f), new Vector2(420f, 30f), 18);
+            RectTransform panel = hud.AddPanel("HUD_TrialActionPanel", new Vector2(24f, ActionPanelTopY), new Vector2(ActionPanelWidth, ActionPanelHeight));
+            hud.Label(panel, "TrialActionTitle", "本地试玩 / 上下文操作", new Vector2(18f, -12f), new Vector2(ActionContentWidth, 30f), 18);
             selectionText = hud.Label(
                 panel,
                 "TrialSelectionText",
                 "未选中对象",
                 new Vector2(18f, -48f),
-                new Vector2(576f, 96f),
+                new Vector2(ActionContentWidth, 104f),
                 14,
                 TextAnchor.UpperLeft);
 
@@ -98,12 +110,12 @@ namespace THUAI9.Unity.UI
                 panel,
                 "TrialActionHint",
                 "点击对象后只显示该上下文的操作；按钮可点，不合法会在状态栏说明原因。",
-                new Vector2(18f, -468f),
-                new Vector2(576f, 34f),
+                new Vector2(18f, -510f),
+                new Vector2(ActionContentWidth, 40f),
                 12,
                 TextAnchor.UpperLeft);
 
-            hud.StatusText.rectTransform.anchoredPosition = new Vector2(24f, -632f);
+            hud.StatusText.rectTransform.anchoredPosition = new Vector2(24f, ActionPanelTopY - ActionPanelHeight - 16f);
         }
 
         private void AddGoodsButtons(RectTransform panel, string prefix, string verb, Color color)
@@ -117,7 +129,7 @@ namespace THUAI9.Unity.UI
 
         private void AddActionButton(RectTransform panel, string name, string label, string action, Color color)
         {
-            Button button = hud.Button(panel, name, label, Vector2.zero, new Vector2(132f, 30f), color, () => trial?.ExecuteSelectedAction(action));
+            Button button = hud.Button(panel, name, label, Vector2.zero, new Vector2(ActionButtonWidth, ActionButtonHeight), color, () => trial?.ExecuteSelectedAction(action));
             actionButtons[action] = button;
             actionButtonSpecs.Add(new ActionButtonSpec(action, button));
         }
@@ -180,9 +192,9 @@ namespace THUAI9.Unity.UI
                 }
 
                 RectTransform rect = button.GetComponent<RectTransform>();
-                int column = visibleIndex % 4;
-                int row = visibleIndex / 4;
-                rect.anchoredPosition = new Vector2(18f + column * 144f, -154f - row * 34f);
+                int column = visibleIndex % ActionButtonColumns;
+                int row = visibleIndex / ActionButtonColumns;
+                rect.anchoredPosition = new Vector2(ActionButtonStartX + column * ActionButtonColumnStep, ActionButtonStartY - row * ActionButtonRowStep);
                 visibleIndex++;
             }
         }
