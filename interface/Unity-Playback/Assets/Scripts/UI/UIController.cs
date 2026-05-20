@@ -18,17 +18,21 @@ namespace THUAI9.Unity.UI
         private Dropdown speedDropdown;
         private PlaybackController playbackController;
         private bool suppressSlider;
+        private WorldSelectionController selector;
+        private WorldHoverInfoPanel hoverInfoPanel;
 
         private void Awake()
         {
             playbackController = FindObjectOfType<PlaybackController>() ?? new GameObject("PlaybackManager").AddComponent<PlaybackController>();
             hud = new SimpleHud("THUAI9 云厂竞逐战 - 回放");
             BuildPanel();
+            EnsureWorldHoverInfo();
         }
 
         private void Update()
         {
             hud.UpdateCommon(playbackController != null ? playbackController.CurrentPlaybackTimeMs : CoreParam.playbackElapsedMilliseconds);
+            EnsureWorldHoverInfo();
             if (playbackController != null)
             {
                 hud.StatusText.text = playbackController.StatusText;
@@ -70,6 +74,25 @@ namespace THUAI9.Unity.UI
             speedDropdown = hud.Dropdown(panel, "SpeedDropdown", new Vector2(472f, -88f), new Vector2(112f, 34f), "0.5x", "1x", "2x", "4x");
             speedDropdown.value = 1;
             speedDropdown.onValueChanged.AddListener(i => playbackController?.SetSpeed(SpeedValues[Mathf.Clamp(i, 0, SpeedValues.Length - 1)]));
+        }
+
+        private void EnsureWorldHoverInfo()
+        {
+            if (selector == null)
+            {
+                selector = FindObjectOfType<WorldSelectionController>() ??
+                    new GameObject("WorldSelectionController").AddComponent<WorldSelectionController>();
+            }
+
+            selector.targetCamera = Camera.main;
+            selector.enableHover = true;
+            selector.enableClickSelection = false;
+
+            if (hud != null && hud.Canvas != null)
+            {
+                hoverInfoPanel = WorldHoverInfoPanel.GetOrCreate(hud.Canvas, Camera.main);
+                hoverInfoPanel.ShowWorldHoverInfo = true;
+            }
         }
 
         private void OnBrowse()

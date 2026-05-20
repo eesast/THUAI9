@@ -17,6 +17,10 @@ namespace THUAI9.Unity.UI
         private SimpleHud hud;
         private InputField addressInput;
         private LiveSpectatorClient liveClient;
+        private EventLogPanelController eventLogPanelController;
+        private bool eventLogPanelConfigured;
+        private WorldSelectionController selector;
+        private WorldHoverInfoPanel hoverInfoPanel;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -50,6 +54,8 @@ namespace THUAI9.Unity.UI
             liveClient = FindObjectOfType<LiveSpectatorClient>() ?? new GameObject("LiveSpectatorClient").AddComponent<LiveSpectatorClient>();
             hud = new SimpleHud("THUAI9 云厂竞逐战 - 直播");
             BuildPanel();
+            EnsureEventLogPanel();
+            EnsureWorldHoverInfo();
         }
 
         private void Update()
@@ -60,7 +66,8 @@ namespace THUAI9.Unity.UI
             }
 
             hud.UpdateCommon(CoreParam.stableLiveGameMilliseconds);
-            hud.StatusText.text = BuildStatusText();
+            EnsureEventLogPanel();
+            EnsureWorldHoverInfo();
         }
 
         private void BuildPanel()
@@ -73,16 +80,54 @@ namespace THUAI9.Unity.UI
             hud.Label(panel, "LiveHintText", "网站调用 window.THUAI9Unity.connectLiveWebSocket(wsUrl) 或 submitLiveFrame* 推送 MessageToClient。", new Vector2(18f, -60f), new Vector2(520f, 44f), 14, TextAnchor.UpperLeft);
         }
 
-        private string BuildStatusText()
+        private void EnsureEventLogPanel()
         {
-            if (liveClient == null)
+            if (hud == null || hud.Canvas == null)
             {
-                return "直播：等待初始化";
+                return;
             }
 
-            return liveClient.StatusText + "\n" +
-                $"收帧/出队/渲染：{liveClient.ReceivedFrameCount}/{liveClient.DequeuedFrameCount}/{liveClient.RenderedFrameCount}  队列：{liveClient.QueuedFrameCount}\n" +
-                $"对象：{liveClient.LastReceivedObjectCount}  队伍：{liveClient.LastReceivedTeamCount}  角色：{liveClient.LastReceivedCharacterCount}  工厂：{liveClient.LastReceivedFactoryCount}  资源：{liveClient.LastReceivedResourceCount}";
+            if (hud.StatusText != null && hud.StatusText.gameObject.activeSelf)
+            {
+                hud.StatusText.gameObject.SetActive(false);
+            }
+
+            if (eventLogPanelController == null)
+            {
+                eventLogPanelController = FindObjectOfType<EventLogPanelController>(true);
+            }
+
+            if (eventLogPanelController == null)
+            {
+                GameObject go = GameObject.Find("HUD_EventLogPanel") ?? new GameObject("HUD_EventLogPanel", typeof(RectTransform), typeof(Image));
+                eventLogPanelController = go.GetComponent<EventLogPanelController>() ?? go.AddComponent<EventLogPanelController>();
+                eventLogPanelConfigured = false;
+            }
+
+            if (!eventLogPanelConfigured || eventLogPanelController.transform.parent != hud.Canvas.transform)
+            {
+                eventLogPanelController.Configure(hud.Canvas);
+                eventLogPanelConfigured = true;
+            }
+        }
+
+        private void EnsureWorldHoverInfo()
+        {
+            if (selector == null)
+            {
+                selector = FindObjectOfType<WorldSelectionController>() ??
+                    new GameObject("WorldSelectionController").AddComponent<WorldSelectionController>();
+            }
+
+            selector.targetCamera = Camera.main;
+            selector.enableHover = true;
+            selector.enableClickSelection = false;
+
+            if (hud != null && hud.Canvas != null)
+            {
+                hoverInfoPanel = WorldHoverInfoPanel.GetOrCreate(hud.Canvas, Camera.main);
+                hoverInfoPanel.ShowWorldHoverInfo = true;
+            }
         }
 
         private static void ClearSelection()

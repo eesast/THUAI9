@@ -20,9 +20,10 @@ namespace THUAI9.Unity.WebGL
         private void Awake(){ if(instance!=null&&instance!=this){Destroy(gameObject);return;} instance=this; gameObject.name=BridgeObjectName; DontDestroyOnLoad(gameObject); RefreshReferences(); }
         private void Start() => NotifyReady();
         private void RefreshReferences(){ trial ??= FindObjectOfType<TrialSandboxController>(); if(trial==null) trial=new GameObject("TrialSandboxController").AddComponent<TrialSandboxController>(); }
-        public void StartTrial(string optionsJson=null){ RefreshReferences(); trial.StartTrial(optionsJson); DispatchEvent("trial-started", optionsJson ?? string.Empty); }
-        public void StopTrial(string ignored=null){ RefreshReferences(); trial.StopTrial(); DispatchEvent("trial-stopped", string.Empty); }
-        public void TrialAction(string action){ RefreshReferences(); trial.HandleAction(action); }
+        public void StartTrial(string optionsJson=null){ RefreshReferences(); trial.StartTrial(optionsJson); DispatchEvent("trial-started", optionsJson ?? string.Empty); DispatchEvent("trial-status", trial.StatusText); }
+        public void StopTrial(string ignored=null){ RefreshReferences(); trial.StopTrial(); DispatchEvent("trial-stopped", string.Empty); DispatchEvent("trial-status", trial.StatusText); }
+        public void ResetTrial(string ignored=null){ RefreshReferences(); trial.ResetTrial(); DispatchEvent("trial-reset", string.Empty); DispatchEvent("trial-status", trial.StatusText); }
+        public void TrialAction(string action){ RefreshReferences(); trial.HandleAction(action); DispatchEvent("trial-status", trial.StatusText); }
         private void NotifyReady()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR

@@ -18,7 +18,8 @@ namespace THUAI9.Unity.Core
         {
             None,
             Playback,
-            Live
+            Live,
+            Trial
         }
 
         public static event Action<MessageToClient> ImmediateFrameSubmitted;
@@ -226,7 +227,9 @@ namespace THUAI9.Unity.Core
                 : "--";
             string frameLine = ActiveKind == SourceKind.Playback
                 ? $"当前帧：{CoreParam.frameCount}  回放索引：{playbackIndexText}"
-                : $"当前帧：{CoreParam.frameCount}  实时收帧：{SubmittedFrameCount}";
+                : ActiveKind == SourceKind.Trial
+                    ? $"当前帧：{CoreParam.frameCount}  试玩帧：{SubmittedFrameCount}"
+                    : $"当前帧：{CoreParam.frameCount}  实时收帧：{SubmittedFrameCount}";
 
             return
                 $"帧源：{TranslateSourceKind(ActiveKind)}  {ActiveName}\n" +
@@ -249,6 +252,7 @@ namespace THUAI9.Unity.Core
             {
                 SourceKind.Playback => "回放",
                 SourceKind.Live => "实时",
+                SourceKind.Trial => "试玩",
                 _ => "无"
             };
         }

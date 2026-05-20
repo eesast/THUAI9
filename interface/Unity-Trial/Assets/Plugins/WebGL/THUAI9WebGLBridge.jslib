@@ -22,6 +22,7 @@ mergeInto(LibraryManager.library, {
     window.THUAI9Unity.sendMessage = function (methodName, payload) { THUAI9WebGLBridge.sendMessage(gameObjectName, methodName, payload || ''); };
     window.THUAI9Unity.startTrial = function (options) { THUAI9WebGLBridge.sendMessage(gameObjectName, 'StartTrial', JSON.stringify(options || {})); };
     window.THUAI9Unity.stopTrial = function () { THUAI9WebGLBridge.sendMessage(gameObjectName, 'StopTrial', ''); };
+    window.THUAI9Unity.resetTrial = function () { THUAI9WebGLBridge.sendMessage(gameObjectName, 'ResetTrial', ''); };
     window.THUAI9Unity.trialAction = function (action) { THUAI9WebGLBridge.sendMessage(gameObjectName, 'TrialAction', action || ''); };
     THUAI9WebGLBridge.dispatchCustomEvent('thuai9-unity-ready', { gameObjectName: gameObjectName, mode: 'trial' });
   },

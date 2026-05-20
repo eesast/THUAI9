@@ -25,6 +25,27 @@ namespace THUAI9.Unity.UI
         public WorldObjectInfo HoveredInfo => hoveredInfo;
         public WorldObjectInfo SelectedInfo => selectedInfo;
         public Vector2Int? SelectedTile => selectedTile;
+        public bool IsPointerOverUi => IsPointerOverUI();
+
+        public bool TryGetMouseTile(out Vector2Int tile)
+        {
+            tile = default;
+            targetCamera ??= Camera.main;
+            if (targetCamera == null)
+            {
+                return false;
+            }
+
+            Vector3 mouseWorld = targetCamera.ScreenToWorldPoint(Input.mousePosition);
+            mouseWorld.z = 0f;
+            return TryGetMapTileAt(mouseWorld, out tile);
+        }
+
+        public void ClearCurrentSelection()
+        {
+            ClearSelection();
+            SetHighlightVisible(selectedHighlight, false);
+        }
 
         private void Awake()
         {
