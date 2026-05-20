@@ -43,4 +43,7 @@ jobs:
 
       - name: Check Interface (Unity)
         run: |
-          dotnet format whitespace "./interface/Unity/Assets/Scripts/" --folder --verify-no-changes
+          dotnet format whitespace "./interface/Unity/Unity-Live/Assets/Scripts/" --folder --verify-no-changes
+          dotnet format whitespace "./interface/Unity/Unity-Playback/Assets/Scripts/" --folder --verify-no-changes
+          dotnet format whitespace "./interface/Unity/Unity-Trial/Assets/Scripts/" --folder --verify-no-changes
+          dotnet format whitespace "./interface/Unity/Unity-Live/Packages/com.eesast.interface.shared/Runtime/Scripts/" --folder --verify-no-changes

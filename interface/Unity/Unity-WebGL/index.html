@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>THUAI9 WebGL 入口</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #05080d;
+      color: #e9f3ff;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(45, 156, 219, 0.18), transparent 32rem),
+        radial-gradient(circle at 80% 85%, rgba(18, 194, 233, 0.12), transparent 28rem),
+        #05080d;
+    }
+
+    main {
+      width: min(720px, calc(100vw - 48px));
+      padding: 40px;
+      border: 1px solid rgba(130, 190, 255, 0.18);
+      border-radius: 20px;
+      background: rgba(8, 15, 24, 0.82);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 28px;
+      font-size: 32px;
+      letter-spacing: 0.04em;
+    }
+
+    nav {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    a {
+      display: block;
+      padding: 22px 12px;
+      border-radius: 14px;
+      color: #eaf6ff;
+      background: linear-gradient(180deg, #123154, #0c2037);
+      border: 1px solid rgba(124, 201, 255, 0.26);
+      text-decoration: none;
+      font-size: 22px;
+      font-weight: 700;
+      text-transform: lowercase;
+    }
+
+    a:hover,
+    a:focus-visible {
+      outline: none;
+      background: linear-gradient(180deg, #1d5084, #123154);
+      border-color: rgba(124, 201, 255, 0.58);
+    }
+
+    @media (max-width: 640px) {
+      nav {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>THUAI9 WebGL 入口</h1>
+    <nav aria-label="THUAI9 WebGL entries">
+      <a href="./trial/">试玩</a>
+      <a href="./live/">直播</a>
+      <a href="./playback/">回放</a>
+    </nav>
+  </main>
+</body>
+</html>

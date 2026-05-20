@@ -8,6 +8,24 @@ Unity/Logs/
 Unity/UserSettings/
 Unity/.codex/
 
+# Split Unity project generated state
+Unity/Unity-*/Library/
+Unity/Unity-*/Temp/
+Unity/Unity-*/Logs/
+Unity/Unity-*/UserSettings/
+Unity/Unity-*/Build/
+Unity/Unity-*/Builds/
+Unity/Unity-*/WebGLBuild/
+Unity/Unity-*/WebGLBuilds/
+Unity/Unity-*/StandaloneBuild/
+Unity/Unity-WebGL/tools/*.log
+Unity/Unity-WebGL/tools/*.png
+Unity/Unity-WebGL/tools/LiveWebSocketBridge/bin/
+Unity/Unity-WebGL/tools/LiveWebSocketBridge/obj/
+
+# Local backup of the previous single Unity project
+Unity.bak/
+
 # Unity local agent/config scratch files
 Unity/AGENTS.md
 Unity/fix_unity.ps1
