@@ -52,7 +52,7 @@ namespace THUAI9.Unity.UI
 
         [Range(160, 480)] public float scorePanelWidth = 376f;
 
-        [Range(18, 180)] public float scoreItemHeight = 156f;
+        [Range(18, 180)] public float scoreItemHeight = 180f;
         [Range(6, 22)] public float scoreItemSpacing = 8f;
 
 
