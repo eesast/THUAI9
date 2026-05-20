@@ -9,7 +9,7 @@ set "CHARACTER_NUM=5"
 set "GAME_SECONDS=600"
 set "WEB_PORT=18089"
 set "WS_PORT=18091"
-set "WEBGL_ROOT=%ROOT%interface\Unity-WebGL"
+set "WEBGL_ROOT=%ROOT%interface\Unity\Unity-WebGL"
 set "BRIDGE_PROJECT=%WEBGL_ROOT%\tools\LiveWebSocketBridge\LiveWebSocketBridge.csproj"
 set "SERVER_LOG=%ROOT%logic\Server\logs\GameServer.log"
 if not defined THUAI9_SPECTATOR_WAIT_SECONDS set "THUAI9_SPECTATOR_WAIT_SECONDS=180"
@@ -30,7 +30,7 @@ if not exist "%ROOT%logic\ClientTest2\ClientTest2.csproj" (
 )
 
 if not exist "%WEBGL_ROOT%\live\index.html" (
-    echo [ERROR] WebGL Live build not found: interface\Unity-WebGL\live\index.html
+    echo [ERROR] WebGL Live build not found: interface\Unity\Unity-WebGL\live\index.html
     echo [HINT] Export Unity-Live WebGL before running this smoke script.
     exit /b 1
 )
@@ -99,7 +99,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [THUAI9] Starting WebGL static server on http://127.0.0.1:%WEB_PORT% from interface\Unity-WebGL ...
+echo [THUAI9] Starting WebGL static server on http://127.0.0.1:%WEB_PORT% from interface\Unity\Unity-WebGL ...
 start "THUAI9 WebGL HTTP" cmd /k "cd /d ""%WEBGL_ROOT%"" && %PYTHON_CMD% -m http.server %WEB_PORT% --bind 127.0.0.1"
 
 echo [THUAI9] Waiting for WebGL static server...
