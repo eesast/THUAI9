@@ -99,7 +99,7 @@ namespace THUAI9.Unity.UI
             hud.Label(
                 helpPanel,
                 "TrialHelpBody",
-                "这是仿 THUAI7 interface_local 的探索式试玩，不是正式 Server 判题器。\n\n" +
+                "" +
                 "基础交互：\n" +
                 "• 左键选中角色、工厂、资源点、算力中心或地图格。\n" +
                 "• 右键地图格移动当前角色；WASD / 方向键也可单格移动。\n" +
