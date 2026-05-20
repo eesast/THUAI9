@@ -127,7 +127,7 @@ echo [THUAI9] Starting WebGL static server on http://127.0.0.1:%WEB_PORT% from i
 start "THUAI9 WebGL HTTP" cmd /k "cd /d ""%WEBGL_ROOT%"" && %PYTHON_CMD% -m http.server %WEB_PORT% --bind 127.0.0.1"
 
 echo [THUAI9] Waiting for WebGL static server...
-powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $root = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:%WEB_PORT%/' -TimeoutSec 2; $live = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:%WEB_PORT%/live/index.html' -TimeoutSec 2; if($root.Content -match 'Directory listing for /' -or $root.Content -match '\.git|logic/|tasks/'){ exit 2 }; if($live.StatusCode -eq 200){ exit 0 } } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while((Get-Date) -lt $deadline){ try { $base = 'http://127.0.0.1:%WEB_PORT%'; $root = Invoke-WebRequest -UseBasicParsing ($base + '/') -TimeoutSec 2; $trial = Invoke-WebRequest -UseBasicParsing ($base + '/trial/') -TimeoutSec 2; $live = Invoke-WebRequest -UseBasicParsing ($base + '/live/') -TimeoutSec 2; $playback = Invoke-WebRequest -UseBasicParsing ($base + '/playback/') -TimeoutSec 2; if($root.Content -match 'Directory listing for /' -or $root.Content -match '\.git|logic/|tasks/'){ exit 2 }; if($trial.StatusCode -eq 200 -and $live.StatusCode -eq 200 -and $playback.StatusCode -eq 200){ exit 0 } } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
 if errorlevel 2 (
     echo [ERROR] WebGL static server is serving the repository root, not interface\Unity\Unity-WebGL.
     echo [HINT] The script already stopped old listeners; check the "THUAI9 WebGL HTTP" window and port %WEB_PORT%.
