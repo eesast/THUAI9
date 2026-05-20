@@ -35,7 +35,7 @@ namespace Server
                 using var response = await request.PostAsync(url, JsonContent.Create(new
                 {
                     status = state,
-                    scores = new int[] { scores[0], scores[1], scores[2], scores[3] },
+                    scores,
                     player_roles = player_role
                 }));
                 GameServerLogging.logger.LogInfo("Send to web successfully!");
@@ -61,6 +61,11 @@ namespace Server
 
                 // 解析 JSON 字符串
                 var result = JsonConvert.DeserializeObject<ContestResult>(jsonString);
+                if (result?.scores == null)
+                {
+                    GameServerLogging.logger.LogInfo("Error: Invalid ladder score response from web!");
+                    return new double[0];
+                }
                 return result.scores.Select(score => (double)score).ToArray();
             }
             catch (Exception e)
