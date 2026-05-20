@@ -23,7 +23,7 @@ namespace Preparation.Utility
         public const int CharacterRadius = 300;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
-        public const int MaxCharactersPerTeam = 6;          // 每队最大存活角色数
+        public const int MaxCharactersPerTeam = 3;          // 每队最大存活角色数
 
         public const int MaxRobust = 50;
         public const int MaxEfficiency = 10;
