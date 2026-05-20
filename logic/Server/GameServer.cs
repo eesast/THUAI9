@@ -33,7 +33,7 @@ namespace Server
         private readonly List<MessageOfNews> currentNews = [];
         private readonly SemaphoreSlim endGameSem = new(0);
         protected readonly Game game;
-        private readonly uint spectatorMinPlayerID = 2023;  
+        private readonly uint spectatorMinPlayerID = 2023;
         public int playerNum;
         public int TeamCount => options.TeamCount;
         // protected long[][] communicationToGameID; // 通信用的ID映射到游戏内的ID，0指向队伍1，1指向队伍2，通信中0为大本营，1-5为船
