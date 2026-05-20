@@ -94,7 +94,7 @@ namespace THUAI9.Unity.Live
         public int SubmittedFrameCount => FrameSourceHub.SubmittedFrameCount;
         public int DequeuedFrameCount => FrameSourceHub.DequeuedFrameCount;
         public int RenderedFrameCount => FrameSourceHub.RenderedFrameCount;
-private void Start()
+        private void Start()
         {
             if (autoConnectOnStart)
             {
@@ -168,7 +168,8 @@ private void Start()
             {
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
                 return;
-            }
+            }
+
             FrameSourceHub.Reset(FrameSourceHub.SourceKind.Live, BuildLiveSourceName(), statusText);
 
             _ = ConnectOnceAsync();
@@ -200,7 +201,8 @@ private void Start()
             if (!string.IsNullOrWhiteSpace(sourceName))
             {
                 externalLiveSourceName = sourceName.Trim();
-            }
+            }
+
             ReleaseConnectionResources(waitForShutdown: false);
 
             liveRequested = true;

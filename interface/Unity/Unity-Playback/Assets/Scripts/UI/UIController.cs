@@ -125,8 +125,8 @@ namespace THUAI9.Unity.UI
                 : new Color(0.88f, 0.94f, 0.98f, 1f);
         }
 
-        private void OnSliderChanged(float value){ if (!suppressSlider && playbackController != null && playbackController.PlaybackLoaded) playbackController.SeekToFrame(Mathf.RoundToInt(value)); }
-        private static void ClearSelection(){ if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null); }
+        private void OnSliderChanged(float value) { if (!suppressSlider && playbackController != null && playbackController.PlaybackLoaded) playbackController.SeekToFrame(Mathf.RoundToInt(value)); }
+        private static void ClearSelection() { if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null); }
         private static int FindNearestSpeedIndex(float speed)
         {
             int best = 0;
