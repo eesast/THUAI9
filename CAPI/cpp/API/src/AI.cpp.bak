@@ -1,0 +1,538 @@
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "AI.h"
+#include "constants.h"
+
+extern const bool asynchronous = false;
+
+extern const std::array<THUAI9::CharacterType, 3> CharacterTypeDict = {
+    THUAI9::CharacterType::Robot,
+    THUAI9::CharacterType::Drone,
+    THUAI9::CharacterType::AutonomousCar,
+};
+
+namespace
+{
+    constexpr int32_t kGridPerCell = 1000;
+    constexpr int32_t kCellCenter = 500;
+    constexpr int64_t kMoveTimeMs = 200;
+    constexpr int32_t kCenterTolerance = 10;
+    using Cell = std::pair<int32_t, int32_t>;
+
+    constexpr int32_t kPlayerIdRobot = 1;
+
+    constexpr std::array<Cell, 4> kDirs = {{
+        {1, 0},
+        {-1, 0},
+        {0, 1},
+        {0, -1},
+    }};
+
+    struct CellHash
+    {
+        size_t operator()(const Cell& c) const noexcept
+        {
+            return static_cast<size_t>(c.first) * 137 + static_cast<size_t>(c.second);
+        }
+    };
+    using CellSet = std::unordered_set<Cell, CellHash>;
+
+    enum class Phase
+    {
+        SeekFactory,
+        ToFactory,
+        AttackFactory,
+    };
+
+    struct PathTarget
+    {
+        Cell factory{-1, -1};
+        Cell approach{-1, -1};
+        std::vector<Cell> path;
+    };
+
+    struct CharState
+    {
+        Phase phase = Phase::SeekFactory;
+        PathTarget target{};
+        size_t pathIndex = 1;
+    };
+
+    struct TeamState
+    {
+        bool robotBuilt = false;
+    };
+
+    std::map<int64_t, CharState> g_charStates;
+    std::map<int64_t, TeamState> g_teamStates;
+
+    [[nodiscard]] int32_t CellToGrid(int32_t cell) noexcept
+    {
+        return cell * kGridPerCell + kCellCenter;
+    }
+
+    [[nodiscard]] int32_t GridToCell(int32_t grid) noexcept
+    {
+        return grid / kGridPerCell;
+    }
+
+    [[nodiscard]] std::string CellText(Cell c)
+    {
+        return "(" + std::to_string(c.first) + "," + std::to_string(c.second) + ")";
+    }
+
+    [[nodiscard]] bool InBounds(const std::vector<std::vector<THUAI9::PlaceType>>& map, int32_t x, int32_t y)
+    {
+        return !map.empty() && !map.front().empty() &&
+               x >= 0 && y >= 0 &&
+               x < static_cast<int32_t>(map.size()) &&
+               y < static_cast<int32_t>(map.front().size());
+    }
+
+    [[nodiscard]] bool Walkable(THUAI9::PlaceType pt)
+    {
+        return pt == THUAI9::PlaceType::Space || pt == THUAI9::PlaceType::Bush;
+    }
+
+    [[nodiscard]] bool NearCellCenter(const THUAI9::Character& self)
+    {
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+        return std::abs(self.x - CellToGrid(cur.first)) <= kCenterTolerance &&
+               std::abs(self.y - CellToGrid(cur.second)) <= kCenterTolerance;
+    }
+
+    [[nodiscard]] bool IsBusy(const THUAI9::Character& self)
+    {
+        auto s = self.characterActiveState;
+        return s == THUAI9::CharacterState::Moving ||
+               s == THUAI9::CharacterState::KnockedBack ||
+               s == THUAI9::CharacterState::Trading ||
+               s == THUAI9::CharacterState::Attacking ||
+               s == THUAI9::CharacterState::Harvesting ||
+               s == THUAI9::CharacterState::Ocuppying;
+    }
+
+    [[nodiscard]] CellSet GetTeammateCells(ICharacterAPI& api, const THUAI9::Character& self)
+    {
+        CellSet occupied;
+        auto chars = api.GetCharacters();
+        for (const auto& ch : chars)
+        {
+            if (!ch || ch->playerID == self.playerID)
+                continue;
+            if (ch->characterActiveState == THUAI9::CharacterState::Deceased)
+                continue;
+            occupied.insert({GridToCell(ch->x), GridToCell(ch->y)});
+        }
+        return occupied;
+    }
+
+    bool MoveToCellCenter(ICharacterAPI& api, const THUAI9::Character& self)
+    {
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+        const int32_t centerX = CellToGrid(cur.first);
+        const int32_t centerY = CellToGrid(cur.second);
+
+        if (std::abs(self.x - centerX) <= kCenterTolerance &&
+            std::abs(self.y - centerY) <= kCenterTolerance)
+            return true;
+
+        const int32_t dx = centerX - self.x;
+        const int32_t dy = centerY - self.y;
+        const int64_t moveMs = std::max<int64_t>(1, (std::max(std::abs(dx), std::abs(dy)) + 4) / 5);
+
+        if (std::abs(dx) >= std::abs(dy))
+        {
+            if (dx > 0)
+                (void)api.MoveDown(moveMs).get();
+            else
+                (void)api.MoveUp(moveMs).get();
+        }
+        else
+        {
+            if (dy > 0)
+                (void)api.MoveRight(moveMs).get();
+            else
+                (void)api.MoveLeft(moveMs).get();
+        }
+        return false;
+    }
+
+    [[nodiscard]] std::vector<Cell> Bfs(
+        const std::vector<std::vector<THUAI9::PlaceType>>& map,
+        Cell start,
+        Cell target,
+        const CellSet& blocked
+    )
+    {
+        if (!InBounds(map, start.first, start.second) ||
+            !InBounds(map, target.first, target.second))
+            return {};
+        if (start == target)
+            return {start};
+
+        const int32_t cols = static_cast<int32_t>(map.size());
+        const int32_t rows = static_cast<int32_t>(map.front().size());
+
+        std::vector<std::vector<char>> vis(cols, std::vector<char>(rows, 0));
+        std::vector<std::vector<Cell>> pre(cols, std::vector<Cell>(rows, Cell{-1, -1}));
+        std::queue<Cell> q;
+
+        vis[start.first][start.second] = 1;
+        q.push(start);
+
+        bool found = false;
+        while (!q.empty())
+        {
+            auto [x, y] = q.front();
+            q.pop();
+
+            if (x == target.first && y == target.second)
+            {
+                found = true;
+                break;
+            }
+
+            for (const auto& [dx, dy] : kDirs)
+            {
+                const int32_t nx = x + dx;
+                const int32_t ny = y + dy;
+                if (!InBounds(map, nx, ny))
+                    continue;
+                if (vis[nx][ny])
+                    continue;
+                bool isTarget = (nx == target.first && ny == target.second);
+                if (!isTarget)
+                {
+                    if (!Walkable(map[nx][ny]))
+                        continue;
+                    if (blocked.count({nx, ny}))
+                        continue;
+                }
+
+                vis[nx][ny] = 1;
+                pre[nx][ny] = {x, y};
+                q.push({nx, ny});
+            }
+        }
+
+        if (!found)
+            return {};
+
+        std::vector<Cell> path;
+        for (Cell cur = target; cur != start; cur = pre[cur.first][cur.second])
+            path.push_back(cur);
+        path.push_back(start);
+        std::reverse(path.begin(), path.end());
+        return path;
+    }
+
+    [[nodiscard]] std::optional<PathTarget> FindPathToCell(
+        ICharacterAPI& api, const THUAI9::Character& self, Cell targetCell
+    )
+    {
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+
+        const Cell start{GridToCell(self.x), GridToCell(self.y)};
+        auto blocked = GetTeammateCells(api, self);
+        std::optional<PathTarget> best;
+
+        for (const auto& [dx, dy] : kDirs)
+        {
+            const int32_t nx = targetCell.first + dx;
+            const int32_t ny = targetCell.second + dy;
+            if (!InBounds(map, nx, ny))
+                continue;
+            if (!Walkable(map[nx][ny]))
+                continue;
+            if (blocked.count({nx, ny}) && Cell{nx, ny} != start)
+                continue;
+
+            auto path = Bfs(map, start, {nx, ny}, blocked);
+            if (path.empty())
+                continue;
+            if (!best.has_value() || path.size() < best->path.size())
+                best = PathTarget{targetCell, {nx, ny}, std::move(path)};
+        }
+        return best;
+    }
+
+    [[nodiscard]] bool MoveAlongPath(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (IsBusy(self))
+            return false;
+
+        if (s.target.path.empty() || s.pathIndex >= s.target.path.size())
+            return true;
+
+        if (!NearCellCenter(self))
+            return MoveToCellCenter(api, self);
+
+        const Cell cur{GridToCell(self.x), GridToCell(self.y)};
+
+        if (s.pathIndex < s.target.path.size())
+        {
+            auto nextCell = s.target.path[s.pathIndex];
+            auto teammates = api.GetCharacters();
+            for (const auto& ch : teammates)
+            {
+                if (!ch || ch->playerID == self.playerID)
+                    continue;
+                if (ch->characterActiveState == THUAI9::CharacterState::Deceased)
+                    continue;
+                Cell tc{GridToCell(ch->x), GridToCell(ch->y)};
+                if (tc == nextCell)
+                {
+                    s.phase = Phase::SeekFactory;
+                    s.target = {};
+                    return false;
+                }
+            }
+        }
+
+        while (s.pathIndex < s.target.path.size() && s.target.path[s.pathIndex] == cur)
+            ++s.pathIndex;
+        if (s.pathIndex >= s.target.path.size())
+            return true;
+
+        const auto [dx, dy] = Cell{
+            s.target.path[s.pathIndex].first - cur.first,
+            s.target.path[s.pathIndex].second - cur.second,
+        };
+        if (std::abs(dx) + std::abs(dy) != 1)
+        {
+            s.phase = Phase::SeekFactory;
+            s.target = {};
+            return false;
+        }
+
+        size_t runLen = 1;
+        while (s.pathIndex + runLen < s.target.path.size())
+        {
+            const auto next = s.target.path[s.pathIndex + runLen];
+            const auto prev = s.target.path[s.pathIndex + runLen - 1];
+            if (next.first - prev.first != dx || next.second - prev.second != dy)
+                break;
+            ++runLen;
+        }
+
+        const int64_t moveMs = static_cast<int64_t>(runLen) * kMoveTimeMs;
+        if (dx == 1)
+            (void)api.MoveDown(moveMs).get();
+        else if (dx == -1)
+            (void)api.MoveUp(moveMs).get();
+        else if (dy == 1)
+            (void)api.MoveRight(moveMs).get();
+        else if (dy == -1)
+            (void)api.MoveLeft(moveMs).get();
+        s.pathIndex += runLen;
+        return false;
+    }
+
+    // ============================================================
+    //  Find nearest enemy factory
+    // ============================================================
+    [[nodiscard]] std::optional<PathTarget> FindNearestEnemyFactory(
+        ICharacterAPI& api, const THUAI9::Character& self
+    )
+    {
+        const auto map = api.GetFullMap();
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
+
+        const Cell start{GridToCell(self.x), GridToCell(self.y)};
+        auto blocked = GetTeammateCells(api, self);
+        std::optional<PathTarget> best;
+
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::Factory)
+                    continue;
+                auto fac = api.GetFactoryState(x, y);
+                if (!fac.has_value())
+                    continue;
+                if (fac->teamID == self.teamID)
+                    continue;
+                if (fac->hp <= 0)
+                    continue;
+
+                auto pt = FindPathToCell(api, self, {x, y});
+                if (!pt.has_value())
+                    continue;
+                if (!best.has_value() || pt->path.size() < best->path.size())
+                    best = std::move(pt);
+            }
+        }
+        return best;
+    }
+
+    // ============================================================
+    //  FactoryAttacker AI — Robot
+    //  find enemy factory → move to it → attack → repeat
+    // ============================================================
+    void FactoryAttackerAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        const Cell selfCell{GridToCell(self.x), GridToCell(self.y)};
+        api.Print(
+            "robot frame=" + std::to_string(api.GetFrameCount()) +
+            " phase=" + std::to_string(static_cast<int>(s.phase)) +
+            " cell=" + CellText(selfCell)
+        );
+
+        // --- SeekFactory: find nearest enemy factory ---
+        if (s.phase == Phase::SeekFactory)
+        {
+            auto target = FindNearestEnemyFactory(api, self);
+            if (!target.has_value())
+            {
+                api.Print("robot: no enemy factory found");
+                return;
+            }
+            s.target = std::move(*target);
+            s.pathIndex = 1;
+            s.phase = Phase::ToFactory;
+            api.Print("robot: -> enemy factory " + CellText(s.target.factory));
+            return;
+        }
+
+        // --- ToFactory: walk to enemy factory ---
+        if (s.phase == Phase::ToFactory)
+        {
+            auto fac = api.GetFactoryState(s.target.factory.first, s.target.factory.second);
+            if (!fac.has_value() || fac->teamID == self.teamID || fac->hp <= 0)
+            {
+                s.phase = Phase::SeekFactory;
+                s.target = {};
+                return;
+            }
+
+            if (!MoveAlongPath(api, self, s))
+                return;
+
+            // Check adjacency to factory
+            if (std::abs(selfCell.first - s.target.factory.first) <= 1 &&
+                std::abs(selfCell.second - s.target.factory.second) <= 1)
+            {
+                s.phase = Phase::AttackFactory;
+                return;
+            }
+
+            s.phase = Phase::SeekFactory;
+            s.target = {};
+            return;
+        }
+
+        // --- AttackFactory: attack the enemy factory ---
+        if (s.phase == Phase::AttackFactory)
+        {
+            auto fac = api.GetFactoryState(s.target.factory.first, s.target.factory.second);
+            if (!fac.has_value() || fac->teamID == self.teamID || fac->hp <= 0)
+            {
+                api.Print("robot: factory destroyed or lost");
+                s.phase = Phase::SeekFactory;
+                s.target = {};
+                return;
+            }
+
+            // Verify still adjacent
+            if (std::abs(selfCell.first - s.target.factory.first) > 1 ||
+                std::abs(selfCell.second - s.target.factory.second) > 1)
+            {
+                s.phase = Phase::SeekFactory;
+                s.target = {};
+                return;
+            }
+
+            // Must be precisely at cell center for attack range to reach factory
+            if (!NearCellCenter(self))
+            {
+                MoveToCellCenter(api, self);
+                return;
+            }
+
+            if (IsBusy(self))
+                return;
+
+            api.Print("robot: attacking factory " + CellText(s.target.factory) +
+                      " hp=" + std::to_string(fac->hp));
+            (void)api.Common_Attack(0).get();
+            return;
+        }
+    }
+
+    // ============================================================
+    //  Character dispatcher
+    // ============================================================
+    void CharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        FactoryAttackerAI(api, self, s);
+    }
+
+    // ============================================================
+    //  Team AI — build 1 Robot, then keep attacking enemy factories
+    // ============================================================
+    void TeamAI(ITeamAPI& api, const THUAI9::Team& team, TeamState& s)
+    {
+        api.Print(
+            "team frame=" + std::to_string(api.GetFrameCount()) +
+            " robot=" + std::string(s.robotBuilt ? "yes" : "no") +
+            " compute=" + std::to_string(team.computePower) +
+            " material=" + std::to_string(team.material)
+        );
+
+        // Build one Robot (50 compute) for attacking enemy factories
+        if (!s.robotBuilt)
+        {
+            if (static_cast<int32_t>(team.computePower) >= 50)
+            {
+                api.Print("build Robot");
+                if (api.BuildCharacter(THUAI9::CharacterType::Robot, kPlayerIdRobot).get())
+                    s.robotBuilt = true;
+            }
+            else
+            {
+                api.Print("waiting for compute to build Robot (have " +
+                          std::to_string(team.computePower) + ", need 50)");
+            }
+            return;
+        }
+    }
+
+}  // namespace
+
+// ================================================================
+//  Entry points
+// ================================================================
+
+void AI::play(ICharacterAPI& api)
+{
+    auto self = api.GetSelfInfo();
+    if (!self)
+        return;
+    auto& s = g_charStates[self->playerID];
+    CharAI(api, *self, s);
+}
+
+void AI::play(ITeamAPI& api)
+{
+    auto team = api.GetSelfInfo();
+    if (!team)
+        return;
+    auto& s = g_teamStates[team->teamID];
+    TeamAI(api, *team, s);
+}

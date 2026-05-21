@@ -299,7 +299,7 @@ namespace Gaming
 
                 long damage = (long)(character.AttackPower - gameobj.Robust);
                 if (damage <= 0) damage = 1;
-                long actualSub = gameobj.HP.SubRChange(damage);
+                long actualSub = gameobj.HP.SubPositiveVRChange(damage);
                 game.AddTeamScore((long)character.TeamID.Get(), actualSub * GameData.FactoryDamageScoreMultiplier);
                 gameobj.Interupt();
                 new Thread(() =>
