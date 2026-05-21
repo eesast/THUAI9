@@ -30,8 +30,9 @@ namespace Gaming
                     case TechType.INCREASE_ROBUST:
                         key = "Robust"; cost = GameData.TechCostRobust; break;
                     case TechType.INCREASE_ATTACK_POWER:
-                    case TechType.INCREASE_ATTACK_SIZE:
                         key = "Warrior"; cost = GameData.TechCostWarrior; break;
+                    case TechType.INCREASE_ATTACK_SIZE:
+                        key = "AttackSize"; cost = GameData.TechCostAttackSize; break;
                     case TechType.INCREASE_MOVE_SPEED:
                         key = "MoveSpeed"; cost = GameData.TechCostMoveSpeed; break;
                     case TechType.INCREASE_CARRY_CAPACITY:
@@ -110,6 +111,14 @@ namespace Gaming
                                 ch.AttackPower.AddPositiveV(extra);
                                 ch.AttackPower.SetMaxV(ch.AttackPower + extra);
                             }
+                        }
+                        break;
+                    case "AttackSize":
+                        foreach (var ch in game.characterManager.GetTeamCharacters(teamId))
+                        {
+                            long newSize = ch.AttackSize.GetMaxV() + GameData.TechAttackSizeAddPerLevel * (newLevel - curLevel);
+                            ch.AttackSize.SetPositiveMaxV(newSize);
+                            ch.AttackSize.AddPositiveV(GameData.TechAttackSizeAddPerLevel * (newLevel - curLevel));
                         }
                         break;
                     case "MoveSpeed":

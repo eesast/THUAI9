@@ -23,7 +23,7 @@ namespace Preparation.Utility
         public const int CharacterRadius = 300;         // 角色半径
         public const int AdjustLength = 3;                // 碰撞调整距离
 
-        public const int MaxCharactersPerTeam = 6;          // 每队最大存活角色数
+        public const int MaxCharactersPerTeam = 3;          // 每队最大存活角色数
 
         public const int MaxRobust = 50;
         public const int MaxEfficiency = 10;
@@ -122,6 +122,7 @@ namespace Preparation.Utility
         public const int TechMaxLevel = 2;
         public const int TechCostRobust = 30;
         public const int TechCostWarrior = 60;
+        public const int TechCostAttackSize = 60;
         public const int TechCostMoveSpeed = 40;
         public const int TechCostCarry = 50;
         public const int TechCostEfficiency = 40;
@@ -134,6 +135,7 @@ namespace Preparation.Utility
         public const int TechRobustAddPerLevel = 5;
         public const int TechEfficiencyAddPerLevel = 2;
         public const double TechWarriorAtkMultiplierPerLevel = 0.3;
+        public const int TechAttackSizeAddPerLevel = 500;
         public const int TechMoveSpeedAddPerLevel = 200;
         public const int TechCarryAddPerLevel = 10;
         public const int TechStorageAddPerLevel = 50;
