@@ -45,11 +45,13 @@ fi
 : "${PORT:=8888}"
 : "${TEAM_COUNT:=2}"
 : "${CHARACTER_NUM:=6}"
-: "${GAME_TIME:=600}"
+: "${GAME_TIME:=10}"
 : "${EXPOSED:=1}"
 : "${TEAM_SEQ_ID:=0}"
 : "${TEAM_LABEL:=TeamA}"
 : "${CONNECT_IP:=172.17.0.1}"
+
+GAME_TIME=$((GAME_TIME * 60))
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  SERVER
