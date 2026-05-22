@@ -34,7 +34,7 @@ namespace Gaming
             tradeManager = new(this, gameMap);
             uplevelManager = new(this);
             teams = new ConcurrentDictionary<long, TeamState>();
-            InitTeams();
+            InitTeams(numOfTeam);
 
             tradeManager = new TradeManager(this, gameMap);
             uplevelManager = new UplevelManager(this);
