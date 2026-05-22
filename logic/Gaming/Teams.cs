@@ -77,23 +77,28 @@ namespace Gaming
             }
         }
 
-        private void InitTeams()
+        private void InitTeams(int numOfTeam)
         {
-            // 工厂位置应该对应地图中 PlaceType.FACTORY 的位置
-            // MapInfo 中 defaultMap 的工厂位置是 [3,3], [3,46], [46,3], [46,46]
+            if (numOfTeam < 2 || numOfTeam > 4)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(numOfTeam),
+                    numOfTeam,
+                    "Team count must be 2, 3, or 4."
+                );
+            }
+
+            // Team layout order:
+            // Team 1: top-left, Team 2: bottom-right,
+            // Team 3: bottom-left, Team 4: top-right.
             var corners = new (int cx, int cy)[]
             {
-                (3, 3),      // 角0 — 左下
-                (3, 46),     // 角1 — 左上
-                (46, 3),     // 角2 — 右下
-                (46, 46)     // 角3 — 右上
+                (3, 3),
+                (46, 46),
+                (3, 46),
+                (46, 3),
             };
-            int[] selected = numOfTeam switch
-            {
-                2 => new[] { 0, 3 },                  // 对角线
-                3 => new[] { 0, 1, 3 },                // 三角形
-                _ => Enumerable.Range(0, numOfTeam).ToArray()
-            };
+
             for (int i = 0; i < numOfTeam; i++)
             {
                 long teamId = i + 1;
