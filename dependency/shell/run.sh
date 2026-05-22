@@ -170,7 +170,7 @@ elif [ "$TERMINAL" = "CLIENT" ]; then
 
             command="nice -n 0 python3 ${cp_dir}/PyAPI/main.py \
                 -I $CONNECT_IP -P $PORT \
-                -t $team_id -s $TEAM_SEQ_ID \
+                -t $team_id \
                 -p $player_idx"
 
             retry_command "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
@@ -180,7 +180,7 @@ elif [ "$TERMINAL" = "CLIENT" ]; then
 
             command="nice -n 0 ./$code_name \
                 -I $CONNECT_IP -P $PORT \
-                -t $team_id -s $TEAM_SEQ_ID \
+                -t $team_id \
                 -p $player_idx"
 
             retry_command "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
