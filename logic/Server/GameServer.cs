@@ -403,6 +403,7 @@ namespace Server
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
                              ? options.ResultFileName
                              : options.ResultFileName + ".json");
+            GameServerLogging.logger.LogInfo($"OnGameEnd enters with mode={options.Mode}");
             int[] rawMatchScores = GetScore();
             double[] competitionScores = rawMatchScores.Select(x => (double)x).ToArray();
             if (options.Mode == 2)
@@ -416,9 +417,8 @@ namespace Server
                 }
                 else
                     rawMatchScores = ladderDeltas.Select(x => (int)x).ToArray();
-                endGameSem.Release();
-                Thread.Sleep(1);
                 SendGameResult(rawMatchScores, gameCrashed);
+                endGameSem.Release();
             }
             else if (options.Mode == 1)
             {
@@ -432,7 +432,6 @@ namespace Server
                     s = [2, 0];
                 */ // 得分计算方式待定
                 endGameSem.Release();
-                Thread.Sleep(1);
                 //SendGameResult(s);
             }
             else
