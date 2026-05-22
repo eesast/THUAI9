@@ -5,6 +5,7 @@ using Preparation.Utility.Value.SafeValue.Atomic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Gaming
@@ -82,15 +83,21 @@ namespace Gaming
             // MapInfo 中 defaultMap 的工厂位置是 [3,3], [3,46], [46,3], [46,46]
             var corners = new (int cx, int cy)[]
             {
-                (3, 3),      // Team 1 工厂位置
-                (3, 46),     // Team 2 工厂位置
-                (46, 3),     // Team 3 工厂位置
-                (46, 46)     // Team 4 工厂位置
+                (3, 3),      // 角0 — 左下
+                (3, 46),     // 角1 — 左上
+                (46, 3),     // 角2 — 右下
+                (46, 46)     // 角3 — 右上
             };
-            for (int i = 0; i < 4; i++)
+            int[] selected = numOfTeam switch
+            {
+                2 => new[] { 0, 3 },                  // 对角线
+                3 => new[] { 0, 1, 3 },                // 三角形
+                _ => Enumerable.Range(0, numOfTeam).ToArray()
+            };
+            for (int i = 0; i < numOfTeam; i++)
             {
                 long teamId = i + 1;
-                var (cx, cy) = corners[i];
+                var (cx, cy) = corners[selected[i]];
                 XY pos = GameData.GetCellCenterPos(cx, cy);
                 var fac = new Factory(pos);
                 fac.TeamID.SetROri(teamId);
