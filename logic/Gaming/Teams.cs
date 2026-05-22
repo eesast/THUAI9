@@ -5,6 +5,7 @@ using Preparation.Utility.Value.SafeValue.Atomic;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace Gaming
@@ -101,7 +102,7 @@ namespace Gaming
             for (int i = 0; i < numOfTeam; i++)
             {
                 long teamId = i + 1;
-                var (cx, cy) = corners[i];
+                var (cx, cy) = corners[selected[i]];
                 XY pos = GameData.GetCellCenterPos(cx, cy);
                 var fac = new Factory(pos);
                 fac.TeamID.SetROri(teamId);
