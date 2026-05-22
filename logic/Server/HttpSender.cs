@@ -38,8 +38,18 @@ namespace Server
                     scores,
                     player_roles = player_role
                 }));
-                GameServerLogging.logger.LogInfo("Send to web successfully!");
-                GameServerLogging.logger.LogInfo($"Web response: {await response.Content.ReadAsStringAsync()}");
+                var body = await response.Content.ReadAsStringAsync();
+                if (response.IsSuccessStatusCode)
+                {
+                    GameServerLogging.logger.LogInfo("Send to web successfully!");
+                    GameServerLogging.logger.LogInfo($"Web response: {body}");
+                }
+                else
+                {
+                    GameServerLogging.logger.LogWarning(
+                        $"Send to web failed with status {(int)response.StatusCode} {response.StatusCode}. Response: {body}"
+                    );
+                }
             }
             catch (Exception e)
             {
