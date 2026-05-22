@@ -26,8 +26,11 @@ namespace Gaming
     {
         private readonly Map gameMap;
         public Map GameMap => gameMap;
+        private readonly int numOfTeam;
+        public int NumOfTeam => numOfTeam;
         public Game(MapStruct mapResource, int numOfTeam)
         {
+            this.numOfTeam = numOfTeam;
             gameMap = new(mapResource);
             characterManager = new(this, gameMap);
             actionManager = new(this, gameMap, characterManager);
