@@ -51,34 +51,6 @@ fi
 : "${TEAM_LABEL:=TeamA}"
 : "${CONNECT_IP:=172.17.0.1}"
 
-# ── Retry helper ───────────────────────────────────────────────────────────
-function retry_command {
-    local command="$1"
-    local max_attempts=5
-    local attempt_num=1
-    local sleep_seconds=10
-
-    while [ $attempt_num -le $max_attempts ]; do
-        echo "Attempt $attempt_num / $max_attempts to run command: $command"
-
-        eval $command &
-        local pid=$!
-
-        sleep $sleep_seconds
-
-        if kill -0 $pid 2>/dev/null; then
-            echo "Failed to connect to server. Retrying..."
-            ((attempt_num++))
-        else
-            echo "Connected to server successfully."
-            return 0
-        fi
-    done
-
-    echo "Failed to connect to server after $max_attempts attempts."
-    return 1
-}
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  SERVER
 # ═══════════════════════════════════════════════════════════════════════════
@@ -173,7 +145,8 @@ elif [ "$TERMINAL" = "CLIENT" ]; then
                 -t $team_id \
                 -p $player_idx"
 
-            retry_command "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
+            echo "Launching: $command"
+            eval "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
 
         elif [ -f "./$code_name" ]; then
             echo "Found ./$code_name"
@@ -183,7 +156,8 @@ elif [ "$TERMINAL" = "CLIENT" ]; then
                 -t $team_id \
                 -p $player_idx"
 
-            retry_command "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
+            echo "Launching: $command"
+            eval "$command" > "$output_dir/team${TEAM_SEQ_ID}-$code_name.log" 2>&1 &
 
         else
             break
