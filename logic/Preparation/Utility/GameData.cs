@@ -152,7 +152,7 @@ namespace Preparation.Utility
         public const int BarrierRadius = NumOfPosGridPerCell / 2;
 
         public static string API_key = "Mzg2MDU0MmEtNjcxZS00NjVkLTkxY2QtYTI3NzdjY2NhODU4";
-        public static string API_url = "http://eesast.com/llm/chat";
+        public static string API_url = "https://api.eesast.com/llm/chat";
         public static string ModelName = "deepseek-v4-pro";
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;
