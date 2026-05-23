@@ -187,6 +187,23 @@ bool Communication::UplevelTech(int64_t teamID, THUAI9::TechType techType)
     return status.ok() && result.act_success();
 }
 
+std::string Communication::AskAI(int64_t teamID, int64_t currentGameTime, const std::string& prompt, const std::string& apiKey)
+{
+    if (!ConsumeQuota(mtxLimit, counter, limit))
+        return {};
+
+    protobuf::StrategicAIResponse reply;
+    ClientContext context;
+    protobuf::StrategicAIRequest request;
+    request.set_team_id(teamID);
+    request.set_current_game_time(currentGameTime);
+    request.set_prompt(apiKey + "||" + prompt);
+    auto status = THUAI9Stub->AskAI(&context, request, &reply);
+    if (status.ok() && reply.act_success())
+        return reply.answer();
+    return {};
+}
+
 bool Communication::TryConnection(int32_t playerID, int32_t teamID)
 {
     protobuf::BoolRes reply;
