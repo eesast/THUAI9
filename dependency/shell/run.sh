@@ -44,7 +44,7 @@ fi
 # ── Defaults ───────────────────────────────────────────────────────────────
 : "${PORT:=8888}"
 : "${TEAM_COUNT:=2}"
-: "${CHARACTER_NUM:=6}"
+: "${CHARACTER_NUM:=3}"
 : "${GAME_TIME:=10}"
 : "${EXPOSED:=1}"
 : "${TEAM_SEQ_ID:=0}"

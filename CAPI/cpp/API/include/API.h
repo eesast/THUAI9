@@ -75,6 +75,7 @@ public:
     virtual bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t playerID) = 0;
     virtual bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) = 0;
     virtual bool UplevelTech(THUAI9::TechType techType) = 0;
+    virtual std::string AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey) = 0;
 };
 
 class IAPI
