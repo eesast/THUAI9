@@ -280,6 +280,11 @@ bool Logic::UplevelTech(THUAI9::TechType techType)
     return pComm->UplevelTech(teamID, techType);
 }
 
+std::string Logic::AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey)
+{
+    return pComm->AskAI(teamID, currentGameTime, prompt, apiKey);
+}
+
 bool Logic::TryConnection()
 {
     return pComm->TryConnection(playerID, teamID);
