@@ -63,6 +63,12 @@ extern CharacterMsgDefaultTypeInternal _CharacterMsg_default_instance_;
 class CreateCharacterMsg;
 struct CreateCharacterMsgDefaultTypeInternal;
 extern CreateCharacterMsgDefaultTypeInternal _CreateCharacterMsg_default_instance_;
+class EventStatusRequest;
+struct EventStatusRequestDefaultTypeInternal;
+extern EventStatusRequestDefaultTypeInternal _EventStatusRequest_default_instance_;
+class EventStatusResponse;
+struct EventStatusResponseDefaultTypeInternal;
+extern EventStatusResponseDefaultTypeInternal _EventStatusResponse_default_instance_;
 class IDMsg;
 struct IDMsgDefaultTypeInternal;
 extern IDMsgDefaultTypeInternal _IDMsg_default_instance_;
@@ -81,9 +87,6 @@ extern OccupyMsgDefaultTypeInternal _OccupyMsg_default_instance_;
 class ProduceGoodsMsg;
 struct ProduceGoodsMsgDefaultTypeInternal;
 extern ProduceGoodsMsgDefaultTypeInternal _ProduceGoodsMsg_default_instance_;
-class ProductionSuggestion;
-struct ProductionSuggestionDefaultTypeInternal;
-extern ProductionSuggestionDefaultTypeInternal _ProductionSuggestion_default_instance_;
 class RecoverMsg;
 struct RecoverMsgDefaultTypeInternal;
 extern RecoverMsgDefaultTypeInternal _RecoverMsg_default_instance_;
@@ -102,9 +105,6 @@ extern StrategicAIRequestDefaultTypeInternal _StrategicAIRequest_default_instanc
 class StrategicAIResponse;
 struct StrategicAIResponseDefaultTypeInternal;
 extern StrategicAIResponseDefaultTypeInternal _StrategicAIResponse_default_instance_;
-class TaskSuggestion;
-struct TaskSuggestionDefaultTypeInternal;
-extern TaskSuggestionDefaultTypeInternal _TaskSuggestion_default_instance_;
 class TradeMsg;
 struct TradeMsgDefaultTypeInternal;
 extern TradeMsgDefaultTypeInternal _TradeMsg_default_instance_;
@@ -564,31 +564,31 @@ class TradeMsg final : public ::google::protobuf::Message
 };
 // -------------------------------------------------------------------
 
-class TaskSuggestion final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:protobuf.TaskSuggestion) */ {
+class StrategicAIResponse final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:protobuf.StrategicAIResponse) */ {
  public:
-  inline TaskSuggestion() : TaskSuggestion(nullptr) {}
-  ~TaskSuggestion() PROTOBUF_FINAL;
+  inline StrategicAIResponse() : StrategicAIResponse(nullptr) {}
+  ~StrategicAIResponse() PROTOBUF_FINAL;
 
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-  void operator delete(TaskSuggestion* msg, std::destroying_delete_t) {
+  void operator delete(StrategicAIResponse* msg, std::destroying_delete_t) {
     SharedDtor(*msg);
-    ::google::protobuf::internal::SizedDelete(msg, sizeof(TaskSuggestion));
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(StrategicAIResponse));
   }
 #endif
 
   template <typename = void>
-  explicit PROTOBUF_CONSTEXPR TaskSuggestion(
+  explicit PROTOBUF_CONSTEXPR StrategicAIResponse(
       ::google::protobuf::internal::ConstantInitialized);
 
-  inline TaskSuggestion(const TaskSuggestion& from) : TaskSuggestion(nullptr, from) {}
-  inline TaskSuggestion(TaskSuggestion&& from) noexcept
-      : TaskSuggestion(nullptr, std::move(from)) {}
-  inline TaskSuggestion& operator=(const TaskSuggestion& from) {
+  inline StrategicAIResponse(const StrategicAIResponse& from) : StrategicAIResponse(nullptr, from) {}
+  inline StrategicAIResponse(StrategicAIResponse&& from) noexcept
+      : StrategicAIResponse(nullptr, std::move(from)) {}
+  inline StrategicAIResponse& operator=(const StrategicAIResponse& from) {
     CopyFrom(from);
     return *this;
   }
-  inline TaskSuggestion& operator=(TaskSuggestion&& from) noexcept {
+  inline StrategicAIResponse& operator=(StrategicAIResponse&& from) noexcept {
     if (this == &from) return *this;
     if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
       InternalSwap(&from);
@@ -616,16 +616,16 @@ class TaskSuggestion final : public ::google::protobuf::Message
   static const ::google::protobuf::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const TaskSuggestion& default_instance() {
+  static const StrategicAIResponse& default_instance() {
     return *internal_default_instance();
   }
-  static inline const TaskSuggestion* internal_default_instance() {
-    return reinterpret_cast<const TaskSuggestion*>(
-        &_TaskSuggestion_default_instance_);
+  static inline const StrategicAIResponse* internal_default_instance() {
+    return reinterpret_cast<const StrategicAIResponse*>(
+        &_StrategicAIResponse_default_instance_);
   }
-  static constexpr int kIndexInFileMessages = 18;
-  friend void swap(TaskSuggestion& a, TaskSuggestion& b) { a.Swap(&b); }
-  inline void Swap(TaskSuggestion* other) {
+  static constexpr int kIndexInFileMessages = 16;
+  friend void swap(StrategicAIResponse& a, StrategicAIResponse& b) { a.Swap(&b); }
+  inline void Swap(StrategicAIResponse* other) {
     if (other == this) return;
     if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
       InternalSwap(other);
@@ -633,7 +633,7 @@ class TaskSuggestion final : public ::google::protobuf::Message
       ::google::protobuf::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(TaskSuggestion* other) {
+  void UnsafeArenaSwap(StrategicAIResponse* other) {
     if (other == this) return;
     ABSL_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -641,13 +641,13 @@ class TaskSuggestion final : public ::google::protobuf::Message
 
   // implements Message ----------------------------------------------
 
-  TaskSuggestion* New(::google::protobuf::Arena* arena = nullptr) const {
-    return ::google::protobuf::Message::DefaultConstruct<TaskSuggestion>(arena);
+  StrategicAIResponse* New(::google::protobuf::Arena* arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<StrategicAIResponse>(arena);
   }
   using ::google::protobuf::Message::CopyFrom;
-  void CopyFrom(const TaskSuggestion& from);
+  void CopyFrom(const StrategicAIResponse& from);
   using ::google::protobuf::Message::MergeFrom;
-  void MergeFrom(const TaskSuggestion& from) { TaskSuggestion::MergeImpl(*this, from); }
+  void MergeFrom(const StrategicAIResponse& from) { StrategicAIResponse::MergeImpl(*this, from); }
 
   private:
   static void MergeImpl(
@@ -684,18 +684,18 @@ class TaskSuggestion final : public ::google::protobuf::Message
   private:
   void SharedCtor(::google::protobuf::Arena* arena);
   static void SharedDtor(MessageLite& self);
-  void InternalSwap(TaskSuggestion* other);
+  void InternalSwap(StrategicAIResponse* other);
  private:
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "protobuf.TaskSuggestion"; }
+  static ::absl::string_view FullMessageName() { return "protobuf.StrategicAIResponse"; }
 
  protected:
-  explicit TaskSuggestion(::google::protobuf::Arena* arena);
-  TaskSuggestion(::google::protobuf::Arena* arena, const TaskSuggestion& from);
-  TaskSuggestion(::google::protobuf::Arena* arena, TaskSuggestion&& from) noexcept
-      : TaskSuggestion(arena) {
+  explicit StrategicAIResponse(::google::protobuf::Arena* arena);
+  StrategicAIResponse(::google::protobuf::Arena* arena, const StrategicAIResponse& from);
+  StrategicAIResponse(::google::protobuf::Arena* arena, StrategicAIResponse&& from) noexcept
+      : StrategicAIResponse(arena) {
     *this = ::std::move(from);
   }
   const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
@@ -710,69 +710,59 @@ class TaskSuggestion final : public ::google::protobuf::Message
 
   // accessors -------------------------------------------------------
   enum : int {
-    kCharacterIdFieldNumber = 2,
-    kActionTypeFieldNumber = 1,
-    kTargetXFieldNumber = 3,
-    kTargetIdFieldNumber = 5,
-    kTargetYFieldNumber = 4,
+    kAnswerFieldNumber = 2,
+    kExplanationFieldNumber = 3,
+    kActSuccessFieldNumber = 1,
   };
-  // int64 character_id = 2;
-  void clear_character_id() ;
-  ::int64_t character_id() const;
-  void set_character_id(::int64_t value);
+  // string answer = 2;
+  void clear_answer() ;
+  const std::string& answer() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_answer(Arg_&& arg, Args_... args);
+  std::string* mutable_answer();
+  PROTOBUF_NODISCARD std::string* release_answer();
+  void set_allocated_answer(std::string* value);
 
   private:
-  ::int64_t _internal_character_id() const;
-  void _internal_set_character_id(::int64_t value);
+  const std::string& _internal_answer() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_answer(
+      const std::string& value);
+  std::string* _internal_mutable_answer();
 
   public:
-  // .protobuf.AIActionType action_type = 1;
-  void clear_action_type() ;
-  ::protobuf::AIActionType action_type() const;
-  void set_action_type(::protobuf::AIActionType value);
+  // string explanation = 3;
+  void clear_explanation() ;
+  const std::string& explanation() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_explanation(Arg_&& arg, Args_... args);
+  std::string* mutable_explanation();
+  PROTOBUF_NODISCARD std::string* release_explanation();
+  void set_allocated_explanation(std::string* value);
 
   private:
-  ::protobuf::AIActionType _internal_action_type() const;
-  void _internal_set_action_type(::protobuf::AIActionType value);
+  const std::string& _internal_explanation() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_explanation(
+      const std::string& value);
+  std::string* _internal_mutable_explanation();
 
   public:
-  // int32 target_x = 3;
-  void clear_target_x() ;
-  ::int32_t target_x() const;
-  void set_target_x(::int32_t value);
+  // bool act_success = 1;
+  void clear_act_success() ;
+  bool act_success() const;
+  void set_act_success(bool value);
 
   private:
-  ::int32_t _internal_target_x() const;
-  void _internal_set_target_x(::int32_t value);
+  bool _internal_act_success() const;
+  void _internal_set_act_success(bool value);
 
   public:
-  // int64 target_id = 5;
-  void clear_target_id() ;
-  ::int64_t target_id() const;
-  void set_target_id(::int64_t value);
-
-  private:
-  ::int64_t _internal_target_id() const;
-  void _internal_set_target_id(::int64_t value);
-
-  public:
-  // int32 target_y = 4;
-  void clear_target_y() ;
-  ::int32_t target_y() const;
-  void set_target_y(::int32_t value);
-
-  private:
-  ::int32_t _internal_target_y() const;
-  void _internal_set_target_y(::int32_t value);
-
-  public:
-  // @@protoc_insertion_point(class_scope:protobuf.TaskSuggestion)
+  // @@protoc_insertion_point(class_scope:protobuf.StrategicAIResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 5, 0,
-      0, 2>
+      2, 3, 0,
+      54, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -788,12 +778,10 @@ class TaskSuggestion final : public ::google::protobuf::Message
                           ::google::protobuf::Arena* arena);
     inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                           ::google::protobuf::Arena* arena, const Impl_& from,
-                          const TaskSuggestion& from_msg);
-    ::int64_t character_id_;
-    int action_type_;
-    ::int32_t target_x_;
-    ::int64_t target_id_;
-    ::int32_t target_y_;
+                          const StrategicAIResponse& from_msg);
+    ::google::protobuf::internal::ArenaStringPtr answer_;
+    ::google::protobuf::internal::ArenaStringPtr explanation_;
+    bool act_success_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -948,9 +936,26 @@ class StrategicAIRequest final : public ::google::protobuf::Message
 
   // accessors -------------------------------------------------------
   enum : int {
+    kPromptFieldNumber = 3,
     kTeamIdFieldNumber = 1,
     kCurrentGameTimeFieldNumber = 2,
   };
+  // string prompt = 3;
+  void clear_prompt() ;
+  const std::string& prompt() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_prompt(Arg_&& arg, Args_... args);
+  std::string* mutable_prompt();
+  PROTOBUF_NODISCARD std::string* release_prompt();
+  void set_allocated_prompt(std::string* value);
+
+  private:
+  const std::string& _internal_prompt() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_prompt(
+      const std::string& value);
+  std::string* _internal_mutable_prompt();
+
+  public:
   // int64 team_id = 1;
   void clear_team_id() ;
   ::int64_t team_id() const;
@@ -976,8 +981,8 @@ class StrategicAIRequest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      1, 2, 0,
-      0, 2>
+      2, 3, 0,
+      42, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -994,6 +999,7 @@ class StrategicAIRequest final : public ::google::protobuf::Message
     inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                           ::google::protobuf::Arena* arena, const Impl_& from,
                           const StrategicAIRequest& from_msg);
+    ::google::protobuf::internal::ArenaStringPtr prompt_;
     ::int64_t team_id_;
     ::int64_t current_game_time_;
     ::google::protobuf::internal::CachedSize _cached_size_;
@@ -1942,208 +1948,6 @@ class RecoverMsg final : public ::google::protobuf::Message
     ::int64_t player_id_;
     ::int64_t recovered_hp_;
     ::int64_t team_id_;
-    ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_Message2Server_2eproto;
-};
-// -------------------------------------------------------------------
-
-class ProductionSuggestion final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:protobuf.ProductionSuggestion) */ {
- public:
-  inline ProductionSuggestion() : ProductionSuggestion(nullptr) {}
-  ~ProductionSuggestion() PROTOBUF_FINAL;
-
-#if defined(PROTOBUF_CUSTOM_VTABLE)
-  void operator delete(ProductionSuggestion* msg, std::destroying_delete_t) {
-    SharedDtor(*msg);
-    ::google::protobuf::internal::SizedDelete(msg, sizeof(ProductionSuggestion));
-  }
-#endif
-
-  template <typename = void>
-  explicit PROTOBUF_CONSTEXPR ProductionSuggestion(
-      ::google::protobuf::internal::ConstantInitialized);
-
-  inline ProductionSuggestion(const ProductionSuggestion& from) : ProductionSuggestion(nullptr, from) {}
-  inline ProductionSuggestion(ProductionSuggestion&& from) noexcept
-      : ProductionSuggestion(nullptr, std::move(from)) {}
-  inline ProductionSuggestion& operator=(const ProductionSuggestion& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline ProductionSuggestion& operator=(ProductionSuggestion&& from) noexcept {
-    if (this == &from) return *this;
-    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
-      ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
-  }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
-      ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
-  }
-
-  static const ::google::protobuf::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::google::protobuf::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::google::protobuf::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const ProductionSuggestion& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const ProductionSuggestion* internal_default_instance() {
-    return reinterpret_cast<const ProductionSuggestion*>(
-        &_ProductionSuggestion_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages = 17;
-  friend void swap(ProductionSuggestion& a, ProductionSuggestion& b) { a.Swap(&b); }
-  inline void Swap(ProductionSuggestion* other) {
-    if (other == this) return;
-    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
-      InternalSwap(other);
-    } else {
-      ::google::protobuf::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(ProductionSuggestion* other) {
-    if (other == this) return;
-    ABSL_DCHECK(GetArena() == other->GetArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  ProductionSuggestion* New(::google::protobuf::Arena* arena = nullptr) const {
-    return ::google::protobuf::Message::DefaultConstruct<ProductionSuggestion>(arena);
-  }
-  using ::google::protobuf::Message::CopyFrom;
-  void CopyFrom(const ProductionSuggestion& from);
-  using ::google::protobuf::Message::MergeFrom;
-  void MergeFrom(const ProductionSuggestion& from) { ProductionSuggestion::MergeImpl(*this, from); }
-
-  private:
-  static void MergeImpl(
-      ::google::protobuf::MessageLite& to_msg,
-      const ::google::protobuf::MessageLite& from_msg);
-
-  public:
-  bool IsInitialized() const {
-    return true;
-  }
-  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
-  #if defined(PROTOBUF_CUSTOM_VTABLE)
-  private:
-  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
-  static ::uint8_t* _InternalSerialize(
-      const MessageLite& msg, ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream);
-
-  public:
-  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
-  ::uint8_t* _InternalSerialize(
-      ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
-    return _InternalSerialize(*this, target, stream);
-  }
-  #else   // PROTOBUF_CUSTOM_VTABLE
-  ::size_t ByteSizeLong() const final;
-  ::uint8_t* _InternalSerialize(
-      ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  #endif  // PROTOBUF_CUSTOM_VTABLE
-  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::google::protobuf::Arena* arena);
-  static void SharedDtor(MessageLite& self);
-  void InternalSwap(ProductionSuggestion* other);
- private:
-  template <typename T>
-  friend ::absl::string_view(
-      ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "protobuf.ProductionSuggestion"; }
-
- protected:
-  explicit ProductionSuggestion(::google::protobuf::Arena* arena);
-  ProductionSuggestion(::google::protobuf::Arena* arena, const ProductionSuggestion& from);
-  ProductionSuggestion(::google::protobuf::Arena* arena, ProductionSuggestion&& from) noexcept
-      : ProductionSuggestion(arena) {
-    *this = ::std::move(from);
-  }
-  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
-  static void* PlacementNew_(const void*, void* mem,
-                             ::google::protobuf::Arena* arena);
-  static constexpr auto InternalNewImpl_();
-  static const ::google::protobuf::internal::ClassDataFull _class_data_;
-
- public:
-  ::google::protobuf::Metadata GetMetadata() const;
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-  enum : int {
-    kProductTypeFieldNumber = 1,
-    kQuantityFieldNumber = 2,
-  };
-  // .protobuf.GoodsType product_type = 1;
-  void clear_product_type() ;
-  ::protobuf::GoodsType product_type() const;
-  void set_product_type(::protobuf::GoodsType value);
-
-  private:
-  ::protobuf::GoodsType _internal_product_type() const;
-  void _internal_set_product_type(::protobuf::GoodsType value);
-
-  public:
-  // int32 quantity = 2;
-  void clear_quantity() ;
-  ::int32_t quantity() const;
-  void set_quantity(::int32_t value);
-
-  private:
-  ::int32_t _internal_quantity() const;
-  void _internal_set_quantity(::int32_t value);
-
-  public:
-  // @@protoc_insertion_point(class_scope:protobuf.ProductionSuggestion)
- private:
-  class _Internal;
-  friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<
-      1, 2, 0,
-      0, 2>
-      _table_;
-
-  friend class ::google::protobuf::MessageLite;
-  friend class ::google::protobuf::Arena;
-  template <typename T>
-  friend class ::google::protobuf::Arena::InternalHelper;
-  using InternalArenaConstructable_ = void;
-  using DestructorSkippable_ = void;
-  struct Impl_ {
-    inline explicit constexpr Impl_(
-        ::google::protobuf::internal::ConstantInitialized) noexcept;
-    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
-                          ::google::protobuf::Arena* arena);
-    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
-                          ::google::protobuf::Arena* arena, const Impl_& from,
-                          const ProductionSuggestion& from_msg);
-    int product_type_;
-    ::int32_t quantity_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -3403,6 +3207,434 @@ class IDMsg final : public ::google::protobuf::Message
 };
 // -------------------------------------------------------------------
 
+class EventStatusResponse final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:protobuf.EventStatusResponse) */ {
+ public:
+  inline EventStatusResponse() : EventStatusResponse(nullptr) {}
+  ~EventStatusResponse() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(EventStatusResponse* msg, std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(EventStatusResponse));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR EventStatusResponse(
+      ::google::protobuf::internal::ConstantInitialized);
+
+  inline EventStatusResponse(const EventStatusResponse& from) : EventStatusResponse(nullptr, from) {}
+  inline EventStatusResponse(EventStatusResponse&& from) noexcept
+      : EventStatusResponse(nullptr, std::move(from)) {}
+  inline EventStatusResponse& operator=(const EventStatusResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline EventStatusResponse& operator=(EventStatusResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const EventStatusResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const EventStatusResponse* internal_default_instance() {
+    return reinterpret_cast<const EventStatusResponse*>(
+        &_EventStatusResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 18;
+  friend void swap(EventStatusResponse& a, EventStatusResponse& b) { a.Swap(&b); }
+  inline void Swap(EventStatusResponse* other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(EventStatusResponse* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  EventStatusResponse* New(::google::protobuf::Arena* arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<EventStatusResponse>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const EventStatusResponse& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const EventStatusResponse& from) { EventStatusResponse::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(
+      ::google::protobuf::MessageLite& to_msg,
+      const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* _InternalSerialize(
+      const MessageLite& msg, ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(EventStatusResponse* other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(
+      ::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "protobuf.EventStatusResponse"; }
+
+ protected:
+  explicit EventStatusResponse(::google::protobuf::Arena* arena);
+  EventStatusResponse(::google::protobuf::Arena* arena, const EventStatusResponse& from);
+  EventStatusResponse(::google::protobuf::Arena* arena, EventStatusResponse&& from) noexcept
+      : EventStatusResponse(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
+  static void* PlacementNew_(const void*, void* mem,
+                             ::google::protobuf::Arena* arena);
+  static constexpr auto InternalNewImpl_();
+  static const ::google::protobuf::internal::ClassDataFull _class_data_;
+
+ public:
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kEventNameFieldNumber = 2,
+    kEventDescriptionFieldNumber = 3,
+    kActSuccessFieldNumber = 1,
+  };
+  // string event_name = 2;
+  void clear_event_name() ;
+  const std::string& event_name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_event_name(Arg_&& arg, Args_... args);
+  std::string* mutable_event_name();
+  PROTOBUF_NODISCARD std::string* release_event_name();
+  void set_allocated_event_name(std::string* value);
+
+  private:
+  const std::string& _internal_event_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_event_name(
+      const std::string& value);
+  std::string* _internal_mutable_event_name();
+
+  public:
+  // string event_description = 3;
+  void clear_event_description() ;
+  const std::string& event_description() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_event_description(Arg_&& arg, Args_... args);
+  std::string* mutable_event_description();
+  PROTOBUF_NODISCARD std::string* release_event_description();
+  void set_allocated_event_description(std::string* value);
+
+  private:
+  const std::string& _internal_event_description() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_event_description(
+      const std::string& value);
+  std::string* _internal_mutable_event_description();
+
+  public:
+  // bool act_success = 1;
+  void clear_act_success() ;
+  bool act_success() const;
+  void set_act_success(bool value);
+
+  private:
+  bool _internal_act_success() const;
+  void _internal_set_act_success(bool value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:protobuf.EventStatusResponse)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      2, 3, 0,
+      64, 2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(
+        ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena);
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena, const Impl_& from,
+                          const EventStatusResponse& from_msg);
+    ::google::protobuf::internal::ArenaStringPtr event_name_;
+    ::google::protobuf::internal::ArenaStringPtr event_description_;
+    bool act_success_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Message2Server_2eproto;
+};
+// -------------------------------------------------------------------
+
+class EventStatusRequest final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:protobuf.EventStatusRequest) */ {
+ public:
+  inline EventStatusRequest() : EventStatusRequest(nullptr) {}
+  ~EventStatusRequest() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(EventStatusRequest* msg, std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(EventStatusRequest));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR EventStatusRequest(
+      ::google::protobuf::internal::ConstantInitialized);
+
+  inline EventStatusRequest(const EventStatusRequest& from) : EventStatusRequest(nullptr, from) {}
+  inline EventStatusRequest(EventStatusRequest&& from) noexcept
+      : EventStatusRequest(nullptr, std::move(from)) {}
+  inline EventStatusRequest& operator=(const EventStatusRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline EventStatusRequest& operator=(EventStatusRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const EventStatusRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const EventStatusRequest* internal_default_instance() {
+    return reinterpret_cast<const EventStatusRequest*>(
+        &_EventStatusRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 17;
+  friend void swap(EventStatusRequest& a, EventStatusRequest& b) { a.Swap(&b); }
+  inline void Swap(EventStatusRequest* other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(EventStatusRequest* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  EventStatusRequest* New(::google::protobuf::Arena* arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<EventStatusRequest>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const EventStatusRequest& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const EventStatusRequest& from) { EventStatusRequest::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(
+      ::google::protobuf::MessageLite& to_msg,
+      const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* _InternalSerialize(
+      const MessageLite& msg, ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(EventStatusRequest* other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(
+      ::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "protobuf.EventStatusRequest"; }
+
+ protected:
+  explicit EventStatusRequest(::google::protobuf::Arena* arena);
+  EventStatusRequest(::google::protobuf::Arena* arena, const EventStatusRequest& from);
+  EventStatusRequest(::google::protobuf::Arena* arena, EventStatusRequest&& from) noexcept
+      : EventStatusRequest(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
+  static void* PlacementNew_(const void*, void* mem,
+                             ::google::protobuf::Arena* arena);
+  static constexpr auto InternalNewImpl_();
+  static const ::google::protobuf::internal::ClassDataFull _class_data_;
+
+ public:
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kTeamIdFieldNumber = 1,
+    kPlayerIdFieldNumber = 2,
+  };
+  // int64 team_id = 1;
+  void clear_team_id() ;
+  ::int64_t team_id() const;
+  void set_team_id(::int64_t value);
+
+  private:
+  ::int64_t _internal_team_id() const;
+  void _internal_set_team_id(::int64_t value);
+
+  public:
+  // int64 player_id = 2;
+  void clear_player_id() ;
+  ::int64_t player_id() const;
+  void set_player_id(::int64_t value);
+
+  private:
+  ::int64_t _internal_player_id() const;
+  void _internal_set_player_id(::int64_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:protobuf.EventStatusRequest)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      1, 2, 0,
+      0, 2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(
+        ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena);
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena, const Impl_& from,
+                          const EventStatusRequest& from_msg);
+    ::int64_t team_id_;
+    ::int64_t player_id_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_Message2Server_2eproto;
+};
+// -------------------------------------------------------------------
+
 class CreateCharacterMsg final : public ::google::protobuf::Message
 /* @@protoc_insertion_point(class_definition:protobuf.CreateCharacterMsg) */ {
  public:
@@ -4073,252 +4305,6 @@ class AttackMsg final : public ::google::protobuf::Message
     ::int64_t attacked_player_id_;
     ::int64_t attacked_team_id_;
     ::int32_t attack_range_;
-    ::google::protobuf::internal::CachedSize _cached_size_;
-    PROTOBUF_TSAN_DECLARE_MEMBER
-  };
-  union { Impl_ _impl_; };
-  friend struct ::TableStruct_Message2Server_2eproto;
-};
-// -------------------------------------------------------------------
-
-class StrategicAIResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:protobuf.StrategicAIResponse) */ {
- public:
-  inline StrategicAIResponse() : StrategicAIResponse(nullptr) {}
-  ~StrategicAIResponse() PROTOBUF_FINAL;
-
-#if defined(PROTOBUF_CUSTOM_VTABLE)
-  void operator delete(StrategicAIResponse* msg, std::destroying_delete_t) {
-    SharedDtor(*msg);
-    ::google::protobuf::internal::SizedDelete(msg, sizeof(StrategicAIResponse));
-  }
-#endif
-
-  template <typename = void>
-  explicit PROTOBUF_CONSTEXPR StrategicAIResponse(
-      ::google::protobuf::internal::ConstantInitialized);
-
-  inline StrategicAIResponse(const StrategicAIResponse& from) : StrategicAIResponse(nullptr, from) {}
-  inline StrategicAIResponse(StrategicAIResponse&& from) noexcept
-      : StrategicAIResponse(nullptr, std::move(from)) {}
-  inline StrategicAIResponse& operator=(const StrategicAIResponse& from) {
-    CopyFrom(from);
-    return *this;
-  }
-  inline StrategicAIResponse& operator=(StrategicAIResponse&& from) noexcept {
-    if (this == &from) return *this;
-    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
-      InternalSwap(&from);
-    } else {
-      CopyFrom(from);
-    }
-    return *this;
-  }
-
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
-      ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
-  }
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
-      ABSL_ATTRIBUTE_LIFETIME_BOUND {
-    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
-  }
-
-  static const ::google::protobuf::Descriptor* descriptor() {
-    return GetDescriptor();
-  }
-  static const ::google::protobuf::Descriptor* GetDescriptor() {
-    return default_instance().GetMetadata().descriptor;
-  }
-  static const ::google::protobuf::Reflection* GetReflection() {
-    return default_instance().GetMetadata().reflection;
-  }
-  static const StrategicAIResponse& default_instance() {
-    return *internal_default_instance();
-  }
-  static inline const StrategicAIResponse* internal_default_instance() {
-    return reinterpret_cast<const StrategicAIResponse*>(
-        &_StrategicAIResponse_default_instance_);
-  }
-  static constexpr int kIndexInFileMessages = 16;
-  friend void swap(StrategicAIResponse& a, StrategicAIResponse& b) { a.Swap(&b); }
-  inline void Swap(StrategicAIResponse* other) {
-    if (other == this) return;
-    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
-      InternalSwap(other);
-    } else {
-      ::google::protobuf::internal::GenericSwap(this, other);
-    }
-  }
-  void UnsafeArenaSwap(StrategicAIResponse* other) {
-    if (other == this) return;
-    ABSL_DCHECK(GetArena() == other->GetArena());
-    InternalSwap(other);
-  }
-
-  // implements Message ----------------------------------------------
-
-  StrategicAIResponse* New(::google::protobuf::Arena* arena = nullptr) const {
-    return ::google::protobuf::Message::DefaultConstruct<StrategicAIResponse>(arena);
-  }
-  using ::google::protobuf::Message::CopyFrom;
-  void CopyFrom(const StrategicAIResponse& from);
-  using ::google::protobuf::Message::MergeFrom;
-  void MergeFrom(const StrategicAIResponse& from) { StrategicAIResponse::MergeImpl(*this, from); }
-
-  private:
-  static void MergeImpl(
-      ::google::protobuf::MessageLite& to_msg,
-      const ::google::protobuf::MessageLite& from_msg);
-
-  public:
-  bool IsInitialized() const {
-    return true;
-  }
-  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
-  #if defined(PROTOBUF_CUSTOM_VTABLE)
-  private:
-  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
-  static ::uint8_t* _InternalSerialize(
-      const MessageLite& msg, ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream);
-
-  public:
-  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
-  ::uint8_t* _InternalSerialize(
-      ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
-    return _InternalSerialize(*this, target, stream);
-  }
-  #else   // PROTOBUF_CUSTOM_VTABLE
-  ::size_t ByteSizeLong() const final;
-  ::uint8_t* _InternalSerialize(
-      ::uint8_t* target,
-      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
-  #endif  // PROTOBUF_CUSTOM_VTABLE
-  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
-
-  private:
-  void SharedCtor(::google::protobuf::Arena* arena);
-  static void SharedDtor(MessageLite& self);
-  void InternalSwap(StrategicAIResponse* other);
- private:
-  template <typename T>
-  friend ::absl::string_view(
-      ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "protobuf.StrategicAIResponse"; }
-
- protected:
-  explicit StrategicAIResponse(::google::protobuf::Arena* arena);
-  StrategicAIResponse(::google::protobuf::Arena* arena, const StrategicAIResponse& from);
-  StrategicAIResponse(::google::protobuf::Arena* arena, StrategicAIResponse&& from) noexcept
-      : StrategicAIResponse(arena) {
-    *this = ::std::move(from);
-  }
-  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
-  static void* PlacementNew_(const void*, void* mem,
-                             ::google::protobuf::Arena* arena);
-  static constexpr auto InternalNewImpl_();
-  static const ::google::protobuf::internal::ClassDataFull _class_data_;
-
- public:
-  ::google::protobuf::Metadata GetMetadata() const;
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-  enum : int {
-    kProductionPlanFieldNumber = 2,
-    kTaskPlanFieldNumber = 3,
-    kExplanationFieldNumber = 4,
-    kActSuccessFieldNumber = 1,
-  };
-  // repeated .protobuf.ProductionSuggestion production_plan = 2;
-  int production_plan_size() const;
-  private:
-  int _internal_production_plan_size() const;
-
-  public:
-  void clear_production_plan() ;
-  ::protobuf::ProductionSuggestion* mutable_production_plan(int index);
-  ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>* mutable_production_plan();
-
-  private:
-  const ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>& _internal_production_plan() const;
-  ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>* _internal_mutable_production_plan();
-  public:
-  const ::protobuf::ProductionSuggestion& production_plan(int index) const;
-  ::protobuf::ProductionSuggestion* add_production_plan();
-  const ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>& production_plan() const;
-  // repeated .protobuf.TaskSuggestion task_plan = 3;
-  int task_plan_size() const;
-  private:
-  int _internal_task_plan_size() const;
-
-  public:
-  void clear_task_plan() ;
-  ::protobuf::TaskSuggestion* mutable_task_plan(int index);
-  ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>* mutable_task_plan();
-
-  private:
-  const ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>& _internal_task_plan() const;
-  ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>* _internal_mutable_task_plan();
-  public:
-  const ::protobuf::TaskSuggestion& task_plan(int index) const;
-  ::protobuf::TaskSuggestion* add_task_plan();
-  const ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>& task_plan() const;
-  // string explanation = 4;
-  void clear_explanation() ;
-  const std::string& explanation() const;
-  template <typename Arg_ = const std::string&, typename... Args_>
-  void set_explanation(Arg_&& arg, Args_... args);
-  std::string* mutable_explanation();
-  PROTOBUF_NODISCARD std::string* release_explanation();
-  void set_allocated_explanation(std::string* value);
-
-  private:
-  const std::string& _internal_explanation() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_explanation(
-      const std::string& value);
-  std::string* _internal_mutable_explanation();
-
-  public:
-  // bool act_success = 1;
-  void clear_act_success() ;
-  bool act_success() const;
-  void set_act_success(bool value);
-
-  private:
-  bool _internal_act_success() const;
-  void _internal_set_act_success(bool value);
-
-  public:
-  // @@protoc_insertion_point(class_scope:protobuf.StrategicAIResponse)
- private:
-  class _Internal;
-  friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<
-      2, 4, 2,
-      48, 2>
-      _table_;
-
-  friend class ::google::protobuf::MessageLite;
-  friend class ::google::protobuf::Arena;
-  template <typename T>
-  friend class ::google::protobuf::Arena::InternalHelper;
-  using InternalArenaConstructable_ = void;
-  using DestructorSkippable_ = void;
-  struct Impl_ {
-    inline explicit constexpr Impl_(
-        ::google::protobuf::internal::ConstantInitialized) noexcept;
-    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
-                          ::google::protobuf::Arena* arena);
-    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
-                          ::google::protobuf::Arena* arena, const Impl_& from,
-                          const StrategicAIResponse& from_msg);
-    ::google::protobuf::RepeatedPtrField< ::protobuf::ProductionSuggestion > production_plan_;
-    ::google::protobuf::RepeatedPtrField< ::protobuf::TaskSuggestion > task_plan_;
-    ::google::protobuf::internal::ArenaStringPtr explanation_;
-    bool act_success_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -5769,6 +5755,54 @@ inline void StrategicAIRequest::_internal_set_current_game_time(::int64_t value)
   _impl_.current_game_time_ = value;
 }
 
+// string prompt = 3;
+inline void StrategicAIRequest::clear_prompt() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.prompt_.ClearToEmpty();
+}
+inline const std::string& StrategicAIRequest::prompt() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:protobuf.StrategicAIRequest.prompt)
+  return _internal_prompt();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void StrategicAIRequest::set_prompt(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.prompt_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:protobuf.StrategicAIRequest.prompt)
+}
+inline std::string* StrategicAIRequest::mutable_prompt() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_prompt();
+  // @@protoc_insertion_point(field_mutable:protobuf.StrategicAIRequest.prompt)
+  return _s;
+}
+inline const std::string& StrategicAIRequest::_internal_prompt() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.prompt_.Get();
+}
+inline void StrategicAIRequest::_internal_set_prompt(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.prompt_.Set(value, GetArena());
+}
+inline std::string* StrategicAIRequest::_internal_mutable_prompt() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.prompt_.Mutable( GetArena());
+}
+inline std::string* StrategicAIRequest::release_prompt() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:protobuf.StrategicAIRequest.prompt)
+  return _impl_.prompt_.Release();
+}
+inline void StrategicAIRequest::set_allocated_prompt(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.prompt_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.prompt_.IsDefault()) {
+    _impl_.prompt_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:protobuf.StrategicAIRequest.prompt)
+}
+
 // -------------------------------------------------------------------
 
 // StrategicAIResponse
@@ -5795,105 +5829,55 @@ inline void StrategicAIResponse::_internal_set_act_success(bool value) {
   _impl_.act_success_ = value;
 }
 
-// repeated .protobuf.ProductionSuggestion production_plan = 2;
-inline int StrategicAIResponse::_internal_production_plan_size() const {
-  return _internal_production_plan().size();
-}
-inline int StrategicAIResponse::production_plan_size() const {
-  return _internal_production_plan_size();
-}
-inline void StrategicAIResponse::clear_production_plan() {
+// string answer = 2;
+inline void StrategicAIResponse::clear_answer() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.production_plan_.Clear();
+  _impl_.answer_.ClearToEmpty();
 }
-inline ::protobuf::ProductionSuggestion* StrategicAIResponse::mutable_production_plan(int index)
+inline const std::string& StrategicAIResponse::answer() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable:protobuf.StrategicAIResponse.production_plan)
-  return _internal_mutable_production_plan()->Mutable(index);
+  // @@protoc_insertion_point(field_get:protobuf.StrategicAIResponse.answer)
+  return _internal_answer();
 }
-inline ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>* StrategicAIResponse::mutable_production_plan()
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:protobuf.StrategicAIResponse.production_plan)
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void StrategicAIResponse::set_answer(Arg_&& arg,
+                                                     Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  return _internal_mutable_production_plan();
+  _impl_.answer_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:protobuf.StrategicAIResponse.answer)
 }
-inline const ::protobuf::ProductionSuggestion& StrategicAIResponse::production_plan(int index) const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:protobuf.StrategicAIResponse.production_plan)
-  return _internal_production_plan().Get(index);
+inline std::string* StrategicAIResponse::mutable_answer() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_answer();
+  // @@protoc_insertion_point(field_mutable:protobuf.StrategicAIResponse.answer)
+  return _s;
 }
-inline ::protobuf::ProductionSuggestion* StrategicAIResponse::add_production_plan() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  ::protobuf::ProductionSuggestion* _add = _internal_mutable_production_plan()->Add();
-  // @@protoc_insertion_point(field_add:protobuf.StrategicAIResponse.production_plan)
-  return _add;
-}
-inline const ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>& StrategicAIResponse::production_plan() const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:protobuf.StrategicAIResponse.production_plan)
-  return _internal_production_plan();
-}
-inline const ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>&
-StrategicAIResponse::_internal_production_plan() const {
+inline const std::string& StrategicAIResponse::_internal_answer() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.production_plan_;
+  return _impl_.answer_.Get();
 }
-inline ::google::protobuf::RepeatedPtrField<::protobuf::ProductionSuggestion>*
-StrategicAIResponse::_internal_mutable_production_plan() {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return &_impl_.production_plan_;
+inline void StrategicAIResponse::_internal_set_answer(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.answer_.Set(value, GetArena());
+}
+inline std::string* StrategicAIResponse::_internal_mutable_answer() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.answer_.Mutable( GetArena());
+}
+inline std::string* StrategicAIResponse::release_answer() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:protobuf.StrategicAIResponse.answer)
+  return _impl_.answer_.Release();
+}
+inline void StrategicAIResponse::set_allocated_answer(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.answer_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.answer_.IsDefault()) {
+    _impl_.answer_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:protobuf.StrategicAIResponse.answer)
 }
 
-// repeated .protobuf.TaskSuggestion task_plan = 3;
-inline int StrategicAIResponse::_internal_task_plan_size() const {
-  return _internal_task_plan().size();
-}
-inline int StrategicAIResponse::task_plan_size() const {
-  return _internal_task_plan_size();
-}
-inline void StrategicAIResponse::clear_task_plan() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.task_plan_.Clear();
-}
-inline ::protobuf::TaskSuggestion* StrategicAIResponse::mutable_task_plan(int index)
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable:protobuf.StrategicAIResponse.task_plan)
-  return _internal_mutable_task_plan()->Mutable(index);
-}
-inline ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>* StrategicAIResponse::mutable_task_plan()
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:protobuf.StrategicAIResponse.task_plan)
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  return _internal_mutable_task_plan();
-}
-inline const ::protobuf::TaskSuggestion& StrategicAIResponse::task_plan(int index) const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:protobuf.StrategicAIResponse.task_plan)
-  return _internal_task_plan().Get(index);
-}
-inline ::protobuf::TaskSuggestion* StrategicAIResponse::add_task_plan() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  ::protobuf::TaskSuggestion* _add = _internal_mutable_task_plan()->Add();
-  // @@protoc_insertion_point(field_add:protobuf.StrategicAIResponse.task_plan)
-  return _add;
-}
-inline const ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>& StrategicAIResponse::task_plan() const
-    ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:protobuf.StrategicAIResponse.task_plan)
-  return _internal_task_plan();
-}
-inline const ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>&
-StrategicAIResponse::_internal_task_plan() const {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.task_plan_;
-}
-inline ::google::protobuf::RepeatedPtrField<::protobuf::TaskSuggestion>*
-StrategicAIResponse::_internal_mutable_task_plan() {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return &_impl_.task_plan_;
-}
-
-// string explanation = 4;
+// string explanation = 3;
 inline void StrategicAIResponse::clear_explanation() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.explanation_.ClearToEmpty();
@@ -5943,164 +5927,172 @@ inline void StrategicAIResponse::set_allocated_explanation(std::string* value) {
 
 // -------------------------------------------------------------------
 
-// ProductionSuggestion
+// EventStatusRequest
 
-// .protobuf.GoodsType product_type = 1;
-inline void ProductionSuggestion::clear_product_type() {
+// int64 team_id = 1;
+inline void EventStatusRequest::clear_team_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.product_type_ = 0;
+  _impl_.team_id_ = ::int64_t{0};
 }
-inline ::protobuf::GoodsType ProductionSuggestion::product_type() const {
-  // @@protoc_insertion_point(field_get:protobuf.ProductionSuggestion.product_type)
-  return _internal_product_type();
+inline ::int64_t EventStatusRequest::team_id() const {
+  // @@protoc_insertion_point(field_get:protobuf.EventStatusRequest.team_id)
+  return _internal_team_id();
 }
-inline void ProductionSuggestion::set_product_type(::protobuf::GoodsType value) {
-  _internal_set_product_type(value);
-  // @@protoc_insertion_point(field_set:protobuf.ProductionSuggestion.product_type)
+inline void EventStatusRequest::set_team_id(::int64_t value) {
+  _internal_set_team_id(value);
+  // @@protoc_insertion_point(field_set:protobuf.EventStatusRequest.team_id)
 }
-inline ::protobuf::GoodsType ProductionSuggestion::_internal_product_type() const {
+inline ::int64_t EventStatusRequest::_internal_team_id() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return static_cast<::protobuf::GoodsType>(_impl_.product_type_);
+  return _impl_.team_id_;
 }
-inline void ProductionSuggestion::_internal_set_product_type(::protobuf::GoodsType value) {
+inline void EventStatusRequest::_internal_set_team_id(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.product_type_ = value;
+  _impl_.team_id_ = value;
 }
 
-// int32 quantity = 2;
-inline void ProductionSuggestion::clear_quantity() {
+// int64 player_id = 2;
+inline void EventStatusRequest::clear_player_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.quantity_ = 0;
+  _impl_.player_id_ = ::int64_t{0};
 }
-inline ::int32_t ProductionSuggestion::quantity() const {
-  // @@protoc_insertion_point(field_get:protobuf.ProductionSuggestion.quantity)
-  return _internal_quantity();
+inline ::int64_t EventStatusRequest::player_id() const {
+  // @@protoc_insertion_point(field_get:protobuf.EventStatusRequest.player_id)
+  return _internal_player_id();
 }
-inline void ProductionSuggestion::set_quantity(::int32_t value) {
-  _internal_set_quantity(value);
-  // @@protoc_insertion_point(field_set:protobuf.ProductionSuggestion.quantity)
+inline void EventStatusRequest::set_player_id(::int64_t value) {
+  _internal_set_player_id(value);
+  // @@protoc_insertion_point(field_set:protobuf.EventStatusRequest.player_id)
 }
-inline ::int32_t ProductionSuggestion::_internal_quantity() const {
+inline ::int64_t EventStatusRequest::_internal_player_id() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.quantity_;
+  return _impl_.player_id_;
 }
-inline void ProductionSuggestion::_internal_set_quantity(::int32_t value) {
+inline void EventStatusRequest::_internal_set_player_id(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.quantity_ = value;
+  _impl_.player_id_ = value;
 }
 
 // -------------------------------------------------------------------
 
-// TaskSuggestion
+// EventStatusResponse
 
-// .protobuf.AIActionType action_type = 1;
-inline void TaskSuggestion::clear_action_type() {
+// bool act_success = 1;
+inline void EventStatusResponse::clear_act_success() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.action_type_ = 0;
+  _impl_.act_success_ = false;
 }
-inline ::protobuf::AIActionType TaskSuggestion::action_type() const {
-  // @@protoc_insertion_point(field_get:protobuf.TaskSuggestion.action_type)
-  return _internal_action_type();
+inline bool EventStatusResponse::act_success() const {
+  // @@protoc_insertion_point(field_get:protobuf.EventStatusResponse.act_success)
+  return _internal_act_success();
 }
-inline void TaskSuggestion::set_action_type(::protobuf::AIActionType value) {
-  _internal_set_action_type(value);
-  // @@protoc_insertion_point(field_set:protobuf.TaskSuggestion.action_type)
+inline void EventStatusResponse::set_act_success(bool value) {
+  _internal_set_act_success(value);
+  // @@protoc_insertion_point(field_set:protobuf.EventStatusResponse.act_success)
 }
-inline ::protobuf::AIActionType TaskSuggestion::_internal_action_type() const {
+inline bool EventStatusResponse::_internal_act_success() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return static_cast<::protobuf::AIActionType>(_impl_.action_type_);
+  return _impl_.act_success_;
 }
-inline void TaskSuggestion::_internal_set_action_type(::protobuf::AIActionType value) {
+inline void EventStatusResponse::_internal_set_act_success(bool value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.action_type_ = value;
-}
-
-// int64 character_id = 2;
-inline void TaskSuggestion::clear_character_id() {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.character_id_ = ::int64_t{0};
-}
-inline ::int64_t TaskSuggestion::character_id() const {
-  // @@protoc_insertion_point(field_get:protobuf.TaskSuggestion.character_id)
-  return _internal_character_id();
-}
-inline void TaskSuggestion::set_character_id(::int64_t value) {
-  _internal_set_character_id(value);
-  // @@protoc_insertion_point(field_set:protobuf.TaskSuggestion.character_id)
-}
-inline ::int64_t TaskSuggestion::_internal_character_id() const {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.character_id_;
-}
-inline void TaskSuggestion::_internal_set_character_id(::int64_t value) {
-  ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.character_id_ = value;
+  _impl_.act_success_ = value;
 }
 
-// int32 target_x = 3;
-inline void TaskSuggestion::clear_target_x() {
+// string event_name = 2;
+inline void EventStatusResponse::clear_event_name() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_x_ = 0;
+  _impl_.event_name_.ClearToEmpty();
 }
-inline ::int32_t TaskSuggestion::target_x() const {
-  // @@protoc_insertion_point(field_get:protobuf.TaskSuggestion.target_x)
-  return _internal_target_x();
+inline const std::string& EventStatusResponse::event_name() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:protobuf.EventStatusResponse.event_name)
+  return _internal_event_name();
 }
-inline void TaskSuggestion::set_target_x(::int32_t value) {
-  _internal_set_target_x(value);
-  // @@protoc_insertion_point(field_set:protobuf.TaskSuggestion.target_x)
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void EventStatusResponse::set_event_name(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.event_name_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:protobuf.EventStatusResponse.event_name)
 }
-inline ::int32_t TaskSuggestion::_internal_target_x() const {
+inline std::string* EventStatusResponse::mutable_event_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_event_name();
+  // @@protoc_insertion_point(field_mutable:protobuf.EventStatusResponse.event_name)
+  return _s;
+}
+inline const std::string& EventStatusResponse::_internal_event_name() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.target_x_;
+  return _impl_.event_name_.Get();
 }
-inline void TaskSuggestion::_internal_set_target_x(::int32_t value) {
+inline void EventStatusResponse::_internal_set_event_name(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_x_ = value;
+  _impl_.event_name_.Set(value, GetArena());
+}
+inline std::string* EventStatusResponse::_internal_mutable_event_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.event_name_.Mutable( GetArena());
+}
+inline std::string* EventStatusResponse::release_event_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:protobuf.EventStatusResponse.event_name)
+  return _impl_.event_name_.Release();
+}
+inline void EventStatusResponse::set_allocated_event_name(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.event_name_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.event_name_.IsDefault()) {
+    _impl_.event_name_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:protobuf.EventStatusResponse.event_name)
 }
 
-// int32 target_y = 4;
-inline void TaskSuggestion::clear_target_y() {
+// string event_description = 3;
+inline void EventStatusResponse::clear_event_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_y_ = 0;
+  _impl_.event_description_.ClearToEmpty();
 }
-inline ::int32_t TaskSuggestion::target_y() const {
-  // @@protoc_insertion_point(field_get:protobuf.TaskSuggestion.target_y)
-  return _internal_target_y();
+inline const std::string& EventStatusResponse::event_description() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:protobuf.EventStatusResponse.event_description)
+  return _internal_event_description();
 }
-inline void TaskSuggestion::set_target_y(::int32_t value) {
-  _internal_set_target_y(value);
-  // @@protoc_insertion_point(field_set:protobuf.TaskSuggestion.target_y)
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void EventStatusResponse::set_event_description(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.event_description_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:protobuf.EventStatusResponse.event_description)
 }
-inline ::int32_t TaskSuggestion::_internal_target_y() const {
+inline std::string* EventStatusResponse::mutable_event_description() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_event_description();
+  // @@protoc_insertion_point(field_mutable:protobuf.EventStatusResponse.event_description)
+  return _s;
+}
+inline const std::string& EventStatusResponse::_internal_event_description() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.target_y_;
+  return _impl_.event_description_.Get();
 }
-inline void TaskSuggestion::_internal_set_target_y(::int32_t value) {
+inline void EventStatusResponse::_internal_set_event_description(const std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_y_ = value;
+  _impl_.event_description_.Set(value, GetArena());
 }
-
-// int64 target_id = 5;
-inline void TaskSuggestion::clear_target_id() {
+inline std::string* EventStatusResponse::_internal_mutable_event_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_id_ = ::int64_t{0};
+  return _impl_.event_description_.Mutable( GetArena());
 }
-inline ::int64_t TaskSuggestion::target_id() const {
-  // @@protoc_insertion_point(field_get:protobuf.TaskSuggestion.target_id)
-  return _internal_target_id();
-}
-inline void TaskSuggestion::set_target_id(::int64_t value) {
-  _internal_set_target_id(value);
-  // @@protoc_insertion_point(field_set:protobuf.TaskSuggestion.target_id)
-}
-inline ::int64_t TaskSuggestion::_internal_target_id() const {
-  ::google::protobuf::internal::TSanRead(&_impl_);
-  return _impl_.target_id_;
-}
-inline void TaskSuggestion::_internal_set_target_id(::int64_t value) {
+inline std::string* EventStatusResponse::release_event_description() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_.target_id_ = value;
+  // @@protoc_insertion_point(field_release:protobuf.EventStatusResponse.event_description)
+  return _impl_.event_description_.Release();
+}
+inline void EventStatusResponse::set_allocated_event_description(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.event_description_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.event_description_.IsDefault()) {
+    _impl_.event_description_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:protobuf.EventStatusResponse.event_description)
 }
 
 #ifdef __GNUC__

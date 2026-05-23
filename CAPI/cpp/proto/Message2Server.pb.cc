@@ -81,17 +81,19 @@ struct TradeMsgDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TradeMsgDefaultTypeInternal _TradeMsg_default_instance_;
 
-inline constexpr TaskSuggestion::Impl_::Impl_(
+inline constexpr StrategicAIResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
-      : character_id_{::int64_t{0}},
-        action_type_{static_cast< ::protobuf::AIActionType >(0)},
-        target_x_{0},
-        target_id_{::int64_t{0}},
-        target_y_{0},
+      : answer_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        explanation_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        act_success_{false},
         _cached_size_{0} {}
 
 template <typename>
-PROTOBUF_CONSTEXPR TaskSuggestion::TaskSuggestion(::_pbi::ConstantInitialized)
+PROTOBUF_CONSTEXPR StrategicAIResponse::StrategicAIResponse(::_pbi::ConstantInitialized)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(_class_data_.base()),
 #else   // PROTOBUF_CUSTOM_VTABLE
@@ -99,20 +101,23 @@ PROTOBUF_CONSTEXPR TaskSuggestion::TaskSuggestion(::_pbi::ConstantInitialized)
 #endif  // PROTOBUF_CUSTOM_VTABLE
       _impl_(::_pbi::ConstantInitialized()) {
 }
-struct TaskSuggestionDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TaskSuggestionDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~TaskSuggestionDefaultTypeInternal() {}
+struct StrategicAIResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR StrategicAIResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~StrategicAIResponseDefaultTypeInternal() {}
   union {
-    TaskSuggestion _instance;
+    StrategicAIResponse _instance;
   };
 };
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TaskSuggestionDefaultTypeInternal _TaskSuggestion_default_instance_;
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StrategicAIResponseDefaultTypeInternal _StrategicAIResponse_default_instance_;
 
 inline constexpr StrategicAIRequest::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
-      : team_id_{::int64_t{0}},
+      : prompt_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        team_id_{::int64_t{0}},
         current_game_time_{::int64_t{0}},
         _cached_size_{0} {}
 
@@ -248,32 +253,6 @@ struct RecoverMsgDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RecoverMsgDefaultTypeInternal _RecoverMsg_default_instance_;
-
-inline constexpr ProductionSuggestion::Impl_::Impl_(
-    ::_pbi::ConstantInitialized) noexcept
-      : product_type_{static_cast< ::protobuf::GoodsType >(0)},
-        quantity_{0},
-        _cached_size_{0} {}
-
-template <typename>
-PROTOBUF_CONSTEXPR ProductionSuggestion::ProductionSuggestion(::_pbi::ConstantInitialized)
-#if defined(PROTOBUF_CUSTOM_VTABLE)
-    : ::google::protobuf::Message(_class_data_.base()),
-#else   // PROTOBUF_CUSTOM_VTABLE
-    : ::google::protobuf::Message(),
-#endif  // PROTOBUF_CUSTOM_VTABLE
-      _impl_(::_pbi::ConstantInitialized()) {
-}
-struct ProductionSuggestionDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ProductionSuggestionDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~ProductionSuggestionDefaultTypeInternal() {}
-  union {
-    ProductionSuggestion _instance;
-  };
-};
-
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProductionSuggestionDefaultTypeInternal _ProductionSuggestion_default_instance_;
 
 inline constexpr ProduceGoodsMsg::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -431,6 +410,63 @@ struct IDMsgDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 IDMsgDefaultTypeInternal _IDMsg_default_instance_;
 
+inline constexpr EventStatusResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : event_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        event_description_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        act_success_{false},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR EventStatusResponse::EventStatusResponse(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct EventStatusResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EventStatusResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EventStatusResponseDefaultTypeInternal() {}
+  union {
+    EventStatusResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EventStatusResponseDefaultTypeInternal _EventStatusResponse_default_instance_;
+
+inline constexpr EventStatusRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : team_id_{::int64_t{0}},
+        player_id_{::int64_t{0}},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR EventStatusRequest::EventStatusRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct EventStatusRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR EventStatusRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~EventStatusRequestDefaultTypeInternal() {}
+  union {
+    EventStatusRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EventStatusRequestDefaultTypeInternal _EventStatusRequest_default_instance_;
+
 inline constexpr CreateCharacterMsg::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : team_id_{::int64_t{0}},
@@ -514,36 +550,6 @@ struct AttackMsgDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AttackMsgDefaultTypeInternal _AttackMsg_default_instance_;
-
-inline constexpr StrategicAIResponse::Impl_::Impl_(
-    ::_pbi::ConstantInitialized) noexcept
-      : production_plan_{},
-        task_plan_{},
-        explanation_(
-            &::google::protobuf::internal::fixed_address_empty_string,
-            ::_pbi::ConstantInitialized()),
-        act_success_{false},
-        _cached_size_{0} {}
-
-template <typename>
-PROTOBUF_CONSTEXPR StrategicAIResponse::StrategicAIResponse(::_pbi::ConstantInitialized)
-#if defined(PROTOBUF_CUSTOM_VTABLE)
-    : ::google::protobuf::Message(_class_data_.base()),
-#else   // PROTOBUF_CUSTOM_VTABLE
-    : ::google::protobuf::Message(),
-#endif  // PROTOBUF_CUSTOM_VTABLE
-      _impl_(::_pbi::ConstantInitialized()) {
-}
-struct StrategicAIResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR StrategicAIResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
-  ~StrategicAIResponseDefaultTypeInternal() {}
-  union {
-    StrategicAIResponse _instance;
-  };
-};
-
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
-    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 StrategicAIResponseDefaultTypeInternal _StrategicAIResponse_default_instance_;
 }  // namespace protobuf
 static constexpr const ::_pb::EnumDescriptor**
     file_level_enum_descriptors_Message2Server_2eproto = nullptr;
@@ -737,6 +743,7 @@ const ::uint32_t
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIRequest, _impl_.team_id_),
         PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIRequest, _impl_.current_game_time_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIRequest, _impl_.prompt_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -746,32 +753,29 @@ const ::uint32_t
         ~0u,  // no _split_
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _impl_.act_success_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _impl_.production_plan_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _impl_.task_plan_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _impl_.answer_),
         PROTOBUF_FIELD_OFFSET(::protobuf::StrategicAIResponse, _impl_.explanation_),
         ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::protobuf::ProductionSuggestion, _internal_metadata_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusRequest, _internal_metadata_),
         ~0u,  // no _extensions_
         ~0u,  // no _oneof_case_
         ~0u,  // no _weak_field_map_
         ~0u,  // no _inlined_string_donated_
         ~0u,  // no _split_
         ~0u,  // no sizeof(Split)
-        PROTOBUF_FIELD_OFFSET(::protobuf::ProductionSuggestion, _impl_.product_type_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::ProductionSuggestion, _impl_.quantity_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusRequest, _impl_.team_id_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusRequest, _impl_.player_id_),
         ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _internal_metadata_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusResponse, _internal_metadata_),
         ~0u,  // no _extensions_
         ~0u,  // no _oneof_case_
         ~0u,  // no _weak_field_map_
         ~0u,  // no _inlined_string_donated_
         ~0u,  // no _split_
         ~0u,  // no sizeof(Split)
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _impl_.action_type_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _impl_.character_id_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _impl_.target_x_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _impl_.target_y_),
-        PROTOBUF_FIELD_OFFSET(::protobuf::TaskSuggestion, _impl_.target_id_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusResponse, _impl_.act_success_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusResponse, _impl_.event_name_),
+        PROTOBUF_FIELD_OFFSET(::protobuf::EventStatusResponse, _impl_.event_description_),
 };
 
 static const ::_pbi::MigrationSchema
@@ -792,9 +796,9 @@ static const ::_pbi::MigrationSchema
         {154, -1, -1, sizeof(::protobuf::ProduceGoodsMsg)},
         {165, -1, -1, sizeof(::protobuf::UplevelTechMsg)},
         {175, -1, -1, sizeof(::protobuf::StrategicAIRequest)},
-        {185, -1, -1, sizeof(::protobuf::StrategicAIResponse)},
-        {197, -1, -1, sizeof(::protobuf::ProductionSuggestion)},
-        {207, -1, -1, sizeof(::protobuf::TaskSuggestion)},
+        {186, -1, -1, sizeof(::protobuf::StrategicAIResponse)},
+        {197, -1, -1, sizeof(::protobuf::EventStatusRequest)},
+        {207, -1, -1, sizeof(::protobuf::EventStatusResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::protobuf::_NullRequest_default_instance_._instance,
@@ -814,8 +818,8 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::protobuf::_UplevelTechMsg_default_instance_._instance,
     &::protobuf::_StrategicAIRequest_default_instance_._instance,
     &::protobuf::_StrategicAIResponse_default_instance_._instance,
-    &::protobuf::_ProductionSuggestion_default_instance_._instance,
-    &::protobuf::_TaskSuggestion_default_instance_._instance,
+    &::protobuf::_EventStatusRequest_default_instance_._instance,
+    &::protobuf::_EventStatusResponse_default_instance_._instance,
 };
 const char descriptor_table_protodef_Message2Server_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
@@ -856,19 +860,15 @@ const char descriptor_table_protodef_Message2Server_2eproto[] ABSL_ATTRIBUTE_SEC
     "\001 \001(\0162\023.protobuf.GoodsType\022\017\n\007team_id\030\002 "
     "\001(\003\022\027\n\017max_produce_num\030\003 \001(\005\"H\n\016UplevelT"
     "echMsg\022\017\n\007team_id\030\001 \001(\003\022%\n\ttech_type\030\002 \001"
-    "(\0162\022.protobuf.TechType\"@\n\022StrategicAIReq"
+    "(\0162\022.protobuf.TechType\"P\n\022StrategicAIReq"
     "uest\022\017\n\007team_id\030\001 \001(\003\022\031\n\021current_game_ti"
-    "me\030\002 \001(\003\"\245\001\n\023StrategicAIResponse\022\023\n\013act_"
-    "success\030\001 \001(\010\0227\n\017production_plan\030\002 \003(\0132\036"
-    ".protobuf.ProductionSuggestion\022+\n\ttask_p"
-    "lan\030\003 \003(\0132\030.protobuf.TaskSuggestion\022\023\n\013e"
-    "xplanation\030\004 \001(\t\"S\n\024ProductionSuggestion"
-    "\022)\n\014product_type\030\001 \001(\0162\023.protobuf.GoodsT"
-    "ype\022\020\n\010quantity\030\002 \001(\005\"\212\001\n\016TaskSuggestion"
-    "\022+\n\013action_type\030\001 \001(\0162\026.protobuf.AIActio"
-    "nType\022\024\n\014character_id\030\002 \001(\003\022\020\n\010target_x\030"
-    "\003 \001(\005\022\020\n\010target_y\030\004 \001(\005\022\021\n\ttarget_id\030\005 \001"
-    "(\003b\006proto3"
+    "me\030\002 \001(\003\022\016\n\006prompt\030\003 \001(\t\"O\n\023StrategicAIR"
+    "esponse\022\023\n\013act_success\030\001 \001(\010\022\016\n\006answer\030\002"
+    " \001(\t\022\023\n\013explanation\030\003 \001(\t\"8\n\022EventStatus"
+    "Request\022\017\n\007team_id\030\001 \001(\003\022\021\n\tplayer_id\030\002 "
+    "\001(\003\"Y\n\023EventStatusResponse\022\023\n\013act_succes"
+    "s\030\001 \001(\010\022\022\n\nevent_name\030\002 \001(\t\022\031\n\021event_des"
+    "cription\030\003 \001(\tb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_Message2Server_2eproto_deps[1] =
     {
@@ -878,7 +878,7 @@ static ::absl::once_flag descriptor_table_Message2Server_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_Message2Server_2eproto = {
     false,
     false,
-    1970,
+    1822,
     descriptor_table_protodef_Message2Server_2eproto,
     "Message2Server.proto",
     &descriptor_table_Message2Server_2eproto_once,
@@ -5043,15 +5043,40 @@ StrategicAIRequest::StrategicAIRequest(::google::protobuf::Arena* arena)
   SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:protobuf.StrategicAIRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE StrategicAIRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::protobuf::StrategicAIRequest& from_msg)
+      : prompt_(arena, from.prompt_),
+        _cached_size_{0} {}
+
 StrategicAIRequest::StrategicAIRequest(
-    ::google::protobuf::Arena* arena, const StrategicAIRequest& from)
-    : StrategicAIRequest(arena) {
-  MergeFrom(from);
+    ::google::protobuf::Arena* arena,
+    const StrategicAIRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  StrategicAIRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, team_id_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, team_id_),
+           offsetof(Impl_, current_game_time_) -
+               offsetof(Impl_, team_id_) +
+               sizeof(Impl_::current_game_time_));
+
+  // @@protoc_insertion_point(copy_constructor:protobuf.StrategicAIRequest)
 }
 inline PROTOBUF_NDEBUG_INLINE StrategicAIRequest::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : _cached_size_{0} {}
+      : prompt_(arena),
+        _cached_size_{0} {}
 
 inline void StrategicAIRequest::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -5070,6 +5095,7 @@ inline void StrategicAIRequest::SharedDtor(MessageLite& self) {
   StrategicAIRequest& this_ = static_cast<StrategicAIRequest&>(self);
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.prompt_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -5078,7 +5104,7 @@ inline void* StrategicAIRequest::PlacementNew_(const void*, void* mem,
   return ::new (mem) StrategicAIRequest(arena);
 }
 constexpr auto StrategicAIRequest::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(StrategicAIRequest),
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(StrategicAIRequest),
                                             alignof(StrategicAIRequest));
 }
 PROTOBUF_CONSTINIT
@@ -5109,15 +5135,15 @@ const ::google::protobuf::internal::ClassData* StrategicAIRequest::GetClassData(
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 0, 0, 2> StrategicAIRequest::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 0, 42, 2> StrategicAIRequest::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    2, 8,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967292,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    2,  // num_field_entries
+    3,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -5127,12 +5153,16 @@ const ::_pbi::TcParseTable<1, 2, 0, 0, 2> StrategicAIRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::protobuf::StrategicAIRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // int64 current_game_time = 2;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(StrategicAIRequest, _impl_.current_game_time_), 63>(),
-     {16, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.current_game_time_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // int64 team_id = 1;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(StrategicAIRequest, _impl_.team_id_), 63>(),
      {8, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.team_id_)}},
+    // int64 current_game_time = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(StrategicAIRequest, _impl_.current_game_time_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.current_game_time_)}},
+    // string prompt = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.prompt_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -5142,9 +5172,15 @@ const ::_pbi::TcParseTable<1, 2, 0, 0, 2> StrategicAIRequest::_table_ = {
     // int64 current_game_time = 2;
     {PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.current_game_time_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+    // string prompt = 3;
+    {PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.prompt_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
+    "\33\0\0\6\0\0\0\0"
+    "protobuf.StrategicAIRequest"
+    "prompt"
   }},
 };
 
@@ -5155,6 +5191,7 @@ PROTOBUF_NOINLINE void StrategicAIRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  _impl_.prompt_.ClearToEmpty();
   ::memset(&_impl_.team_id_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.current_game_time_) -
       reinterpret_cast<char*>(&_impl_.team_id_)) + sizeof(_impl_.current_game_time_));
@@ -5190,6 +5227,14 @@ PROTOBUF_NOINLINE void StrategicAIRequest::Clear() {
                     stream, this_._internal_current_game_time(), target);
           }
 
+          // string prompt = 3;
+          if (!this_._internal_prompt().empty()) {
+            const std::string& _s = this_._internal_prompt();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.StrategicAIRequest.prompt");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -5215,6 +5260,11 @@ PROTOBUF_NOINLINE void StrategicAIRequest::Clear() {
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
            {
+            // string prompt = 3;
+            if (!this_._internal_prompt().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_prompt());
+            }
             // int64 team_id = 1;
             if (this_._internal_team_id() != 0) {
               total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
@@ -5238,6 +5288,9 @@ void StrategicAIRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, cons
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
+  if (!from._internal_prompt().empty()) {
+    _this->_internal_set_prompt(from._internal_prompt());
+  }
   if (from._internal_team_id() != 0) {
     _this->_impl_.team_id_ = from._impl_.team_id_;
   }
@@ -5257,7 +5310,10 @@ void StrategicAIRequest::CopyFrom(const StrategicAIRequest& from) {
 
 void StrategicAIRequest::InternalSwap(StrategicAIRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.prompt_, &other->_impl_.prompt_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(StrategicAIRequest, _impl_.current_game_time_)
       + sizeof(StrategicAIRequest::_impl_.current_game_time_)
@@ -5287,8 +5343,7 @@ StrategicAIResponse::StrategicAIResponse(::google::protobuf::Arena* arena)
 inline PROTOBUF_NDEBUG_INLINE StrategicAIResponse::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
     const Impl_& from, const ::protobuf::StrategicAIResponse& from_msg)
-      : production_plan_{visibility, arena, from.production_plan_},
-        task_plan_{visibility, arena, from.task_plan_},
+      : answer_(arena, from.answer_),
         explanation_(arena, from.explanation_),
         _cached_size_{0} {}
 
@@ -5312,8 +5367,7 @@ StrategicAIResponse::StrategicAIResponse(
 inline PROTOBUF_NDEBUG_INLINE StrategicAIResponse::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : production_plan_{visibility, arena},
-        task_plan_{visibility, arena},
+      : answer_(arena),
         explanation_(arena),
         _cached_size_{0} {}
 
@@ -5329,6 +5383,7 @@ inline void StrategicAIResponse::SharedDtor(MessageLite& self) {
   StrategicAIResponse& this_ = static_cast<StrategicAIResponse&>(self);
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.answer_.Destroy();
   this_._impl_.explanation_.Destroy();
   this_._impl_.~Impl_();
 }
@@ -5338,24 +5393,8 @@ inline void* StrategicAIResponse::PlacementNew_(const void*, void* mem,
   return ::new (mem) StrategicAIResponse(arena);
 }
 constexpr auto StrategicAIResponse::InternalNewImpl_() {
-  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
-      PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.production_plan_) +
-          decltype(StrategicAIResponse::_impl_.production_plan_)::
-              InternalGetArenaOffset(
-                  ::google::protobuf::Message::internal_visibility()),
-      PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.task_plan_) +
-          decltype(StrategicAIResponse::_impl_.task_plan_)::
-              InternalGetArenaOffset(
-                  ::google::protobuf::Message::internal_visibility()),
-  });
-  if (arena_bits.has_value()) {
-    return ::google::protobuf::internal::MessageCreator::CopyInit(
-        sizeof(StrategicAIResponse), alignof(StrategicAIResponse), *arena_bits);
-  } else {
-    return ::google::protobuf::internal::MessageCreator(&StrategicAIResponse::PlacementNew_,
-                                 sizeof(StrategicAIResponse),
-                                 alignof(StrategicAIResponse));
-  }
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(StrategicAIResponse),
+                                            alignof(StrategicAIResponse));
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
@@ -5385,17 +5424,17 @@ const ::google::protobuf::internal::ClassData* StrategicAIResponse::GetClassData
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 4, 2, 48, 2> StrategicAIResponse::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 0, 54, 2> StrategicAIResponse::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    4, 24,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967280,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
-    2,  // num_aux_entries
-    offsetof(decltype(_table_), aux_entries),
+    3,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
@@ -5403,39 +5442,34 @@ const ::_pbi::TcParseTable<2, 4, 2, 48, 2> StrategicAIResponse::_table_ = {
     ::_pbi::TcParser::GetTable<::protobuf::StrategicAIResponse>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // string explanation = 4;
-    {::_pbi::TcParser::FastUS1,
-     {34, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.explanation_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // bool act_success = 1;
     {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(StrategicAIResponse, _impl_.act_success_), 63>(),
      {8, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.act_success_)}},
-    // repeated .protobuf.ProductionSuggestion production_plan = 2;
-    {::_pbi::TcParser::FastMtR1,
-     {18, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.production_plan_)}},
-    // repeated .protobuf.TaskSuggestion task_plan = 3;
-    {::_pbi::TcParser::FastMtR1,
-     {26, 63, 1, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.task_plan_)}},
+    // string answer = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.answer_)}},
+    // string explanation = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.explanation_)}},
   }}, {{
     65535, 65535
   }}, {{
     // bool act_success = 1;
     {PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.act_success_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kBool)},
-    // repeated .protobuf.ProductionSuggestion production_plan = 2;
-    {PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.production_plan_), 0, 0,
-    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
-    // repeated .protobuf.TaskSuggestion task_plan = 3;
-    {PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.task_plan_), 0, 1,
-    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
-    // string explanation = 4;
+    // string answer = 2;
+    {PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.answer_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string explanation = 3;
     {PROTOBUF_FIELD_OFFSET(StrategicAIResponse, _impl_.explanation_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
-  }}, {{
-    {::_pbi::TcParser::GetTable<::protobuf::ProductionSuggestion>()},
-    {::_pbi::TcParser::GetTable<::protobuf::TaskSuggestion>()},
-  }}, {{
-    "\34\0\0\0\13\0\0\0"
+  }},
+  // no aux_entries
+  {{
+    "\34\0\6\13\0\0\0\0"
     "protobuf.StrategicAIResponse"
+    "answer"
     "explanation"
   }},
 };
@@ -5447,8 +5481,7 @@ PROTOBUF_NOINLINE void StrategicAIResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  _impl_.production_plan_.Clear();
-  _impl_.task_plan_.Clear();
+  _impl_.answer_.ClearToEmpty();
   _impl_.explanation_.ClearToEmpty();
   _impl_.act_success_ = false;
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
@@ -5476,34 +5509,20 @@ PROTOBUF_NOINLINE void StrategicAIResponse::Clear() {
                 1, this_._internal_act_success(), target);
           }
 
-          // repeated .protobuf.ProductionSuggestion production_plan = 2;
-          for (unsigned i = 0, n = static_cast<unsigned>(
-                                   this_._internal_production_plan_size());
-               i < n; i++) {
-            const auto& repfield = this_._internal_production_plan().Get(i);
-            target =
-                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
-                    2, repfield, repfield.GetCachedSize(),
-                    target, stream);
+          // string answer = 2;
+          if (!this_._internal_answer().empty()) {
+            const std::string& _s = this_._internal_answer();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.StrategicAIResponse.answer");
+            target = stream->WriteStringMaybeAliased(2, _s, target);
           }
 
-          // repeated .protobuf.TaskSuggestion task_plan = 3;
-          for (unsigned i = 0, n = static_cast<unsigned>(
-                                   this_._internal_task_plan_size());
-               i < n; i++) {
-            const auto& repfield = this_._internal_task_plan().Get(i);
-            target =
-                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
-                    3, repfield, repfield.GetCachedSize(),
-                    target, stream);
-          }
-
-          // string explanation = 4;
+          // string explanation = 3;
           if (!this_._internal_explanation().empty()) {
             const std::string& _s = this_._internal_explanation();
             ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
                 _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.StrategicAIResponse.explanation");
-            target = stream->WriteStringMaybeAliased(4, _s, target);
+            target = stream->WriteStringMaybeAliased(3, _s, target);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -5531,23 +5550,12 @@ PROTOBUF_NOINLINE void StrategicAIResponse::Clear() {
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
            {
-            // repeated .protobuf.ProductionSuggestion production_plan = 2;
-            {
-              total_size += 1UL * this_._internal_production_plan_size();
-              for (const auto& msg : this_._internal_production_plan()) {
-                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
-              }
+            // string answer = 2;
+            if (!this_._internal_answer().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_answer());
             }
-            // repeated .protobuf.TaskSuggestion task_plan = 3;
-            {
-              total_size += 1UL * this_._internal_task_plan_size();
-              for (const auto& msg : this_._internal_task_plan()) {
-                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
-              }
-            }
-          }
-           {
-            // string explanation = 4;
+            // string explanation = 3;
             if (!this_._internal_explanation().empty()) {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_explanation());
@@ -5569,10 +5577,9 @@ void StrategicAIResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, con
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_internal_mutable_production_plan()->MergeFrom(
-      from._internal_production_plan());
-  _this->_internal_mutable_task_plan()->MergeFrom(
-      from._internal_task_plan());
+  if (!from._internal_answer().empty()) {
+    _this->_internal_set_answer(from._internal_answer());
+  }
   if (!from._internal_explanation().empty()) {
     _this->_internal_set_explanation(from._internal_explanation());
   }
@@ -5595,8 +5602,7 @@ void StrategicAIResponse::InternalSwap(StrategicAIResponse* PROTOBUF_RESTRICT ot
   auto* arena = GetArena();
   ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  _impl_.production_plan_.InternalSwap(&other->_impl_.production_plan_);
-  _impl_.task_plan_.InternalSwap(&other->_impl_.task_plan_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.answer_, &other->_impl_.answer_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.explanation_, &other->_impl_.explanation_, arena);
         swap(_impl_.act_success_, other->_impl_.act_success_);
 }
@@ -5606,86 +5612,86 @@ void StrategicAIResponse::InternalSwap(StrategicAIResponse* PROTOBUF_RESTRICT ot
 }
 // ===================================================================
 
-class ProductionSuggestion::_Internal {
+class EventStatusRequest::_Internal {
  public:
 };
 
-ProductionSuggestion::ProductionSuggestion(::google::protobuf::Arena* arena)
+EventStatusRequest::EventStatusRequest(::google::protobuf::Arena* arena)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(arena, _class_data_.base()) {
 #else   // PROTOBUF_CUSTOM_VTABLE
     : ::google::protobuf::Message(arena) {
 #endif  // PROTOBUF_CUSTOM_VTABLE
   SharedCtor(arena);
-  // @@protoc_insertion_point(arena_constructor:protobuf.ProductionSuggestion)
+  // @@protoc_insertion_point(arena_constructor:protobuf.EventStatusRequest)
 }
-ProductionSuggestion::ProductionSuggestion(
-    ::google::protobuf::Arena* arena, const ProductionSuggestion& from)
-    : ProductionSuggestion(arena) {
+EventStatusRequest::EventStatusRequest(
+    ::google::protobuf::Arena* arena, const EventStatusRequest& from)
+    : EventStatusRequest(arena) {
   MergeFrom(from);
 }
-inline PROTOBUF_NDEBUG_INLINE ProductionSuggestion::Impl_::Impl_(
+inline PROTOBUF_NDEBUG_INLINE EventStatusRequest::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
       : _cached_size_{0} {}
 
-inline void ProductionSuggestion::SharedCtor(::_pb::Arena* arena) {
+inline void EventStatusRequest::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
   ::memset(reinterpret_cast<char *>(&_impl_) +
-               offsetof(Impl_, product_type_),
+               offsetof(Impl_, team_id_),
            0,
-           offsetof(Impl_, quantity_) -
-               offsetof(Impl_, product_type_) +
-               sizeof(Impl_::quantity_));
+           offsetof(Impl_, player_id_) -
+               offsetof(Impl_, team_id_) +
+               sizeof(Impl_::player_id_));
 }
-ProductionSuggestion::~ProductionSuggestion() {
-  // @@protoc_insertion_point(destructor:protobuf.ProductionSuggestion)
+EventStatusRequest::~EventStatusRequest() {
+  // @@protoc_insertion_point(destructor:protobuf.EventStatusRequest)
   SharedDtor(*this);
 }
-inline void ProductionSuggestion::SharedDtor(MessageLite& self) {
-  ProductionSuggestion& this_ = static_cast<ProductionSuggestion&>(self);
+inline void EventStatusRequest::SharedDtor(MessageLite& self) {
+  EventStatusRequest& this_ = static_cast<EventStatusRequest&>(self);
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
   this_._impl_.~Impl_();
 }
 
-inline void* ProductionSuggestion::PlacementNew_(const void*, void* mem,
+inline void* EventStatusRequest::PlacementNew_(const void*, void* mem,
                                         ::google::protobuf::Arena* arena) {
-  return ::new (mem) ProductionSuggestion(arena);
+  return ::new (mem) EventStatusRequest(arena);
 }
-constexpr auto ProductionSuggestion::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(ProductionSuggestion),
-                                            alignof(ProductionSuggestion));
+constexpr auto EventStatusRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(EventStatusRequest),
+                                            alignof(EventStatusRequest));
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::google::protobuf::internal::ClassDataFull ProductionSuggestion::_class_data_ = {
+const ::google::protobuf::internal::ClassDataFull EventStatusRequest::_class_data_ = {
     ::google::protobuf::internal::ClassData{
-        &_ProductionSuggestion_default_instance_._instance,
+        &_EventStatusRequest_default_instance_._instance,
         &_table_.header,
         nullptr,  // OnDemandRegisterArenaDtor
         nullptr,  // IsInitialized
-        &ProductionSuggestion::MergeImpl,
-        ::google::protobuf::Message::GetNewImpl<ProductionSuggestion>(),
+        &EventStatusRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<EventStatusRequest>(),
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        &ProductionSuggestion::SharedDtor,
-        ::google::protobuf::Message::GetClearImpl<ProductionSuggestion>(), &ProductionSuggestion::ByteSizeLong,
-            &ProductionSuggestion::_InternalSerialize,
+        &EventStatusRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<EventStatusRequest>(), &EventStatusRequest::ByteSizeLong,
+            &EventStatusRequest::_InternalSerialize,
 #endif  // PROTOBUF_CUSTOM_VTABLE
-        PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_._cached_size_),
+        PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_._cached_size_),
         false,
     },
-    &ProductionSuggestion::kDescriptorMethods,
+    &EventStatusRequest::kDescriptorMethods,
     &descriptor_table_Message2Server_2eproto,
     nullptr,  // tracker
 };
-const ::google::protobuf::internal::ClassData* ProductionSuggestion::GetClassData() const {
+const ::google::protobuf::internal::ClassData* EventStatusRequest::GetClassData() const {
   ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
   ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 0, 0, 2> ProductionSuggestion::_table_ = {
+const ::_pbi::TcParseTable<1, 2, 0, 0, 2> EventStatusRequest::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
@@ -5700,70 +5706,70 @@ const ::_pbi::TcParseTable<1, 2, 0, 0, 2> ProductionSuggestion::_table_ = {
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
     #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
-    ::_pbi::TcParser::GetTable<::protobuf::ProductionSuggestion>(),  // to_prefetch
+    ::_pbi::TcParser::GetTable<::protobuf::EventStatusRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // int32 quantity = 2;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ProductionSuggestion, _impl_.quantity_), 63>(),
-     {16, 63, 0, PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.quantity_)}},
-    // .protobuf.GoodsType product_type = 1;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(ProductionSuggestion, _impl_.product_type_), 63>(),
-     {8, 63, 0, PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.product_type_)}},
+    // int64 player_id = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(EventStatusRequest, _impl_.player_id_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.player_id_)}},
+    // int64 team_id = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(EventStatusRequest, _impl_.team_id_), 63>(),
+     {8, 63, 0, PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.team_id_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // .protobuf.GoodsType product_type = 1;
-    {PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.product_type_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kOpenEnum)},
-    // int32 quantity = 2;
-    {PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.quantity_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // int64 team_id = 1;
+    {PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.team_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+    // int64 player_id = 2;
+    {PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.player_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
   }},
   // no aux_entries
   {{
   }},
 };
 
-PROTOBUF_NOINLINE void ProductionSuggestion::Clear() {
-// @@protoc_insertion_point(message_clear_start:protobuf.ProductionSuggestion)
+PROTOBUF_NOINLINE void EventStatusRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.EventStatusRequest)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ::memset(&_impl_.product_type_, 0, static_cast<::size_t>(
-      reinterpret_cast<char*>(&_impl_.quantity_) -
-      reinterpret_cast<char*>(&_impl_.product_type_)) + sizeof(_impl_.quantity_));
+  ::memset(&_impl_.team_id_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.player_id_) -
+      reinterpret_cast<char*>(&_impl_.team_id_)) + sizeof(_impl_.player_id_));
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        ::uint8_t* ProductionSuggestion::_InternalSerialize(
+        ::uint8_t* EventStatusRequest::_InternalSerialize(
             const MessageLite& base, ::uint8_t* target,
             ::google::protobuf::io::EpsCopyOutputStream* stream) {
-          const ProductionSuggestion& this_ = static_cast<const ProductionSuggestion&>(base);
+          const EventStatusRequest& this_ = static_cast<const EventStatusRequest&>(base);
 #else   // PROTOBUF_CUSTOM_VTABLE
-        ::uint8_t* ProductionSuggestion::_InternalSerialize(
+        ::uint8_t* EventStatusRequest::_InternalSerialize(
             ::uint8_t* target,
             ::google::protobuf::io::EpsCopyOutputStream* stream) const {
-          const ProductionSuggestion& this_ = *this;
+          const EventStatusRequest& this_ = *this;
 #endif  // PROTOBUF_CUSTOM_VTABLE
-          // @@protoc_insertion_point(serialize_to_array_start:protobuf.ProductionSuggestion)
+          // @@protoc_insertion_point(serialize_to_array_start:protobuf.EventStatusRequest)
           ::uint32_t cached_has_bits = 0;
           (void)cached_has_bits;
 
-          // .protobuf.GoodsType product_type = 1;
-          if (this_._internal_product_type() != 0) {
-            target = stream->EnsureSpace(target);
-            target = ::_pbi::WireFormatLite::WriteEnumToArray(
-                1, this_._internal_product_type(), target);
+          // int64 team_id = 1;
+          if (this_._internal_team_id() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt64ToArrayWithField<1>(
+                    stream, this_._internal_team_id(), target);
           }
 
-          // int32 quantity = 2;
-          if (this_._internal_quantity() != 0) {
+          // int64 player_id = 2;
+          if (this_._internal_player_id() != 0) {
             target = ::google::protobuf::internal::WireFormatLite::
-                WriteInt32ToArrayWithField<2>(
-                    stream, this_._internal_quantity(), target);
+                WriteInt64ToArrayWithField<2>(
+                    stream, this_._internal_player_id(), target);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -5771,18 +5777,18 @@ PROTOBUF_NOINLINE void ProductionSuggestion::Clear() {
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
                     this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
           }
-          // @@protoc_insertion_point(serialize_to_array_end:protobuf.ProductionSuggestion)
+          // @@protoc_insertion_point(serialize_to_array_end:protobuf.EventStatusRequest)
           return target;
         }
 
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        ::size_t ProductionSuggestion::ByteSizeLong(const MessageLite& base) {
-          const ProductionSuggestion& this_ = static_cast<const ProductionSuggestion&>(base);
+        ::size_t EventStatusRequest::ByteSizeLong(const MessageLite& base) {
+          const EventStatusRequest& this_ = static_cast<const EventStatusRequest&>(base);
 #else   // PROTOBUF_CUSTOM_VTABLE
-        ::size_t ProductionSuggestion::ByteSizeLong() const {
-          const ProductionSuggestion& this_ = *this;
+        ::size_t EventStatusRequest::ByteSizeLong() const {
+          const EventStatusRequest& this_ = *this;
 #endif  // PROTOBUF_CUSTOM_VTABLE
-          // @@protoc_insertion_point(message_byte_size_start:protobuf.ProductionSuggestion)
+          // @@protoc_insertion_point(message_byte_size_start:protobuf.EventStatusRequest)
           ::size_t total_size = 0;
 
           ::uint32_t cached_has_bits = 0;
@@ -5791,262 +5797,258 @@ PROTOBUF_NOINLINE void ProductionSuggestion::Clear() {
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
            {
-            // .protobuf.GoodsType product_type = 1;
-            if (this_._internal_product_type() != 0) {
-              total_size += 1 +
-                            ::_pbi::WireFormatLite::EnumSize(this_._internal_product_type());
+            // int64 team_id = 1;
+            if (this_._internal_team_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+                  this_._internal_team_id());
             }
-            // int32 quantity = 2;
-            if (this_._internal_quantity() != 0) {
-              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
-                  this_._internal_quantity());
+            // int64 player_id = 2;
+            if (this_._internal_player_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+                  this_._internal_player_id());
             }
           }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
         }
 
-void ProductionSuggestion::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<ProductionSuggestion*>(&to_msg);
-  auto& from = static_cast<const ProductionSuggestion&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.ProductionSuggestion)
+void EventStatusRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<EventStatusRequest*>(&to_msg);
+  auto& from = static_cast<const EventStatusRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.EventStatusRequest)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_product_type() != 0) {
-    _this->_impl_.product_type_ = from._impl_.product_type_;
+  if (from._internal_team_id() != 0) {
+    _this->_impl_.team_id_ = from._impl_.team_id_;
   }
-  if (from._internal_quantity() != 0) {
-    _this->_impl_.quantity_ = from._impl_.quantity_;
+  if (from._internal_player_id() != 0) {
+    _this->_impl_.player_id_ = from._impl_.player_id_;
   }
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void ProductionSuggestion::CopyFrom(const ProductionSuggestion& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.ProductionSuggestion)
+void EventStatusRequest::CopyFrom(const EventStatusRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.EventStatusRequest)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 
-void ProductionSuggestion::InternalSwap(ProductionSuggestion* PROTOBUF_RESTRICT other) {
+void EventStatusRequest::InternalSwap(EventStatusRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.quantity_)
-      + sizeof(ProductionSuggestion::_impl_.quantity_)
-      - PROTOBUF_FIELD_OFFSET(ProductionSuggestion, _impl_.product_type_)>(
-          reinterpret_cast<char*>(&_impl_.product_type_),
-          reinterpret_cast<char*>(&other->_impl_.product_type_));
+      PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.player_id_)
+      + sizeof(EventStatusRequest::_impl_.player_id_)
+      - PROTOBUF_FIELD_OFFSET(EventStatusRequest, _impl_.team_id_)>(
+          reinterpret_cast<char*>(&_impl_.team_id_),
+          reinterpret_cast<char*>(&other->_impl_.team_id_));
 }
 
-::google::protobuf::Metadata ProductionSuggestion::GetMetadata() const {
+::google::protobuf::Metadata EventStatusRequest::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================
 
-class TaskSuggestion::_Internal {
+class EventStatusResponse::_Internal {
  public:
 };
 
-TaskSuggestion::TaskSuggestion(::google::protobuf::Arena* arena)
+EventStatusResponse::EventStatusResponse(::google::protobuf::Arena* arena)
 #if defined(PROTOBUF_CUSTOM_VTABLE)
     : ::google::protobuf::Message(arena, _class_data_.base()) {
 #else   // PROTOBUF_CUSTOM_VTABLE
     : ::google::protobuf::Message(arena) {
 #endif  // PROTOBUF_CUSTOM_VTABLE
   SharedCtor(arena);
-  // @@protoc_insertion_point(arena_constructor:protobuf.TaskSuggestion)
+  // @@protoc_insertion_point(arena_constructor:protobuf.EventStatusResponse)
 }
-TaskSuggestion::TaskSuggestion(
-    ::google::protobuf::Arena* arena, const TaskSuggestion& from)
-    : TaskSuggestion(arena) {
-  MergeFrom(from);
+inline PROTOBUF_NDEBUG_INLINE EventStatusResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::protobuf::EventStatusResponse& from_msg)
+      : event_name_(arena, from.event_name_),
+        event_description_(arena, from.event_description_),
+        _cached_size_{0} {}
+
+EventStatusResponse::EventStatusResponse(
+    ::google::protobuf::Arena* arena,
+    const EventStatusResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  EventStatusResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  _impl_.act_success_ = from._impl_.act_success_;
+
+  // @@protoc_insertion_point(copy_constructor:protobuf.EventStatusResponse)
 }
-inline PROTOBUF_NDEBUG_INLINE TaskSuggestion::Impl_::Impl_(
+inline PROTOBUF_NDEBUG_INLINE EventStatusResponse::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
-      : _cached_size_{0} {}
+      : event_name_(arena),
+        event_description_(arena),
+        _cached_size_{0} {}
 
-inline void TaskSuggestion::SharedCtor(::_pb::Arena* arena) {
+inline void EventStatusResponse::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  ::memset(reinterpret_cast<char *>(&_impl_) +
-               offsetof(Impl_, character_id_),
-           0,
-           offsetof(Impl_, target_y_) -
-               offsetof(Impl_, character_id_) +
-               sizeof(Impl_::target_y_));
+  _impl_.act_success_ = {};
 }
-TaskSuggestion::~TaskSuggestion() {
-  // @@protoc_insertion_point(destructor:protobuf.TaskSuggestion)
+EventStatusResponse::~EventStatusResponse() {
+  // @@protoc_insertion_point(destructor:protobuf.EventStatusResponse)
   SharedDtor(*this);
 }
-inline void TaskSuggestion::SharedDtor(MessageLite& self) {
-  TaskSuggestion& this_ = static_cast<TaskSuggestion&>(self);
+inline void EventStatusResponse::SharedDtor(MessageLite& self) {
+  EventStatusResponse& this_ = static_cast<EventStatusResponse&>(self);
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.event_name_.Destroy();
+  this_._impl_.event_description_.Destroy();
   this_._impl_.~Impl_();
 }
 
-inline void* TaskSuggestion::PlacementNew_(const void*, void* mem,
+inline void* EventStatusResponse::PlacementNew_(const void*, void* mem,
                                         ::google::protobuf::Arena* arena) {
-  return ::new (mem) TaskSuggestion(arena);
+  return ::new (mem) EventStatusResponse(arena);
 }
-constexpr auto TaskSuggestion::InternalNewImpl_() {
-  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(TaskSuggestion),
-                                            alignof(TaskSuggestion));
+constexpr auto EventStatusResponse::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(EventStatusResponse),
+                                            alignof(EventStatusResponse));
 }
 PROTOBUF_CONSTINIT
 PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::google::protobuf::internal::ClassDataFull TaskSuggestion::_class_data_ = {
+const ::google::protobuf::internal::ClassDataFull EventStatusResponse::_class_data_ = {
     ::google::protobuf::internal::ClassData{
-        &_TaskSuggestion_default_instance_._instance,
+        &_EventStatusResponse_default_instance_._instance,
         &_table_.header,
         nullptr,  // OnDemandRegisterArenaDtor
         nullptr,  // IsInitialized
-        &TaskSuggestion::MergeImpl,
-        ::google::protobuf::Message::GetNewImpl<TaskSuggestion>(),
+        &EventStatusResponse::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<EventStatusResponse>(),
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        &TaskSuggestion::SharedDtor,
-        ::google::protobuf::Message::GetClearImpl<TaskSuggestion>(), &TaskSuggestion::ByteSizeLong,
-            &TaskSuggestion::_InternalSerialize,
+        &EventStatusResponse::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<EventStatusResponse>(), &EventStatusResponse::ByteSizeLong,
+            &EventStatusResponse::_InternalSerialize,
 #endif  // PROTOBUF_CUSTOM_VTABLE
-        PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_._cached_size_),
+        PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_._cached_size_),
         false,
     },
-    &TaskSuggestion::kDescriptorMethods,
+    &EventStatusResponse::kDescriptorMethods,
     &descriptor_table_Message2Server_2eproto,
     nullptr,  // tracker
 };
-const ::google::protobuf::internal::ClassData* TaskSuggestion::GetClassData() const {
+const ::google::protobuf::internal::ClassData* EventStatusResponse::GetClassData() const {
   ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
   ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 5, 0, 0, 2> TaskSuggestion::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 0, 64, 2> EventStatusResponse::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    5, 56,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967264,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    5,  // num_field_entries
+    3,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
     nullptr,  // post_loop_handler
     ::_pbi::TcParser::GenericFallback,  // fallback
     #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
-    ::_pbi::TcParser::GetTable<::protobuf::TaskSuggestion>(),  // to_prefetch
+    ::_pbi::TcParser::GetTable<::protobuf::EventStatusResponse>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
     {::_pbi::TcParser::MiniParse, {}},
-    // .protobuf.AIActionType action_type = 1;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(TaskSuggestion, _impl_.action_type_), 63>(),
-     {8, 63, 0, PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.action_type_)}},
-    // int64 character_id = 2;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(TaskSuggestion, _impl_.character_id_), 63>(),
-     {16, 63, 0, PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.character_id_)}},
-    // int32 target_x = 3;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(TaskSuggestion, _impl_.target_x_), 63>(),
-     {24, 63, 0, PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_x_)}},
-    // int32 target_y = 4;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(TaskSuggestion, _impl_.target_y_), 63>(),
-     {32, 63, 0, PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_y_)}},
-    // int64 target_id = 5;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(TaskSuggestion, _impl_.target_id_), 63>(),
-     {40, 63, 0, PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_id_)}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // bool act_success = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(EventStatusResponse, _impl_.act_success_), 63>(),
+     {8, 63, 0, PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.act_success_)}},
+    // string event_name = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.event_name_)}},
+    // string event_description = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.event_description_)}},
   }}, {{
     65535, 65535
   }}, {{
-    // .protobuf.AIActionType action_type = 1;
-    {PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.action_type_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kOpenEnum)},
-    // int64 character_id = 2;
-    {PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.character_id_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
-    // int32 target_x = 3;
-    {PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_x_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
-    // int32 target_y = 4;
-    {PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_y_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
-    // int64 target_id = 5;
-    {PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_id_), 0, 0,
-    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+    // bool act_success = 1;
+    {PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.act_success_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+    // string event_name = 2;
+    {PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.event_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string event_description = 3;
+    {PROTOBUF_FIELD_OFFSET(EventStatusResponse, _impl_.event_description_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
+    "\34\0\12\21\0\0\0\0"
+    "protobuf.EventStatusResponse"
+    "event_name"
+    "event_description"
   }},
 };
 
-PROTOBUF_NOINLINE void TaskSuggestion::Clear() {
-// @@protoc_insertion_point(message_clear_start:protobuf.TaskSuggestion)
+PROTOBUF_NOINLINE void EventStatusResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:protobuf.EventStatusResponse)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ::memset(&_impl_.character_id_, 0, static_cast<::size_t>(
-      reinterpret_cast<char*>(&_impl_.target_y_) -
-      reinterpret_cast<char*>(&_impl_.character_id_)) + sizeof(_impl_.target_y_));
+  _impl_.event_name_.ClearToEmpty();
+  _impl_.event_description_.ClearToEmpty();
+  _impl_.act_success_ = false;
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        ::uint8_t* TaskSuggestion::_InternalSerialize(
+        ::uint8_t* EventStatusResponse::_InternalSerialize(
             const MessageLite& base, ::uint8_t* target,
             ::google::protobuf::io::EpsCopyOutputStream* stream) {
-          const TaskSuggestion& this_ = static_cast<const TaskSuggestion&>(base);
+          const EventStatusResponse& this_ = static_cast<const EventStatusResponse&>(base);
 #else   // PROTOBUF_CUSTOM_VTABLE
-        ::uint8_t* TaskSuggestion::_InternalSerialize(
+        ::uint8_t* EventStatusResponse::_InternalSerialize(
             ::uint8_t* target,
             ::google::protobuf::io::EpsCopyOutputStream* stream) const {
-          const TaskSuggestion& this_ = *this;
+          const EventStatusResponse& this_ = *this;
 #endif  // PROTOBUF_CUSTOM_VTABLE
-          // @@protoc_insertion_point(serialize_to_array_start:protobuf.TaskSuggestion)
+          // @@protoc_insertion_point(serialize_to_array_start:protobuf.EventStatusResponse)
           ::uint32_t cached_has_bits = 0;
           (void)cached_has_bits;
 
-          // .protobuf.AIActionType action_type = 1;
-          if (this_._internal_action_type() != 0) {
+          // bool act_success = 1;
+          if (this_._internal_act_success() != 0) {
             target = stream->EnsureSpace(target);
-            target = ::_pbi::WireFormatLite::WriteEnumToArray(
-                1, this_._internal_action_type(), target);
+            target = ::_pbi::WireFormatLite::WriteBoolToArray(
+                1, this_._internal_act_success(), target);
           }
 
-          // int64 character_id = 2;
-          if (this_._internal_character_id() != 0) {
-            target = ::google::protobuf::internal::WireFormatLite::
-                WriteInt64ToArrayWithField<2>(
-                    stream, this_._internal_character_id(), target);
+          // string event_name = 2;
+          if (!this_._internal_event_name().empty()) {
+            const std::string& _s = this_._internal_event_name();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.EventStatusResponse.event_name");
+            target = stream->WriteStringMaybeAliased(2, _s, target);
           }
 
-          // int32 target_x = 3;
-          if (this_._internal_target_x() != 0) {
-            target = ::google::protobuf::internal::WireFormatLite::
-                WriteInt32ToArrayWithField<3>(
-                    stream, this_._internal_target_x(), target);
-          }
-
-          // int32 target_y = 4;
-          if (this_._internal_target_y() != 0) {
-            target = ::google::protobuf::internal::WireFormatLite::
-                WriteInt32ToArrayWithField<4>(
-                    stream, this_._internal_target_y(), target);
-          }
-
-          // int64 target_id = 5;
-          if (this_._internal_target_id() != 0) {
-            target = ::google::protobuf::internal::WireFormatLite::
-                WriteInt64ToArrayWithField<5>(
-                    stream, this_._internal_target_id(), target);
+          // string event_description = 3;
+          if (!this_._internal_event_description().empty()) {
+            const std::string& _s = this_._internal_event_description();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "protobuf.EventStatusResponse.event_description");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -6054,18 +6056,18 @@ PROTOBUF_NOINLINE void TaskSuggestion::Clear() {
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
                     this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
           }
-          // @@protoc_insertion_point(serialize_to_array_end:protobuf.TaskSuggestion)
+          // @@protoc_insertion_point(serialize_to_array_end:protobuf.EventStatusResponse)
           return target;
         }
 
 #if defined(PROTOBUF_CUSTOM_VTABLE)
-        ::size_t TaskSuggestion::ByteSizeLong(const MessageLite& base) {
-          const TaskSuggestion& this_ = static_cast<const TaskSuggestion&>(base);
+        ::size_t EventStatusResponse::ByteSizeLong(const MessageLite& base) {
+          const EventStatusResponse& this_ = static_cast<const EventStatusResponse&>(base);
 #else   // PROTOBUF_CUSTOM_VTABLE
-        ::size_t TaskSuggestion::ByteSizeLong() const {
-          const TaskSuggestion& this_ = *this;
+        ::size_t EventStatusResponse::ByteSizeLong() const {
+          const EventStatusResponse& this_ = *this;
 #endif  // PROTOBUF_CUSTOM_VTABLE
-          // @@protoc_insertion_point(message_byte_size_start:protobuf.TaskSuggestion)
+          // @@protoc_insertion_point(message_byte_size_start:protobuf.EventStatusResponse)
           ::size_t total_size = 0;
 
           ::uint32_t cached_has_bits = 0;
@@ -6074,82 +6076,64 @@ PROTOBUF_NOINLINE void TaskSuggestion::Clear() {
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
            {
-            // int64 character_id = 2;
-            if (this_._internal_character_id() != 0) {
-              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
-                  this_._internal_character_id());
+            // string event_name = 2;
+            if (!this_._internal_event_name().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_event_name());
             }
-            // .protobuf.AIActionType action_type = 1;
-            if (this_._internal_action_type() != 0) {
-              total_size += 1 +
-                            ::_pbi::WireFormatLite::EnumSize(this_._internal_action_type());
+            // string event_description = 3;
+            if (!this_._internal_event_description().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_event_description());
             }
-            // int32 target_x = 3;
-            if (this_._internal_target_x() != 0) {
-              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
-                  this_._internal_target_x());
-            }
-            // int64 target_id = 5;
-            if (this_._internal_target_id() != 0) {
-              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
-                  this_._internal_target_id());
-            }
-            // int32 target_y = 4;
-            if (this_._internal_target_y() != 0) {
-              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
-                  this_._internal_target_y());
+            // bool act_success = 1;
+            if (this_._internal_act_success() != 0) {
+              total_size += 2;
             }
           }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
         }
 
-void TaskSuggestion::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
-  auto* const _this = static_cast<TaskSuggestion*>(&to_msg);
-  auto& from = static_cast<const TaskSuggestion&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.TaskSuggestion)
+void EventStatusResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<EventStatusResponse*>(&to_msg);
+  auto& from = static_cast<const EventStatusResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protobuf.EventStatusResponse)
   ABSL_DCHECK_NE(&from, _this);
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_character_id() != 0) {
-    _this->_impl_.character_id_ = from._impl_.character_id_;
+  if (!from._internal_event_name().empty()) {
+    _this->_internal_set_event_name(from._internal_event_name());
   }
-  if (from._internal_action_type() != 0) {
-    _this->_impl_.action_type_ = from._impl_.action_type_;
+  if (!from._internal_event_description().empty()) {
+    _this->_internal_set_event_description(from._internal_event_description());
   }
-  if (from._internal_target_x() != 0) {
-    _this->_impl_.target_x_ = from._impl_.target_x_;
-  }
-  if (from._internal_target_id() != 0) {
-    _this->_impl_.target_id_ = from._impl_.target_id_;
-  }
-  if (from._internal_target_y() != 0) {
-    _this->_impl_.target_y_ = from._impl_.target_y_;
+  if (from._internal_act_success() != 0) {
+    _this->_impl_.act_success_ = from._impl_.act_success_;
   }
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
-void TaskSuggestion::CopyFrom(const TaskSuggestion& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.TaskSuggestion)
+void EventStatusResponse::CopyFrom(const EventStatusResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protobuf.EventStatusResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 
-void TaskSuggestion::InternalSwap(TaskSuggestion* PROTOBUF_RESTRICT other) {
+void EventStatusResponse::InternalSwap(EventStatusResponse* PROTOBUF_RESTRICT other) {
   using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.target_y_)
-      + sizeof(TaskSuggestion::_impl_.target_y_)
-      - PROTOBUF_FIELD_OFFSET(TaskSuggestion, _impl_.character_id_)>(
-          reinterpret_cast<char*>(&_impl_.character_id_),
-          reinterpret_cast<char*>(&other->_impl_.character_id_));
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.event_name_, &other->_impl_.event_name_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.event_description_, &other->_impl_.event_description_, arena);
+        swap(_impl_.act_success_, other->_impl_.act_success_);
 }
 
-::google::protobuf::Metadata TaskSuggestion::GetMetadata() const {
+::google::protobuf::Metadata EventStatusResponse::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // @@protoc_insertion_point(namespace_scope)
