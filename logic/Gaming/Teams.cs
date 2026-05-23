@@ -102,7 +102,7 @@ namespace Gaming
             for (int i = 0; i < numOfTeam; i++)
             {
                 long teamId = i + 1;
-                var (cx, cy) = corners[selected[i]];
+                var (cx, cy) = corners[i];
                 XY pos = GameData.GetCellCenterPos(cx, cy);
                 var fac = new Factory(pos);
                 fac.TeamID.SetROri(teamId);
