@@ -55,7 +55,7 @@ class GameConfig:
     num_markets: int = 3
     num_resource_points: int = 2
     num_compute_centers: int = 2
-    random_map: bool = False
+    random_map: bool = True
 
     # Time
     time_step: float = 0.25          # seconds per tick

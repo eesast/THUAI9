@@ -174,6 +174,9 @@ class GameEnvironment(gym.Env):
         self._step: int = 0
         self._techs_owned: set = set()
 
+    def set_random_map(self, enabled: bool = True) -> None:
+        self.cfg.random_map = enabled
+
     # ── Gym interface ──────────────────────────────────────────────────────────
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
