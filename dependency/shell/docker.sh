@@ -42,7 +42,7 @@ while getopts ':cr' OPT; do
                 -e TERMINAL=SERVER \
                 -e SERVER_PORT="${SERVER_PORT:-8888}" \
                 -e TEAM_COUNT="${TEAM_COUNT:-4}" \
-                -e GAME_TIME_SEC="${GAME_TIME_SEC:-600}" \
+                -e GAME_TIME="${GAME_TIME:-600}" \
                 -p "${SERVER_PORT:-8888}:${SERVER_PORT:-8888}" \
                 eesast/thuai9_server:latest
 
