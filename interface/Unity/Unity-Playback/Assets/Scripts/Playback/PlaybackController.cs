@@ -41,6 +41,7 @@ namespace THUAI9.Unity.Playback
         private int currentFrameIndex = -1;
         private int firstFrameGameTimeMs = -1;
         private int currentPlaybackTimeMs;
+        private int loadRevision;
         private MessageOfMap playbackMap;
 
         public bool PlaybackLoaded => playbackLoaded;
@@ -101,10 +102,11 @@ namespace THUAI9.Unity.Playback
             }
 
             string normalizedPath = NormalizePlaybackPath(filePath);
-            PreparePlaybackLoad(normalizedPath, GetPlaybackDisplayName(normalizedPath), "状态：正在加载回放文件");
+            int revision = PreparePlaybackLoad(normalizedPath, GetPlaybackDisplayName(normalizedPath), "状态：正在加载回放文件");
 
             if (!File.Exists(playbackFilePath))
             {
+                if (!IsCurrentLoad(revision)) return;
                 statusText = "状态：未找到回放文件 " + normalizedPath;
                 FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                 Debug.LogWarning($"Playback file does not exist: {playbackFilePath}");
@@ -113,11 +115,11 @@ namespace THUAI9.Unity.Playback
 
             try
             {
-                LoadPlaybackData(File.ReadAllBytes(playbackFilePath));
+                LoadPlaybackData(File.ReadAllBytes(playbackFilePath), revision);
             }
             catch (Exception ex)
             {
-                MarkPlaybackLoadFailed("状态：回放加载失败", ex);
+                MarkPlaybackLoadFailed("状态：回放加载失败", ex, revision);
             }
         }
 
@@ -142,23 +144,23 @@ namespace THUAI9.Unity.Playback
                 return;
             }
 
-            PreparePlaybackLoad(trimmedUrl, displayName ?? GetPlaybackDisplayName(trimmedUrl), "状态：正在从浏览器加载回放文件");
-            loadCoroutine = StartCoroutine(LoadPlaybackUrlCoroutine(trimmedUrl));
+            int revision = PreparePlaybackLoad(trimmedUrl, displayName ?? GetPlaybackDisplayName(trimmedUrl), "状态：正在从浏览器加载回放文件");
+            loadCoroutine = StartCoroutine(LoadPlaybackUrlCoroutine(trimmedUrl, revision));
         }
 
         public void LoadPlaybackBytes(byte[] data, string displayName = null)
         {
-            PreparePlaybackLoad(displayName ?? "WebGL playback bytes", displayName ?? "WebGL playback", "状态：正在从浏览器读取回放数据");
-            LoadPlaybackData(data);
+            int revision = PreparePlaybackLoad(displayName ?? "WebGL playback bytes", displayName ?? "WebGL playback", "状态：正在从浏览器读取回放数据");
+            LoadPlaybackData(data, revision);
         }
 
         public void RejectPlaybackLoad(string source, string displayName, string failureStatus)
         {
-            PreparePlaybackLoad(source, displayName, "状态：正在检查回放文件");
-            MarkPlaybackLoadFailed(failureStatus, null);
+            int revision = PreparePlaybackLoad(source, displayName, "状态：正在检查回放文件");
+            MarkPlaybackLoadFailed(failureStatus, null, revision);
         }
 
-        private IEnumerator LoadPlaybackUrlCoroutine(string url)
+        private IEnumerator LoadPlaybackUrlCoroutine(string url, int revision)
         {
             using (UnityWebRequest request = UnityWebRequest.Get(url))
             {
@@ -166,26 +168,28 @@ namespace THUAI9.Unity.Playback
                 request.downloadHandler = new DownloadHandlerBuffer();
                 yield return request.SendWebRequest();
 
+                if (!IsCurrentLoad(revision)) yield break;
                 loadCoroutine = null;
                 if (request.result != UnityWebRequest.Result.Success)
                 {
-                    MarkPlaybackLoadFailed($"状态：浏览器读取回放失败：{request.error}", null);
+                    MarkPlaybackLoadFailed($"状态：浏览器读取回放失败：{request.error}", null, revision);
                     yield break;
                 }
 
                 byte[] data = request.downloadHandler?.data;
                 if (data != null && data.Length > MaxRemotePlaybackBytes)
                 {
-                    MarkPlaybackLoadFailed($"状态：回放文件过大（{data.Length} 字节）", null);
+                    MarkPlaybackLoadFailed($"状态：回放文件过大（{data.Length} 字节）", null, revision);
                     yield break;
                 }
 
-                LoadPlaybackData(data);
+                LoadPlaybackData(data, revision);
             }
         }
 
-        private void PreparePlaybackLoad(string source, string displayName, string loadingStatus)
+        private int PreparePlaybackLoad(string source, string displayName, string loadingStatus)
         {
+            int revision = NextLoadRevision();
             if (playCoroutine != null || isPlaying || isPaused || playbackLoaded || currentFrameIndex >= 0)
             {
                 StopInternal(false);
@@ -199,6 +203,7 @@ namespace THUAI9.Unity.Playback
 
             messageReader?.Dispose();
             messageReader = new MessageReader();
+            GC.Collect();
             playbackFilePath = source;
             playbackSourceDisplayName = string.IsNullOrWhiteSpace(displayName) ? GetPlaybackDisplayName(source) : displayName;
             playbackLoaded = false;
@@ -210,12 +215,36 @@ namespace THUAI9.Unity.Playback
             CoreParam.playbackElapsedMilliseconds = 0;
             statusText = loadingStatus;
             FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+            return revision;
         }
+
+        private int NextLoadRevision()
+        {
+            unchecked
+            {
+                loadRevision++;
+                if (loadRevision == 0)
+                {
+                    loadRevision = 1;
+                }
+            }
+
+            return loadRevision;
+        }
+
+        private bool IsCurrentLoad(int revision) => revision == loadRevision;
 
         private void LoadPlaybackData(byte[] data)
         {
+            LoadPlaybackData(data, loadRevision);
+        }
+
+        private void LoadPlaybackData(byte[] data, int revision)
+        {
             try
             {
+                if (!IsCurrentLoad(revision)) return;
+
                 if (data == null || data.Length == 0)
                 {
                     throw new InvalidDataException("Playback data is empty.");
@@ -223,6 +252,8 @@ namespace THUAI9.Unity.Playback
 
                 messageReader ??= new MessageReader();
                 messageReader.LoadData(data);
+                if (!IsCurrentLoad(revision)) return;
+
                 playbackLoaded = messageReader != null && messageReader.GetMessageCount() > 0;
 
                 if (!playbackLoaded)
@@ -249,12 +280,23 @@ namespace THUAI9.Unity.Playback
             }
             catch (Exception ex)
             {
-                MarkPlaybackLoadFailed("状态：回放加载失败", ex);
+                MarkPlaybackLoadFailed("状态：回放加载失败", ex, revision);
             }
         }
 
         private void MarkPlaybackLoadFailed(string status, Exception ex)
         {
+            MarkPlaybackLoadFailed(status, ex, loadRevision);
+        }
+
+        private void MarkPlaybackLoadFailed(string status, Exception ex, int revision)
+        {
+            if (!IsCurrentLoad(revision))
+            {
+                Debug.LogWarning($"Ignored stale playback load failure from revision {revision}; current revision is {loadRevision}.");
+                return;
+            }
+
             if (playCoroutine != null)
             {
                 StopCoroutine(playCoroutine);
@@ -325,7 +367,7 @@ namespace THUAI9.Unity.Playback
                 return "状态：读取回放文件失败：" + BuildSafeExceptionMessage(ex);
             }
 
-            return "状态：回放加载失败，请换用当前逻辑组生成的 .thuaipb";
+            return "状态：回放加载失败，请重新选择文件；若持续失败再确认是否为当前逻辑组生成的 .thuaipb";
         }
 
         private string BuildPlaybackLoadedStatus()

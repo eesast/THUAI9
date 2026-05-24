@@ -187,7 +187,14 @@ namespace THUAI9.Unity.Core
             {
                 if (kvp.Value != null)
                 {
-                    UnityEngine.Object.DestroyImmediate(kvp.Value);
+                    if (Application.isPlaying)
+                    {
+                        UnityEngine.Object.Destroy(kvp.Value);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(kvp.Value);
+                    }
                 }
             }
 

@@ -3,6 +3,7 @@ mergeInto(LibraryManager.library, {
     maxBase64Bytes: 16 * 1024 * 1024,
     maxRemotePlaybackBytes: 64 * 1024 * 1024,
     activePlaybackObjectUrl: null,
+    objectUrlCleanupRegistered: false,
     sendMessage: function (gameObjectName, methodName, payload) {
       if (typeof SendMessage === 'function') { SendMessage(gameObjectName, methodName, payload || ''); return; }
       var unityInstance = window.unityInstance || window.THUAIGameInstance || window.gameInstance || (typeof Module !== 'undefined' ? Module : null);
@@ -53,16 +54,12 @@ mergeInto(LibraryManager.library, {
       try { URL.revokeObjectURL(THUAI9WebGLBridge.activePlaybackObjectUrl); } catch (_) {}
       THUAI9WebGLBridge.activePlaybackObjectUrl = null;
     },
-    isTerminalPlaybackStatus: function (payload) {
-      if (!payload) return false;
-      try {
-        var status = typeof payload === 'string' ? JSON.parse(payload) : payload;
-        if (status && status.loaded) return true;
-        var text = status && status.statusText ? String(status.statusText) : '';
-        return text && text.indexOf('正在') < 0;
-      } catch (_) {
-        return false;
-      }
+    ensureObjectUrlCleanup: function () {
+      if (THUAI9WebGLBridge.objectUrlCleanupRegistered || typeof window.addEventListener !== 'function') return;
+      THUAI9WebGLBridge.objectUrlCleanupRegistered = true;
+      window.addEventListener('beforeunload', function () {
+        THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
+      });
     }
   },
   THUAI9_SelectPlaybackFile__deps: ['$THUAI9WebGLBridge'],
@@ -81,6 +78,7 @@ mergeInto(LibraryManager.library, {
       }
 
       THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
+      THUAI9WebGLBridge.ensureObjectUrlCleanup();
       var url = URL.createObjectURL(file);
       THUAI9WebGLBridge.activePlaybackObjectUrl = url;
       var payload = JSON.stringify({ url: url, name: name, size: size });
@@ -95,6 +93,7 @@ mergeInto(LibraryManager.library, {
   },
   THUAI9_NotifyUnityReady__deps: ['$THUAI9WebGLBridge'],
   THUAI9_NotifyUnityReady: function (gameObjectNamePtr) {
+    THUAI9WebGLBridge.ensureObjectUrlCleanup();
     var gameObjectName = UTF8ToString(gameObjectNamePtr); window.THUAI9Unity = window.THUAI9Unity || {}; window.THUAI9Unity.gameObjectName = gameObjectName;
     window.THUAI9Unity.sendMessage = function (methodName, payload) { THUAI9WebGLBridge.sendMessageLater(gameObjectName, methodName, payload || ''); };
     window.THUAI9Unity.setPlaybackFile = function (url, name) {
@@ -129,8 +128,5 @@ mergeInto(LibraryManager.library, {
     var eventName = UTF8ToString(eventNamePtr); var payload = UTF8ToString(payloadPtr);
     THUAI9WebGLBridge.dispatchCustomEventLater('thuai9-unity-event', { eventName: eventName, payload: payload });
     THUAI9WebGLBridge.dispatchCustomEventLater('thuai9-' + eventName, payload);
-    if (eventName === 'playback-error' || (eventName === 'playback-status' && THUAI9WebGLBridge.isTerminalPlaybackStatus(payload))) {
-      THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
-    }
   }
 });
