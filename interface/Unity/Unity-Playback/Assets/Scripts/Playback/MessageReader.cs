@@ -7,6 +7,17 @@ using Protobuf;
 
 namespace THUAI9.Unity.Playback
 {
+    public sealed class PlaybackFileIncompleteException : Exception
+    {
+        public PlaybackFileIncompleteException(string message, int parsedFrameCount)
+            : base(message)
+        {
+            ParsedFrameCount = parsedFrameCount;
+        }
+
+        public int ParsedFrameCount { get; }
+    }
+
     /// <summary>
     /// THUAI9 ????????
     /// ?????????
@@ -28,6 +39,9 @@ namespace THUAI9.Unity.Playback
         public uint PlayerCount { get; private set; }
         public byte FileVersion { get; private set; }
         public bool IsLegacyVersion => FileVersion != 0 && FileVersion != PlayBackConstant.FILE_VERSION;
+        public bool IsIncompleteTail { get; private set; }
+        public string LoadWarning { get; private set; }
+        public int DecompressedByteCount { get; private set; }
 
         public void LoadData(byte[] data)
         {
@@ -36,8 +50,12 @@ namespace THUAI9.Unity.Playback
                 throw new ObjectDisposedException(nameof(MessageReader));
             }
 
-            messages.Clear();
-            currentMsgIndex = -1;
+            ResetLoadedData();
+
+            if (data == null || data.Length < 12)
+            {
+                throw new FormatException("回放文件头不完整。");
+            }
 
             using (var headerStream = new MemoryStream(data))
             using (var headerReader = new BinaryReader(headerStream))
@@ -65,17 +83,17 @@ namespace THUAI9.Unity.Playback
             byte[] compressedData = new byte[data.Length - headerSize];
             Array.Copy(data, headerSize, compressedData, 0, compressedData.Length);
 
-            using (var compressedStream = new MemoryStream(compressedData))
-            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
-            using (var decompressedStream = new MemoryStream())
-            {
-                gzipStream.CopyTo(decompressedStream);
-                byte[] decompressedData = decompressedStream.ToArray();
+            byte[] decompressedData = DecompressWithLimit(compressedData, out bool gzipEndedEarly);
+            DecompressedByteCount = decompressedData.Length;
 
-                if (!TryLoadIndexedMessages(decompressedData))
-                {
-                    LoadOfficialStreamMessages(decompressedData);
-                }
+            if (!TryLoadIndexedMessages(decompressedData))
+            {
+                LoadOfficialStreamMessages(decompressedData, gzipEndedEarly);
+            }
+            else if (gzipEndedEarly)
+            {
+                IsIncompleteTail = true;
+                LoadWarning = "回放文件末尾缺少 GZip 结束标记，已加载可读取帧。";
             }
 
             Reset();
@@ -151,6 +169,18 @@ namespace THUAI9.Unity.Playback
             disposed = true;
         }
 
+        private void ResetLoadedData()
+        {
+            messages.Clear();
+            currentMsgIndex = -1;
+            TeamCount = 0;
+            PlayerCount = 0;
+            FileVersion = 0;
+            IsIncompleteTail = false;
+            LoadWarning = null;
+            DecompressedByteCount = 0;
+        }
+
         private bool TryLoadIndexedMessages(byte[] decompressedData)
         {
             try
@@ -218,23 +248,131 @@ namespace THUAI9.Unity.Playback
             }
         }
 
-        private void LoadOfficialStreamMessages(byte[] decompressedData)
+        private void LoadOfficialStreamMessages(byte[] decompressedData, bool gzipEndedEarly)
         {
-            messages.Clear();
+            var parsedMessages = new List<MessageToClient>();
+            int offset = 0;
 
-            using (var protobufStream = new CodedInputStream(decompressedData))
+            while (offset < decompressedData.Length)
             {
-                while (!protobufStream.IsAtEnd)
+                if (parsedMessages.Count >= PlayBackConstant.MAX_MESSAGE_COUNT)
                 {
-                    if (messages.Count >= PlayBackConstant.MAX_MESSAGE_COUNT)
+                    throw new FormatException($"Playback message count exceeds {PlayBackConstant.MAX_MESSAGE_COUNT}.");
+                }
+
+                if (!TryReadRawVarint32(decompressedData, ref offset, out int messageLength))
+                {
+                    AcceptOrRejectIncompleteTail(parsedMessages, "回放文件末尾不完整：最后一帧长度字段未写完。");
+                    return;
+                }
+
+                if (messageLength < 0)
+                {
+                    throw new FormatException("回放帧长度字段异常。");
+                }
+
+                if (offset + messageLength > decompressedData.Length)
+                {
+                    int missingBytes = offset + messageLength - decompressedData.Length;
+                    AcceptOrRejectIncompleteTail(parsedMessages, $"回放文件末尾不完整：最后一帧缺少 {missingBytes} 字节。");
+                    return;
+                }
+
+                try
+                {
+                    parsedMessages.Add(MessageToClient.Parser.ParseFrom(decompressedData, offset, messageLength));
+                }
+                catch (InvalidProtocolBufferException ex)
+                {
+                    throw new FormatException("回放帧数据损坏，无法解析。", ex);
+                }
+
+                offset += messageLength;
+            }
+
+            messages.Clear();
+            messages.AddRange(parsedMessages);
+            if (gzipEndedEarly && parsedMessages.Count > 0)
+            {
+                IsIncompleteTail = true;
+                LoadWarning = "回放文件末尾缺少 GZip 结束标记，已加载可读取帧。";
+            }
+        }
+
+        private static bool TryReadRawVarint32(byte[] data, ref int offset, out int value)
+        {
+            value = 0;
+            int shift = 0;
+            while (shift < 32)
+            {
+                if (offset >= data.Length)
+                {
+                    return false;
+                }
+
+                byte b = data[offset++];
+                value |= (b & 0x7F) << shift;
+                if ((b & 0x80) == 0)
+                {
+                    return true;
+                }
+
+                shift += 7;
+            }
+
+            throw new FormatException("回放帧长度字段异常。");
+        }
+
+        private void AcceptOrRejectIncompleteTail(List<MessageToClient> parsedMessages, string warning)
+        {
+            if (parsedMessages.Count == 0)
+            {
+                throw new PlaybackFileIncompleteException(warning, parsedMessages.Count);
+            }
+
+            messages.Clear();
+            messages.AddRange(parsedMessages);
+            IsIncompleteTail = true;
+            LoadWarning = warning;
+        }
+
+        private static byte[] DecompressWithLimit(byte[] compressedData, out bool endedEarly)
+        {
+            endedEarly = false;
+            using (var compressedStream = new MemoryStream(compressedData))
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+            using (var decompressedStream = new MemoryStream())
+            {
+                byte[] buffer = new byte[81920];
+                while (true)
+                {
+                    int read;
+                    try
                     {
-                        throw new FormatException($"Playback message count exceeds {PlayBackConstant.MAX_MESSAGE_COUNT}.");
+                        read = gzipStream.Read(buffer, 0, buffer.Length);
+                    }
+                    catch (Exception ex) when (
+                        decompressedStream.Length > 0
+                        && (ex is InvalidDataException || ex is IOException || ex is EndOfStreamException))
+                    {
+                        endedEarly = true;
+                        break;
                     }
 
-                    var message = new MessageToClient();
-                    protobufStream.ReadMessage(message);
-                    messages.Add(message);
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    if (decompressedStream.Length + read > PlayBackConstant.MAX_DECOMPRESSED_PLAYBACK_BYTES)
+                    {
+                        throw new InvalidDataException($"回放解压后超过 {PlayBackConstant.MAX_DECOMPRESSED_PLAYBACK_BYTES} 字节。");
+                    }
+
+                    decompressedStream.Write(buffer, 0, read);
                 }
+
+                return decompressedStream.ToArray();
             }
         }
     }

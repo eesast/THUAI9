@@ -73,8 +73,16 @@ namespace THUAI9.Unity.WebGL
             RefreshReferences();
             if (playbackController == null) { DispatchEvent("playback-error", "missing-playback-controller"); return; }
             uiController?.SetPlaybackPathDisplay(selection.name ?? selection.url);
-            playbackController.LoadPlaybackUrl(selection.url, selection.name);
             DispatchEvent("playback-loading", selection.name ?? selection.url);
+            if (selection.size > PlaybackController.MaxRemotePlaybackBytes)
+            {
+                string status = $"状态：回放文件过大（{selection.size} 字节）";
+                playbackController.RejectPlaybackLoad(selection.url, selection.name, status);
+                DispatchEvent("playback-error", $"file-too-large:{selection.size}");
+                return;
+            }
+
+            playbackController.LoadPlaybackUrl(selection.url, selection.name);
         }
 
         public void SetPlaybackUrl(string url) => SetPlaybackFile(url);
@@ -254,7 +262,7 @@ namespace THUAI9.Unity.WebGL
                 .Replace("\t", string.Empty);
         }
 
-        [Serializable] private class PlaybackSelection { public string url; public string name; }
+        [Serializable] private class PlaybackSelection { public string url; public string name; public long size; }
         [Serializable] private class PlaybackDataSelection { public string data; public string name; }
         [Serializable]
         private class PlaybackStatus

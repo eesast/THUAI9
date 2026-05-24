@@ -1,6 +1,8 @@
 mergeInto(LibraryManager.library, {
   $THUAI9WebGLBridge: {
     maxBase64Bytes: 16 * 1024 * 1024,
+    maxRemotePlaybackBytes: 64 * 1024 * 1024,
+    activePlaybackObjectUrl: null,
     sendMessage: function (gameObjectName, methodName, payload) {
       if (typeof SendMessage === 'function') { SendMessage(gameObjectName, methodName, payload || ''); return; }
       var unityInstance = window.unityInstance || window.THUAIGameInstance || window.gameInstance || (typeof Module !== 'undefined' ? Module : null);
@@ -35,13 +37,47 @@ mergeInto(LibraryManager.library, {
     dispatchCustomEvent: function (eventName, detail) {
       if (typeof window.CustomEvent === 'function') { window.dispatchEvent(new CustomEvent(eventName, { detail: detail })); return; }
       var event = document.createEvent('CustomEvent'); event.initCustomEvent(eventName, false, false, detail); window.dispatchEvent(event);
+    },
+    revokeActivePlaybackObjectUrl: function () {
+      if (!THUAI9WebGLBridge.activePlaybackObjectUrl) return;
+      try { URL.revokeObjectURL(THUAI9WebGLBridge.activePlaybackObjectUrl); } catch (_) {}
+      THUAI9WebGLBridge.activePlaybackObjectUrl = null;
+    },
+    isTerminalPlaybackStatus: function (payload) {
+      if (!payload) return false;
+      try {
+        var status = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        if (status && status.loaded) return true;
+        var text = status && status.statusText ? String(status.statusText) : '';
+        return text && text.indexOf('正在') < 0;
+      } catch (_) {
+        return false;
+      }
     }
   },
   THUAI9_SelectPlaybackFile__deps: ['$THUAI9WebGLBridge'],
   THUAI9_SelectPlaybackFile: function (gameObjectNamePtr, callbackNamePtr) {
     var gameObjectName = UTF8ToString(gameObjectNamePtr); var callbackName = UTF8ToString(callbackNamePtr);
     var input = document.createElement('input'); input.type = 'file'; input.accept = '.thuaipb,application/octet-stream'; input.style.display = 'none';
-    input.onchange = function () { var file = input.files && input.files[0]; if (!file) { input.remove(); return; } var url = URL.createObjectURL(file); var payload = JSON.stringify({ url: url, name: file.name || 'playback.thuaipb', size: file.size || 0 }); THUAI9WebGLBridge.sendMessage(gameObjectName, callbackName, payload); THUAI9WebGLBridge.dispatchCustomEvent('thuai9-playback-file-selected', { url: url, name: file.name, size: file.size }); input.remove(); };
+    input.onchange = function () {
+      var file = input.files && input.files[0];
+      if (!file) { input.remove(); return; }
+      var size = file.size || 0;
+      var name = file.name || 'playback.thuaipb';
+      if (size > THUAI9WebGLBridge.maxRemotePlaybackBytes) {
+        THUAI9WebGLBridge.dispatchCustomEvent('thuai9-playback-error', 'file-too-large:' + size);
+        input.remove();
+        return;
+      }
+
+      THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
+      var url = URL.createObjectURL(file);
+      THUAI9WebGLBridge.activePlaybackObjectUrl = url;
+      var payload = JSON.stringify({ url: url, name: name, size: size });
+      THUAI9WebGLBridge.sendMessage(gameObjectName, callbackName, payload);
+      THUAI9WebGLBridge.dispatchCustomEvent('thuai9-playback-file-selected', { url: url, name: name, size: size });
+      input.remove();
+    };
     document.body.appendChild(input); input.click();
   },
   THUAI9_ClearDevelopmentConsole: function () {
@@ -83,5 +119,8 @@ mergeInto(LibraryManager.library, {
     var eventName = UTF8ToString(eventNamePtr); var payload = UTF8ToString(payloadPtr);
     THUAI9WebGLBridge.dispatchCustomEvent('thuai9-unity-event', { eventName: eventName, payload: payload });
     THUAI9WebGLBridge.dispatchCustomEvent('thuai9-' + eventName, payload);
+    if (eventName === 'playback-error' || (eventName === 'playback-status' && THUAI9WebGLBridge.isTerminalPlaybackStatus(payload))) {
+      THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
+    }
   }
 });
