@@ -81,10 +81,22 @@ std::future<bool> CharacterAPI::EndAllAction()
                       { return logic.EndAllAction(); });
 }
 
+std::future<std::string> CharacterAPI::AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey)
+{
+    return std::async(std::launch::async, [this, currentGameTime, prompt = std::move(prompt), apiKey = std::move(apiKey)]() mutable
+                      { return logic.AskAI(currentGameTime, std::move(prompt), std::move(apiKey)); });
+}
+
 std::future<bool> TeamAPI::EndAllAction()
 {
     return std::async(std::launch::async, [this]()
                       { return logic.EndAllAction(); });
+}
+
+std::future<std::string> TeamAPI::AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey)
+{
+    return std::async(std::launch::async, [this, currentGameTime, prompt = std::move(prompt), apiKey = std::move(apiKey)]() mutable
+                      { return logic.AskAI(currentGameTime, std::move(prompt), std::move(apiKey)); });
 }
 
 std::vector<std::shared_ptr<const THUAI9::Character>> CharacterAPI::GetCharacters() const

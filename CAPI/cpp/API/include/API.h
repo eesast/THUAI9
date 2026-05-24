@@ -75,6 +75,7 @@ public:
     virtual bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t playerID) = 0;
     virtual bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum) = 0;
     virtual bool UplevelTech(THUAI9::TechType techType) = 0;
+    virtual std::string AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey) = 0;
 };
 
 class IAPI
@@ -93,6 +94,7 @@ public:
     // 等待下一帧
     virtual bool Wait() = 0;
     virtual std::future<bool> EndAllAction() = 0;
+    virtual std::future<std::string> AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey = "") = 0;
     [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const = 0;
     [[nodiscard]] virtual std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const = 0;
     [[nodiscard]] virtual std::vector<std::vector<THUAI9::PlaceType>> GetFullMap() const = 0;
@@ -190,6 +192,7 @@ public:
     [[nodiscard]] int32_t GetFrameCount() const override;
     bool Wait() override;
     std::future<bool> EndAllAction() override;
+    std::future<std::string> AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey = "") override;
 
     std::future<bool> Move(int64_t moveTimeInMilliseconds, double angle) override;
     std::future<bool> MoveRight(int64_t timeInMilliseconds) override;
@@ -258,6 +261,7 @@ public:
     [[nodiscard]] int32_t GetFrameCount() const override;
     bool Wait() override;
     std::future<bool> EndAllAction() override;
+    std::future<std::string> AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey = "") override;
 
     [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
     [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;
@@ -307,6 +311,7 @@ public:
     bool Wait() override;
     [[nodiscard]] int32_t GetFrameCount() const override;
     std::future<bool> EndAllAction() override;
+    std::future<std::string> AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey = "") override;
 
     std::future<bool> Move(int64_t moveTimeInMilliseconds, double angle) override;
     std::future<bool> MoveRight(int64_t timeInMilliseconds) override;
@@ -366,6 +371,7 @@ public:
     [[nodiscard]] int32_t GetFrameCount() const override;
     bool Wait() override;
     std::future<bool> EndAllAction() override;
+    std::future<std::string> AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey = "") override;
 
     [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetCharacters() const override;
     [[nodiscard]] std::vector<std::shared_ptr<const THUAI9::Character>> GetEnemyCharacters() const override;

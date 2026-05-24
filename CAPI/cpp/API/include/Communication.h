@@ -50,6 +50,8 @@ public:
     bool ProduceGoods(int64_t teamID, THUAI9::GoodsType goodsType, int32_t maxProduceNum);
     bool UplevelTech(int64_t teamID, THUAI9::TechType techType);
 
+    std::string AskAI(int64_t teamID, int64_t currentGameTime, const std::string& prompt, const std::string& apiKey);
+
 private:
     std::unique_ptr<protobuf::AvailableService::Stub> THUAI9Stub;
     bool haveNewMessage = false;

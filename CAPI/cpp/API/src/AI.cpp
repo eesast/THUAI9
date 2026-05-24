@@ -18,5 +18,6 @@ void AI::play(ICharacterAPI& api)
 void AI::play(ITeamAPI& api)
 {
     (void)api;
+    // auto answer = api.AskAI(/*currentGameTime*/, "your prompt", "<your uuid you can copy from eesast>").get();
     // TODO: implement team strategy.
 }
