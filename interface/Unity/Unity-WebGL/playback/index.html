@@ -57,15 +57,30 @@
       }
 
       var thuai9Mode = 'playback';
+      var thuai9BuildStamp = '639152452027760595';
       var thuai9Query = new URLSearchParams(window.location.search);
+      function thuai9CacheBust(url) {
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(thuai9BuildStamp);
+      }
       function thuai9SetUnityInstance(unityInstance) {
         window.unityInstance = unityInstance;
         window.THUAIGameInstance = unityInstance;
         window.gameInstance = unityInstance;
       }
+      function thuai9RunLater(callback) {
+        if (typeof window.setTimeout === 'function') { window.setTimeout(callback, 0); return; }
+        callback();
+      }
+      function thuai9DispatchLater(eventName, detail) {
+        thuai9RunLater(function () {
+          window.dispatchEvent(new CustomEvent(eventName, { detail: detail }));
+        });
+      }
       function thuai9RunWhenReady(callback) {
-        if (window.THUAI9Unity) { callback(window.THUAI9Unity); return; }
-        window.addEventListener('thuai9-unity-ready', function () { callback(window.THUAI9Unity); }, { once: true });
+        if (window.THUAI9Unity) { thuai9RunLater(function () { callback(window.THUAI9Unity); }); return; }
+        window.addEventListener('thuai9-unity-ready', function () {
+          thuai9RunLater(function () { callback(window.THUAI9Unity); });
+        }, { once: true });
       }
       function thuai9Bool(value) {
         return value === '1' || value === 'true' || value === 'yes' || value === 'on';
@@ -116,11 +131,11 @@
       }
 
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/playback.loader.js";
+      var loaderUrl = thuai9CacheBust(buildUrl + "/playback.loader.js");
       var config = {
-        dataUrl: buildUrl + "/playback.data",
-        frameworkUrl: buildUrl + "/playback.framework.js",
-        codeUrl: buildUrl + "/playback.wasm",
+        dataUrl: thuai9CacheBust(buildUrl + "/playback.data"),
+        frameworkUrl: thuai9CacheBust(buildUrl + "/playback.framework.js"),
+        codeUrl: thuai9CacheBust(buildUrl + "/playback.wasm"),
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Unity-Playback",
@@ -175,7 +190,7 @@
           progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
                 thuai9SetUnityInstance(unityInstance);
-                window.dispatchEvent(new CustomEvent('thuai9-unity-instance-created', { detail: { mode: thuai9Mode } }));
+                thuai9DispatchLater('thuai9-unity-instance-created', { mode: thuai9Mode });
                 thuai9RunWhenReady(thuai9ApplyPlaybackOptions);
                 loadingBar.style.display = "none";
                 fullscreenButton.onclick = () => {
