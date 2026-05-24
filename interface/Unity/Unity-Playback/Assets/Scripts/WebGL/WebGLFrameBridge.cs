@@ -212,7 +212,9 @@ namespace THUAI9.Unity.WebGL
                 statusText = playbackController.StatusText
             });
 
-            if (!force && payload == lastStatusPayload)
+            // Even forced command responses must not re-emit an identical status.
+            // Host pages may synchronously call back into Unity from status listeners.
+            if (payload == lastStatusPayload)
             {
                 return;
             }

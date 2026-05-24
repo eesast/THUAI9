@@ -38,6 +38,11 @@ mergeInto(LibraryManager.library, {
       if (typeof window.CustomEvent === 'function') { window.dispatchEvent(new CustomEvent(eventName, { detail: detail })); return; }
       var event = document.createEvent('CustomEvent'); event.initCustomEvent(eventName, false, false, detail); window.dispatchEvent(event);
     },
+    dispatchCustomEventLater: function (eventName, detail) {
+      var dispatch = function () { THUAI9WebGLBridge.dispatchCustomEvent(eventName, detail); };
+      if (typeof window.setTimeout === 'function') { window.setTimeout(dispatch, 0); return; }
+      dispatch();
+    },
     revokeActivePlaybackObjectUrl: function () {
       if (!THUAI9WebGLBridge.activePlaybackObjectUrl) return;
       try { URL.revokeObjectURL(THUAI9WebGLBridge.activePlaybackObjectUrl); } catch (_) {}
@@ -117,8 +122,11 @@ mergeInto(LibraryManager.library, {
   THUAI9_DispatchUnityEvent__deps: ['$THUAI9WebGLBridge'],
   THUAI9_DispatchUnityEvent: function (eventNamePtr, payloadPtr) {
     var eventName = UTF8ToString(eventNamePtr); var payload = UTF8ToString(payloadPtr);
-    THUAI9WebGLBridge.dispatchCustomEvent('thuai9-unity-event', { eventName: eventName, payload: payload });
-    THUAI9WebGLBridge.dispatchCustomEvent('thuai9-' + eventName, payload);
+    var dispatch = eventName === 'playback-status'
+      ? THUAI9WebGLBridge.dispatchCustomEventLater
+      : THUAI9WebGLBridge.dispatchCustomEvent;
+    dispatch('thuai9-unity-event', { eventName: eventName, payload: payload });
+    dispatch('thuai9-' + eventName, payload);
     if (eventName === 'playback-error' || (eventName === 'playback-status' && THUAI9WebGLBridge.isTerminalPlaybackStatus(payload))) {
       THUAI9WebGLBridge.revokeActivePlaybackObjectUrl();
     }
