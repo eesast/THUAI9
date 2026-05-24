@@ -336,8 +336,8 @@ namespace THUAI9.Unity.Playback
             if (ex is PlaybackFileIncompleteException incomplete)
             {
                 return incomplete.ParsedFrameCount > 0
-                    ? $"状态：回放文件末尾不完整，已读取 {incomplete.ParsedFrameCount} 帧但未完成加载"
-                    : "状态：回放文件不完整，未读到可用帧";
+                    ? $"状态：已读取 {incomplete.ParsedFrameCount} 帧，但回放加载未完成"
+                    : "状态：回放文件未读到可用帧";
             }
 
             if (ex is InvalidProtocolBufferException)
@@ -372,15 +372,10 @@ namespace THUAI9.Unity.Playback
 
         private string BuildPlaybackLoadedStatus()
         {
-            string baseStatus = $"状态：已加载 {messageReader.GetMessageCount()} 帧（v{messageReader.FileVersion}，{messageReader.TeamCount} 队，{messageReader.PlayerCount} 玩家）";
+            string baseStatus = $"状态：已加载 {messageReader.GetMessageCount()} 帧（v{messageReader.FileVersion}，{messageReader.TeamCount}队/{messageReader.PlayerCount}玩家）";
             if (messageReader.IsLegacyVersion)
             {
                 baseStatus += "，旧版回放建议用当前逻辑重新生成";
-            }
-
-            if (messageReader.IsIncompleteTail)
-            {
-                baseStatus += "，但文件末尾不完整，已保留可读取部分";
             }
 
             return baseStatus;
