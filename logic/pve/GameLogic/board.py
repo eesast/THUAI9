@@ -4,6 +4,7 @@ Map / board management: grid state, placement of entities, obstacle checking.
 from __future__ import annotations
 import math
 import random
+from collections import deque
 from typing import List, Optional, Tuple
 
 from .config import (
@@ -93,6 +94,10 @@ class Board:
             pos = self._place_one(CELL_COMPUTE, used)
             self.compute_centers.append(ComputeCenter(pos[0], pos[1], i))
 
+        if cfg.random_map:
+            # Ensure factory can reach all key locations even with random obstacles.
+            self._ensure_connectivity()
+
     def _place_random_obstacles(self, used: set, density: float = 0.1):
         total = self.W * self.H
         n_obs = int(total * density)
@@ -123,6 +128,61 @@ class Board:
                 used.add((r, c))
                 return (r, c)
         raise RuntimeError("Board too crowded to place entity")
+
+    def _ensure_connectivity(self) -> None:
+        start = (self.cfg.factory_x, self.cfg.factory_y)
+        targets: List[Tuple[int, int]] = []
+        targets.extend(self.market_positions)
+        targets.extend((rp.x, rp.y) for rp in self.resource_points)
+        targets.extend((cc.x, cc.y) for cc in self.compute_centers)
+
+        for target in targets:
+            if not self._is_reachable(start, target):
+                self._carve_manhattan_path(start, target)
+
+    def _is_reachable(self, start: Tuple[int, int], goal: Tuple[int, int]) -> bool:
+        if start == goal:
+            return True
+        sx, sy = start
+        gx, gy = goal
+        if not self.is_passable(gx, gy):
+            return False
+
+        queue = deque([(sx, sy)])
+        visited = [[False for _ in range(self.W)] for _ in range(self.H)]
+        visited[sx][sy] = True
+
+        while queue:
+            x, y = queue.popleft()
+            for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < self.H and 0 <= ny < self.W and not visited[nx][ny]:
+                    if not self.is_passable(nx, ny):
+                        continue
+                    if (nx, ny) == (gx, gy):
+                        return True
+                    visited[nx][ny] = True
+                    queue.append((nx, ny))
+        return False
+
+    def _carve_manhattan_path(self, start: Tuple[int, int], goal: Tuple[int, int]) -> None:
+        x, y = start
+        gx, gy = goal
+        while (x, y) != (gx, gy):
+            can_move_x = x != gx
+            can_move_y = y != gy
+            if can_move_x and can_move_y:
+                move_axis = self._rng.choice(("x", "y"))
+            else:
+                move_axis = "x" if can_move_x else "y"
+
+            if move_axis == "x":
+                x += 1 if gx > x else -1
+            else:
+                y += 1 if gy > y else -1
+
+            if self.grid[x][y] == CELL_OBSTACLE:
+                self.grid[x][y] = CELL_EMPTY
 
     # ── Queries ──────────────────────────���─────────────────────────────────────
     def is_passable(self, x: int, y: int) -> bool:
