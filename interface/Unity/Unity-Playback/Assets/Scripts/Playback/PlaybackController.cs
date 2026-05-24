@@ -372,7 +372,7 @@ namespace THUAI9.Unity.Playback
 
         private string BuildPlaybackLoadedStatus()
         {
-            string baseStatus = $"状态：已加载 {messageReader.GetMessageCount()} 帧（v{messageReader.FileVersion}，{messageReader.TeamCount}队/{messageReader.PlayerCount}玩家）";
+            string baseStatus = $"状态：已加载 {messageReader.GetMessageCount()} 帧（{messageReader.TeamCount}队/{messageReader.PlayerCount}玩家）";
             if (messageReader.IsLegacyVersion)
             {
                 baseStatus += "，旧版回放建议用当前逻辑重新生成";
