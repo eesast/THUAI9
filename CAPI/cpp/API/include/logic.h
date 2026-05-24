@@ -136,6 +136,7 @@ private:
     bool BuildCharacter(THUAI9::CharacterType CharacterType, int32_t playerID);
     bool ProduceGoods(THUAI9::GoodsType goodsType, int32_t maxProduceNum);
     bool UplevelTech(THUAI9::TechType techType);
+    std::string AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey);
 
     bool TryConnection();
     void ProcessMessage();

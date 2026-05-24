@@ -56,11 +56,11 @@ namespace Gaming
             public bool InitializeFromLLM(int startTimeMs, int endTimeMs)
                 => InitializeFromLLMAsync(startTimeMs, endTimeMs).GetAwaiter().GetResult();
 
-            public async Task<string?> AskWithPromptAsync(string prompt, CancellationToken cancellationToken = default)
+            public async Task<string?> AskWithPromptAsync(string prompt, string apiKey = "", CancellationToken cancellationToken = default)
             {
                 try
                 {
-                    return await RequestTextFromLLMAsync(prompt, cancellationToken);
+                    return await RequestTextFromLLMAsync(prompt, apiKey, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -69,10 +69,10 @@ namespace Gaming
                 }
             }
 
-            public string? AskWithPrompt(string prompt)
+            public string? AskWithPrompt(string prompt, string apiKey = "")
             {
                 using var cts = new CancellationTokenSource(GameData.AskAITimeoutMs);
-                return AskWithPromptAsync(prompt, cts.Token).GetAwaiter().GetResult();
+                return AskWithPromptAsync(prompt, apiKey, cts.Token).GetAwaiter().GetResult();
             }
 
             public void InitDefault()
@@ -180,6 +180,16 @@ namespace Gaming
 
             private static readonly HttpClient httpClient = new();
 
+            private static HttpRequestMessage BuildLLMRequest(string jsonBody, string apiKey)
+            {
+                var msg = new HttpRequestMessage(HttpMethod.Post, GameData.API_url)
+                {
+                    Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+                };
+                msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                return msg;
+            }
+
             private static async Task<GeneratedEvent?> RequestEventFromLLMAsync(CancellationToken cancellationToken)
             {
                 if (string.IsNullOrWhiteSpace(GameData.API_key) ||
@@ -190,10 +200,7 @@ namespace Gaming
                     return null;
                 }
 
-                if (httpClient.DefaultRequestHeaders.Authorization == null)
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
-
-                var req = new ChatRequest
+                var chatReq = new ChatRequest
                 {
                     Model = GameData.ModelName,
                     Messages =
@@ -211,9 +218,9 @@ namespace Gaming
                     ]
                 };
 
-                var json = JsonSerializer.Serialize(req);
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
+                var json = JsonSerializer.Serialize(chatReq);
+                using var request = BuildLLMRequest(json, GameData.API_key);
+                using var resp = await httpClient.SendAsync(request, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"Event LLM HTTP failed: {(int)resp.StatusCode}");
@@ -237,20 +244,22 @@ namespace Gaming
                 return generated;
             }
 
-            private static async Task<string?> RequestTextFromLLMAsync(string prompt, CancellationToken cancellationToken)
+            private static async Task<string?> RequestTextFromLLMAsync(string prompt, string apiKey, CancellationToken cancellationToken = default)
             {
-                if (string.IsNullOrWhiteSpace(GameData.API_key) ||
-                    string.IsNullOrWhiteSpace(GameData.API_url) ||
+                if (string.IsNullOrWhiteSpace(apiKey))
+                {
+                    LogicLogging.logger.LogError("AskAI failed: team API key not configured.");
+                    return null;
+                }
+
+                if (string.IsNullOrWhiteSpace(GameData.API_url) ||
                     string.IsNullOrWhiteSpace(GameData.ModelName))
                 {
                     LogicLogging.logger.LogError("AskAI config missing in GameData.");
                     return null;
                 }
 
-                if (httpClient.DefaultRequestHeaders.Authorization == null)
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GameData.API_key);
-
-                var req = new ChatRequest
+                var chatReq = new ChatRequest
                 {
                     Model = GameData.ModelName,
                     MaxTokens = 512,
@@ -269,9 +278,9 @@ namespace Gaming
                     ]
                 };
 
-                var json = JsonSerializer.Serialize(req);
-                using var content = new StringContent(json, Encoding.UTF8, "application/json");
-                using var resp = await httpClient.PostAsync(GameData.API_url, content, cancellationToken);
+                var json = JsonSerializer.Serialize(chatReq);
+                using var request = BuildLLMRequest(json, apiKey);
+                using var resp = await httpClient.SendAsync(request, cancellationToken);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogicLogging.logger.LogError($"AskAI HTTP failed: {(int)resp.StatusCode}");

@@ -99,6 +99,12 @@ std::future<bool> CharacterDebugAPI::EndAllAction()
                       { return logic.EndAllAction(); });
 }
 
+std::future<std::string> CharacterDebugAPI::AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey)
+{
+    return std::async(std::launch::async, [this, currentGameTime, prompt = std::move(prompt), apiKey = std::move(apiKey)]() mutable
+                      { return logic.AskAI(currentGameTime, std::move(prompt), std::move(apiKey)); });
+}
+
 std::future<bool> CharacterDebugAPI::Move(int64_t moveTimeInMilliseconds, double angle)
 {
     logger->info("Move {} ms", moveTimeInMilliseconds);
@@ -350,6 +356,12 @@ std::future<bool> TeamDebugAPI::EndAllAction()
 {
     return std::async(std::launch::async, [this]()
                       { return logic.EndAllAction(); });
+}
+
+std::future<std::string> TeamDebugAPI::AskAI(int64_t currentGameTime, std::string prompt, std::string apiKey)
+{
+    return std::async(std::launch::async, [this, currentGameTime, prompt = std::move(prompt), apiKey = std::move(apiKey)]() mutable
+                      { return logic.AskAI(currentGameTime, std::move(prompt), std::move(apiKey)); });
 }
 
 std::vector<std::shared_ptr<const THUAI9::Character>> TeamDebugAPI::GetCharacters() const

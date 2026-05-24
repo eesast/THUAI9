@@ -315,6 +315,15 @@ namespace Gaming
             if (!EnsureGameStarted(nameof(AskAI)))
                 return null;
 
+            // Prompt format: "apiKey||actualPrompt"
+            string apiKey = string.Empty;
+            var sepIndex = prompt.IndexOf("||", StringComparison.Ordinal);
+            if (sepIndex >= 0)
+            {
+                apiKey = prompt.Substring(0, sepIndex);
+                prompt = prompt.Substring(sepIndex + 2);
+            }
+
             if (string.IsNullOrWhiteSpace(prompt) || prompt.Length > GameData.AskAIPromptMaxLength)
             {
                 LogicLogging.logger.LogWarning($"AskAI failed: invalid prompt length for team {teamId}.");
@@ -340,7 +349,7 @@ namespace Gaming
                 if (fac.ComputingPower.CompareExROri(cur - cost, cur) == cur) break;
             }
 
-            var answer = marketEvent.AskWithPrompt(prompt);
+            var answer = marketEvent.AskWithPrompt(prompt, apiKey);
             if (string.IsNullOrWhiteSpace(answer))
             {
                 fac.AddComputingPower(cost);
