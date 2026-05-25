@@ -12,13 +12,13 @@ namespace THUAI9.Unity.Render
 {
     public class RenderManager : SingletonMono<RenderManager>
     {
-        [Header("瀵瑰眬鏃堕棿")]
+        [Header("对局时间")]
         public Text gameTimeText;
 
-        [Header("闃熶紞淇℃伅")]
+        [Header("队伍信息")]
         public Text[] teamScoreTexts = new Text[4];
 
-        [Header("璋冭瘯淇℃伅")]
+        [Header("调试信息")]
         public Text fpsText;
         public bool autoBindSceneReferences = true;
         public bool showWorldLabels = true;
