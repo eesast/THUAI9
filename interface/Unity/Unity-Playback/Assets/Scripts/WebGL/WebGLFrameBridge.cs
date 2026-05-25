@@ -74,6 +74,14 @@ namespace THUAI9.Unity.WebGL
             if (playbackController == null) { DispatchEvent("playback-error", "missing-playback-controller"); return; }
             uiController?.SetPlaybackPathDisplay(selection.name ?? selection.url);
             DispatchEvent("playback-loading", selection.name ?? selection.url);
+            if (selection.size == 0)
+            {
+                string status = "状态：回放文件为空，请选择有效的 .thuaipb 文件";
+                playbackController.RejectPlaybackLoad(selection.url, selection.name, status);
+                DispatchEvent("playback-error", "file-empty");
+                return;
+            }
+
             if (selection.size > PlaybackController.MaxRemotePlaybackBytes)
             {
                 string status = $"状态：回放文件过大（{selection.size} 字节）";
@@ -228,7 +236,17 @@ namespace THUAI9.Unity.WebGL
             if (string.IsNullOrWhiteSpace(payload)) return null;
             string trimmed = payload.Trim();
             if (!trimmed.StartsWith("{", StringComparison.Ordinal)) return new PlaybackSelection { url = trimmed.Trim('"'), name = trimmed.Trim('"') };
-            try { return JsonUtility.FromJson<PlaybackSelection>(trimmed); } catch { return new PlaybackSelection { url = trimmed }; }
+            try
+            {
+                PlaybackSelection selection = JsonUtility.FromJson<PlaybackSelection>(trimmed);
+                if (trimmed.IndexOf("\"size\"", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    selection.size = -1;
+                }
+
+                return selection;
+            }
+            catch { return new PlaybackSelection { url = trimmed }; }
         }
 
         private static PlaybackDataSelection ParsePlaybackDataSelection(string payload)
@@ -264,7 +282,7 @@ namespace THUAI9.Unity.WebGL
                 .Replace("\t", string.Empty);
         }
 
-        [Serializable] private class PlaybackSelection { public string url; public string name; public long size; }
+        [Serializable] private class PlaybackSelection { public string url; public string name; public long size = -1; }
         [Serializable] private class PlaybackDataSelection { public string data; public string name; }
         [Serializable]
         private class PlaybackStatus
