@@ -252,11 +252,11 @@ namespace Server
 
         private static double[] TwoTeamLadderCalculate(double[] oriScores, double[] competitionScores)
         {
-            const double normalDeltaThreshold = 100.0;
+            const double normalDeltaThreshold = 300.0;
             const double correctParam = normalDeltaThreshold * 1.2;
-            const double winnerWeight = 4e-10;
-            const double loserWeight = 1.5e-10;
-            const double scoreDeltaThreshold = 50000.0;
+            const double winnerWeight = 4e-5;
+            const double loserWeight = 1.5e-5;
+            const double scoreDeltaThreshold = 3000.0;
 
             int winnerIndex = 0;
             int loserIndex = 1;
