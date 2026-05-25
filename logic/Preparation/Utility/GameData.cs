@@ -92,11 +92,11 @@ namespace Preparation.Utility
         public const int FactoryComputePowerPerSecond = 1;
         public const int FactoryComputePowerBonusPerCenterPerSecond = 2;
 
-        public const int BasePriceSemiconductor = 80;
-        public const int BasePriceMedicine = 50;
-        public const int BasePriceToys = 8;
-        public const int BasePriceClothes = 32;
-        public const int BasePriceFood = 6;
+        public const int BasePriceSemiconductor = 180;
+        public const int BasePriceMedicine = 110;
+        public const int BasePriceToys = 25;
+        public const int BasePriceClothes = 70;
+        public const int BasePriceFood = 20;
 
         public const double SmallMarketMultiplier = 1.1;
         public const double MediumMarketMultiplier = 1.3;
