@@ -17,6 +17,7 @@
         public const int FILE_VERSION = 9;
         public const int LEGACY_FILE_VERSION = 7;
         public const int MAX_MESSAGE_COUNT = 100000;
+        public const int MAX_DECOMPRESSED_PLAYBACK_BYTES = 256 * 1024 * 1024;
         public const string DEFAULT_PLAYBACK_PATH = "Playback/";
         public const string PLAYBACK_EXTENSION = ".thuaipb";
 
