@@ -2,7 +2,7 @@ using Grpc.Core;
 using Protobuf;
 
 // ============================================================================
-// 科技升级测试：生成角色 → 占领算力中心 → 逐个升级所有科技
+// 价格科技测试：采资源 → 生产2 Food → 装载 → 卖1 → 升级售价科技 → 卖1
 //
 // 运行：dotnet run --project logic/ClientTest -- <playerId> <teamId>
 // ============================================================================
@@ -14,6 +14,7 @@ namespace ClientTest
         private const int CellSize = 1000;
         private const int CellCenter = 500;
         private const double ArrivalRadius = 300.0;
+        private const GoodsType Food = GoodsType.Food;
 
         private sealed class SharedState
         {
@@ -26,6 +27,11 @@ namespace ClientTest
             private bool _hasPos;
             private int _charX, _charY;
             private long _computingPower;
+            private long _teamScore;
+            private int _facX = -1, _facY = -1;
+            private int _material;
+            private readonly Dictionary<GoodsType, int> _facGoods = new();
+            private bool _factoryCanProduce = true;
 
             public Task GameStartTask => _gameStartTcs.Task;
             public Task CharSeenTask => _charSeenTcs.Task;
@@ -40,7 +46,16 @@ namespace ClientTest
                     var fac = obj.FactoryMessage;
                     if (fac != null && fac.TeamId == teamId)
                     {
-                        lock (_lk) { _computingPower = fac.ComputingPower; }
+                        lock (_lk)
+                        {
+                            _computingPower = fac.ComputingPower;
+                            _facX = fac.X;
+                            _facY = fac.Y;
+                            _factoryCanProduce = fac.CanProduce;
+                            _facGoods.Clear();
+                            foreach (var gs in fac.ProductInventory)
+                                _facGoods[gs.ProductType] = gs.Quantity;
+                        }
                     }
 
                     var ch = obj.CharacterMessage;
@@ -55,12 +70,35 @@ namespace ClientTest
                         _charSeenTcs.TrySetResult(true);
                     }
                 }
+
+                if (frame.AllMessage != null)
+                {
+                    int idx = (int)teamId - 1;
+                    if ((uint)idx < (uint)frame.AllMessage.Teams.Count)
+                    {
+                        lock (_lk)
+                        {
+                            _material = frame.AllMessage.Teams[idx].Material;
+                            _teamScore = frame.AllMessage.Teams[idx].Score;
+                        }
+                    }
+                }
             }
 
             public bool TryGetPos(out int x, out int y)
             { lock (_lk) { x = _charX; y = _charY; return _hasPos; } }
 
             public long ComputingPower { get { lock (_lk) return _computingPower; } }
+            public long TeamScore { get { lock (_lk) return _teamScore; } }
+            public int Material { get { lock (_lk) return _material; } }
+
+            public bool TryGetFactoryPos(out int x, out int y)
+            { lock (_lk) { x = _facX; y = _facY; return _facX >= 0; } }
+
+            public int GetFactoryGoods(GoodsType type)
+            { lock (_lk) return _facGoods.GetValueOrDefault(type, 0); }
+
+            public bool FactoryCanProduce { get { lock (_lk) return _factoryCanProduce; } }
         }
 
         public static async Task Main(string[] args)
@@ -99,7 +137,7 @@ namespace ClientTest
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                Console.WriteLine($"[EXCEPTION] {ex.Message}");
+                Console.WriteLine($"[EXCEPTION] {ex}");
             }
             finally
             {
@@ -135,149 +173,159 @@ namespace ClientTest
             { Log("[FAIL] CreateCharacter failed."); return; }
 
             if (!await TimeoutTask(state.CharSeenTask, 10, ct))
-            { Log("[FAIL] Character not seen in frame within 10s."); return; }
+            { Log("[FAIL] Character not seen in frame."); return; }
             Log("[OK] Character spawned.");
 
-            // [3] 获取地图，寻路到最近算力中心
+            // [3] 获取地图
             var map = client.GetMap(new NullRequest());
-            Log("Navigating to nearest ComputeCenter...");
-            if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.ComputeCenter, ct))
-            { Log("[FAIL] Failed to reach any ComputeCenter."); return; }
-            Log("[OK] Arrived at ComputeCenter.");
 
-            // [4] 占领算力中心
-            Log("Occupying ComputeCenter...");
-            bool occupied = false;
-            for (int i = 0; i < 30 && !ct.IsCancellationRequested; i++)
+            // [4] 寻路到最近资源并采集
+            Log("Navigating to nearest Resource...");
+            if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Resource, ct))
+            { Log("[FAIL] Failed to reach Resource."); return; }
+            Log("[OK] Arrived at Resource.");
+
+            // 持续采集直到 material 足够生产 2 个 Food
+            Log("Harvesting resources...");
+            int targetMaterial = 10 * 2; // Food cost = 10 each (CostFood), need 20 total
+            var harvestDeadline = DateTime.UtcNow.AddSeconds(30);
+            while (DateTime.UtcNow < harvestDeadline && !ct.IsCancellationRequested)
             {
-                var or = client.Occupy(new OccupyMsg
+                if (state.Material >= targetMaterial) break;
+
+                var hr = client.Harvest(new ResourceMsg
                 {
                     TeamId = teamId,
                     PlayerId = charId,
-                    TargetX = 0,
-                    TargetY = 0,
-                    TargetComputeCenterId = -1
+                    ResourceId = 0,
+                    Amount = 0
                 });
-                if (or.ActSuccess)
-                {
-                    Log($"[OK] Occupy started (attempt {i + 1}).");
-                    occupied = true;
-                    break;
-                }
-                await Task.Delay(500, ct);
+                await Task.Delay(600, ct);
             }
-            if (!occupied)
-            { Log("[FAIL] Occupy failed."); return; }
+            Log($"Material after harvest: {state.Material} (target {targetMaterial})");
 
-            // [5] 等待算力积累（占领后每秒 +CP）
-            Log("Waiting for Computing Power to accumulate...");
-            await Task.Delay(3000, ct);
-            Log($"Current CP = {state.ComputingPower}");
+            if (state.Material < targetMaterial)
+            { Log("[FAIL] Not enough material."); return; }
 
-            // [6] 逐个升级所有科技
-            // TechType 枚举值和成本:
-            var allTechs = new (TechType type, string name, int cost)[]
+            // [5] 生产 2 单位 Food（每单位需等上一次生产完成）
+            Log("Producing 2x Food at factory...");
+            for (int i = 0; i < 2 && !ct.IsCancellationRequested; i++)
             {
-                (TechType.IncreaseHp,         "INCREASE_HP",          30),
-                (TechType.IncreaseRobust,     "INCREASE_ROBUST",      30),
-                (TechType.IncreaseAttackPower,"INCREASE_ATTACK_POWER",60),
-                (TechType.IncreaseAttackSize, "INCREASE_ATTACK_SIZE", 60),
-                (TechType.IncreaseMoveSpeed,  "INCREASE_MOVE_SPEED",  40),
-                (TechType.IncreaseCarryCapacity,"INCREASE_CARRY_CAPACITY",50),
-                (TechType.IncreaseEfficiency, "INCREASE_EFFICIENCY",  40),
-                (TechType.IncreaseProduction, "INCREASE_PRODUCTION",  60),
-                (TechType.IncreaseStorage,    "INCREASE_STORAGE",     50),
-                (TechType.IncreasePrice,      "INCREASE_PRICE",       80),
-                (TechType.DecreaseCost,        "DECREASE_COST",       50),
-            };
+                // 等工厂空闲（CanProduce 由流异步更新，Produce 后需给帧时间）
+                await WaitFor(refreshMs: 400, timeoutSec: 12, ct,
+                    () => state.FactoryCanProduce,
+                    desc: $"CanProduce before produce #{i + 1}");
 
-            Console.WriteLine();
-            Console.WriteLine("══════════════════════════════════════════════");
-            Console.WriteLine("  Tech Upgrade Test — Costs and Results");
-            Console.WriteLine("══════════════════════════════════════════════");
-
-            foreach (var (type, name, cost) in allTechs)
-            {
-                if (ct.IsCancellationRequested) break;
-
-                long cpBefore = state.ComputingPower;
-                Console.WriteLine();
-                Console.WriteLine($"--- {name} ---");
-                Console.WriteLine($"  Cost: {cost}, CP before: {cpBefore}");
-
-                var upRes = client.UplevelTech(new UplevelTechMsg
+                var pr = client.Produce(new ProduceGoodsMsg
                 {
                     TeamId = teamId,
-                    TechType = type
+                    ProductType = Food,
+                    MaxProduceNum = 1
                 });
+                Log($"  Produce #{i + 1}: {(pr.ActSuccess ? "OK" : "FAIL")}");
 
-                long cpAfter = state.ComputingPower;
-                Console.WriteLine($"  Result: {(upRes.ActSuccess ? "OK" : "FAIL")}");
-                Console.WriteLine($"  CP after: {cpAfter} (delta: {cpAfter - cpBefore})");
+                if (!pr.ActSuccess) continue;
 
-                // 给算力恢复时间
-                await Task.Delay(500, ct);
+                // 等生产完成 + 流推送库存更新
+                await WaitFor(refreshMs: 400, timeoutSec: 15, ct,
+                    () => state.FactoryCanProduce && state.GetFactoryGoods(Food) > i,
+                    desc: $"produce #{i + 1} complete");
             }
+            Log($"Factory Food stock: {state.GetFactoryGoods(Food)}, CP: {state.ComputingPower}");
 
-            // [7] 尝试升级到第2级
-            Console.WriteLine();
-            Console.WriteLine("══════════════════════════════════════════════");
-            Console.WriteLine("  Level 2 Upgrade Attempts");
-            Console.WriteLine("══════════════════════════════════════════════");
+            // [6] 导航回工厂装载 2 单位 Food
+            Log("Navigating to Factory...");
+            if (!state.TryGetFactoryPos(out int fx, out int fy))
+            { Log("[FAIL] Factory position unknown."); return; }
+            if (!await NavigateToCell(client, state, teamId, charId, fx / CellSize, fy / CellSize, map, ct))
+            { Log("[FAIL] Failed to reach Factory."); return; }
+            Log("[OK] Arrived at Factory.");
 
-            // 先等更多算力
-            Log("Waiting 5s for more CP...");
-            await Task.Delay(5000, ct);
-            Log($"CP = {state.ComputingPower}");
-
-            foreach (var (type, name, cost) in allTechs)
+            Log("Loading 2x Food...");
+            for (int i = 0; i < 2 && !ct.IsCancellationRequested; i++)
             {
-                if (ct.IsCancellationRequested) break;
-
-                long cpBefore = state.ComputingPower;
-                Console.WriteLine();
-                Console.WriteLine($"--- {name} Lv.2 ---");
-                Console.WriteLine($"  Cost: {cost}, CP before: {cpBefore}");
-
-                var upRes = client.UplevelTech(new UplevelTechMsg
+                var lr = client.Load(new LoadMsg
                 {
                     TeamId = teamId,
-                    TechType = type
+                    PlayerId = charId,
+                    ProductType = Food,
+                    ProductAmount = 1
                 });
-
-                long cpAfter = state.ComputingPower;
-                Console.WriteLine($"  Result: {(upRes.ActSuccess ? "OK" : "FAIL")}");
-                Console.WriteLine($"  CP after: {cpAfter} (delta: {cpAfter - cpBefore})");
-
-                await Task.Delay(300, ct);
-            }
-
-            // [8] 尝试第3级（应该失败，max level = 2）
-            Console.WriteLine();
-            Console.WriteLine("══════════════════════════════════════════════");
-            Console.WriteLine("  Level 3 Upgrade Attempts (should FAIL — max=2)");
-            Console.WriteLine("══════════════════════════════════════════════");
-
-            await Task.Delay(3000, ct);
-            Log($"CP = {state.ComputingPower}");
-
-            foreach (var (type, name, cost) in allTechs.Take(3))
-            {
-                if (ct.IsCancellationRequested) break;
-                Console.WriteLine();
-                Console.WriteLine($"--- {name} Lv.3 ---");
-                var upRes = client.UplevelTech(new UplevelTechMsg
-                {
-                    TeamId = teamId,
-                    TechType = type
-                });
-                Console.WriteLine($"  Result: {(upRes.ActSuccess ? "OK" : "FAIL (expected)")}");
+                Log($"  Load #{i + 1}: {(lr.ActSuccess ? "OK" : "FAIL")}");
                 await Task.Delay(200, ct);
             }
 
+            // [7] 寻路到最近市场
+            Log("Navigating to nearest Market...");
+            if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct))
+            { Log("[FAIL] Failed to reach Market."); return; }
+            Log("[OK] Arrived at Market.");
+
+            // [8] 卖出 1 单位 Food（升级前基准价，看 Score 增长）
+            long scoreBefore1 = state.TeamScore;
+            Log($"Selling 1x Food (before price upgrade), Score before: {scoreBefore1}...");
+            var tr1 = client.Trade(new TradeMsg
+            {
+                TeamId = teamId,
+                PlayerId = charId,
+                ProductType = Food,
+                ProductAmount = 1,
+                IsBuy = false
+            });
+            await Task.Delay(500, ct);
+            long scoreAfter1 = state.TeamScore;
+            long sell1Gain = scoreAfter1 - scoreBefore1;
+            Log($"  Sell #1: {(tr1.ActSuccess ? "OK" : "FAIL")}, Score +{sell1Gain} (CP={state.ComputingPower})");
+
+            // [9] 攒够 80 CP 来升级（Trade 加的是 Score 不是 CP，CP 靠工厂自然生成）
+            if (state.ComputingPower < 80)
+            {
+                Log($"CP ({state.ComputingPower}) < 80, waiting for factory CP generation...");
+                await GrindCP(client, state, teamId, charId, map, ct);
+            }
+
+            await Task.Delay(400, ct);
+            long cpBeforeUpgrade = state.ComputingPower;
+            Log($"CP before upgrade: {cpBeforeUpgrade}");
+
+            // [10] 升级 INCREASE_PRICE 科技
+            Log("Upgrading INCREASE_PRICE tech (cost 80)...");
+            var upRes = client.UplevelTech(new UplevelTechMsg
+            {
+                TeamId = teamId,
+                TechType = TechType.IncreasePrice
+            });
+            await Task.Delay(500, ct);
+            long cpAfterUpgrade = state.ComputingPower;
+            Log($"  Upgrade: {(upRes.ActSuccess ? "OK" : "FAIL")}, CP after: {cpAfterUpgrade}");
+
+            // [11] 再卖出 1 单位 Food（确保在市场旁，看 Score 增长）
+            long scoreBefore2 = state.TeamScore;
+            Log($"Selling 1x Food (after price upgrade), Score before: {scoreBefore2}...");
+            if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct))
+            { Log("[FAIL] Lost market."); return; }
+            var tr2 = client.Trade(new TradeMsg
+            {
+                TeamId = teamId,
+                PlayerId = charId,
+                ProductType = Food,
+                ProductAmount = 1,
+                IsBuy = false
+            });
+            await Task.Delay(500, ct);
+            long scoreAfter2 = state.TeamScore;
+            long sell2Gain = scoreAfter2 - scoreBefore2;
+            Log($"  Sell #2: {(tr2.ActSuccess ? "OK" : "FAIL")}, Score +{sell2Gain} (CP={state.ComputingPower})");
+
+            if (tr1.ActSuccess && tr2.ActSuccess)
+            {
+                Log($"  Sell #1 gain: {sell1Gain}, Sell #2 gain: {sell2Gain}");
+                Log($"  Price tech effect: {(sell2Gain > sell1Gain ? $"+{sell2Gain - sell1Gain} ({(double)sell2Gain / sell1Gain:F2}x)" : "no change")}");
+            }
+
             Console.WriteLine();
             Console.WriteLine("══════════════════════════════════════════════");
-            Console.WriteLine("  Tech test complete.");
+            Console.WriteLine("  Price tech test complete.");
             Console.WriteLine("══════════════════════════════════════════════");
         }
 
@@ -311,6 +359,31 @@ namespace ClientTest
                 { await Task.Delay(100, ct); continue; }
 
                 var path = FindPathToType(map, cx / CellSize, cy / CellSize, targetType);
+                if (path == null) return false;
+                if (path.Count <= 1) return true;
+
+                bool ok = true;
+                foreach (var cell in path.Skip(1))
+                {
+                    if (!await MoveToCellAsync(client, state, teamId, charId, cell.r, cell.c, ct))
+                    { ok = false; break; }
+                }
+                if (ok) return true;
+            }
+            return false;
+        }
+
+        private static async Task<bool> NavigateToCell(
+            AvailableService.AvailableServiceClient client,
+            SharedState state, long teamId, long charId,
+            int row, int col, MessageOfMap map, CancellationToken ct)
+        {
+            for (int attempt = 0; attempt < 8 && !ct.IsCancellationRequested; attempt++)
+            {
+                if (!state.TryGetPos(out int cx, out int cy))
+                { await Task.Delay(100, ct); continue; }
+
+                var path = FindPathToCell(map, cx / CellSize, cy / CellSize, row, col);
                 if (path == null) return false;
                 if (path.Count <= 1) return true;
 
@@ -418,6 +491,27 @@ namespace ClientTest
             return best == null ? null : Reconstruct(best.Value, sr, sc, prevR, prevC);
         }
 
+        private static List<(int r, int c)>? FindPathToCell(
+            MessageOfMap map, int sr, int sc, int tr, int tc)
+        {
+            int h = map.Rows.Count;
+            if (h == 0) return null;
+            int w = map.Rows[0].Cols.Count;
+
+            var (dist, prevR, prevC) = BfsFrom(map, sr, sc, h, w, clearance: 0);
+            int[] dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
+            (int r, int c)? best = null;
+            int bestD = int.MaxValue;
+            for (int k = 0; k < 4; k++)
+            {
+                int ar = tr + dr[k], ac = tc + dc[k];
+                if ((uint)ar >= (uint)h || (uint)ac >= (uint)w) continue;
+                if (dist[ar, ac] < 0 || dist[ar, ac] >= bestD) continue;
+                bestD = dist[ar, ac]; best = (ar, ac);
+            }
+            return best == null ? null : Reconstruct(best.Value, sr, sc, prevR, prevC);
+        }
+
         private static (int[,] dist, int[,] prevR, int[,] prevC) BfsFrom(
             MessageOfMap map, int sr, int sc, int h, int w, int clearance)
         {
@@ -484,8 +578,69 @@ namespace ClientTest
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // 攒钱辅助：回到工厂 → 生产 Food → 装货 → 到市场卖 → 循环直到 CP 达标
+        // ────────────────────────────────────────────────────────────────────
+        private static async Task GrindCP(
+            AvailableService.AvailableServiceClient client,
+            SharedState state, long teamId, long charId,
+            MessageOfMap map, CancellationToken ct)
+        {
+            const int targetCP = 80;
+            for (int round = 0; round < 10 && !ct.IsCancellationRequested; round++)
+            {
+                if (state.ComputingPower >= targetCP) break;
+
+                // 回工厂
+                if (!state.TryGetFactoryPos(out int fx, out int fy)) break;
+                if (!await NavigateToCell(client, state, teamId, charId, fx / CellSize, fy / CellSize, map, ct))
+                { Log("[GrindCP] Can't reach factory."); break; }
+
+                // 等空闲 + 生产
+                await WaitFor(refreshMs: 400, timeoutSec: 12, ct,
+                    () => state.FactoryCanProduce,
+                    desc: "CanProduce for grind");
+                client.Produce(new ProduceGoodsMsg { TeamId = teamId, ProductType = Food, MaxProduceNum = 1 });
+
+                // 等生产完成
+                await Task.Delay(2500, ct);
+                await WaitFor(refreshMs: 400, timeoutSec: 10, ct,
+                    () => state.GetFactoryGoods(Food) >= 1,
+                    desc: "grind produce complete");
+
+                if (state.GetFactoryGoods(Food) < 1) continue;
+
+                // 装货
+                client.Load(new LoadMsg { TeamId = teamId, PlayerId = charId, ProductType = Food, ProductAmount = 1 });
+                await Task.Delay(300, ct);
+
+                // 去市场卖
+                if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct)) break;
+                client.Trade(new TradeMsg { TeamId = teamId, PlayerId = charId, ProductType = Food, ProductAmount = 1, IsBuy = false });
+                await Task.Delay(500, ct); // 等流推送 CP
+                Log($"[GrindCP] Round {round + 1}: CP={state.ComputingPower}, Score={state.TeamScore}");
+            }
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // 工具
         // ────────────────────────────────────────────────────────────────────
+        /// <summary>
+        /// 等待 condition 为 true，每次检查前 sleep refreshMs 让流推送新帧。
+        /// </summary>
+        private static async Task<bool> WaitFor(
+            int refreshMs, int timeoutSec, CancellationToken ct,
+            Func<bool> condition, string desc)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(timeoutSec);
+            while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+            {
+                if (condition()) return true;
+                await Task.Delay(refreshMs, ct);
+            }
+            Log($"[WaitFor] Timeout waiting for: {desc}");
+            return false;
+        }
+
         private static async Task<bool> TimeoutTask(Task task, int sec, CancellationToken ct)
         {
             var delay = Task.Delay(TimeSpan.FromSeconds(sec), ct);
