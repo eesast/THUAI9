@@ -2,10 +2,9 @@ using Grpc.Core;
 using Protobuf;
 
 // ============================================================================
-// 完整流程测试：召唤角色 → 寻路采集 → 工厂生产 → 返厂装载 → 前往市场售卖
+// 价格科技测试：采资源 → 生产2 Food → 装载 → 卖1 → 升级售价科技 → 卖1
 //
-// 运行前提：服务端需用 --gameTimeInSecond 60（以上）启动，否则默认 10s 不够一轮循环
-// 参数：<playerId> <teamId> [characterId]  （characterId 默认 1）
+// 运行：dotnet run --project logic/ClientTest -- <playerId> <teamId>
 // ============================================================================
 
 namespace ClientTest
@@ -14,12 +13,9 @@ namespace ClientTest
     {
         private const int CellSize = 1000;
         private const int CellCenter = 500;
-        // 到达阈值：300 game-units（< 1 cell），保证落在目标格内
         private const double ArrivalRadius = 300.0;
+        private const GoodsType Food = GoodsType.Food;
 
-        // ────────────────────────────────────────────────────────────────────
-        // SharedState：由帧读取线程更新，主任务线程只读
-        // ────────────────────────────────────────────────────────────────────
         private sealed class SharedState
         {
             private readonly object _lk = new();
@@ -30,12 +26,12 @@ namespace ClientTest
 
             private bool _hasPos;
             private int _charX, _charY;
-            private int _currentLoad;
-            private int _material;
-            private bool _factoryCanProduce = true;
-            // 本队工厂在游戏坐标系中的位置（首帧更新后有效）
+            private long _computingPower;
+            private long _teamScore;
             private int _facX = -1, _facY = -1;
+            private int _material;
             private readonly Dictionary<GoodsType, int> _facGoods = new();
+            private bool _factoryCanProduce = true;
 
             public Task GameStartTask => _gameStartTcs.Task;
             public Task CharSeenTask => _charSeenTcs.Task;
@@ -45,33 +41,23 @@ namespace ClientTest
                 if (frame.GameState is GameState.GameStart or GameState.GameRunning)
                     _gameStartTcs.TrySetResult(true);
 
-                // ── 队伍经济 ──────────────────────────────────────────────
-                if (frame.AllMessage != null)
-                {
-                    int idx = (int)teamId - 1;
-                    if ((uint)idx < (uint)frame.AllMessage.Teams.Count)
-                        lock (_lk) { _material = frame.AllMessage.Teams[idx].Material; }
-                }
-
                 foreach (var obj in frame.ObjMessage)
                 {
-                    // ── 本队工厂 ──────────────────────────────────────────
                     var fac = obj.FactoryMessage;
                     if (fac != null && fac.TeamId == teamId)
                     {
                         lock (_lk)
                         {
-                            _factoryCanProduce = fac.CanProduce;
+                            _computingPower = fac.ComputingPower;
                             _facX = fac.X;
                             _facY = fac.Y;
+                            _factoryCanProduce = fac.CanProduce;
                             _facGoods.Clear();
-                            // GoodsStack 字段：ProductType (GoodsType) + Quantity (int)
                             foreach (var gs in fac.ProductInventory)
                                 _facGoods[gs.ProductType] = gs.Quantity;
                         }
                     }
 
-                    // ── 本角色 ────────────────────────────────────────────
                     var ch = obj.CharacterMessage;
                     if (ch != null && ch.TeamId == teamId && ch.PlayerId == charId)
                     {
@@ -80,9 +66,21 @@ namespace ClientTest
                             _hasPos = true;
                             _charX = ch.X;
                             _charY = ch.Y;
-                            _currentLoad = ch.CurrentLoad;
                         }
                         _charSeenTcs.TrySetResult(true);
+                    }
+                }
+
+                if (frame.AllMessage != null)
+                {
+                    int idx = (int)teamId - 1;
+                    if ((uint)idx < (uint)frame.AllMessage.Teams.Count)
+                    {
+                        lock (_lk)
+                        {
+                            _material = frame.AllMessage.Teams[idx].Material;
+                            _teamScore = frame.AllMessage.Teams[idx].Score;
+                        }
                     }
                 }
             }
@@ -90,25 +88,24 @@ namespace ClientTest
             public bool TryGetPos(out int x, out int y)
             { lock (_lk) { x = _charX; y = _charY; return _hasPos; } }
 
+            public long ComputingPower { get { lock (_lk) return _computingPower; } }
+            public long TeamScore { get { lock (_lk) return _teamScore; } }
             public int Material { get { lock (_lk) return _material; } }
-            public bool FactoryCanProduce { get { lock (_lk) return _factoryCanProduce; } }
-            public int CurrentLoad { get { lock (_lk) return _currentLoad; } }
 
             public bool TryGetFactoryPos(out int x, out int y)
             { lock (_lk) { x = _facX; y = _facY; return _facX >= 0; } }
 
             public int GetFactoryGoods(GoodsType type)
             { lock (_lk) return _facGoods.GetValueOrDefault(type, 0); }
+
+            public bool FactoryCanProduce { get { lock (_lk) return _factoryCanProduce; } }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // Main：负责连接、注册、清理；游戏逻辑委托给 RunAsync
-        // ────────────────────────────────────────────────────────────────────
         public static async Task Main(string[] args)
         {
             if (args.Length < 2)
             {
-                Console.WriteLine("Usage: ClientTest <playerId> <teamId> [characterId]");
+                Console.WriteLine("Usage: ClientTest <playerId> <teamId>");
                 return;
             }
             if (!long.TryParse(args[0], out long playerId) ||
@@ -117,7 +114,7 @@ namespace ClientTest
                 Console.WriteLine("Invalid arguments.");
                 return;
             }
-            long charId = args.Length >= 3 && long.TryParse(args[2], out long cid) ? cid : 1L;
+            long charId = 1;
 
             var channel = new Channel("127.0.0.1:8888", ChannelCredentials.Insecure);
             await channel.ConnectAsync(DateTime.UtcNow.AddSeconds(5));
@@ -140,7 +137,7 @@ namespace ClientTest
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                Console.WriteLine($"[EXCEPTION] {ex.Message}");
+                Console.WriteLine($"[EXCEPTION] {ex}");
             }
             finally
             {
@@ -150,9 +147,6 @@ namespace ClientTest
             }
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // 核心流程：7 步完整循环
-        // ────────────────────────────────────────────────────────────────────
         private static async Task RunAsync(
             AvailableService.AvailableServiceClient client,
             SharedState state,
@@ -161,13 +155,13 @@ namespace ClientTest
         {
             var ct = cts.Token;
 
-            // ── [1] 等待游戏开始 ──────────────────────────────────────────
+            // [1] 等待游戏开始
             Log("Waiting for game start...");
             if (!await TimeoutTask(state.GameStartTask, 30, ct))
-            { Fail(cts, "Game start timeout."); return; }
+            { Log("[FAIL] Game start timeout."); return; }
+            Log("[OK] Game started.");
 
-            // ── [2] 召唤角色 ──────────────────────────────────────────────
-            // 诊断：CreateCharacterRID 可取回分配的 PlayerId；这里用 CreateCharacter 固定 Id
+            // [2] 召唤角色
             Log($"Creating Robot (charId={charId})...");
             var createRes = client.CreateCharacter(new CreateCharacterMsg
             {
@@ -176,164 +170,163 @@ namespace ClientTest
                 CharacterType = CharacterType.Robot
             });
             if (!createRes.ActSuccess)
-            { Fail(cts, "CreateCharacter failed (工厂可能无 Material 或未开局)."); return; }
+            { Log("[FAIL] CreateCharacter failed."); return; }
 
             if (!await TimeoutTask(state.CharSeenTask, 10, ct))
-            { Fail(cts, "Character not seen in frame within 10s."); return; }
-            Log("  Character spawned.");
+            { Log("[FAIL] Character not seen in frame."); return; }
+            Log("[OK] Character spawned.");
 
-            // ── [3] 获取地图，寻路到最近资源 ─────────────────────────────
+            // [3] 获取地图
             var map = client.GetMap(new NullRequest());
-            Log("Navigating to nearest resource...");
+
+            // [4] 寻路到最近资源并采集
+            Log("Navigating to nearest Resource...");
             if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Resource, ct))
-            { Fail(cts, "Failed to reach any resource."); return; }
+            { Log("[FAIL] Failed to reach Resource."); return; }
+            Log("[OK] Arrived at Resource.");
 
-            // ── [4] 开始采集 ──────────────────────────────────────────────
-            // 诊断 A：Harvest 不需要 ResourceId，服务端用 OneForInteract 按位置找最近资源
-            // 诊断 B：资源可能在导航途中被耗尽，重试 15 次兜底
-            Log("Starting harvest...");
-            bool harvesting = false;
-            for (int i = 0; i < 15 && !harvesting && !ct.IsCancellationRequested; i++)
+            // 持续采集直到 material 足够生产 2 个 Food
+            Log("Harvesting resources...");
+            int targetMaterial = 10 * 2; // Food cost = 10 each (CostFood), need 20 total
+            var harvestDeadline = DateTime.UtcNow.AddSeconds(30);
+            while (DateTime.UtcNow < harvestDeadline && !ct.IsCancellationRequested)
             {
-                var hr = client.Harvest(new ResourceMsg { TeamId = teamId, PlayerId = charId });
-                if (hr.ActSuccess) harvesting = true;
-                else await Task.Delay(150, ct);
+                if (state.Material >= targetMaterial) break;
+
+                var hr = client.Harvest(new ResourceMsg
+                {
+                    TeamId = teamId,
+                    PlayerId = charId,
+                    ResourceId = 0,
+                    Amount = 0
+                });
+                await Task.Delay(600, ct);
             }
-            if (!harvesting)
-            { Fail(cts, "Harvest failed（角色可能不在资源旁边，或资源已耗尽）."); return; }
-            Log("  Harvest running.");
+            Log($"Material after harvest: {state.Material} (target {targetMaterial})");
 
-            // ── [5] 等待 Material 足够，下达生产命令 ─────────────────────
-            // 选择：Semiconductor（成本 10，生产时间 5s，基础价格 80，收益最高）
-            const GoodsType Product = GoodsType.Semiconductor;
-            const int ProduceCost = 10; // CostSemiconductor
+            if (state.Material < targetMaterial)
+            { Log("[FAIL] Not enough material."); return; }
 
-            Log($"Waiting for material >= {ProduceCost}...");
-            // 诊断：material 通过 AllMessage.Teams[idx].Material 推送，约 50ms 延迟
-            if (!await WaitFor(() => state.Material >= ProduceCost, 90, ct))
-            { Fail(cts, $"Material still {state.Material} after 90s."); return; }
-            Log($"  Material = {state.Material}. Ready to produce.");
-
-            // ── [6] 工厂生产 ──────────────────────────────────────────────
-            // 诊断 C：必须先等 CanProduce=true；游戏一开始 CanProduce 可能为 false
-            //         （工厂被攻击后有一段 disable 时间）
-            Log("Issuing Produce command...");
-            await WaitFor(() => state.FactoryCanProduce, 15, ct);
-
-            var produceRes = client.Produce(new ProduceGoodsMsg
+            // [5] 生产 2 单位 Food（每单位需等上一次生产完成）
+            Log("Producing 2x Food at factory...");
+            for (int i = 0; i < 2 && !ct.IsCancellationRequested; i++)
             {
-                TeamId = teamId,
-                ProductType = Product,
-                MaxProduceNum = 1
-            });
-            Log($"  Produce: {(produceRes.ActSuccess ? "OK" : "FAIL")}");
+                // 等工厂空闲（CanProduce 由流异步更新，Produce 后需给帧时间）
+                await WaitFor(refreshMs: 400, timeoutSec: 12, ct,
+                    () => state.FactoryCanProduce,
+                    desc: $"CanProduce before produce #{i + 1}");
 
-            if (produceRes.ActSuccess)
-            {
-                // 诊断 D：Produce 成功后的下一帧 CanProduce 可能仍为 true（旧帧值），
-                //         加 150ms 延迟让"繁忙帧"先到达，再等恢复
-                await Task.Delay(150, ct);
-                bool finished = await WaitFor(() => state.FactoryCanProduce, 30, ct);
-                if (!finished)
-                    Log("  WARNING: factory still busy after 30s, continuing anyway.");
+                var pr = client.Produce(new ProduceGoodsMsg
+                {
+                    TeamId = teamId,
+                    ProductType = Food,
+                    MaxProduceNum = 1
+                });
+                Log($"  Produce #{i + 1}: {(pr.ActSuccess ? "OK" : "FAIL")}");
 
-                // 同时确认仓库里确实有货（FactoryMessage.ProductInventory 已更新）
-                await WaitFor(() => state.GetFactoryGoods(Product) >= 1, 10, ct);
-                Log($"  Factory inventory: {Product} x{state.GetFactoryGoods(Product)}");
+                if (!pr.ActSuccess) continue;
+
+                // 等生产完成 + 流推送库存更新
+                await WaitFor(refreshMs: 400, timeoutSec: 15, ct,
+                    () => state.FactoryCanProduce && state.GetFactoryGoods(Food) > i,
+                    desc: $"produce #{i + 1} complete");
             }
+            Log($"Factory Food stock: {state.GetFactoryGoods(Food)}, CP: {state.ComputingPower}");
 
-            // ── [7] 停止采集，导航回本队工厂 ─────────────────────────────
-            // 诊断 E：EndAllAction 在服务端 ActionLock 内同步将角色状态清为 NULL，
-            //         所以 Move 在其后立即到达服务端时不会被 HARVESTING 状态拒绝。
-            //         100ms 延迟是额外安全余量。
-            Log("Stopping harvest, navigating to own factory...");
-            client.EndAllAction(new IDMsg { PlayerId = charId, TeamId = teamId });
-            await Task.Delay(100, ct);
+            // [6] 导航回工厂装载 2 单位 Food
+            Log("Navigating to Factory...");
+            if (!state.TryGetFactoryPos(out int fx, out int fy))
+            { Log("[FAIL] Factory position unknown."); return; }
+            if (!await NavigateToCell(client, state, teamId, charId, fx / CellSize, fy / CellSize, map, ct))
+            { Log("[FAIL] Failed to reach Factory."); return; }
+            Log("[OK] Arrived at Factory.");
 
-            if (!state.TryGetFactoryPos(out int facX, out int facY))
-            { Fail(cts, "Factory position not seen in any frame yet."); return; }
-
-            int facRow = facX / CellSize;
-            int facCol = facY / CellSize;
-            Log($"  Own factory cell: [{facRow}, {facCol}]");
-
-            if (!await NavigateToCell(client, state, map, teamId, charId, facRow, facCol, ct))
-            { Fail(cts, "Failed to reach own factory."); return; }
-
-            if (!await WaitFor(() =>
-            {
-                if (!state.TryGetPos(out int x, out int y)) return false;
-                return Math.Abs(x / CellSize - facRow) <= 1 && Math.Abs(y / CellSize - facCol) <= 1;
-            }, 8, ct))
-            { Fail(cts, "Character is not close enough to own factory for Load."); return; }
-
-            // ── [8] 装载货物 ──────────────────────────────────────────────
-            // 诊断 F：Load 用 OneForInteract 找"最近工厂"，不检查团队归属。
-            //         若敌方工厂更近，会从敌方工厂扣货（即使为空也会失败）。
-            //         通过导航到 TryGetFactoryPos 返回的坐标，保证本队工厂是最近的。
-            // 诊断 G：Load 要求 amount > 0，且工厂仓库 >= amount；若生产未完成则失败。
-            Log($"Loading {Product} x1 from factory...");
-            bool loaded = false;
-            for (int i = 0; i < 15 && !loaded && !ct.IsCancellationRequested; i++)
+            Log("Loading 2x Food...");
+            for (int i = 0; i < 2 && !ct.IsCancellationRequested; i++)
             {
                 var lr = client.Load(new LoadMsg
                 {
                     TeamId = teamId,
                     PlayerId = charId,
-                    ProductType = Product,
+                    ProductType = Food,
                     ProductAmount = 1
                 });
-                if (lr.ActSuccess) loaded = true;
-                else
-                {
-                    Log($"  Load attempt {i + 1} failed (factory goods={state.GetFactoryGoods(Product)}, load={state.CurrentLoad})");
-                    await Task.Delay(200, ct);
-                }
+                Log($"  Load #{i + 1}: {(lr.ActSuccess ? "OK" : "FAIL")}");
+                await Task.Delay(200, ct);
             }
-            if (!loaded)
-            { Fail(cts, "Load failed after 15 attempts."); return; }
-            Log($"  Load succeeded. CurrentLoad={state.CurrentLoad}");
 
-            // ── [9] 寻路到最近市场 ────────────────────────────────────────
-            Log("Navigating to nearest market...");
+            // [7] 寻路到最近市场
+            Log("Navigating to nearest Market...");
             if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct))
-            { Fail(cts, "Failed to reach any market."); return; }
+            { Log("[FAIL] Failed to reach Market."); return; }
+            Log("[OK] Arrived at Market.");
 
-            // ── [10] 售卖货物 ──────────────────────────────────────────────
-            // 诊断 H：Trade 同样用 OneForInteract 找最近市场，ApproachToInteract 检查
-            //         格坐标 Chebyshev 距离 ≤ 1（即角色所在格与目标格相邻即可）。
-            //         BFS 导航到目标格的相邻格，满足此条件。
-            // 诊断 I：市场价格有衰减机制（同类型商品大量交易后价格下降），
-            //         Semiconductor 基础价 80，小市场 x1.1 = 88 分；尽早卖出更划算。
-            Log($"Selling {Product} x1...");
-            bool sold = false;
-            for (int i = 0; i < 15 && !sold && !ct.IsCancellationRequested; i++)
+            // [8] 卖出 1 单位 Food（升级前基准价，看 Score 增长）
+            long scoreBefore1 = state.TeamScore;
+            Log($"Selling 1x Food (before price upgrade), Score before: {scoreBefore1}...");
+            var tr1 = client.Trade(new TradeMsg
             {
-                var tr = client.Trade(new TradeMsg
-                {
-                    TeamId = teamId,
-                    PlayerId = charId,
-                    ProductType = Product,
-                    ProductAmount = 1,
-                    IsBuy = false   // 卖出
-                });
-                if (tr.ActSuccess) sold = true;
-                else
-                {
-                    Log($"  Trade attempt {i + 1} failed");
-                    await Task.Delay(200, ct);
-                }
+                TeamId = teamId,
+                PlayerId = charId,
+                ProductType = Food,
+                ProductAmount = 1,
+                IsBuy = false
+            });
+            await Task.Delay(500, ct);
+            long scoreAfter1 = state.TeamScore;
+            long sell1Gain = scoreAfter1 - scoreBefore1;
+            Log($"  Sell #1: {(tr1.ActSuccess ? "OK" : "FAIL")}, Score +{sell1Gain} (CP={state.ComputingPower})");
+
+            // [9] 攒够 80 CP 来升级（Trade 加的是 Score 不是 CP，CP 靠工厂自然生成）
+            if (state.ComputingPower < 80)
+            {
+                Log($"CP ({state.ComputingPower}) < 80, waiting for factory CP generation...");
+                await GrindCP(client, state, teamId, charId, map, ct);
             }
 
-            // ── 结果汇总 ──────────────────────────────────────────────────
+            await Task.Delay(400, ct);
+            long cpBeforeUpgrade = state.ComputingPower;
+            Log($"CP before upgrade: {cpBeforeUpgrade}");
+
+            // [10] 升级 INCREASE_PRICE 科技
+            Log("Upgrading INCREASE_PRICE tech (cost 80)...");
+            var upRes = client.UplevelTech(new UplevelTechMsg
+            {
+                TeamId = teamId,
+                TechType = TechType.IncreasePrice
+            });
+            await Task.Delay(500, ct);
+            long cpAfterUpgrade = state.ComputingPower;
+            Log($"  Upgrade: {(upRes.ActSuccess ? "OK" : "FAIL")}, CP after: {cpAfterUpgrade}");
+
+            // [11] 再卖出 1 单位 Food（确保在市场旁，看 Score 增长）
+            long scoreBefore2 = state.TeamScore;
+            Log($"Selling 1x Food (after price upgrade), Score before: {scoreBefore2}...");
+            if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct))
+            { Log("[FAIL] Lost market."); return; }
+            var tr2 = client.Trade(new TradeMsg
+            {
+                TeamId = teamId,
+                PlayerId = charId,
+                ProductType = Food,
+                ProductAmount = 1,
+                IsBuy = false
+            });
+            await Task.Delay(500, ct);
+            long scoreAfter2 = state.TeamScore;
+            long sell2Gain = scoreAfter2 - scoreBefore2;
+            Log($"  Sell #2: {(tr2.ActSuccess ? "OK" : "FAIL")}, Score +{sell2Gain} (CP={state.ComputingPower})");
+
+            if (tr1.ActSuccess && tr2.ActSuccess)
+            {
+                Log($"  Sell #1 gain: {sell1Gain}, Sell #2 gain: {sell2Gain}");
+                Log($"  Price tech effect: {(sell2Gain > sell1Gain ? $"+{sell2Gain - sell1Gain} ({(double)sell2Gain / sell1Gain:F2}x)" : "no change")}");
+            }
+
             Console.WriteLine();
-            Console.WriteLine("══════════════════════════════════════");
-            Console.WriteLine($"  Harvest    : OK");
-            Console.WriteLine($"  Produce    : {(produceRes.ActSuccess ? "OK" : "FAIL")}");
-            Console.WriteLine($"  Load       : {(loaded ? "OK" : "FAIL")}");
-            Console.WriteLine($"  Trade/Sell : {(sold ? "OK" : "FAIL")}");
-            Console.WriteLine($"  Full cycle : {(produceRes.ActSuccess && loaded && sold ? "PASS ✓" : "FAIL ✗")}");
-            Console.WriteLine("══════════════════════════════════════");
+            Console.WriteLine("══════════════════════════════════════════════");
+            Console.WriteLine("  Price tech test complete.");
+            Console.WriteLine("══════════════════════════════════════════════");
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -353,10 +346,8 @@ namespace ClientTest
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // 寻路导航
+        // 导航
         // ────────────────────────────────────────────────────────────────────
-
-        // 导航到地图上最近的 targetType 类型格旁边（BFS + 重试）
         private static async Task<bool> NavigateToType(
             AvailableService.AvailableServiceClient client,
             SharedState state, MessageOfMap map, long teamId, long charId,
@@ -368,32 +359,6 @@ namespace ClientTest
                 { await Task.Delay(100, ct); continue; }
 
                 var path = FindPathToType(map, cx / CellSize, cy / CellSize, targetType);
-                if (path == null) return false;
-                if (path.Count <= 1) return true;   // 已经到了
-
-                bool ok = true;
-                foreach (var cell in path.Skip(1))
-                {
-                    if (!await MoveToCellAsync(client, state, teamId, charId, cell.r, cell.c, ct))
-                    { ok = false; break; }
-                }
-                if (ok) return true;
-            }
-            return false;
-        }
-
-        // 导航到 (targetRow, targetCol) 格旁边的可行走格（用于精确到达本队工厂）
-        private static async Task<bool> NavigateToCell(
-            AvailableService.AvailableServiceClient client,
-            SharedState state, MessageOfMap map, long teamId, long charId,
-            int targetRow, int targetCol, CancellationToken ct)
-        {
-            for (int attempt = 0; attempt < 8 && !ct.IsCancellationRequested; attempt++)
-            {
-                if (!state.TryGetPos(out int cx, out int cy))
-                { await Task.Delay(100, ct); continue; }
-
-                var path = FindPathAdjacentTo(map, cx / CellSize, cy / CellSize, targetRow, targetCol);
                 if (path == null) return false;
                 if (path.Count <= 1) return true;
 
@@ -408,7 +373,31 @@ namespace ClientTest
             return false;
         }
 
-        // 移动到某个格的中心，带防卡死偏转
+        private static async Task<bool> NavigateToCell(
+            AvailableService.AvailableServiceClient client,
+            SharedState state, long teamId, long charId,
+            int row, int col, MessageOfMap map, CancellationToken ct)
+        {
+            for (int attempt = 0; attempt < 8 && !ct.IsCancellationRequested; attempt++)
+            {
+                if (!state.TryGetPos(out int cx, out int cy))
+                { await Task.Delay(100, ct); continue; }
+
+                var path = FindPathToCell(map, cx / CellSize, cy / CellSize, row, col);
+                if (path == null) return false;
+                if (path.Count <= 1) return true;
+
+                bool ok = true;
+                foreach (var cell in path.Skip(1))
+                {
+                    if (!await MoveToCellAsync(client, state, teamId, charId, cell.r, cell.c, ct))
+                    { ok = false; break; }
+                }
+                if (ok) return true;
+            }
+            return false;
+        }
+
         private static async Task<bool> MoveToCellAsync(
             AvailableService.AvailableServiceClient client,
             SharedState state, long teamId, long charId,
@@ -431,7 +420,6 @@ namespace ClientTest
 
                 double angle = Math.Atan2(dy, dx);
                 stall = dis >= lastDis - 20 ? stall + 1 : 0;
-                // 卡死检测：连续 4 帧未前进则左右偏转
                 if (stall >= 4) angle += (stall / 4) % 2 == 0 ? 0.35 : -0.35;
 
                 client.Move(new MoveMsg
@@ -448,10 +436,8 @@ namespace ClientTest
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // BFS 寻路
+        // BFS
         // ────────────────────────────────────────────────────────────────────
-
-        // Space 和 Bush 可行走；Factory/Market/Resource/ComputeCenter/Barrier 不可行走
         private static bool IsPassable(PlaceType p) =>
             p is PlaceType.Space or PlaceType.Bush;
 
@@ -470,14 +456,10 @@ namespace ClientTest
             return true;
         }
 
-        // 从起点 BFS，找到最近 targetType 旁边的可行走格，返回完整路径
         private static List<(int r, int c)>? FindPathToType(
             MessageOfMap map, int sr, int sc, PlaceType targetType)
-        {
-            // clearance=1 优先（避免紧贴墙走），失败回退 clearance=0
-            return FindPathToType(map, sr, sc, targetType, 1)
+            => FindPathToType(map, sr, sc, targetType, 1)
                 ?? FindPathToType(map, sr, sc, targetType, 0);
-        }
 
         private static List<(int r, int c)>? FindPathToType(
             MessageOfMap map, int sr, int sc, PlaceType targetType, int clearance)
@@ -509,8 +491,7 @@ namespace ClientTest
             return best == null ? null : Reconstruct(best.Value, sr, sc, prevR, prevC);
         }
 
-        // 到指定格 (tr,tc) 相邻格的路径（用于精确导航到本队工厂）
-        private static List<(int r, int c)>? FindPathAdjacentTo(
+        private static List<(int r, int c)>? FindPathToCell(
             MessageOfMap map, int sr, int sc, int tr, int tc)
         {
             int h = map.Rows.Count;
@@ -518,7 +499,6 @@ namespace ClientTest
             int w = map.Rows[0].Cols.Count;
 
             var (dist, prevR, prevC) = BfsFrom(map, sr, sc, h, w, clearance: 0);
-
             int[] dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
             (int r, int c)? best = null;
             int bestD = int.MaxValue;
@@ -529,7 +509,6 @@ namespace ClientTest
                 if (dist[ar, ac] < 0 || dist[ar, ac] >= bestD) continue;
                 bestD = dist[ar, ac]; best = (ar, ac);
             }
-
             return best == null ? null : Reconstruct(best.Value, sr, sc, prevR, prevC);
         }
 
@@ -545,9 +524,8 @@ namespace ClientTest
 
             dist[sr, sc] = 0; prevR[sr, sc] = sr; prevC[sr, sc] = sc;
             var q = new Queue<(int, int)>();
-
-            // 如果起点本身不可通行（如站在资源上），也从邻近的可通行格开始扩展
             int[] dr = [-1, 1, 0, 0], dcc = [0, 0, -1, 1];
+
             if (!IsTraversable(map, sr, sc, clearance))
             {
                 for (int k = 0; k < 4; k++)
@@ -563,10 +541,7 @@ namespace ClientTest
                     }
                 }
             }
-            else
-            {
-                q.Enqueue((sr, sc));
-            }
+            else q.Enqueue((sr, sc));
 
             while (q.Count > 0)
             {
@@ -603,30 +578,73 @@ namespace ClientTest
         }
 
         // ────────────────────────────────────────────────────────────────────
-        // 通用工具
+        // 攒钱辅助：回到工厂 → 生产 Food → 装货 → 到市场卖 → 循环直到 CP 达标
         // ────────────────────────────────────────────────────────────────────
-
-        private static async Task<bool> WaitFor(Func<bool> cond, int timeoutSec, CancellationToken ct)
+        private static async Task GrindCP(
+            AvailableService.AvailableServiceClient client,
+            SharedState state, long teamId, long charId,
+            MessageOfMap map, CancellationToken ct)
         {
-            var end = DateTime.UtcNow.AddSeconds(timeoutSec);
-            while (DateTime.UtcNow < end && !ct.IsCancellationRequested)
+            const int targetCP = 80;
+            for (int round = 0; round < 10 && !ct.IsCancellationRequested; round++)
             {
-                if (cond()) return true;
-                await Task.Delay(120, ct);
+                if (state.ComputingPower >= targetCP) break;
+
+                // 回工厂
+                if (!state.TryGetFactoryPos(out int fx, out int fy)) break;
+                if (!await NavigateToCell(client, state, teamId, charId, fx / CellSize, fy / CellSize, map, ct))
+                { Log("[GrindCP] Can't reach factory."); break; }
+
+                // 等空闲 + 生产
+                await WaitFor(refreshMs: 400, timeoutSec: 12, ct,
+                    () => state.FactoryCanProduce,
+                    desc: "CanProduce for grind");
+                client.Produce(new ProduceGoodsMsg { TeamId = teamId, ProductType = Food, MaxProduceNum = 1 });
+
+                // 等生产完成
+                await Task.Delay(2500, ct);
+                await WaitFor(refreshMs: 400, timeoutSec: 10, ct,
+                    () => state.GetFactoryGoods(Food) >= 1,
+                    desc: "grind produce complete");
+
+                if (state.GetFactoryGoods(Food) < 1) continue;
+
+                // 装货
+                client.Load(new LoadMsg { TeamId = teamId, PlayerId = charId, ProductType = Food, ProductAmount = 1 });
+                await Task.Delay(300, ct);
+
+                // 去市场卖
+                if (!await NavigateToType(client, state, map, teamId, charId, PlaceType.Market, ct)) break;
+                client.Trade(new TradeMsg { TeamId = teamId, PlayerId = charId, ProductType = Food, ProductAmount = 1, IsBuy = false });
+                await Task.Delay(500, ct); // 等流推送 CP
+                Log($"[GrindCP] Round {round + 1}: CP={state.ComputingPower}, Score={state.TeamScore}");
             }
-            return cond();
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // 工具
+        // ────────────────────────────────────────────────────────────────────
+        /// <summary>
+        /// 等待 condition 为 true，每次检查前 sleep refreshMs 让流推送新帧。
+        /// </summary>
+        private static async Task<bool> WaitFor(
+            int refreshMs, int timeoutSec, CancellationToken ct,
+            Func<bool> condition, string desc)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(timeoutSec);
+            while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+            {
+                if (condition()) return true;
+                await Task.Delay(refreshMs, ct);
+            }
+            Log($"[WaitFor] Timeout waiting for: {desc}");
+            return false;
         }
 
         private static async Task<bool> TimeoutTask(Task task, int sec, CancellationToken ct)
         {
             var delay = Task.Delay(TimeSpan.FromSeconds(sec), ct);
             return await Task.WhenAny(task, delay) == task;
-        }
-
-        private static void Fail(CancellationTokenSource cts, string msg)
-        {
-            Console.WriteLine($"[FAIL] {msg}");
-            cts.Cancel();
         }
 
         private static void Log(string msg) =>

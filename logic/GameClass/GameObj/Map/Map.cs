@@ -272,7 +272,17 @@ namespace GameClass.GameObj.Map
                             Add(new Space(GameData.GetCellCenterPos(i, j)));
                             break;
                         case PlaceType.MARKET:
-                            Add(new Market(GameData.GetCellCenterPos(i, j), MarketType.MEDIUM_MARKET));
+                            {
+                                double centerY = height / 2.0;
+                                double centerX = width / 2.0;
+                                double maxDist = Math.Sqrt(centerY * centerY + centerX * centerX);
+                                double dist = Math.Sqrt((i - centerY) * (i - centerY) + (j - centerX) * (j - centerX));
+                                double norm = dist / maxDist;
+                                MarketType mktType = norm < 1.0 / 3.0 ? MarketType.LARGE_MARKET
+                                    : norm < 2.0 / 3.0 ? MarketType.MEDIUM_MARKET
+                                    : MarketType.SMALL_MARKET;
+                                Add(new Market(GameData.GetCellCenterPos(i, j), mktType));
+                            }
                             break;
                         case PlaceType.FACTORY:
                             Add(new Factory(GameData.GetCellCenterPos(i, j)));

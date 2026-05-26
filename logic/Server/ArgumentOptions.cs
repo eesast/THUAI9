@@ -18,8 +18,8 @@ namespace Server
         [Option('p', "port", Required = true, HelpText = "Server listening port")]
         public ushort ServerPort { get; set; } = 8888;
 
-        [Option("teamCount", Required = false, HelpText = "The number of teams, 4 by defualt")]
-        public ushort TeamCount { get; set; } = 1;
+        [Option("teamCount", Required = false, HelpText = "The number of teams, 4 by default")]
+        public ushort TeamCount { get; set; } = 2;
 
         [Option("CharacterNum", Required = false, HelpText = "The max number of Character, 6 by default")]
         public ushort CharacterCount { get; set; } = 6;
