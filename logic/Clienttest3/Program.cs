@@ -262,7 +262,8 @@ namespace ClientTest3
             long teamId, long charId, CancellationToken ct)
         {
             try { while (await call.ResponseStream.MoveNext(ct)) state.ApplyFrame(call.ResponseStream.Current, teamId, charId); }
-            catch (RpcException) { } catch (OperationCanceledException) { }
+            catch (RpcException) { }
+            catch (OperationCanceledException) { }
         }
 
         // =========================================================================
@@ -350,8 +351,12 @@ namespace ClientTest3
             MessageOfMap map, int sr, int sc, int h, int w, int clearance)
         {
             var dist = new int[h, w]; var prevR = new int[h, w]; var prevC = new int[h, w];
-            for (int r = 0; r < h; r++) for (int c = 0; c < w; c++)
-                { dist[r, c] = -1; prevR[r, c] = prevC[r, c] = -1; }
+            for (int r = 0; r < h; r++)
+                for (int c = 0; c < w; c++)
+                {
+                    dist[r, c] = -1;
+                    prevR[r, c] = prevC[r, c] = -1;
+                }
             dist[sr, sc] = 0; prevR[sr, sc] = sr; prevC[sr, sc] = sc;
             var q = new Queue<(int, int)>();
             int[] dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
@@ -387,8 +392,10 @@ namespace ClientTest3
         {
             var path = new List<(int, int)>(); var cur = end;
             while (!(cur.r == sr && cur.c == sc))
-            { path.Add(cur); int pr = prevR[cur.r, cur.c], pc = prevC[cur.r, cur.c];
-              if (pr < 0) return []; cur = (pr, pc); }
+            {
+                path.Add(cur); int pr = prevR[cur.r, cur.c], pc = prevC[cur.r, cur.c];
+                if (pr < 0) return []; cur = (pr, pc);
+            }
             path.Add((sr, sc)); path.Reverse(); return path;
         }
 
