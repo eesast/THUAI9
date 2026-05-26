@@ -398,7 +398,10 @@ namespace ClientTest2
         {
             var dist = new int[h, w]; var prevR = new int[h, w]; var prevC = new int[h, w];
             for (int r = 0; r < h; r++) for (int c = 0; c < w; c++)
-                { dist[r, c] = -1; prevR[r, c] = prevC[r, c] = -1; }
+            {
+                dist[r, c] = -1;
+                prevR[r, c] = prevC[r, c] = -1;
+            }
 
             dist[sr, sc] = 0; prevR[sr, sc] = sr; prevC[sr, sc] = sc;
             var q = new Queue<(int, int)>();
