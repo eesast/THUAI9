@@ -1,6 +1,6 @@
 ﻿{
     "CapiDebug":  true,
-    "TeamCount":  3,
+    "TeamCount":  2,
     "TeamCapiExes":  [
                          "",
                          "",
@@ -12,7 +12,7 @@
     "CapiWarnOnly":  false,
     "ServerIP":  "127.0.0.1",
     "StartUI":  true,
-    "CharacterNum":  5,
+    "CharacterNum":  3,
     "ServerPort":  8888,
     "CheatMode":  false,
     "PlaybackFile":  "mygame"
