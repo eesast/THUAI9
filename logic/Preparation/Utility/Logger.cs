@@ -97,13 +97,20 @@ public class AdvancedLoggerFactory
     private class MultiFileLoggerProvider : ILoggerProvider
     {
         private readonly Dictionary<string, StreamWriter> _writers = new();
-        private static readonly string AllLogPath = "logs/all.log";
-        private static readonly StreamWriter AllLogWriter;
+        private const string AllLogPath = "logs/all.log";
+        private readonly StreamWriter _allLogWriter;
 
-        static MultiFileLoggerProvider()
+        private static bool s_directoryCreated;
+
+        public MultiFileLoggerProvider()
         {
-            Directory.CreateDirectory("logs");
-            AllLogWriter = new StreamWriter(AllLogPath, append: false) { AutoFlush = true };
+            if (!s_directoryCreated)
+            {
+                Directory.CreateDirectory("logs");
+                s_directoryCreated = true;
+            }
+            var allLogStream = new FileStream(AllLogPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+            _allLogWriter = new StreamWriter(allLogStream) { AutoFlush = true };
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -111,16 +118,17 @@ public class AdvancedLoggerFactory
             if (!_writers.ContainsKey(categoryName))
             {
                 var file = $"logs/{categoryName}.log";
-                _writers[categoryName] = new StreamWriter(file, append: false) { AutoFlush = true };
+                var fileStream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                _writers[categoryName] = new StreamWriter(fileStream) { AutoFlush = true };
             }
-            return new MultiFileLogger(_writers[categoryName], categoryName);
+            return new MultiFileLogger(_writers[categoryName], _allLogWriter, categoryName);
         }
 
         public void Dispose()
         {
             foreach (var writer in _writers.Values)
                 writer.Dispose();
-            AllLogWriter.Dispose();
+            _allLogWriter.Dispose();
         }
 
         /// <summary>
@@ -129,11 +137,13 @@ public class AdvancedLoggerFactory
         private class MultiFileLogger : ILogger
         {
             private readonly StreamWriter _writer;
+            private readonly StreamWriter _allWriter;
             private readonly string _categoryName;
 
-            public MultiFileLogger(StreamWriter writer, string categoryName)
+            public MultiFileLogger(StreamWriter writer, StreamWriter allWriter, string categoryName)
             {
                 _writer = writer;
+                _allWriter = allWriter;
                 _categoryName = categoryName;
             }
 
@@ -159,9 +169,9 @@ public class AdvancedLoggerFactory
                 {
                     _writer.WriteLine(logLine);
                 }
-                lock (AllLogWriter)
+                lock (_allWriter)
                 {
-                    AllLogWriter.WriteLine(logLine);
+                    _allWriter.WriteLine(logLine);
                 }
             }
         }
@@ -218,6 +228,7 @@ public class AdvancedLoggerFactory
     /// </summary>
     public static void SetLogLevel(LogLevel loglevel)
     {
+        _loggerFactory?.Dispose();
         LoggerFactory = Microsoft.Extensions.Logging.LoggerFactory.Create(builder =>
         {
             builder.ClearProviders()
