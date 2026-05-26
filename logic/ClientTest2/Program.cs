@@ -437,8 +437,10 @@ namespace ClientTest2
         {
             var path = new List<(int, int)>(); var cur = end;
             while (!(cur.r == sr && cur.c == sc))
-            { path.Add(cur); int pr = prevR[cur.r, cur.c], pc = prevC[cur.r, cur.c];
-              if (pr < 0) return []; cur = (pr, pc); }
+            {
+                path.Add(cur); int pr = prevR[cur.r, cur.c], pc = prevC[cur.r, cur.c];
+                if (pr < 0) return []; cur = (pr, pc);
+            }
             path.Add((sr, sc)); path.Reverse(); return path;
         }
 
@@ -450,7 +452,8 @@ namespace ClientTest2
             long teamId, CancellationToken ct)
         {
             try { while (await call.ResponseStream.MoveNext(ct)) state.ApplyFrame(call.ResponseStream.Current, teamId); }
-            catch (RpcException) { } catch (OperationCanceledException) { }
+            catch (RpcException) { }
+            catch (OperationCanceledException) { }
         }
 
         private static async Task<bool> Timeout(Task task, int sec, CancellationToken ct)
