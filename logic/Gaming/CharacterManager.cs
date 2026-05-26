@@ -188,6 +188,7 @@ namespace Gaming
                     return;
                 }
                 int effLevel = t.GetTech("Efficiency");
+                int hpLevel = t.GetTech("HP");
                 int robustLevel = t.GetTech("Robust");
                 int warriorLevel = t.GetTech("Warrior");
                 int attackSizeLevel = t.GetTech("AttackSize");
@@ -197,12 +198,16 @@ namespace Gaming
                     ch.Efficiency.AddPositiveV(effLevel);
                 }
 
-                if (robustLevel > 0)
+                if (hpLevel > 0)
                 {
                     long baseHp = ch.Occupation.MaxHp;
-                    long newMaxHp = (long)(baseHp * (1.0 + GameData.TechHpMultiplierPerLevel * robustLevel));
+                    long newMaxHp = (long)(baseHp * (1.0 + GameData.TechHpMultiplierPerLevel * hpLevel));
                     ch.HP.SetMaxV(newMaxHp);
                     ch.HP.SetVToMaxV();
+                }
+
+                if (robustLevel > 0)
+                {
                     ch.Robust.AddPositiveV(robustLevel * GameData.TechRobustAddPerLevel);
                 }
 

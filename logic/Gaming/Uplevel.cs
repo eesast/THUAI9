@@ -27,6 +27,7 @@ namespace Gaming
                 switch (tech)
                 {
                     case TechType.INCREASE_HP:
+                        key = "HP"; cost = GameData.TechCostHP; break;
                     case TechType.INCREASE_ROBUST:
                         key = "Robust"; cost = GameData.TechCostRobust; break;
                     case TechType.INCREASE_ATTACK_POWER:
@@ -91,14 +92,41 @@ namespace Gaming
                             ch.Efficiency.AddPositiveV((newLevel - curLevel) * GameData.TechEfficiencyAddPerLevel);
                         }
                         break;
-                    case "Robust":
-                        foreach (var ch in game.characterManager.GetTeamCharacters(teamId))
+                    case "HP":
                         {
-                            long baseHp = ch.Occupation.MaxHp;
-                            long newMaxHp = (long)(baseHp * (1.0 + GameData.TechHpMultiplierPerLevel * newLevel));
-                            ch.HP.SetMaxV(newMaxHp);
-                            ch.HP.SetVToMaxV();
-                            ch.Robust.AddPositiveV((newLevel - curLevel) * GameData.TechRobustAddPerLevel);
+                            // 角色 HP
+                            foreach (var ch in game.characterManager.GetTeamCharacters(teamId))
+                            {
+                                long baseHp = ch.Occupation.MaxHp;
+                                long newMaxHp = (long)(baseHp * (1.0 + GameData.TechHpMultiplierPerLevel * newLevel));
+                                ch.HP.SetMaxV(newMaxHp);
+                                ch.HP.SetVToMaxV();
+                            }
+                            // 工厂 HP
+                            var facHp = game.GetTeamFactory(teamId);
+                            if (facHp != null)
+                            {
+                                long baseFacHp = GameData.FactoryHP;
+                                long newFacMaxHp = (long)(baseFacHp * (1.0 + GameData.TechHpMultiplierPerLevel * newLevel));
+                                if (newFacMaxHp > GameData.MaxHP) newFacMaxHp = GameData.MaxHP;
+                                facHp.HP.SetMaxV(newFacMaxHp);
+                                facHp.HP.SetVToMaxV();
+                            }
+                        }
+                        break;
+                    case "Robust":
+                        {
+                            // 角色 Robust（减伤）
+                            foreach (var ch in game.characterManager.GetTeamCharacters(teamId))
+                            {
+                                ch.Robust.AddPositiveV((newLevel - curLevel) * GameData.TechRobustAddPerLevel);
+                            }
+                            // 工厂 Robust
+                            var facRob = game.GetTeamFactory(teamId);
+                            if (facRob != null)
+                            {
+                                facRob.Robust.AddPositiveV((newLevel - curLevel) * GameData.TechRobustAddPerLevel);
+                            }
                         }
                         break;
                     case "Warrior":
