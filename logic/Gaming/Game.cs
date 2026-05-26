@@ -491,7 +491,7 @@ namespace Gaming
                 try { canRecruit = fac.CanRecruit.Get(); } catch { canRecruit = false; }
             }
 
-            var techKeys = new string[] { "Cost", "Efficiency", "Market", "Robust", "Warrior", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
+            var techKeys = new string[] { "Cost", "Efficiency", "HP", "Market", "Robust", "Warrior", "AttackSize", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
             var techs = new Dictionary<string, int>(techKeys.Length);
             foreach (var k in techKeys) techs[k] = t.GetTech(k);
 
@@ -524,7 +524,7 @@ namespace Gaming
                     try { canRecruit = fac.CanRecruit.Get(); } catch { canRecruit = false; }
                 }
 
-                var techKeys = new string[] { "Cost", "Efficiency", "Market", "Robust", "Warrior", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
+                var techKeys = new string[] { "Cost", "Efficiency", "HP", "Market", "Robust", "Warrior", "AttackSize", "Production", "Storage", "MoveSpeed", "Carry", "Price" };
                 var techs = new Dictionary<string, int>(techKeys.Length);
                 foreach (var k in techKeys) techs[k] = t.GetTech(k);
 

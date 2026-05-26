@@ -120,6 +120,7 @@ namespace Preparation.Utility
         public const int ProduceTimeFood = 1;
 
         public const int TechMaxLevel = 2;
+        public const int TechCostHP = 30;
         public const int TechCostRobust = 30;
         public const int TechCostWarrior = 60;
         public const int TechCostAttackSize = 60;
