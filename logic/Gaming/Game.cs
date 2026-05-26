@@ -87,6 +87,12 @@ namespace Gaming
                 gameMap.Add(factory);
             }
 
+            // 清除无用工厂（地图预置但未分配给任何队伍的工厂，如 2 队局中另外 2 个角）
+            if (gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var remainingFactories))
+            {
+                remainingFactories.RemoveAll(obj => obj is Factory f && f.TeamID.Get() >= teams.Count + 1);
+            }
+
             // 市场由地图预置（Map 构造时会根据 PlaceType.MARKET 创建），无需在此处硬编码创建
 
             if (!gameMap.Timer.Start(() => { }, () => CheckAndHandleGameEnd(), milliSeconds))
@@ -985,7 +991,8 @@ namespace Gaming
                         destroyedCount++;
                     }
                 }
-                if (destroyedCount >= 3)
+                // 只剩 1 队或更少存活时结束
+                if (teams.Count - destroyedCount <= 1)
                 {
                     goto EndGame;
                 }
