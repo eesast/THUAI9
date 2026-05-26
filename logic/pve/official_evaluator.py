@@ -6,11 +6,20 @@ Ranking is determined by mean score across multiple seeds.
 
 Contract:
   Contestant submits a directory containing:
-    agent.py          → must define class Agent(BaseAgent) with load(cls, path, env)
-    model.pt (or .zip)→ trained weights, loaded by Agent.load(path, env)
+    agent.py          → must define class Agent(BaseAgent)
+                        - NN-based: implement load(cls, path, env) classmethod
+                        - rule-based: implement __init__(self, env), no model file needed
+    model.pt (or .zip)→ trained weights (optional for rule-based agents)
 
 Usage:
-  python official_evaluator.py --submission ./submission --config hard --episodes 200 --seeds 0 42 123 999 7777
+  # NN-based submission (auto-detects model file):
+  python official_evaluator.py --submission ./submission --config hard --episodes 200
+
+  # Explicit model file:
+  python official_evaluator.py --submission ./submission --model model.pt --config hard
+
+  # Rule-based bot (no model file):
+  python official_evaluator.py --submission ./submission --config hard --episodes 200
 
 Output:
   JSON with per-seed mean/std and overall score_mean / score_std.
@@ -24,7 +33,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -37,14 +46,14 @@ from GameLogic import GameConfig, GameEnvironment
 from RLInterfaces import BaseAgent
 
 
-def load_agent(submission_dir: str, model_path: str, env: GameEnvironment) -> BaseAgent:
+def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironment) -> BaseAgent:
     """
     Dynamically load contestant's Agent class from submission_dir/agent.py.
 
     Expected structure:
       submission_dir/
         agent.py        ← class Agent(BaseAgent)
-        model.pt        ← trained weights
+        model.pt        ← trained weights (optional for rule-based agents)
 
     The agent module must NOT import from GameLogic sub-modules.
     """
@@ -71,14 +80,26 @@ def load_agent(submission_dir: str, model_path: str, env: GameEnvironment) -> Ba
     if not issubclass(AgentClass, BaseAgent):
         raise TypeError(f"{AgentClass.__name__} must inherit from RLInterfaces.BaseAgent.")
 
-    load_fn = getattr(AgentClass, "load", None)
-    if load_fn is None:
-        raise AttributeError(
-            "Agent class must implement load(cls, path, env) classmethod."
-        )
+    # ── Load or instantiate agent ───────────────────────────────────────────
+    if model_path is not None:
+        # NN-based agent with saved weights
+        load_fn = getattr(AgentClass, "load", None)
+        if load_fn is None:
+            raise AttributeError(
+                "Agent class must implement load(cls, path, env) classmethod "
+                "when a model file is provided."
+            )
+        return load_fn(model_path, env)
 
-    agent = load_fn(model_path, env)
-    return agent
+    # No model file → rule-based bot or agent that doesn't need weight loading
+    # Try classmethod load with None first, then fall back to constructor
+    load_fn = getattr(AgentClass, "load", None)
+    if load_fn is not None:
+        try:
+            return load_fn(None, env)
+        except (TypeError, ValueError, NotImplementedError, FileNotFoundError):
+            pass
+    return AgentClass(env)
 
 
 def evaluate(
@@ -129,8 +150,10 @@ def main():
         help="Path to submission directory (must contain agent.py + model file)."
     )
     parser.add_argument(
-        "--model", default="model.pt",
-        help="Filename of model weights inside submission directory (default: model.pt)."
+        "--model", default=None,
+        help="Filename of model weights inside submission directory. "
+             "Auto-detected if not specified (model.pt / model.zip / *.pt / *.zip). "
+             "Omit for rule-based agents."
     )
     parser.add_argument(
         "--config", default="hard",
@@ -161,11 +184,31 @@ def main():
         print(f"[ERROR] Submission directory not found: {sub}")
         sys.exit(1)
 
-    model_path = str(sub / args.model)
-    if not os.path.exists(model_path):
-        print(f"[ERROR] Model file not found: {model_path}")
-        sys.exit(1)
+    # ── Resolve model path ──────────────────────────────────────────────────
+    model_path: Optional[str] = None
+    if args.model is not None:
+        # Explicitly specified: must exist
+        candidate = str(sub / args.model)
+        if not os.path.exists(candidate):
+            print(f"[ERROR] Model file not found: {candidate}")
+            sys.exit(1)
+        model_path = candidate
+    else:
+        # Auto-detect: try common names, then glob
+        for name in ("model.pt", "model.zip"):
+            candidate = sub / name
+            if candidate.exists():
+                model_path = str(candidate)
+                break
+        if model_path is None:
+            pt_files = sorted(sub.glob("*.pt"))
+            zip_files = sorted(sub.glob("*.zip"))
+            if pt_files:
+                model_path = str(pt_files[0])
+            elif zip_files:
+                model_path = str(zip_files[0])
 
+    # ── Config ──────────────────────────────────────────────────────────────
     presets = {
         "easy": GameConfig.easy,
         "medium": GameConfig.medium,
@@ -178,6 +221,7 @@ def main():
     print(f"THUAI9 PvE-RL Official Evaluator")
     print(f"{'='*60}")
     print(f"  submission : {sub}")
+    print(f"  model      : {model_path if model_path else '(none — rule-based agent)'}")
     print(f"  config     : {args.config}")
     print(f"  random_map : {cfg.random_map}")
     print(f"  episodes   : {args.episodes}")
