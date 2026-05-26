@@ -297,6 +297,13 @@ namespace Gaming
                     return false;
                 }
 
+                // 已摧毁的工厂不再受攻击、不再加分
+                if (gameobj.HP <= 0)
+                {
+                    LogicLogging.logger.LogDebug("Factory is already destroyed!");
+                    return false;
+                }
+
                 long damage = (long)(character.AttackPower - gameobj.Robust);
                 if (damage <= 0) damage = 1;
                 long actualSub = gameobj.HP.SubPositiveVRChange(damage);
@@ -309,7 +316,7 @@ namespace Gaming
                     gameobj.CanRecruit.SetROri(true);
                 })
                 { IsBackground = true }.Start();
-                if (gameobj.HP == 0)
+                if (gameobj.HP <= 0)
                 {
                     game.AddTeamScore(character.TeamID.Get(), GameData.FactoryScore);
                 }
