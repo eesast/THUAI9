@@ -49,8 +49,8 @@ namespace Preparation.Utility.Value.SafeValue
                     () =>
                     {
                         Thread.Sleep(timeInMilliseconds);
-                        startTime.SetROri(long.MaxValue);
                         end();
+                        startTime.SetROri(long.MaxValue);
                     }
                 )
                 { IsBackground = true }.Start();

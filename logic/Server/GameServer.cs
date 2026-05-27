@@ -139,6 +139,7 @@ namespace Server
         {
             endGameSem.Wait();
             mwr?.Dispose();
+            game.CleanupAfterEnd();
         }
 
         private void SaveGameResult(string path)
@@ -398,7 +399,7 @@ namespace Server
 
         private void OnGameEnd()
         {
-            mwr?.Flush();
+            try { mwr?.Flush(); } catch (Exception ex) { GameServerLogging.logger.LogError($"Flush playback failed: {ex.Message}"); }
             if (options.ResultFileName != DefaultArgumentOptions.FileName)
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
                              ? options.ResultFileName
