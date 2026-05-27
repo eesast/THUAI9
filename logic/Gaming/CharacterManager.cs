@@ -22,6 +22,7 @@ namespace Gaming
             private readonly Game game = game;
             private readonly Map map = gameMap;
             private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> teamCharacters = new(); // key: TeamID -> (PlayerID -> Character)
+            private readonly ConcurrentDictionary<long, object> teamRecruitLocks = new(); // 防止同一队伍并发创建角色导致出生点重叠
 
             public Character CreateCharacter(long teamId, long playerId, CharacterType type)
             {
@@ -51,33 +52,33 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Factory for Team {teamId} cannot recruit at this time.");
                     return false;
                 }
-                var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
-                if (teamDict.Count >= GameData.MaxCharactersPerTeam)
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
-                    return false;
-                }
-                if (teamDict.ContainsKey(playerId))
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
-                    return false;
-                }
-                if (teamCharacters.TryGetValue(teamId, out var dict) && dict.Count >= GameData.MaxCharactersPerTeam)
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
-                    return false;
-                }
                 var occ = OccupationFactory.FindIOccupation(type);
                 int cost = occ.Cost;
-                if (factory.ComputingPower.Get() < cost)
+
+                var teamLock = teamRecruitLocks.GetOrAdd(teamId, _ => new object());
+                lock (teamLock)
                 {
-                    LogicLogging.logger.LogWarning($"Not enough computing power for Team {teamId} to recruit character. Required: {cost}, Available: {factory.ComputingPower.Get()}");
-                    return false;
+                    var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
+                    if (teamDict.Count >= GameData.MaxCharactersPerTeam)
+                    {
+                        LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
+                        return false;
+                    }
+                    if (teamDict.ContainsKey(playerId))
+                    {
+                        LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
+                        return false;
+                    }
+                    if (factory.ComputingPower.Get() < cost)
+                    {
+                        LogicLogging.logger.LogWarning($"Not enough computing power for Team {teamId} to recruit character. Required: {cost}, Available: {factory.ComputingPower.Get()}");
+                        return false;
+                    }
+                    factory.ComputingPower.SubRNow(cost);
+                    var ch = CreateCharacter(teamId, playerId, type);
+                    ActivateCharacter(teamId, playerId, birthPos);
+                    return true;
                 }
-                factory.ComputingPower.SubRNow(cost);
-                var ch = CreateCharacter(teamId, playerId, type);
-                ActivateCharacter(teamId, playerId, birthPos);
-                return true;
             }
 
             public bool ActivateCharacter(long teamId, long playerId, XY pos)
@@ -154,8 +155,8 @@ namespace Gaming
             // 在基准位置附近按环形搜索一个非碰撞点
             private bool TryFindNearbyFreePosition(Character ch, XY center, out XY result)
             {
-                // 从工厂半径 + 角色半径开始，保证与工厂外部至少间隔1
-                int startDist = GameData.FactoryRadius + ch.Radius + 1;
+                // 工厂外至少两个格子的缓冲区，确保角色不会卡在工厂边缘
+                int startDist = GameData.FactoryRadius + GameData.NumOfPosGridPerCell * 2;
                 int maxDist = GameData.NumOfPosGridPerCell * 5; // 最多搜索 5 个格子的半径
                 int distStep = Math.Max(1, GameData.NumOfPosGridPerCell / 8);
                 int angleStepDeg = 15;
