@@ -37,13 +37,13 @@ namespace Preparation.Utility
 
         public const int ResourceHP = 500;              // 资源血量
 
-        public const int FactoryScore = 20000;
+        public const int FactoryScore = 1000;
         public const int FactoryDisableTimeMs = 10_00;
+        public const int FactoryInvulnerableTimeMs = 7 * 60 * 1000;  // 前7分钟工厂不掉血
 
         // Score multipliers for combat
         public const int CharacterDamageScoreMultiplier = 20;
         public const int CharacterKillScoreMultiplier = 40;
-        public const int FactoryDamageScoreMultiplier = 20;
 
         public const int FactoryHP = 100;
         public const int FactoryStorage = 5;

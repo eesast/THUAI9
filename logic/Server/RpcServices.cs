@@ -313,8 +313,17 @@ namespace Server
             GameServerLogging.logger.LogDebug(
                 $"TRY Attack: Player {request.PlayerId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
-            boolRes.ActSuccess = game.Attack(
-                request.TeamId, request.PlayerId);
+            if (request.AttackedTeamId > 0 && request.AttackedPlayerId == 0)
+            {
+                // 指定攻击工厂：跳过自动索敌，直接打目标工厂
+                boolRes.ActSuccess = game.AttackFactory(
+                    request.TeamId, request.PlayerId, request.AttackedTeamId);
+            }
+            else
+            {
+                boolRes.ActSuccess = game.Attack(
+                    request.TeamId, request.PlayerId);
+            }
             GameServerLogging.logger.LogDebug($"END Attack: {boolRes.ActSuccess}");
             return Task.FromResult(boolRes);
         }
