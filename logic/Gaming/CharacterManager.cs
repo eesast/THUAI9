@@ -156,21 +156,40 @@ namespace Gaming
             {
                 // 从工厂半径 + 角色半径开始，保证与工厂外部至少间隔1
                 int startDist = GameData.FactoryRadius + ch.Radius + 1;
-                int maxDist = GameData.NumOfPosGridPerCell * 3; // 最多搜索 3 个格子的半径
+                int maxDist = GameData.NumOfPosGridPerCell * 5; // 最多搜索 5 个格子的半径
                 int distStep = Math.Max(1, GameData.NumOfPosGridPerCell / 8);
-                int angleStepDeg = 20;
+                int angleStepDeg = 15;
+                int angleOffset = Random.Shared.Next(0, 360); // 随机起始角度，避免多角色同位置
 
                 for (int d = startDist; d <= maxDist; d += distStep)
                 {
-                    for (int ang = 0; ang < 360; ang += angleStepDeg)
+                    for (int ang = angleOffset; ang < angleOffset + 360; ang += angleStepDeg)
                     {
-                        double rad = Math.PI * ang / 180.0;
+                        double rad = Math.PI * (ang % 360) / 180.0;
                         var cand = new XY(rad, d);
                         var candPos = new XY(center.x + cand.x, center.y + cand.y);
 
                         if (!IsPositionColliding(ch, candPos))
                         {
                             result = candPos;
+                            return true;
+                        }
+                    }
+                }
+
+                // 最后兜底：尝试工厂四方向逐格搜索
+                int[] dirX = [1, -1, 0, 0];
+                int[] dirY = [0, 0, 1, -1];
+                for (int cell = 1; cell <= 5; cell++)
+                {
+                    for (int k = 0; k < 4; k++)
+                    {
+                        int cx = GameData.PosGridToCellX(center);
+                        int cy = GameData.PosGridToCellY(center);
+                        var fallbackPos = GameData.GetCellCenterPos(cx + dirX[k] * cell, cy + dirY[k] * cell);
+                        if (!IsPositionColliding(ch, fallbackPos))
+                        {
+                            result = fallbackPos;
                             return true;
                         }
                     }

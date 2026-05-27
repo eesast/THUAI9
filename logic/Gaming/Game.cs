@@ -217,10 +217,10 @@ namespace Gaming
                 return false;
             }
             int attackRange = (int)character.AttackSize.GetValue();
-            var factory = gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var list)
-                ? list.Cast<Factory>().FirstOrDefault(f => f.TeamID.Get() == targetTeamId
-                    && GameData.IsInTheRange(character.Position, f.Position, attackRange))
-                : null;
+            var factory = (Factory?)gameMap.GameObjDict[GameObjType.FACTORY]
+                .Find(obj => obj is Factory f
+                    && f.TeamID.Get() == targetTeamId
+                    && GameData.IsInTheRange(character.Position, f.Position, attackRange));
             if (factory != null)
             {
                 return actionManager.Attack(character, factory);
@@ -275,11 +275,12 @@ namespace Gaming
 
             Factory? enemyFactory = null;
             long bestFactoryDist = long.MaxValue;
-            if (gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var factoryList))
+            var factoryObjs = gameMap.GameObjDict[GameObjType.FACTORY].ToNewList();
+            if (factoryObjs != null)
             {
-                foreach (var f in factoryList.Cast<Factory>())
+                foreach (var obj in factoryObjs)
                 {
-                    if (f == null || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
+                    if (obj is not Factory f || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
                     if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
                     long d = (long)XY.DistanceCeil3(f.Position, character.Position);
                     if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
