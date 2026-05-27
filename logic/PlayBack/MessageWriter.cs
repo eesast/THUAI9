@@ -6,27 +6,28 @@ namespace Playback
 {
     public class MessageWriter : IDisposable
     {
-        /// <summary>
-        /// 回放文件绝对路径
-        /// </summary>
         public string FileName { get; }
 
         /// <summary>
-        /// 写入消息数量
+        /// 总写入消息数
         /// </summary>
         public uint WrittenNum { get; private set; } = 0;
-        private readonly uint FlushNum; // 刷新间隔
 
-        private readonly CodedOutputStream cos; // Protobuf类型二进制输出流
+        private uint sinceLastFlush = 0;
+        private readonly uint FlushNum;
+
+        private readonly FileStream fs;
+        private readonly GZipStream gzs;
+        private readonly CodedOutputStream cos;
         public bool Disposed { get; private set; } = false;
 
-        public MessageWriter(string fileName, uint teamCount, uint playerCount, uint flushNum = 500)
+        public MessageWriter(string fileName, uint teamCount, uint playerCount, uint flushNum = 50)
         {
             Utils.FileNameRegular(ref fileName);
-            FileStream fs = File.Create(fileName);
+            fs = File.Create(fileName);
             FileName = fs.Name;
             fs.WriteHeader(teamCount, playerCount);
-            GZipStream gzs = new(fs, CompressionMode.Compress);
+            gzs = new(fs, CompressionMode.Compress);
             cos = new(gzs);
             FlushNum = flushNum;
         }
@@ -34,18 +35,32 @@ namespace Playback
         public void WriteOne(MessageToClient msg)
         {
             if (Disposed) return;
-            cos.WriteMessage(msg);
-            WrittenNum++;
-            if (WrittenNum % FlushNum == 0)
+            try
             {
-                Flush();
-                WrittenNum = 0;
+                cos.WriteMessage(msg);
+                WrittenNum++;
+                sinceLastFlush++;
+
+                if (sinceLastFlush >= FlushNum)
+                {
+                    cos.Flush();
+                    sinceLastFlush = 0;
+                }
+            }
+            catch (Exception)
+            {
+                // 写回放文件失败不应影响游戏主循环
             }
         }
 
         public void Flush()
         {
-            cos.Flush();
+            try
+            {
+                cos.Flush();
+                sinceLastFlush = 0;
+            }
+            catch { }
         }
 
         public void Dispose()
@@ -59,7 +74,10 @@ namespace Playback
             if (Disposed) return;
             if (disposing)
             {
-                cos.Dispose();
+                try { cos.Flush(); } catch { }
+                try { cos.Dispose(); } catch { }
+                try { gzs.Dispose(); } catch { }
+                try { fs.Dispose(); } catch { }
             }
             Disposed = true;
         }

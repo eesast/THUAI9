@@ -105,46 +105,53 @@ namespace Gaming
             (
                 () =>
                 {
-                    Thread.Sleep(GameData.CheckInterval);
-                    new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
-                    (
-                        loopCondition: () => gameMap.Timer.IsGaming,
-                        loopToDo: () =>
-                        {
-                            int nowTimeMs = NowTime();
-                            TryTriggerPeriodicEvent(nowTimeMs);
-
-                            // Count occupied compute centers per team
-                            int[] occupiedCounts = new int[teams.Count + 1];
-                            if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
+                    try
+                    {
+                        Thread.Sleep(GameData.CheckInterval);
+                        new Timothy.FrameRateTask.FrameRateTaskExecutor<int>
+                        (
+                            loopCondition: () => gameMap.Timer.IsGaming,
+                            loopToDo: () =>
                             {
-                                var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
-                                if (centers != null)
+                                int nowTimeMs = NowTime();
+                                TryTriggerPeriodicEvent(nowTimeMs);
+
+                                // Count occupied compute centers per team
+                                int[] occupiedCounts = new int[teams.Count + 1];
+                                if (gameMap.GameObjDict.TryGetValue(GameObjType.COMPUTE_CENTER, out var centerList))
                                 {
-                                    foreach (var cc in centers)
+                                    var centers = centerList.Cast<ComputeCenter>()?.ToNewList();
+                                    if (centers != null)
                                     {
-                                        if (cc.IsOccupied)
+                                        foreach (var cc in centers)
                                         {
-                                            long ownerId = cc.OccupiedByTeamId;
-                                            if (ownerId > 0 && ownerId < occupiedCounts.Length)
-                                                occupiedCounts[ownerId]++;
+                                            if (cc.IsOccupied)
+                                            {
+                                                long ownerId = cc.OccupiedByTeamId;
+                                                if (ownerId > 0 && ownerId < occupiedCounts.Length)
+                                                    occupiedCounts[ownerId]++;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            foreach (var team in teams)
-                            {
-                                var fac = team.Value.Factory;
-                                if (fac == null) continue;
-                                fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
-                                fac.TickComputingPower(GameData.CheckInterval);
-                            }
+                                foreach (var team in teams)
+                                {
+                                    var fac = team.Value.Factory;
+                                    if (fac == null) continue;
+                                    fac.SetOccupiedComputeCenters(occupiedCounts[team.Key]);
+                                    fac.TickComputingPower(GameData.CheckInterval);
+                                }
 
-                            return !CheckAndHandleGameEnd();
-                        },
-                        timeInterval: GameData.CheckInterval,
-                        finallyReturn: () => 0
-                    ).Start();
+                                return !CheckAndHandleGameEnd();
+                            },
+                            timeInterval: GameData.CheckInterval,
+                            finallyReturn: () => 0
+                        ).Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogicLogging.logger.LogError($"Game tick thread crashed: {ex}");
+                    }
                 }
             ).Start();
             return true;
