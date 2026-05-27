@@ -250,7 +250,8 @@ namespace Gaming
                     return false;
                 }
                 long nowtime = Environment.TickCount64;
-                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                double atkFreq = character.ATKFrequency;
+                if (atkFreq > 0 && nowtime - character.LastAttackTime < 1000.0 / atkFreq)
                 {
                     LogicLogging.logger.LogDebug("Common_attack is still in cd!");
                     return false;
@@ -285,7 +286,8 @@ namespace Gaming
                     return false;
                 }
                 long nowtime = Environment.TickCount64;
-                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                double atkFreq = character.ATKFrequency;
+                if (atkFreq > 0 && nowtime - character.LastAttackTime < 1000.0 / atkFreq)
                 {
                     LogicLogging.logger.LogDebug("Common_attack is still in cd!");
                     return false;
@@ -304,10 +306,17 @@ namespace Gaming
                     return false;
                 }
 
+                // 前7分钟工厂不掉血
+                if (game.NowTime() < GameData.FactoryInvulnerableTimeMs)
+                {
+                    LogicLogging.logger.LogDebug("Factory is invulnerable in the first 7 minutes!");
+                    return false;
+                }
+
                 long damage = (long)(character.AttackPower - gameobj.Robust);
                 if (damage <= 0) damage = 1;
                 long actualSub = gameobj.HP.SubPositiveVRChange(damage);
-                game.AddTeamScore((long)character.TeamID.Get(), actualSub * GameData.FactoryDamageScoreMultiplier);
+                game.AddTeamScore((long)character.TeamID.Get(), actualSub);
                 gameobj.Interupt();
                 new Thread(() =>
                 {

@@ -151,6 +151,8 @@ namespace Gaming
                     catch (Exception ex)
                     {
                         LogicLogging.logger.LogError($"Game tick thread crashed: {ex}");
+                        try { gameMap?.Timer?.EndGame(); } catch { }
+                        try { CheckAndHandleGameEnd(); } catch { }
                     }
                 }
             ).Start();
@@ -196,6 +198,38 @@ namespace Gaming
         }
 
         /// <summary>
+        /// 直接攻击指定队伍的工厂（跳过角色自动索敌）。
+        /// 使用 teamId + playerId 作为发起者标识，targetTeamId 为目标工厂所属队伍。
+        /// </summary>
+        public bool AttackFactory(long teamId, long playerId, long targetTeamId)
+        {
+            if (!EnsureGameStarted(nameof(AttackFactory)))
+                return false;
+
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} not found.");
+                return false;
+            }
+            if (character == null || character.IsRemoved)
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} is null or removed.");
+                return false;
+            }
+            int attackRange = (int)character.AttackSize.GetValue();
+            var factory = (Factory?)gameMap.GameObjDict[GameObjType.FACTORY]
+                .Find(obj => obj is Factory f
+                    && f.TeamID.Get() == targetTeamId
+                    && GameData.IsInTheRange(character.Position, f.Position, attackRange));
+            if (factory != null)
+            {
+                return actionManager.Attack(character, factory);
+            }
+            LogicLogging.logger.LogWarning($"AttackFactory failed: Factory for team {targetTeamId} not in range.");
+            return false;
+        }
+
+        /// <summary>
         /// 发起一次普通近战/远程攻击（根据地图上可见目标自动选择目标）。
         /// 使用 teamId + playerId（队内 id）作为发起者标识。
         /// </summary>
@@ -225,7 +259,7 @@ namespace Gaming
                 long bestDist = long.MaxValue;
                 foreach (var e in enemies)
                 {
-                    if (e == null || e.IsRemoved) continue;
+                    if (e == null || e.IsRemoved || e.HP <= 0) continue;
                     long d = (long)XY.DistanceCeil3(e.Position, character.Position);
                     if (d < bestDist)
                     {
@@ -239,10 +273,22 @@ namespace Gaming
                 }
             }
 
-            var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null && factory.TeamID.Get() != character.TeamID.Get())
+            Factory? enemyFactory = null;
+            long bestFactoryDist = long.MaxValue;
+            var factoryObjs = gameMap.GameObjDict[GameObjType.FACTORY].ToNewList();
+            if (factoryObjs != null)
             {
-                return actionManager.Attack(character, factory);
+                foreach (var obj in factoryObjs)
+                {
+                    if (obj is not Factory f || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
+                    if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
+                    long d = (long)XY.DistanceCeil3(f.Position, character.Position);
+                    if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
+                }
+            }
+            if (enemyFactory != null)
+            {
+                return actionManager.Attack(character, enemyFactory);
             }
             LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
             return false;
@@ -1007,7 +1053,6 @@ namespace Gaming
                 return false;
 
             EndGame:
-                // 做必要的清理工作，尽量安全且幂等
                 gameEnded = true;
                 try
                 {
@@ -1015,43 +1060,6 @@ namespace Gaming
                     gameMap?.Timer?.EndGame();
                 }
                 catch { }
-
-                try
-                {
-                    // 中断所有工厂的生产/招募能力
-                    foreach (var kv in teams)
-                    {
-                        try
-                        {
-                            var fac = GetTeamFactory(kv.Key);
-                            fac?.Interupt();
-                        }
-                        catch { }
-                    }
-                }
-                catch { }
-
-                try
-                {
-                    // 移除/销毁所有角色，释放地图引用
-                    foreach (var kv in teams)
-                    {
-                        long teamId = kv.Key;
-                        var chars = characterManager.GetTeamCharacters(teamId)?.ToList() ?? new List<Character>();
-                        foreach (var ch in chars)
-                        {
-                            try
-                            {
-                                // 标记为死亡并从地图移除
-                                characterManager.Destroy(teamId, (long)ch.PlayerID.Get(), CharacterState.DECEASED);
-                            }
-                            catch { }
-                        }
-                    }
-                }
-                catch { }
-
-                // 其它必要的释放/通知可以在这里加入（例如触发事件、记录结算结果等）
 
                 return true;
             }
@@ -1104,6 +1112,36 @@ namespace Gaming
                 return false;
             }
             return ActionManager.Stop(character);
+        }
+
+        /// <summary>
+        /// 在最终帧写入之后调用，做清理工作。应在 OnGameEnd / WaitForEnd 之后调用。
+        /// 与 CheckAndHandleGameEnd 分离是为了避免清理与最终帧构建的竞态。
+        /// </summary>
+        public void CleanupAfterEnd()
+        {
+            try
+            {
+                foreach (var kv in teams)
+                {
+                    try { GetTeamFactory(kv.Key)?.Interupt(); } catch { }
+                }
+            }
+            catch { }
+
+            try
+            {
+                foreach (var kv in teams)
+                {
+                    long teamId = kv.Key;
+                    var chars = characterManager.GetTeamCharacters(teamId)?.ToList() ?? new List<Character>();
+                    foreach (var ch in chars)
+                    {
+                        try { characterManager.Destroy(teamId, (long)ch.PlayerID.Get(), CharacterState.DECEASED); } catch { }
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
