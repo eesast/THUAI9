@@ -37,7 +37,7 @@ namespace Preparation.Utility
 
         public const int ResourceHP = 500;              // 资源血量
 
-        public const int FactoryScore = 10000;
+        public const int FactoryScore = 20000;
         public const int FactoryDisableTimeMs = 10_00;
         public const int FactoryInvulnerableTimeMs = 30 * 1000;  // 前30秒工厂不掉血
 
@@ -45,7 +45,7 @@ namespace Preparation.Utility
         public const int CharacterDamageScoreMultiplier = 20;
         public const int CharacterKillScoreMultiplier = 40;
 
-        public const int FactoryHP = 5000;
+        public const int FactoryHP = 1000;
         public const int FactoryStorage = 5;
         public const int FactoryRobust = 20;
         public const int FactoryEfficiency = 1;
