@@ -463,7 +463,8 @@ namespace Server
                 {
                     foreach (var kvp in dict)
                     {
-                        kvp.Value.Item1.Release();
+                        try { kvp.Value.Item1.Release(); }
+                        catch (SemaphoreFullException) { /* 客户端还没消费上一帧 */ }
                     }
                 }
 

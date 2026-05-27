@@ -162,7 +162,8 @@ namespace Server
 
             foreach (var kvp in semaDict)
             {
-                kvp.Value.Item1.Release();
+                try { kvp.Value.Item1.Release(); }
+                catch (SemaphoreFullException) { }
             }
 
             foreach (var kvp in semaDict)
