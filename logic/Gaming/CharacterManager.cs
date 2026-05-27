@@ -289,6 +289,11 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}) is being attacked by an ally (Team {obj.TeamID.Get()}, Player {obj.PlayerID.Get()}). No damage applied.");
                     return;
                 }
+                if (character.HP <= 0 || character.IsRemoved == true)
+                {
+                    LogicLogging.logger.LogDebug("Target character is already dead!");
+                    return;
+                }
                 long subHP = (long)(obj.AttackPower - character.Robust);
                 if (subHP < 0) subHP = 0;
                 game.AddTeamScore((long)obj.TeamID.Get(), subHP * GameData.CharacterDamageScoreMultiplier);

@@ -217,8 +217,11 @@ namespace Gaming
                 return false;
             }
             int attackRange = (int)character.AttackSize.GetValue();
-            var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null && factory.TeamID.Get() == targetTeamId)
+            var factory = gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var list)
+                ? list.Cast<Factory>().FirstOrDefault(f => f.TeamID.Get() == targetTeamId
+                    && GameData.IsInTheRange(character.Position, f.Position, attackRange))
+                : null;
+            if (factory != null)
             {
                 return actionManager.Attack(character, factory);
             }
@@ -256,7 +259,7 @@ namespace Gaming
                 long bestDist = long.MaxValue;
                 foreach (var e in enemies)
                 {
-                    if (e == null || e.IsRemoved) continue;
+                    if (e == null || e.IsRemoved || e.HP <= 0) continue;
                     long d = (long)XY.DistanceCeil3(e.Position, character.Position);
                     if (d < bestDist)
                     {
@@ -270,10 +273,21 @@ namespace Gaming
                 }
             }
 
-            var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
-            if (factory != null && factory.TeamID.Get() != character.TeamID.Get())
+            Factory? enemyFactory = null;
+            long bestFactoryDist = long.MaxValue;
+            if (gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var factoryList))
             {
-                return actionManager.Attack(character, factory);
+                foreach (var f in factoryList.Cast<Factory>())
+                {
+                    if (f == null || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
+                    if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
+                    long d = (long)XY.DistanceCeil3(f.Position, character.Position);
+                    if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
+                }
+            }
+            if (enemyFactory != null)
+            {
+                return actionManager.Attack(character, enemyFactory);
             }
             LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
             return false;

@@ -250,7 +250,8 @@ namespace Gaming
                     return false;
                 }
                 long nowtime = Environment.TickCount64;
-                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                int atkFreq = character.ATKFrequency;
+                if (atkFreq > 0 && nowtime - character.LastAttackTime < 1000 / atkFreq)
                 {
                     LogicLogging.logger.LogDebug("Common_attack is still in cd!");
                     return false;
@@ -285,7 +286,8 @@ namespace Gaming
                     return false;
                 }
                 long nowtime = Environment.TickCount64;
-                if (nowtime - character.LastAttackTime < 1000 / character.ATKFrequency)
+                int atkFreq = character.ATKFrequency;
+                if (atkFreq > 0 && nowtime - character.LastAttackTime < 1000 / atkFreq)
                 {
                     LogicLogging.logger.LogDebug("Common_attack is still in cd!");
                     return false;
