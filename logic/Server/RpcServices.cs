@@ -217,6 +217,11 @@ namespace Server
                 do
                 {
                     playerSemas.Item1.Wait();
+                    if (!semaDicts[request.TeamId].ContainsKey(request.PlayerId))
+                    {
+                        GameServerLogging.logger.LogInfo($"Client {request.PlayerId} was removed (stale), exiting stream.");
+                        break;
+                    }
                     var character = game.GameMap.FindCharacterInPlayerID(request.TeamId, request.PlayerId);
 
                     if (!firstTime && request.PlayerId > 0 && (character == null || character.IsRemoved == true))
@@ -245,7 +250,7 @@ namespace Server
                         }
                     }
 
-                    playerSemas.Item2.Release();
+                    try { playerSemas.Item2.Release(); } catch { }
                 } while (game.GameMap.Timer.IsGaming);
             }
             catch (Exception ex)
