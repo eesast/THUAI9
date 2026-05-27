@@ -198,6 +198,35 @@ namespace Gaming
         }
 
         /// <summary>
+        /// 直接攻击指定队伍的工厂（跳过角色自动索敌）。
+        /// 使用 teamId + playerId 作为发起者标识，targetTeamId 为目标工厂所属队伍。
+        /// </summary>
+        public bool AttackFactory(long teamId, long playerId, long targetTeamId)
+        {
+            if (!EnsureGameStarted(nameof(AttackFactory)))
+                return false;
+
+            if (!characterManager.TryGetCharacter(teamId, playerId, out var character))
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} not found.");
+                return false;
+            }
+            if (character == null || character.IsRemoved)
+            {
+                LogicLogging.logger.LogWarning($"AttackFactory failed: Character for team {teamId} player {playerId} is null or removed.");
+                return false;
+            }
+            int attackRange = (int)character.AttackSize.GetValue();
+            var factory = (Factory?)gameMap.OneInTheRange(character.Position, attackRange, GameObjType.FACTORY);
+            if (factory != null && factory.TeamID.Get() == targetTeamId)
+            {
+                return actionManager.Attack(character, factory);
+            }
+            LogicLogging.logger.LogWarning($"AttackFactory failed: Factory for team {targetTeamId} not in range.");
+            return false;
+        }
+
+        /// <summary>
         /// 发起一次普通近战/远程攻击（根据地图上可见目标自动选择目标）。
         /// 使用 teamId + playerId（队内 id）作为发起者标识。
         /// </summary>
