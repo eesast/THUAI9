@@ -200,7 +200,8 @@ namespace ClientTest3
                         for (int i = 0; i < 3 && !ct.IsCancellationRequested; i++)
                         {
                             var atk = client.Attack(new AttackMsg
-                            { TeamId = teamId, PlayerId = charId, AttackRange = 2500 });
+                            { TeamId = teamId, PlayerId = charId, AttackRange = 2500,
+                              AttackedTeamId = target.TeamId, AttackedPlayerId = 0 });
                             await Task.Delay(400, ct);
                             Log($"  Post-mortem attack #{i + 1}: {(atk.ActSuccess ? $"OK  score+{state.TeamScore - scoreBefore}" : "FAIL (expected)")}" +
                                 $"  (total score={state.TeamScore})");
@@ -211,7 +212,8 @@ namespace ClientTest3
 
                     long scoreBefore2 = state.TeamScore;
                     var ar = client.Attack(new AttackMsg
-                    { TeamId = teamId, PlayerId = charId, AttackRange = 2500 });
+                    { TeamId = teamId, PlayerId = charId, AttackRange = 2500,
+                      AttackedTeamId = target.TeamId, AttackedPlayerId = 0 });
                     await Task.Delay(300, ct);
 
                     if (ar.ActSuccess)
