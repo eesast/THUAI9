@@ -214,11 +214,15 @@ class Board:
         return best
 
     def nearest_compute_center(self, x: int, y: int) -> Optional[ComputeCenter]:
-        """Return compute center at Manhattan distance ≤ 1."""
+        """Return adjacent compute center, preferring unopened ones if any."""
+        fallback = None
         for cc in self.compute_centers:
             if self.manhattan(x, y, cc.x, cc.y) <= 1:
-                return cc
-        return None
+                if not cc.is_open:
+                    return cc
+                if fallback is None:
+                    fallback = cc
+        return fallback
 
     def at_factory(self, x: int, y: int) -> bool:
         return x == self.cfg.factory_x and y == self.cfg.factory_y
