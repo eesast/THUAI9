@@ -252,29 +252,22 @@ namespace Gaming
                 return false;
             }
             int attackRange = (int)character.AttackSize.GetValue();
+            IGameObj? bestTarget = null;
+            long bestDist = long.MaxValue;
+
+            // 遍历范围内所有敌方角色
             var enemies = gameMap.CharacterInTheRangeNotTeamID(character.Position, attackRange, character.TeamID.Get());
-            if (enemies != null && enemies.Count > 0)
+            if (enemies != null)
             {
-                Character nearest = null;
-                long bestDist = long.MaxValue;
                 foreach (var e in enemies)
                 {
                     if (e == null || e.IsRemoved || e.HP <= 0) continue;
                     long d = (long)XY.DistanceCeil3(e.Position, character.Position);
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        nearest = e;
-                    }
-                }
-                if (nearest != null)
-                {
-                    return actionManager.Attack(character, nearest);
+                    if (d < bestDist) { bestDist = d; bestTarget = e; }
                 }
             }
 
-            Factory? enemyFactory = null;
-            long bestFactoryDist = long.MaxValue;
+            // 遍历范围内所有敌方工厂
             var factoryObjs = gameMap.GameObjDict[GameObjType.FACTORY].ToNewList();
             if (factoryObjs != null)
             {
@@ -283,14 +276,17 @@ namespace Gaming
                     if (obj is not Factory f || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
                     if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
                     long d = (long)XY.DistanceCeil3(f.Position, character.Position);
-                    if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
+                    if (d < bestDist) { bestDist = d; bestTarget = f; }
                 }
             }
-            if (enemyFactory != null)
-            {
-                return actionManager.Attack(character, enemyFactory);
-            }
-            LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
+
+            if (bestTarget is Character targetChar)
+                return actionManager.Attack(character, targetChar);
+            if (bestTarget is Factory targetFac)
+                return actionManager.Attack(character, targetFac);
+
+            int factoryCount = gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var flist) ? flist.ToNewList()?.Count ?? -1 : -1;
+            LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}. pos=({character.Position.x},{character.Position.y}) range={attackRange} factoryCount={factoryCount}");
             return false;
         }
 
