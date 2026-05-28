@@ -46,7 +46,9 @@ namespace ClientTest3
             public void ApplyFrame(MessageToClient frame, long teamId, long charId)
             {
                 if (frame.GameState is GameState.GameStart or GameState.GameRunning)
+                {
                     _gameStartTcs.TrySetResult(true);
+                }
 
                 lock (_lk)
                 {
@@ -88,41 +90,105 @@ namespace ClientTest3
                     {
                         int idx = (int)teamId - 1;
                         if ((uint)idx < (uint)frame.AllMessage.Teams.Count)
+                        {
                             _teamScore = frame.AllMessage.Teams[idx].Score;
+                        }
                     }
                 }
             }
 
             public bool TryGetPos(out int x, out int y)
-            { lock (_lk) { x = _charX; y = _charY; return _hasPos; } }
+            {
+                lock (_lk)
+                {
+                    x = _charX;
+                    y = _charY;
+                    return _hasPos;
+                }
+            }
 
-            public long ComputingPower { get { lock (_lk) return _computingPower; } }
-            public long TeamScore { get { lock (_lk) return _teamScore; } }
+            public long ComputingPower
+            {
+                get
+                {
+                    lock (_lk)
+                    {
+                        return _computingPower;
+                    }
+                }
+            }
+
+            public long TeamScore
+            {
+                get
+                {
+                    lock (_lk)
+                    {
+                        return _teamScore;
+                    }
+                }
+            }
 
             public List<EnemyFactory> GetEnemyFactories()
-            { lock (_lk) return _enemyFactories.Where(f => (DateTime.UtcNow - f.LastSeen).TotalSeconds < 3).ToList(); }
+            {
+                lock (_lk)
+                {
+                    return _enemyFactories
+                        .Where(f => (DateTime.UtcNow - f.LastSeen).TotalSeconds < 3)
+                        .ToList();
+                }
+            }
         }
 
         public static async Task Main(string[] args)
         {
             if (args.Length < 2)
-            { Console.WriteLine("Usage: ClientTest3 <playerId> <teamId> [characterId]"); return; }
-            if (!long.TryParse(args[0], out long pid) || !long.TryParse(args[1], out long tid)) return;
+            {
+                Console.WriteLine("Usage: ClientTest3 <playerId> <teamId> [characterId]");
+                return;
+            }
+            if (!long.TryParse(args[0], out long pid) || !long.TryParse(args[1], out long tid))
+            {
+                return;
+            }
             long cid = args.Length >= 3 && long.TryParse(args[2], out long x) ? x : 1L;
 
             var channel = new Channel("127.0.0.1:8888", ChannelCredentials.Insecure);
             await channel.ConnectAsync(DateTime.UtcNow.AddSeconds(5));
             var client = new AvailableService.AvailableServiceClient(channel);
             var streamCall = client.RegisterFactory(new RegisterFactoryMsg
-            { PlayerId = pid, TeamId = tid, SideFlag = (int)tid });
+            {
+                PlayerId = pid,
+                TeamId = tid,
+                SideFlag = (int)tid
+            });
             var state = new SharedState();
             using var cts = new CancellationTokenSource();
             var streamTask = ReadStreamAsync(streamCall, state, tid, cid, cts.Token);
 
-            try { await Run(client, state, cts, tid, cid); }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { Console.WriteLine($"[EX] {ex}"); }
-            finally { cts.Cancel(); try { await streamTask; } catch { } await channel.ShutdownAsync(); }
+            try
+            {
+                await Run(client, state, cts, tid, cid);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EX] {ex}");
+            }
+            finally
+            {
+                cts.Cancel();
+                try
+                {
+                    await streamTask;
+                }
+                catch
+                {
+                }
+                await channel.ShutdownAsync();
+            }
         }
 
         private static async Task Run(
@@ -132,14 +198,30 @@ namespace ClientTest3
             var ct = cts.Token;
 
             Log("Waiting for game start...");
-            if (!await Timeout(state.GameStartTask, 30, ct)) { Fail(cts, "Start timeout."); return; }
+            if (!await Timeout(state.GameStartTask, 30, ct))
+            {
+                Fail(cts, "Start timeout.");
+                return;
+            }
             Log("[OK] Game started.");
 
             Log($"Creating Drone (charId={charId})...");
             var cr = client.CreateCharacter(new CreateCharacterMsg
-            { TeamId = teamId, PlayerId = charId, CharacterType = CharacterType.Drone });
-            if (!cr.ActSuccess) { Fail(cts, "CreateCharacter failed."); return; }
-            if (!await Timeout(state.CharSeenTask, 10, ct)) { Fail(cts, "Char not seen."); return; }
+            {
+                TeamId = teamId,
+                PlayerId = charId,
+                CharacterType = CharacterType.Drone
+            });
+            if (!cr.ActSuccess)
+            {
+                Fail(cts, "CreateCharacter failed.");
+                return;
+            }
+            if (!await Timeout(state.CharSeenTask, 10, ct))
+            {
+                Fail(cts, "Char not seen.");
+                return;
+            }
             Log("[OK] Drone spawned.");
 
             var map = client.GetMap(new NullRequest());
@@ -154,8 +236,14 @@ namespace ClientTest3
                 var enemies = state.GetEnemyFactories().Where(f => !destroyedIds.Contains(f.TeamId)).ToList();
                 if (enemies.Count == 0)
                 {
-                    if (destroyedCount > 0) Log("All enemy factories destroyed!");
-                    else Log("No enemy factories found.");
+                    if (destroyedCount > 0)
+                    {
+                        Log("All enemy factories destroyed!");
+                    }
+                    else
+                    {
+                        Log("No enemy factories found.");
+                    }
                     break;
                 }
 
@@ -166,7 +254,11 @@ namespace ClientTest3
                     foreach (var f in enemies)
                     {
                         double d = Math.Sqrt((double)(f.X - sx) * (f.X - sx) + (double)(f.Y - sy) * (f.Y - sy));
-                        if (d < best) { best = d; target = f; }
+                        if (d < best)
+                        {
+                            best = d;
+                            target = f;
+                        }
                     }
                 }
                 if (target == null) break;
@@ -176,7 +268,11 @@ namespace ClientTest3
                 // 导航
                 if (!await NavigateToCell(client, state, map, teamId, charId,
                     target.X / CellSize, target.Y / CellSize, ct))
-                { Log("Can't reach, skip."); destroyedIds.Add(target.TeamId); continue; }
+                {
+                    Log("Can't reach, skip.");
+                    destroyedIds.Add(target.TeamId);
+                    continue;
+                }
 
                 // 攻击直到摧毁
                 int fabHits = 0, fabMisses = 0;
@@ -200,8 +296,13 @@ namespace ClientTest3
                         for (int i = 0; i < 3 && !ct.IsCancellationRequested; i++)
                         {
                             var atk = client.Attack(new AttackMsg
-                            { TeamId = teamId, PlayerId = charId, AttackRange = 2500,
-                              AttackedTeamId = target.TeamId, AttackedPlayerId = 0 });
+                            {
+                                TeamId = teamId,
+                                PlayerId = charId,
+                                AttackRange = 2500,
+                                AttackedTeamId = target.TeamId,
+                                AttackedPlayerId = 0
+                            });
                             await Task.Delay(400, ct);
                             Log($"  Post-mortem attack #{i + 1}: {(atk.ActSuccess ? $"OK  score+{state.TeamScore - scoreBefore}" : "FAIL (expected)")}" +
                                 $"  (total score={state.TeamScore})");
@@ -212,13 +313,19 @@ namespace ClientTest3
 
                     long scoreBefore2 = state.TeamScore;
                     var ar = client.Attack(new AttackMsg
-                    { TeamId = teamId, PlayerId = charId, AttackRange = 2500,
-                      AttackedTeamId = target.TeamId, AttackedPlayerId = 0 });
+                    {
+                        TeamId = teamId,
+                        PlayerId = charId,
+                        AttackRange = 2500,
+                        AttackedTeamId = target.TeamId,
+                        AttackedPlayerId = 0
+                    });
                     await Task.Delay(300, ct);
 
                     if (ar.ActSuccess)
                     {
-                        fabHits++; totalHits++;
+                        fabHits++;
+                        totalHits++;
                         var fresh = state.GetEnemyFactories().FirstOrDefault(f => f.TeamId == target.TeamId);
                         long dam = state.TeamScore - scoreBefore2;
                         Log($"  HIT #{fabHits}  hp={fresh?.Hp ?? -1}  score+{dam}");
@@ -226,7 +333,8 @@ namespace ClientTest3
                     }
                     else
                     {
-                        fabMisses++; totalMisses++;
+                        fabMisses++;
+                        totalMisses++;
                         if (state.TryGetPos(out int mx, out int my) && cur != null)
                         {
                             double dx = cur.X - mx, dy = cur.Y - my;
@@ -234,10 +342,19 @@ namespace ClientTest3
                             if (dist > 900)
                             {
                                 double angle = Math.Atan2(dy, dx);
-                                client.Move(new MoveMsg { TeamId = teamId, PlayerId = charId, TimeInMilliseconds = 200, Angle = angle });
+                                client.Move(new MoveMsg
+                                {
+                                    TeamId = teamId,
+                                    PlayerId = charId,
+                                    TimeInMilliseconds = 200,
+                                    Angle = angle
+                                });
                             }
                         }
-                        if (fabMisses % 10 == 0) Log($"  miss x{fabMisses}");
+                        if (fabMisses % 10 == 0)
+                        {
+                            Log($"  miss x{fabMisses}");
+                        }
                         await Task.Delay(200, ct);
                     }
                 }
@@ -263,9 +380,19 @@ namespace ClientTest3
             AsyncServerStreamingCall<MessageToClient> call, SharedState state,
             long teamId, long charId, CancellationToken ct)
         {
-            try { while (await call.ResponseStream.MoveNext(ct)) state.ApplyFrame(call.ResponseStream.Current, teamId, charId); }
-            catch (RpcException) { }
-            catch (OperationCanceledException) { }
+            try
+            {
+                while (await call.ResponseStream.MoveNext(ct))
+                {
+                    state.ApplyFrame(call.ResponseStream.Current, teamId, charId);
+                }
+            }
+            catch (RpcException)
+            {
+            }
+            catch (OperationCanceledException)
+            {
+            }
         }
 
         // =========================================================================
@@ -277,13 +404,23 @@ namespace ClientTest3
         {
             for (int attempt = 0; attempt < 8 && !ct.IsCancellationRequested; attempt++)
             {
-                if (!state.TryGetPos(out int cx, out int cy)) { await Task.Delay(120, ct); continue; }
+                if (!state.TryGetPos(out int cx, out int cy))
+                {
+                    await Task.Delay(120, ct);
+                    continue;
+                }
                 var path = FindPathAdjacentTo(map, cx / CellSize, cy / CellSize, tr, tc);
                 if (path == null) return false;
                 if (path.Count <= 1) return true;
                 bool ok = true;
                 foreach (var cell in path.Skip(1))
-                    if (!await MoveStep(client, state, teamId, charId, cell.r, cell.c, ct)) { ok = false; break; }
+                {
+                    if (!await MoveStep(client, state, teamId, charId, cell.r, cell.c, ct))
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
                 if (ok) return true;
             }
             return false;
@@ -295,17 +432,28 @@ namespace ClientTest3
         {
             int tx = row * CellSize + CellCenter, ty = col * CellSize + CellCenter;
             var dl = DateTime.UtcNow.AddSeconds(10);
-            double lastDis = double.MaxValue; int stall = 0;
+            double lastDis = double.MaxValue;
+            int stall = 0;
             while (DateTime.UtcNow < dl && !ct.IsCancellationRequested)
             {
-                if (!state.TryGetPos(out int cx, out int cy)) { await Task.Delay(60, ct); continue; }
+                if (!state.TryGetPos(out int cx, out int cy))
+                {
+                    await Task.Delay(60, ct);
+                    continue;
+                }
                 double dx = tx - cx, dy = ty - cy;
                 double dis = Math.Sqrt(dx * dx + dy * dy);
                 if (dis <= ArrivalRadius) return true;
                 double angle = Math.Atan2(dy, dx);
                 stall = dis >= lastDis - 20 ? stall + 1 : 0;
                 if (stall >= 4) angle += (stall / 4) % 2 == 0 ? 0.35 : -0.35;
-                client.Move(new MoveMsg { TeamId = teamId, PlayerId = charId, TimeInMilliseconds = 200, Angle = angle });
+                client.Move(new MoveMsg
+                {
+                    TeamId = teamId,
+                    PlayerId = charId,
+                    TimeInMilliseconds = 200,
+                    Angle = angle
+                });
                 lastDis = dis;
                 await Task.Delay(120, ct);
             }
@@ -334,17 +482,20 @@ namespace ClientTest3
         private static List<(int r, int c)>? FindPathAdjacentTo(
             MessageOfMap map, int sr, int sc, int tr, int tc)
         {
-            int h = map.Rows.Count; if (h == 0) return null;
+            int h = map.Rows.Count;
+            if (h == 0) return null;
             int w = map.Rows[0].Cols.Count;
             var (dist, prevR, prevC) = Bfs(map, sr, sc, h, w, clearance: 0);
             int[] dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
-            (int, int)? best = null; int bestD = int.MaxValue;
+            (int, int)? best = null;
+            int bestD = int.MaxValue;
             for (int k = 0; k < 4; k++)
             {
                 int ar = tr + dr[k], ac = tc + dc[k];
                 if ((uint)ar >= (uint)h || (uint)ac >= (uint)w) continue;
                 if (dist[ar, ac] < 0 || dist[ar, ac] >= bestD) continue;
-                bestD = dist[ar, ac]; best = (ar, ac);
+                bestD = dist[ar, ac];
+                best = (ar, ac);
             }
             return best == null ? null : Reconstruct(best.Value, sr, sc, prevR, prevC);
         }
@@ -352,14 +503,18 @@ namespace ClientTest3
         private static (int[,], int[,], int[,]) Bfs(
             MessageOfMap map, int sr, int sc, int h, int w, int clearance)
         {
-            var dist = new int[h, w]; var prevR = new int[h, w]; var prevC = new int[h, w];
+            var dist = new int[h, w];
+            var prevR = new int[h, w];
+            var prevC = new int[h, w];
             for (int r = 0; r < h; r++)
                 for (int c = 0; c < w; c++)
                 {
                     dist[r, c] = -1;
                     prevR[r, c] = prevC[r, c] = -1;
                 }
-            dist[sr, sc] = 0; prevR[sr, sc] = sr; prevC[sr, sc] = sc;
+            dist[sr, sc] = 0;
+            prevR[sr, sc] = sr;
+            prevC[sr, sc] = sc;
             var q = new Queue<(int, int)>();
             int[] dr = [-1, 1, 0, 0], dc = [0, 0, -1, 1];
             if (!IsTraversable(map, sr, sc, clearance))
@@ -369,10 +524,18 @@ namespace ClientTest3
                     int nr = sr + dr[k], nc = sc + dc[k];
                     if ((uint)nr >= (uint)h || (uint)nc >= (uint)w) continue;
                     if (IsTraversable(map, nr, nc, clearance))
-                    { dist[nr, nc] = 1; prevR[nr, nc] = sr; prevC[nr, nc] = sc; q.Enqueue((nr, nc)); }
+                    {
+                        dist[nr, nc] = 1;
+                        prevR[nr, nc] = sr;
+                        prevC[nr, nc] = sc;
+                        q.Enqueue((nr, nc));
+                    }
                 }
             }
-            else q.Enqueue((sr, sc));
+            else
+            {
+                q.Enqueue((sr, sc));
+            }
             while (q.Count > 0)
             {
                 var (r, c) = q.Dequeue();
@@ -382,7 +545,9 @@ namespace ClientTest3
                     if ((uint)nr >= (uint)h || (uint)nc >= (uint)w) continue;
                     if (dist[nr, nc] >= 0) continue;
                     if (!IsTraversable(map, nr, nc, clearance)) continue;
-                    dist[nr, nc] = dist[r, c] + 1; prevR[nr, nc] = r; prevC[nr, nc] = c;
+                    dist[nr, nc] = dist[r, c] + 1;
+                    prevR[nr, nc] = r;
+                    prevC[nr, nc] = c;
                     q.Enqueue((nr, nc));
                 }
             }
@@ -392,23 +557,34 @@ namespace ClientTest3
         private static List<(int r, int c)> Reconstruct(
             (int r, int c) end, int sr, int sc, int[,] prevR, int[,] prevC)
         {
-            var path = new List<(int, int)>(); var cur = end;
+            var path = new List<(int, int)>();
+            var cur = end;
             while (!(cur.r == sr && cur.c == sc))
             {
-                path.Add(cur); int pr = prevR[cur.r, cur.c], pc = prevC[cur.r, cur.c];
-                if (pr < 0) return []; cur = (pr, pc);
+                path.Add(cur);
+                int pr = prevR[cur.r, cur.c];
+                int pc = prevC[cur.r, cur.c];
+                if (pr < 0) return [];
+                cur = (pr, pc);
             }
-            path.Add((sr, sc)); path.Reverse(); return path;
+            path.Add((sr, sc));
+            path.Reverse();
+            return path;
         }
 
         // =========================================================================
         // Utils
         // =========================================================================
         private static async Task<bool> Timeout(Task t, int sec, CancellationToken ct)
-        { return await Task.WhenAny(t, Task.Delay(sec * 1000, ct)) == t; }
+        {
+            return await Task.WhenAny(t, Task.Delay(sec * 1000, ct)) == t;
+        }
 
         private static void Fail(CancellationTokenSource cts, string msg)
-        { Console.WriteLine($"[FAIL] {msg}"); cts.Cancel(); }
+        {
+            Console.WriteLine($"[FAIL] {msg}");
+            cts.Cancel();
+        }
 
         private static void Log(string msg)
             => Console.WriteLine($"[{DateTime.Now:HH:mm:ss.fff}] {msg}");
