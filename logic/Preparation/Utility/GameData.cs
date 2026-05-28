@@ -27,7 +27,7 @@ namespace Preparation.Utility
 
         public const int MaxRobust = 50;
         public const int MaxEfficiency = 10;
-        public const int MaxHP = 300;
+        public const int MaxHP = 10000;
         public const int MaxCost = 2;
         public const int MaxATKSize = 3 * NumOfPosGridPerCell;
         public const int MaxATKPower = 100;
@@ -39,7 +39,7 @@ namespace Preparation.Utility
 
         public const int FactoryScore = 20000;
         public const int FactoryDisableTimeMs = 10_00;
-        public const int FactoryInvulnerableTimeMs = 30 * 1000;  // 前30秒工厂不掉血
+        public const int FactoryInvulnerableTimeMs = 20 * 1000;  // 前20秒工厂不掉血
 
         // Score multipliers for combat
         public const int CharacterDamageScoreMultiplier = 20;
@@ -58,7 +58,7 @@ namespace Preparation.Utility
 
         public const int DroneHP = 100;
         public const int DroneCost = 50;
-        public const int DroneATKsize = 1000;
+        public const int DroneATKsize = 1500;
         public const int DroneATKpower = 40;
         public const int DroneLoad = 5;
         public const int DroneRobust = 10;
@@ -68,7 +68,7 @@ namespace Preparation.Utility
 
         public const int AutonomouCarHP = 100;
         public const int AutonomouCarCost = 50;
-        public const int AutonomouCarATKsize = 1000;
+        public const int AutonomouCarATKsize = 1500;
         public const int AutonomouCarATKpower = 18;
         public const int AutonomouCarLoad = 5;
         public const int AutonomouCarRobust = 8;
@@ -78,7 +78,7 @@ namespace Preparation.Utility
 
         public const int RobotHP = 150;
         public const int RobotCost = 50;
-        public const int RobotATKsize = 1000;
+        public const int RobotATKsize = 1500;
         public const int RobotATKpower = 30;
         public const int RobotLoad = 5;
         public const int RobotRobust = 15;

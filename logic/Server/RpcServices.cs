@@ -318,14 +318,21 @@ namespace Server
             GameServerLogging.logger.LogDebug(
                 $"TRY Attack: Player {request.PlayerId} from Team {request.TeamId} attacking Player {request.AttackedPlayerId} from Team {request.AttackedTeamId}");
             BoolRes boolRes = new();
-            if (request.AttackedTeamId > 0 && request.AttackedPlayerId == 0)
+            if (request.AttackedTeamId > 0 && request.AttackedPlayerId > 0)
             {
-                // 指定攻击工厂：跳过自动索敌，直接打目标工厂
+                // 指定攻击角色：进攻指定队伍的指定玩家角色（暂用自动索敌，后续可扩展）
+                boolRes.ActSuccess = game.Attack(
+                    request.TeamId, request.PlayerId);
+            }
+            else if (request.AttackedTeamId > 0)
+            {
+                // 指定攻击工厂：attacked_team_id > 0 且 attacked_player_id == 0
                 boolRes.ActSuccess = game.AttackFactory(
                     request.TeamId, request.PlayerId, request.AttackedTeamId);
             }
             else
             {
+                // 未指定目标：自动索敌（最近敌方角色或工厂）
                 boolRes.ActSuccess = game.Attack(
                     request.TeamId, request.PlayerId);
             }

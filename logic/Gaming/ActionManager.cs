@@ -309,7 +309,7 @@ namespace Gaming
                 // 前7分钟工厂不掉血
                 if (game.NowTime() < GameData.FactoryInvulnerableTimeMs)
                 {
-                    LogicLogging.logger.LogDebug("Factory is invulnerable in the first 7 minutes!");
+                    LogicLogging.logger.LogDebug("Factory is invulnerable in the first 20 seconds!");
                     return false;
                 }
 
