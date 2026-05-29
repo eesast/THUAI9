@@ -101,7 +101,7 @@ namespace Gaming
                 return false;
             }
 
-            new Thread
+            Task.Run
             (
                 () =>
                 {
@@ -142,6 +142,59 @@ namespace Gaming
                                     fac.TickComputingPower(GameData.CheckInterval);
                                 }
 
+                                // 诊断：检测长时间空闲/卡在同一位置的角色
+                                int now = NowTime();
+                                var allChars = GetAllCharacters();
+                                var seenIds = new HashSet<long>();
+                                foreach (var ch in allChars)
+                                {
+                                    seenIds.Add(ch.ID);
+                                    if (ch.IsRemoved) continue;
+
+                                    // 状态检测：空闲过久 = AI 可能停止发指令
+                                    if (ch.State == CharacterState.NULL_CHARACTER_STATE)
+                                    {
+                                        if (!characterIdleSinceMs.TryGetValue(ch.ID, out int idleStart))
+                                            characterIdleSinceMs[ch.ID] = now;
+                                        else if (now - idleStart > CharacterIdleWarnThresholdMs)
+                                        {
+                                            LogicLogging.logger.LogWarning(
+                                                $"Character IDLE too long ({now - idleStart}ms): " +
+                                                $"team={ch.TeamId} player={ch.PlayerId} " +
+                                                $"pos=({ch.Position.x},{ch.Position.y}) " +
+                                                $"charType={ch.CharacterType}");
+                                            characterIdleSinceMs[ch.ID] = now;
+                                        }
+                                    }
+                                    else
+                                        characterIdleSinceMs.Remove(ch.ID);
+
+                                    // 位置检测：同一位置停留过久 = 可能被卡住
+                                    if (characterStuckAtPos.TryGetValue(ch.ID, out var stuck))
+                                    {
+                                        if (stuck.pos.x == ch.Position.x && stuck.pos.y == ch.Position.y)
+                                        {
+                                            if (now - stuck.sinceMs > CharacterStuckPosWarnThresholdMs)
+                                            {
+                                                LogicLogging.logger.LogWarning(
+                                                    $"Character STUCK at same position ({stuck.pos.x},{stuck.pos.y}) for {now - stuck.sinceMs}ms: " +
+                                                    $"team={ch.TeamId} player={ch.PlayerId} " +
+                                                    $"state={ch.State} charType={ch.CharacterType}");
+                                                characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                            }
+                                        }
+                                        else
+                                            characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                    }
+                                    else
+                                        characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                }
+                                // 清理已移除角色的跟踪记录
+                                foreach (var id in characterIdleSinceMs.Keys.Where(id => !seenIds.Contains(id)).ToList())
+                                    characterIdleSinceMs.Remove(id);
+                                foreach (var id in characterStuckAtPos.Keys.Where(id => !seenIds.Contains(id)).ToList())
+                                    characterStuckAtPos.Remove(id);
+
                                 return !CheckAndHandleGameEnd();
                             },
                             timeInterval: GameData.CheckInterval,
@@ -155,7 +208,7 @@ namespace Gaming
                         try { CheckAndHandleGameEnd(); } catch { }
                     }
                 }
-            ).Start();
+            );
             return true;
         }
 
@@ -252,29 +305,22 @@ namespace Gaming
                 return false;
             }
             int attackRange = (int)character.AttackSize.GetValue();
+            IGameObj? bestTarget = null;
+            long bestDist = long.MaxValue;
+
+            // 遍历范围内所有敌方角色
             var enemies = gameMap.CharacterInTheRangeNotTeamID(character.Position, attackRange, character.TeamID.Get());
-            if (enemies != null && enemies.Count > 0)
+            if (enemies != null)
             {
-                Character nearest = null;
-                long bestDist = long.MaxValue;
                 foreach (var e in enemies)
                 {
                     if (e == null || e.IsRemoved || e.HP <= 0) continue;
                     long d = (long)XY.DistanceCeil3(e.Position, character.Position);
-                    if (d < bestDist)
-                    {
-                        bestDist = d;
-                        nearest = e;
-                    }
-                }
-                if (nearest != null)
-                {
-                    return actionManager.Attack(character, nearest);
+                    if (d < bestDist) { bestDist = d; bestTarget = e; }
                 }
             }
 
-            Factory? enemyFactory = null;
-            long bestFactoryDist = long.MaxValue;
+            // 遍历范围内所有敌方工厂
             var factoryObjs = gameMap.GameObjDict[GameObjType.FACTORY].ToNewList();
             if (factoryObjs != null)
             {
@@ -283,14 +329,17 @@ namespace Gaming
                     if (obj is not Factory f || f.TeamID.Get() == character.TeamID.Get() || f.HP <= 0) continue;
                     if (!GameData.IsInTheRange(f.Position, character.Position, attackRange)) continue;
                     long d = (long)XY.DistanceCeil3(f.Position, character.Position);
-                    if (d < bestFactoryDist) { bestFactoryDist = d; enemyFactory = f; }
+                    if (d < bestDist) { bestDist = d; bestTarget = f; }
                 }
             }
-            if (enemyFactory != null)
-            {
-                return actionManager.Attack(character, enemyFactory);
-            }
-            LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}.");
+
+            if (bestTarget is Character targetChar)
+                return actionManager.Attack(character, targetChar);
+            if (bestTarget is Factory targetFac)
+                return actionManager.Attack(character, targetFac);
+
+            int factoryCount = gameMap.GameObjDict.TryGetValue(GameObjType.FACTORY, out var flist) ? flist.ToNewList()?.Count ?? -1 : -1;
+            LogicLogging.logger.LogWarning($"Attack failed: No valid targets in range for character of team {teamId} player {playerId}. pos=({character.Position.x},{character.Position.y}) range={attackRange} factoryCount={factoryCount}");
             return false;
         }
 
@@ -985,6 +1034,13 @@ namespace Gaming
 
         private readonly object gameEndLock = new();
         private bool gameEnded = false;
+
+        // 诊断：跟踪角色连续空闲时长，用于发现 AI 停止发送指令的情况
+        private readonly Dictionary<long, int> characterIdleSinceMs = new();
+        private const int CharacterIdleWarnThresholdMs = 15_000;
+        // 诊断：跟踪角色在同一位置的停留时长
+        private readonly Dictionary<long, (XY pos, int sinceMs)> characterStuckAtPos = new();
+        private const int CharacterStuckPosWarnThresholdMs = 30_000;
 
         /// <summary>
         /// 自动检测并处理游戏结束条件：

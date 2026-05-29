@@ -66,12 +66,9 @@ public class Character : Movable, ICharacter
         if (IsRemoved)
             return true;
         if (targetObj.Type == GameObjType.CHARACTER
-            && XY.DistanceCeil3(targetObj.Position, Position)
+            && XY.DistanceCeil3(targetObj.FastPosition, FastPosition)
             < Radius + targetObj.Radius - GameData.AdjustLength)
             return true;
-        //LogicLogging.logger.LogDebug(
-        //     LoggingFunctional.CharacterLogInfo(this) +
-        //     $" IgnoreCollideExecutor with target {targetObj.ID} of type {targetObj.Type} at position {targetObj.Position}");
         return false;
     }
     private long ChangeCharacterState(CharacterState value = CharacterState.NULL_CHARACTER_STATE, GameObj? gameobj = null)
