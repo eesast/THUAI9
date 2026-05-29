@@ -473,15 +473,11 @@ namespace THUAI9.Unity.UI
 
         private static string GetTeamName(long teamId)
         {
-            return teamId switch
-            {
-                1 => "队伍 1",
-                2 => "队伍 2",
-                3 => "队伍 3",
-                4 => "队伍 4",
-                0 => "未归属",
-                _ => "未知队伍"
-            };
+            return teamId == 0
+                ? "未归属"
+                : IsKnownTeam(teamId)
+                    ? CoreParam.GetTeamDisplayLabel(teamId)
+                    : "未知队伍";
         }
 
         private static bool IsKnownTeam(long teamId)
