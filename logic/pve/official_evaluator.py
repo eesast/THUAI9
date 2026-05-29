@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -44,6 +45,12 @@ if str(HERE) not in sys.path:
 
 from GameLogic import GameConfig, GameEnvironment
 from RLInterfaces import BaseAgent
+
+
+def _smooth_score(score: float, scale: float = 1000.0) -> float:
+    """Bounded score smoothing using tanh followed by sigmoid."""
+    z = math.tanh(score / scale)
+    return 1.0 / (1.0 + math.exp(-z))
 
 
 def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironment) -> BaseAgent:
@@ -123,7 +130,8 @@ def evaluate(
             action = agent.get_action(obs)
             obs, _reward, terminated, truncated, info = env.step(action)
             ep_len += 1
-            ep_score = info.get("score", 0.0)
+            raw_score = info.get("score", 0.0)
+            ep_score = _smooth_score(raw_score)
             done = terminated or truncated
 
         scores.append(ep_score)
