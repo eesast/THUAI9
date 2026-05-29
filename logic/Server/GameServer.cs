@@ -41,7 +41,7 @@ namespace Server
         public static readonly long SendMessageToClientIntervalInMilliseconds = 50;
         private readonly MessageWriter? mwr = null;
         private readonly object spectatorJoinLock = new();
-        private const int ClientAckTimeoutMs = 200;
+        private const int ClientAckTimeoutMs = 1000;
 
         public void StartGame()
         {
@@ -139,6 +139,7 @@ namespace Server
         {
             endGameSem.Wait();
             mwr?.Dispose();
+            game.CleanupAfterEnd();
         }
 
         private void SaveGameResult(string path)
@@ -398,7 +399,7 @@ namespace Server
 
         private void OnGameEnd()
         {
-            mwr?.Flush();
+            try { mwr?.Flush(); } catch (Exception ex) { GameServerLogging.logger.LogError($"Flush playback failed: {ex.Message}"); }
             if (options.ResultFileName != DefaultArgumentOptions.FileName)
                 SaveGameResult(options.ResultFileName.EndsWith(".json")
                              ? options.ResultFileName
@@ -489,6 +490,12 @@ namespace Server
                     {
                         try { semas.Item1.Release(); } catch { }
                         try { semas.Item2.Release(); } catch { }
+                        // 清理被踢客户端的角色状态，防止角色成为"孤儿"卡在地图上
+                        if (playerId > 0)
+                        {
+                            try { game.Stop(dictIndex, playerId); }
+                            catch (Exception ex) { GameServerLogging.logger.LogWarning($"Failed to stop orphan character: team={dictIndex} player={playerId}: {ex.Message}"); }
+                        }
                     }
                 }
             }

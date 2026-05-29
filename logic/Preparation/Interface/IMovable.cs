@@ -27,19 +27,25 @@ namespace Preparation.Interface
             if (IgnoreCollideExecutor(targetObj) || targetObj.IgnoreCollideExecutor(this))
                 return false;
 
+            // Quick bounding-box filter using lock-free FastPosition
+            int dx = Math.Abs(nextPos.x - targetObj.FastPosition.x);
+            int dy = Math.Abs(nextPos.y - targetObj.FastPosition.y);
+            int maxDist = targetObj.Radius + Radius;
+            if (dx > maxDist || dy > maxDist)
+                return false;
+
             if (targetObj.Shape == ShapeType.CIRCLE)
             {
-                return XY.DistanceCeil3(nextPos, targetObj.Position) < targetObj.Radius + Radius;
+                return XY.DistanceCeil3(nextPos, targetObj.FastPosition) < maxDist;
             }
             else  // Square
             {
-                long deltaX = Math.Abs(nextPos.x - targetObj.Position.x), deltaY = Math.Abs(nextPos.y - targetObj.Position.y);
-                if (deltaX >= targetObj.Radius + Radius || deltaY >= targetObj.Radius + Radius)
+                if (dx >= maxDist || dy >= maxDist)
                     return false;
-                if (deltaX < targetObj.Radius || deltaY < targetObj.Radius)
+                if (dx < targetObj.Radius || dy < targetObj.Radius)
                     return true;
                 else
-                    return ((long)(deltaX - targetObj.Radius) * (deltaX - targetObj.Radius)) + ((long)(deltaY - targetObj.Radius) * (deltaY - targetObj.Radius)) <= (long)Radius * (long)Radius;
+                    return ((long)(dx - targetObj.Radius) * (dx - targetObj.Radius)) + ((long)(dy - targetObj.Radius) * (dy - targetObj.Radius)) <= (long)Radius * (long)Radius;
             }
         }
     }

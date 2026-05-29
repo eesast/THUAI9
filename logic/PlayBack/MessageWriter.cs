@@ -47,9 +47,9 @@ namespace Playback
                     sinceLastFlush = 0;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 写回放文件失败不应影响游戏主循环
+                Console.Error.WriteLine($"[MessageWriter] WriteOne failed at frame {WrittenNum}: {ex.Message}");
             }
         }
 
@@ -58,6 +58,8 @@ namespace Playback
             try
             {
                 cos.Flush();
+                gzs.Flush();
+                fs.Flush();
                 sinceLastFlush = 0;
             }
             catch { }
@@ -79,6 +81,8 @@ namespace Playback
                 try { gzs.Dispose(); } catch { }
                 try { fs.Dispose(); } catch { }
             }
+            if (WrittenNum == 0)
+                Console.Error.WriteLine($"[MessageWriter] Warning: replay file has 0 frames — game may have crashed before recording");
             Disposed = true;
         }
 

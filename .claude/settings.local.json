@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find \"D:/THUthu/THUAI9\" -type f \\\\\\( -name \"*.cs\" -o -name \"*.cpp\" -o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.py\" -o -name \"*.proto\" \\\\\\) ! -path \"*/.vs/*\" ! -path \"*/obj/*\" ! -path \"*/bin/*\" ! -path \"*/grpc/*\" ! -path \"*/spdlog/*\" ! -path \"*/protobuf/*\" ! -path \"*/x64/*\" ! -path \"*/.git/*\" ! -path \"*/playback/obj/*\" ! -path \"*/playback/bin/*\" -exec grep -l \"Event\" {} \\\\;)"
+      "Bash(find \"D:/THUthu/THUAI9\" -type f \\\\\\( -name \"*.cs\" -o -name \"*.cpp\" -o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.py\" -o -name \"*.proto\" \\\\\\) ! -path \"*/.vs/*\" ! -path \"*/obj/*\" ! -path \"*/bin/*\" ! -path \"*/grpc/*\" ! -path \"*/spdlog/*\" ! -path \"*/protobuf/*\" ! -path \"*/x64/*\" ! -path \"*/.git/*\" ! -path \"*/playback/obj/*\" ! -path \"*/playback/bin/*\" -exec grep -l \"Event\" {} \\\\;)",
+      "Bash(dotnet build *)",
+      "Read(//c/Users/lenovo/.nuget/**)",
+      "Read(//d//**)",
+      "Bash(taskkill /PID 26992 /F)",
+      "Bash(taskkill /PID 31552 /F)",
+      "Bash(cmake --version)",
+      "Bash(dotnet --version)"
     ]
   }
 }

@@ -22,6 +22,7 @@ namespace Gaming
             private readonly Game game = game;
             private readonly Map map = gameMap;
             private readonly ConcurrentDictionary<long, ConcurrentDictionary<long, Character>> teamCharacters = new(); // key: TeamID -> (PlayerID -> Character)
+            private readonly ConcurrentDictionary<long, object> teamRecruitLocks = new(); // 防止同一队伍并发创建角色导致出生点重叠
 
             public Character CreateCharacter(long teamId, long playerId, CharacterType type)
             {
@@ -51,33 +52,33 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Factory for Team {teamId} cannot recruit at this time.");
                     return false;
                 }
-                var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
-                if (teamDict.Count >= GameData.MaxCharactersPerTeam)
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
-                    return false;
-                }
-                if (teamDict.ContainsKey(playerId))
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
-                    return false;
-                }
-                if (teamCharacters.TryGetValue(teamId, out var dict) && dict.Count >= GameData.MaxCharactersPerTeam)
-                {
-                    LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
-                    return false;
-                }
                 var occ = OccupationFactory.FindIOccupation(type);
                 int cost = occ.Cost;
-                if (factory.ComputingPower.Get() < cost)
+
+                var teamLock = teamRecruitLocks.GetOrAdd(teamId, _ => new object());
+                lock (teamLock)
                 {
-                    LogicLogging.logger.LogWarning($"Not enough computing power for Team {teamId} to recruit character. Required: {cost}, Available: {factory.ComputingPower.Get()}");
-                    return false;
+                    var teamDict = teamCharacters.GetOrAdd(teamId, _ => new ConcurrentDictionary<long, Character>());
+                    if (teamDict.Count >= GameData.MaxCharactersPerTeam)
+                    {
+                        LogicLogging.logger.LogWarning($"Team {teamId} has reached the maximum character limit ({GameData.MaxCharactersPerTeam}). Cannot recruit more.");
+                        return false;
+                    }
+                    if (teamDict.ContainsKey(playerId))
+                    {
+                        LogicLogging.logger.LogWarning($"Team {teamId} already has an alive character for Player {playerId}. Cannot recruit.");
+                        return false;
+                    }
+                    if (factory.ComputingPower.Get() < cost)
+                    {
+                        LogicLogging.logger.LogWarning($"Not enough computing power for Team {teamId} to recruit character. Required: {cost}, Available: {factory.ComputingPower.Get()}");
+                        return false;
+                    }
+                    factory.ComputingPower.SubRNow(cost);
+                    var ch = CreateCharacter(teamId, playerId, type);
+                    ActivateCharacter(teamId, playerId, birthPos);
+                    return true;
                 }
-                factory.ComputingPower.SubRNow(cost);
-                var ch = CreateCharacter(teamId, playerId, type);
-                ActivateCharacter(teamId, playerId, birthPos);
-                return true;
             }
 
             public bool ActivateCharacter(long teamId, long playerId, XY pos)
@@ -154,23 +155,42 @@ namespace Gaming
             // 在基准位置附近按环形搜索一个非碰撞点
             private bool TryFindNearbyFreePosition(Character ch, XY center, out XY result)
             {
-                // 从工厂半径 + 角色半径开始，保证与工厂外部至少间隔1
-                int startDist = GameData.FactoryRadius + ch.Radius + 1;
-                int maxDist = GameData.NumOfPosGridPerCell * 3; // 最多搜索 3 个格子的半径
+                // 工厂外至少两个格子的缓冲区，确保角色不会卡在工厂边缘
+                int startDist = GameData.FactoryRadius + GameData.NumOfPosGridPerCell * 2;
+                int maxDist = GameData.NumOfPosGridPerCell * 5; // 最多搜索 5 个格子的半径
                 int distStep = Math.Max(1, GameData.NumOfPosGridPerCell / 8);
-                int angleStepDeg = 20;
+                int angleStepDeg = 15;
+                int angleOffset = Random.Shared.Next(0, 360); // 随机起始角度，避免多角色同位置
 
                 for (int d = startDist; d <= maxDist; d += distStep)
                 {
-                    for (int ang = 0; ang < 360; ang += angleStepDeg)
+                    for (int ang = angleOffset; ang < angleOffset + 360; ang += angleStepDeg)
                     {
-                        double rad = Math.PI * ang / 180.0;
+                        double rad = Math.PI * (ang % 360) / 180.0;
                         var cand = new XY(rad, d);
                         var candPos = new XY(center.x + cand.x, center.y + cand.y);
 
                         if (!IsPositionColliding(ch, candPos))
                         {
                             result = candPos;
+                            return true;
+                        }
+                    }
+                }
+
+                // 最后兜底：尝试工厂四方向逐格搜索
+                int[] dirX = [1, -1, 0, 0];
+                int[] dirY = [0, 0, 1, -1];
+                for (int cell = 1; cell <= 5; cell++)
+                {
+                    for (int k = 0; k < 4; k++)
+                    {
+                        int cx = GameData.PosGridToCellX(center);
+                        int cy = GameData.PosGridToCellY(center);
+                        var fallbackPos = GameData.GetCellCenterPos(cx + dirX[k] * cell, cy + dirY[k] * cell);
+                        if (!IsPositionColliding(ch, fallbackPos))
+                        {
+                            result = fallbackPos;
                             return true;
                         }
                     }
@@ -287,6 +307,11 @@ namespace Gaming
                 if (obj.TeamID.Get() == character.TeamID.Get())
                 {
                     LogicLogging.logger.LogWarning($"Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}) is being attacked by an ally (Team {obj.TeamID.Get()}, Player {obj.PlayerID.Get()}). No damage applied.");
+                    return;
+                }
+                if (character.HP <= 0 || character.IsRemoved == true)
+                {
+                    LogicLogging.logger.LogDebug("Target character is already dead!");
                     return;
                 }
                 long subHP = (long)(obj.AttackPower - character.Robust);
