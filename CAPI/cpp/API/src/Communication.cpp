@@ -3,6 +3,7 @@
 #include "structures.h"
 #include "utils.hpp"
 
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -18,8 +19,16 @@ namespace
     [[nodiscard]] bool ConsumeActionQuota(std::mutex& mtxLimit, int32_t& counter, int32_t& counterMove, int32_t limit, int32_t moveLimit, bool countAsMove)
     {
         std::lock_guard<std::mutex> lock(mtxLimit);
-        if (counter >= limit || (countAsMove && counterMove >= moveLimit))
+        if (counter >= limit)
+        {
+            std::cerr << "[CAPI] Action quota exhausted: " << counter << "/" << limit << " (total limit)" << std::endl;
             return false;
+        }
+        if (countAsMove && counterMove >= moveLimit)
+        {
+            std::cerr << "[CAPI] Move quota exhausted: " << counterMove << "/" << moveLimit << " (move limit)" << std::endl;
+            return false;
+        }
         ++counter;
         if (countAsMove)
             ++counterMove;
@@ -30,7 +39,10 @@ namespace
     {
         std::lock_guard<std::mutex> lock(mtxLimit);
         if (counter >= limit)
+        {
+            std::cerr << "[CAPI] Quota exhausted: " << counter << "/" << limit << std::endl;
             return false;
+        }
         ++counter;
         return true;
     }
@@ -117,7 +129,7 @@ bool Communication::Occupy(int64_t playerID, int64_t teamID)
 
 bool Communication::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
 {
-    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+    if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
 
     protobuf::BoolRes loadResult;
@@ -129,7 +141,7 @@ bool Communication::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goo
 
 bool Communication::Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount, bool isBuy)
 {
-    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+    if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
 
     protobuf::BoolRes tradeResult;
@@ -218,28 +230,44 @@ void Communication::AddPlayer(int32_t playerID, int32_t teamID, THUAI9::Characte
     (void)charactertype;
     auto tMessage = [=]()
     {
-        auto playerMsg = THUAI9Proto::THUAI92ProtobufRegisterFactoryMsg(playerID, teamID, side_flag);
-        grpc::ClientContext context;
-        auto MessageReader = THUAI9Stub->RegisterFactory(&context, playerMsg);
-
-        protobuf::MessageToClient buffer2Client;
-        counter = 0;
-        counterMove = 0;
-
-        while (MessageReader->Read(&buffer2Client))
+        try
         {
+            auto playerMsg = THUAI9Proto::THUAI92ProtobufRegisterFactoryMsg(playerID, teamID, side_flag);
+            grpc::ClientContext context;
+            auto MessageReader = THUAI9Stub->RegisterFactory(&context, playerMsg);
+
+            protobuf::MessageToClient buffer2Client;
+            counter = 0;
+            counterMove = 0;
+
+            while (MessageReader->Read(&buffer2Client))
             {
-                std::lock_guard<std::mutex> lock(mtxMessage);
-                message2Client = std::move(buffer2Client);
-                haveNewMessage = true;
                 {
-                    std::lock_guard<std::mutex> limitLock(mtxLimit);
-                    counter = 0;
-                    counterMove = 0;
+                    std::lock_guard<std::mutex> lock(mtxMessage);
+                    message2Client = std::move(buffer2Client);
+                    haveNewMessage = true;
+                    {
+                        std::lock_guard<std::mutex> limitLock(mtxLimit);
+                        counter = 0;
+                        counterMove = 0;
+                    }
                 }
+                cvMessage.notify_one();
             }
-            cvMessage.notify_one();
         }
+        catch (const std::exception& e)
+        {
+            // 记录异常但不让线程 crash
+        }
+        catch (...)
+        {
+        }
+        // 无论什么原因退出，都要通知主循环以免永久阻塞
+        {
+            std::lock_guard<std::mutex> lock(mtxMessage);
+            haveNewMessage = true;
+        }
+        cvMessage.notify_one();
     };
     std::thread(tMessage).detach();
 }

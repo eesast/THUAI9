@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using GameClass.GameObj;
 using Preparation.Utility;
 
@@ -88,7 +89,8 @@ namespace Gaming
                     if (factory.Source.CompareExROri(cur - totalCost, cur) == cur) break;
                 }
 
-                new Thread(() =>
+                long genAtStart = factory.InterruptGeneration.Get();
+                Task.Factory.StartNew(() =>
                 {
                     int produced = 0;
                     try
@@ -96,6 +98,7 @@ namespace Gaming
                         for (int i = 0; i < amount; i++)
                         {
                             if (factory.IsRemoved.Get()) break;
+                            if (factory.InterruptGeneration.Get() != genAtStart) break;
 
                             Thread.Sleep(produceMsPerItem);
 
@@ -127,10 +130,13 @@ namespace Gaming
                         {
                             factory.AddSource((long)costPer * remaining);
                         }
-                        factory.CanProduce.SetROri(true);
+                        if (factory.InterruptGeneration.Get() == genAtStart)
+                            factory.CanProduce.SetROri(true);
                     }
-                })
-                { IsBackground = true }.Start();
+                },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
 
                 return true;
             }

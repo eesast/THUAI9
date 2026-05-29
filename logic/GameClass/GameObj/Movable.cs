@@ -70,6 +70,7 @@ namespace GameClass.GameObj
                     if (stateNo != stateNum) return -1;
                     facingDirection = moveVec;
                     this.position += moveVec;
+                    fastPosition = this.position;
                 }
             }
             return moveVec * moveVec;
@@ -80,6 +81,7 @@ namespace GameClass.GameObj
             lock (actionLock)
             {
                 this.position = position;
+                fastPosition = position;
             }
         }
         private readonly AtomicBool canMove = new(false);
