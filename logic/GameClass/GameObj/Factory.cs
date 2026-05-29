@@ -25,6 +25,7 @@ public class Factory : Immovable, IFactory
 
     public AtomicBool CanProduce { get; } = new(true);
     public AtomicBool CanRecruit { get; } = new(true);
+    public AtomicLong InterruptGeneration { get; } = new(0);
 
     private readonly AtomicInt[] goodsCounts = new AtomicInt[6]
     {
@@ -142,5 +143,6 @@ public class Factory : Immovable, IFactory
     {
         CanProduce.SetROri(false);
         CanRecruit.SetROri(false);
+        InterruptGeneration.AddRNow(1);
     }
 }

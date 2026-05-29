@@ -23,7 +23,13 @@ namespace GameClass.GameObj
         public long ID { get; } = Interlocked.Increment(ref currentMaxID);
 
         protected XY position = initPos;
+        protected XY fastPosition = initPos;
         public abstract XY Position { get; }
+        /// <summary>
+        /// Lock-free position snapshot for collision detection (no actionLock).
+        /// Updated together with position under the same lock.
+        /// </summary>
+        public XY FastPosition => fastPosition;
         public abstract bool IsRigid(bool args = false);
         public abstract ShapeType Shape { get; }
 

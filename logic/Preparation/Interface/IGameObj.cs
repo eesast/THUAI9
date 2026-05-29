@@ -9,6 +9,7 @@ namespace Preparation.Interface
         public GameObjType Type { get; }
         public long ID { get; }
         public XY Position { get; }  // if Square, Pos equals the center
+        public XY FastPosition { get; }  // lock-free position snapshot for collision checks
         public bool IsRigid(bool args = false);
         public AtomicBool IsRemoved { get; }
         public ShapeType Shape { get; }
