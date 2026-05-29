@@ -151,134 +151,134 @@ namespace GameEngine
             Task.Factory.StartNew(
                 () =>
                 {
-                try
-                {
-                    double deltaLen = 0.0;
-                    XY res = new(direction, 0.0);
-                    IGameObj? collisionObj = null;
-                    bool isEnded = false;
-                    bool flag;
-
-                    // 初始碰撞解决：如果角色当前位置已经和其他物体重叠，推开角色
-                    do
+                    try
                     {
-                        flag = false;
-                        collisionObj = collisionChecker.CheckCollision(obj, obj.Position);
-                        if (collisionObj == null) break;
+                        double deltaLen = 0.0;
+                        XY res = new(direction, 0.0);
+                        IGameObj? collisionObj = null;
+                        bool isEnded = false;
+                        bool flag;
 
-                        switch (OnCollision(obj, collisionObj, res))
+                        // 初始碰撞解决：如果角色当前位置已经和其他物体重叠，推开角色
+                        do
                         {
-                            case AfterCollision.ContinueCheck:
-                                // OnCollision 已执行推离，重新检查
-                                flag = true; break;
-                            case AfterCollision.Destroyed:
-                                isEnded = true; break;
-                            case AfterCollision.MoveMax:
-                                // 角色与障碍物重叠，沿最近方向推开（加随机扰动避免振荡）
-                                int sx = obj.FastPosition.x - collisionObj.FastPosition.x;
-                                int sy = obj.FastPosition.y - collisionObj.FastPosition.y;
-                                double sd = Math.Sqrt((long)sx * sx + (long)sy * sy);
-                                if (sd > 0)
-                                {
-                                    double overlap = obj.Radius + collisionObj.Radius - sd;
-                                    if (overlap > 0)
-                                    {
-                                        // 随机扰动 ±15° 避免两个角色互相推开后再次撞回
-                                        double baseAngle = Math.Atan2(sy, sx);
-                                        double perturb = (Random.Shared.NextDouble() - 0.5) * Math.PI / 6;
-                                        obj.MovingSetPos(new XY(baseAngle + perturb, overlap + 1.0), stateNum);
-                                        flag = true; // 推开后重新检查是否还与其他物体重叠
-                                    }
-                                }
-                                break;
-                        }
-                    } while (flag);
+                            flag = false;
+                            collisionObj = collisionChecker.CheckCollision(obj, obj.Position);
+                            if (collisionObj == null) break;
 
-                    if (isEnded)
-                    {
+                            switch (OnCollision(obj, collisionObj, res))
+                            {
+                                case AfterCollision.ContinueCheck:
+                                    // OnCollision 已执行推离，重新检查
+                                    flag = true; break;
+                                case AfterCollision.Destroyed:
+                                    isEnded = true; break;
+                                case AfterCollision.MoveMax:
+                                    // 角色与障碍物重叠，沿最近方向推开（加随机扰动避免振荡）
+                                    int sx = obj.FastPosition.x - collisionObj.FastPosition.x;
+                                    int sy = obj.FastPosition.y - collisionObj.FastPosition.y;
+                                    double sd = Math.Sqrt((long)sx * sx + (long)sy * sy);
+                                    if (sd > 0)
+                                    {
+                                        double overlap = obj.Radius + collisionObj.Radius - sd;
+                                        if (overlap > 0)
+                                        {
+                                            // 随机扰动 ±15° 避免两个角色互相推开后再次撞回
+                                            double baseAngle = Math.Atan2(sy, sx);
+                                            double perturb = (Random.Shared.NextDouble() - 0.5) * Math.PI / 6;
+                                            obj.MovingSetPos(new XY(baseAngle + perturb, overlap + 1.0), stateNum);
+                                            flag = true; // 推开后重新检查是否还与其他物体重叠
+                                        }
+                                    }
+                                    break;
+                            }
+                        } while (flag);
+
+                        if (isEnded)
+                        {
+                            obj.IsMoving.SetROri(false);
+                            EndMove(obj);
+                            onComplete?.Invoke();
+                            return;
+                        }
+
+                        // 帧步进移动循环（替代 FrameRateTaskExecutor，消除定时器开销）
+                        int stepMs = GameData.NumOfPosGridPerCell / GameData.NumOfStepPerSecond;
+                        int totalMs = 0;
+                        bool stoppedDueToBlock = false;
+
+                        while (totalMs < moveTime && gameTimer.IsGaming
+                               && obj.StateNum == stateNum && obj.CanMove && !obj.IsRemoved)
+                        {
+                            if (totalMs + stepMs > moveTime)
+                                stepMs = moveTime - totalMs;
+
+                            Thread.Sleep(stepMs);
+                            totalMs += stepMs;
+
+                            if (!gameTimer.IsGaming) break;
+                            if (obj.StateNum != stateNum || !obj.CanMove || obj.IsRemoved) break;
+
+                            if (!LoopDo(obj, direction, ref deltaLen, stateNum, speedIncrease))
+                            {
+                                stoppedDueToBlock = true;
+                                break;
+                            }
+                        }
+
+                        // 剩余微小位移（如果前面被阻塞则跳过）
+                        if (!stoppedDueToBlock && obj.StateNum == stateNum && obj.CanMove && !obj.IsRemoved)
+                        {
+                            int leftTime = moveTime - totalMs;
+                            if (leftTime > 0)
+                            {
+                                Thread.Sleep(leftTime);
+                                do
+                                {
+                                    flag = false;
+                                    double moveVecLength = (double)deltaLen + leftTime * (obj.MoveSpeed + speedIncrease) / GameData.NumOfPosGridPerCell;
+                                    res = new XY(direction, moveVecLength);
+                                    collisionObj = collisionChecker.CheckCollisionWhenMoving(obj, res);
+                                    if (collisionObj == null)
+                                    {
+                                        obj.MovingSetPos(res, stateNum);
+                                    }
+                                    else
+                                    {
+                                        switch (OnCollision(obj, collisionObj, res))
+                                        {
+                                            case AfterCollision.ContinueCheck:
+                                                flag = true; break;
+                                            case AfterCollision.Destroyed:
+                                                break;
+                                            case AfterCollision.MoveMax:
+                                                MoveMax(obj, res, stateNum, speedIncrease);
+                                                break;
+                                        }
+                                    }
+                                } while (flag);
+                            }
+                        }
+
+                        XY endPos = obj.FastPosition;
+                        if (startPos.x == endPos.x && startPos.y == endPos.y)
+                            LogicLogging.logger.LogWarning(
+                                LogUtility.GetObjectInfo(obj)
+                                + $" moved ZERO distance! start=({startPos.x},{startPos.y}) dir={direction:F3} blocked={stoppedDueToBlock}");
+
                         obj.IsMoving.SetROri(false);
                         EndMove(obj);
                         onComplete?.Invoke();
-                        return;
                     }
-
-                    // 帧步进移动循环（替代 FrameRateTaskExecutor，消除定时器开销）
-                    int stepMs = GameData.NumOfPosGridPerCell / GameData.NumOfStepPerSecond;
-                    int totalMs = 0;
-                    bool stoppedDueToBlock = false;
-
-                    while (totalMs < moveTime && gameTimer.IsGaming
-                           && obj.StateNum == stateNum && obj.CanMove && !obj.IsRemoved)
+                    catch (Exception ex)
                     {
-                        if (totalMs + stepMs > moveTime)
-                            stepMs = moveTime - totalMs;
-
-                        Thread.Sleep(stepMs);
-                        totalMs += stepMs;
-
-                        if (!gameTimer.IsGaming) break;
-                        if (obj.StateNum != stateNum || !obj.CanMove || obj.IsRemoved) break;
-
-                        if (!LoopDo(obj, direction, ref deltaLen, stateNum, speedIncrease))
-                        {
-                            stoppedDueToBlock = true;
-                            break;
-                        }
-                    }
-
-                    // 剩余微小位移（如果前面被阻塞则跳过）
-                    if (!stoppedDueToBlock && obj.StateNum == stateNum && obj.CanMove && !obj.IsRemoved)
-                    {
-                        int leftTime = moveTime - totalMs;
-                        if (leftTime > 0)
-                        {
-                            Thread.Sleep(leftTime);
-                            do
-                            {
-                                flag = false;
-                                double moveVecLength = (double)deltaLen + leftTime * (obj.MoveSpeed + speedIncrease) / GameData.NumOfPosGridPerCell;
-                                res = new XY(direction, moveVecLength);
-                                collisionObj = collisionChecker.CheckCollisionWhenMoving(obj, res);
-                                if (collisionObj == null)
-                                {
-                                    obj.MovingSetPos(res, stateNum);
-                                }
-                                else
-                                {
-                                    switch (OnCollision(obj, collisionObj, res))
-                                    {
-                                        case AfterCollision.ContinueCheck:
-                                            flag = true; break;
-                                        case AfterCollision.Destroyed:
-                                            break;
-                                        case AfterCollision.MoveMax:
-                                            MoveMax(obj, res, stateNum, speedIncrease);
-                                            break;
-                                    }
-                                }
-                            } while (flag);
-                        }
-                    }
-
-                    XY endPos = obj.FastPosition;
-                    if (startPos.x == endPos.x && startPos.y == endPos.y)
-                        LogicLogging.logger.LogWarning(
+                        LogicLogging.logger.LogError(
                             LogUtility.GetObjectInfo(obj)
-                            + $" moved ZERO distance! start=({startPos.x},{startPos.y}) dir={direction:F3} blocked={stoppedDueToBlock}");
-
-                    obj.IsMoving.SetROri(false);
-                    EndMove(obj);
-                    onComplete?.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    LogicLogging.logger.LogError(
-                        LogUtility.GetObjectInfo(obj)
-                        + $" MoveObj inner task crashed: {ex}");
-                    obj.IsMoving.SetROri(false);
-                    EndMove(obj);
-                    onComplete?.Invoke();
-                }
+                            + $" MoveObj inner task crashed: {ex}");
+                        obj.IsMoving.SetROri(false);
+                        EndMove(obj);
+                        onComplete?.Invoke();
+                    }
                 },
                 CancellationToken.None,
                 TaskCreationOptions.LongRunning,
