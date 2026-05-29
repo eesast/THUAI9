@@ -74,7 +74,7 @@ public class Factory : Immovable, IFactory
         : base(initPos, GameData.NumOfPosGridPerCell / 2, GameObjType.FACTORY)
     {
         HP = new(hpMax);
-        HP.SetMaxV(GameData.MaxHP);
+        // HP 上限由构造参数 hpMax + 科技加成决定，不在此处覆盖为全局 MaxHP
         Robust = new(robustMax);
         Robust.SetMaxV(GameData.MaxRobust);
         Storage = new(storageMax);
