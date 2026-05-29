@@ -101,7 +101,7 @@ namespace Gaming
                 return false;
             }
 
-            new Thread
+            Task.Run
             (
                 () =>
                 {
@@ -155,7 +155,7 @@ namespace Gaming
                         try { CheckAndHandleGameEnd(); } catch { }
                     }
                 }
-            ).Start();
+            );
             return true;
         }
 

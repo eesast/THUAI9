@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using GameClass.GameObj;
 using Preparation.Utility;
 
@@ -88,7 +89,7 @@ namespace Gaming
                     if (factory.Source.CompareExROri(cur - totalCost, cur) == cur) break;
                 }
 
-                new Thread(() =>
+                Task.Factory.StartNew(() =>
                 {
                     int produced = 0;
                     try
@@ -129,8 +130,10 @@ namespace Gaming
                         }
                         factory.CanProduce.SetROri(true);
                     }
-                })
-                { IsBackground = true }.Start();
+                },
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
 
                 return true;
             }
