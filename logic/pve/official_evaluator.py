@@ -52,7 +52,6 @@ def _smooth_score(score: float, scale: float = 1000.0) -> float:
     z = math.tanh(score / scale)
     return 1.0 / (1.0 + math.exp(-z))
 
-
 def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironment) -> BaseAgent:
     """
     Dynamically load contestant's Agent class from submission_dir/agent.py.
