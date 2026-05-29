@@ -148,7 +148,7 @@ public class Character : Movable, ICharacter
         Robust.SetMaxV(GameData.MaxRobust);
         ViewRange.SetMaxV(GameData.MaxViewRange);
         AttackSize.SetMaxV(GameData.MaxATKSize);
-        HP.SetMaxV(GameData.MaxHP);
+        // HP 上限由职业 MaxHp + 科技加成决定，不在此处覆盖为全局 MaxHP
         AttackPower.SetMaxV(GameData.MaxATKPower);
         Carry.SetMaxV(GameData.MaxLoad);
     }
