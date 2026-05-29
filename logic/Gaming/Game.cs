@@ -142,6 +142,59 @@ namespace Gaming
                                     fac.TickComputingPower(GameData.CheckInterval);
                                 }
 
+                                // 诊断：检测长时间空闲/卡在同一位置的角色
+                                int now = NowTime();
+                                var allChars = GetAllCharacters();
+                                var seenIds = new HashSet<long>();
+                                foreach (var ch in allChars)
+                                {
+                                    seenIds.Add(ch.ID);
+                                    if (ch.IsRemoved) continue;
+
+                                    // 状态检测：空闲过久 = AI 可能停止发指令
+                                    if (ch.State == CharacterState.NULL_CHARACTER_STATE)
+                                    {
+                                        if (!characterIdleSinceMs.TryGetValue(ch.ID, out int idleStart))
+                                            characterIdleSinceMs[ch.ID] = now;
+                                        else if (now - idleStart > CharacterIdleWarnThresholdMs)
+                                        {
+                                            LogicLogging.logger.LogWarning(
+                                                $"Character IDLE too long ({now - idleStart}ms): " +
+                                                $"team={ch.TeamId} player={ch.PlayerId} " +
+                                                $"pos=({ch.Position.x},{ch.Position.y}) " +
+                                                $"charType={ch.CharacterType}");
+                                            characterIdleSinceMs[ch.ID] = now;
+                                        }
+                                    }
+                                    else
+                                        characterIdleSinceMs.Remove(ch.ID);
+
+                                    // 位置检测：同一位置停留过久 = 可能被卡住
+                                    if (characterStuckAtPos.TryGetValue(ch.ID, out var stuck))
+                                    {
+                                        if (stuck.pos.x == ch.Position.x && stuck.pos.y == ch.Position.y)
+                                        {
+                                            if (now - stuck.sinceMs > CharacterStuckPosWarnThresholdMs)
+                                            {
+                                                LogicLogging.logger.LogWarning(
+                                                    $"Character STUCK at same position ({stuck.pos.x},{stuck.pos.y}) for {now - stuck.sinceMs}ms: " +
+                                                    $"team={ch.TeamId} player={ch.PlayerId} " +
+                                                    $"state={ch.State} charType={ch.CharacterType}");
+                                                characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                            }
+                                        }
+                                        else
+                                            characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                    }
+                                    else
+                                        characterStuckAtPos[ch.ID] = (ch.Position, now);
+                                }
+                                // 清理已移除角色的跟踪记录
+                                foreach (var id in characterIdleSinceMs.Keys.Where(id => !seenIds.Contains(id)).ToList())
+                                    characterIdleSinceMs.Remove(id);
+                                foreach (var id in characterStuckAtPos.Keys.Where(id => !seenIds.Contains(id)).ToList())
+                                    characterStuckAtPos.Remove(id);
+
                                 return !CheckAndHandleGameEnd();
                             },
                             timeInterval: GameData.CheckInterval,
@@ -981,6 +1034,13 @@ namespace Gaming
 
         private readonly object gameEndLock = new();
         private bool gameEnded = false;
+
+        // 诊断：跟踪角色连续空闲时长，用于发现 AI 停止发送指令的情况
+        private readonly Dictionary<long, int> characterIdleSinceMs = new();
+        private const int CharacterIdleWarnThresholdMs = 15_000;
+        // 诊断：跟踪角色在同一位置的停留时长
+        private readonly Dictionary<long, (XY pos, int sinceMs)> characterStuckAtPos = new();
+        private const int CharacterStuckPosWarnThresholdMs = 30_000;
 
         /// <summary>
         /// 自动检测并处理游戏结束条件：
