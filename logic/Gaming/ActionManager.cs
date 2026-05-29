@@ -370,8 +370,11 @@ namespace Gaming
                 Task.Factory.StartNew(() =>
                 {
                     Thread.Sleep(GameData.FactoryDisableTimeMs);
-                    gameobj.CanProduce.SetROri(true);
-                    gameobj.CanRecruit.SetROri(true);
+                    if (gameobj.HP > 0)
+                    {
+                        gameobj.CanProduce.SetROri(true);
+                        gameobj.CanRecruit.SetROri(true);
+                    }
                 },
                     CancellationToken.None,
                     TaskCreationOptions.LongRunning,

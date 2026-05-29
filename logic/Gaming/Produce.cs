@@ -89,6 +89,7 @@ namespace Gaming
                     if (factory.Source.CompareExROri(cur - totalCost, cur) == cur) break;
                 }
 
+                long genAtStart = factory.InterruptGeneration.Get();
                 Task.Factory.StartNew(() =>
                 {
                     int produced = 0;
@@ -97,6 +98,7 @@ namespace Gaming
                         for (int i = 0; i < amount; i++)
                         {
                             if (factory.IsRemoved.Get()) break;
+                            if (factory.InterruptGeneration.Get() != genAtStart) break;
 
                             Thread.Sleep(produceMsPerItem);
 
@@ -128,7 +130,8 @@ namespace Gaming
                         {
                             factory.AddSource((long)costPer * remaining);
                         }
-                        factory.CanProduce.SetROri(true);
+                        if (factory.InterruptGeneration.Get() == genAtStart)
+                            factory.CanProduce.SetROri(true);
                     }
                 },
                     CancellationToken.None,

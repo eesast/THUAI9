@@ -129,7 +129,7 @@ bool Communication::Occupy(int64_t playerID, int64_t teamID)
 
 bool Communication::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount)
 {
-    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+    if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
 
     protobuf::BoolRes loadResult;
@@ -141,7 +141,7 @@ bool Communication::Load(int64_t playerID, int64_t teamID, THUAI9::GoodsType goo
 
 bool Communication::Trade(int64_t playerID, int64_t teamID, THUAI9::GoodsType goodsType, int32_t amount, bool isBuy)
 {
-    if (!ConsumeActionQuota(mtxLimit, counter, counterMove, limit, moveLimit, true))
+    if (!ConsumeQuota(mtxLimit, counter, limit))
         return false;
 
     protobuf::BoolRes tradeResult;
