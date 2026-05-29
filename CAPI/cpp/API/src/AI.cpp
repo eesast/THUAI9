@@ -38,24 +38,41 @@ namespace
     using Cell = std::pair<int32_t, int32_t>;
 
     constexpr std::array<Cell, 4> kDirs = {{
-        {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+        {1, 0},
+        {-1, 0},
+        {0, 1},
+        {0, -1},
     }};
 
     // ========== Enums & Structs ==========
-    enum class CharRole { Harvester, Trader, Occupy, Attacker };
-    enum class Phase {
-        SeekResource, ToResource, ToFactory,
-        ToMarket, SeekCenter, ToCenter,
-        SeekEnemy, ToEnemy,
+    enum class CharRole
+    {
+        Harvester,
+        Trader,
+        Occupy,
+        Attacker
+    };
+    enum class Phase
+    {
+        SeekResource,
+        ToResource,
+        ToFactory,
+        ToMarket,
+        SeekCenter,
+        ToCenter,
+        SeekEnemy,
+        ToEnemy,
     };
 
-    struct PathTarget {
+    struct PathTarget
+    {
         Cell object{-1, -1};
         Cell approach{-1, -1};
         std::vector<Cell> path;
     };
 
-    struct CharState {
+    struct CharState
+    {
         CharRole role = CharRole::Harvester;
         Phase phase = Phase::SeekResource;
         PathTarget target{};
@@ -70,11 +87,12 @@ namespace
         bool roleAssigned = false;
         int32_t lastFactoryEmptyFrame = -1000;
         int32_t harvestRetries = 0;
-        int32_t taskRetries = 0;                // 当前任务 API 调用连续失败次数
-        int32_t taskStartFrame = 0;             // 当前任务开始的帧号
+        int32_t taskRetries = 0;     // 当前任务 API 调用连续失败次数
+        int32_t taskStartFrame = 0;  // 当前任务开始的帧号
     };
 
-    struct TeamState {
+    struct TeamState
+    {
         bool builderBuilt = false;
         bool attackMode = false;
         int32_t lastProduceFrame = -1000;
@@ -90,71 +108,126 @@ namespace
     std::map<int64_t, TeamState> g_teamStates;
 
     // ========== Utility ==========
-    [[nodiscard]] int32_t CellToGrid(int32_t cell) noexcept { return cell * kGridPerCell + kCellCenter; }
-    [[nodiscard]] int32_t GridToCell(int32_t grid) noexcept { return grid / kGridPerCell; }
-    [[nodiscard]] std::string CellText(Cell c) { return "(" + std::to_string(c.first) + "," + std::to_string(c.second) + ")"; }
-    [[nodiscard]] bool InBounds(const std::vector<std::vector<THUAI9::PlaceType>>& map, int32_t x, int32_t y) {
+    [[nodiscard]] int32_t CellToGrid(int32_t cell) noexcept
+    {
+        return cell * kGridPerCell + kCellCenter;
+    }
+    [[nodiscard]] int32_t GridToCell(int32_t grid) noexcept
+    {
+        return grid / kGridPerCell;
+    }
+    [[nodiscard]] std::string CellText(Cell c)
+    {
+        return "(" + std::to_string(c.first) + "," + std::to_string(c.second) + ")";
+    }
+    [[nodiscard]] bool InBounds(const std::vector<std::vector<THUAI9::PlaceType>>& map, int32_t x, int32_t y)
+    {
         return !map.empty() && !map.front().empty() && x >= 0 && y >= 0 &&
                x < static_cast<int32_t>(map.size()) && y < static_cast<int32_t>(map.front().size());
     }
-    [[nodiscard]] bool Walkable(THUAI9::PlaceType pt) { return pt == THUAI9::PlaceType::Space || pt == THUAI9::PlaceType::Bush; }
-    [[nodiscard]] bool InInteractRange(Cell a, Cell b) { return std::abs(a.first - b.first) <= 1 && std::abs(a.second - b.second) <= 1; }
-    [[nodiscard]] bool NearCellCenter(const THUAI9::Character& self) {
+    [[nodiscard]] bool Walkable(THUAI9::PlaceType pt)
+    {
+        return pt == THUAI9::PlaceType::Space || pt == THUAI9::PlaceType::Bush;
+    }
+    [[nodiscard]] bool InInteractRange(Cell a, Cell b)
+    {
+        return std::abs(a.first - b.first) <= 1 && std::abs(a.second - b.second) <= 1;
+    }
+    [[nodiscard]] bool NearCellCenter(const THUAI9::Character& self)
+    {
         const Cell cur{GridToCell(self.x), GridToCell(self.y)};
         return std::abs(self.x - CellToGrid(cur.first)) <= kCenterTolerance &&
                std::abs(self.y - CellToGrid(cur.second)) <= kCenterTolerance;
     }
-    [[nodiscard]] int32_t GetGoodsValue(THUAI9::GoodsType gt) {
-        switch (gt) {
-        case THUAI9::GoodsType::Semiconductor: return 80;
-        case THUAI9::GoodsType::Medicine:      return 50;
-        case THUAI9::GoodsType::Toys:          return 8;
-        case THUAI9::GoodsType::Clothes:       return 32;
-        case THUAI9::GoodsType::Food:          return 6;
-        default:                                return 0;
+    [[nodiscard]] int32_t GetGoodsValue(THUAI9::GoodsType gt)
+    {
+        switch (gt)
+        {
+            case THUAI9::GoodsType::Semiconductor:
+                return 80;
+            case THUAI9::GoodsType::Medicine:
+                return 50;
+            case THUAI9::GoodsType::Toys:
+                return 8;
+            case THUAI9::GoodsType::Clothes:
+                return 32;
+            case THUAI9::GoodsType::Food:
+                return 6;
+            default:
+                return 0;
         }
     }
 
     // ========== Movement ==========
-    bool MoveToCellCenter(ICharacterAPI& api, const THUAI9::Character& self) {
+    bool MoveToCellCenter(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const Cell cur{GridToCell(self.x), GridToCell(self.y)};
         const int32_t cx = CellToGrid(cur.first), cy = CellToGrid(cur.second);
-        if (std::abs(self.x - cx) <= kCenterTolerance && std::abs(self.y - cy) <= kCenterTolerance) return true;
+        if (std::abs(self.x - cx) <= kCenterTolerance && std::abs(self.y - cy) <= kCenterTolerance)
+            return true;
         const int32_t dx = cx - self.x, dy = cy - self.y;
         const int64_t ms = std::max<int64_t>(1, (std::max(std::abs(dx), std::abs(dy)) + 4) / 5);
-        if (std::abs(dx) >= std::abs(dy)) {
-            if (dx > 0) (void)api.MoveDown(ms).get(); else (void)api.MoveUp(ms).get();
-        } else {
-            if (dy > 0) (void)api.MoveRight(ms).get(); else (void)api.MoveLeft(ms).get();
+        if (std::abs(dx) >= std::abs(dy))
+        {
+            if (dx > 0)
+                (void)api.MoveDown(ms).get();
+            else
+                (void)api.MoveUp(ms).get();
+        }
+        else
+        {
+            if (dy > 0)
+                (void)api.MoveRight(ms).get();
+            else
+                (void)api.MoveLeft(ms).get();
         }
         return false;
     }
 
     // ========== BFS ==========
-    [[nodiscard]] std::vector<Cell> Bfs(const std::vector<std::vector<THUAI9::PlaceType>>& map, Cell start, Cell target) {
-        if (!InBounds(map, start.first, start.second) || !InBounds(map, target.first, target.second)) return {};
-        if (!Walkable(map[start.first][start.second])) return {};
-        if (start == target) return {start};
+    [[nodiscard]] std::vector<Cell> Bfs(const std::vector<std::vector<THUAI9::PlaceType>>& map, Cell start, Cell target)
+    {
+        if (!InBounds(map, start.first, start.second) || !InBounds(map, target.first, target.second))
+            return {};
+        if (!Walkable(map[start.first][start.second]))
+            return {};
+        if (start == target)
+            return {start};
         const int32_t cols = static_cast<int32_t>(map.size()), rows = static_cast<int32_t>(map.front().size());
         std::vector<std::vector<char>> vis(cols, std::vector<char>(rows, 0));
         std::vector<std::vector<Cell>> pre(cols, std::vector<Cell>(rows, Cell{-1, -1}));
         std::queue<Cell> q;
-        vis[start.first][start.second] = 1; q.push(start);
+        vis[start.first][start.second] = 1;
+        q.push(start);
         bool found = false;
-        while (!q.empty()) {
-            auto [x, y] = q.front(); q.pop();
-            if (x == target.first && y == target.second) { found = true; break; }
-            for (const auto& [dx, dy] : kDirs) {
+        while (!q.empty())
+        {
+            auto [x, y] = q.front();
+            q.pop();
+            if (x == target.first && y == target.second)
+            {
+                found = true;
+                break;
+            }
+            for (const auto& [dx, dy] : kDirs)
+            {
                 int32_t nx = x + dx, ny = y + dy;
-                if (!InBounds(map, nx, ny)) continue;
-                if (!Walkable(map[nx][ny]) && !(nx == target.first && ny == target.second)) continue;
-                if (vis[nx][ny]) continue;
-                vis[nx][ny] = 1; pre[nx][ny] = {x, y}; q.push({nx, ny});
+                if (!InBounds(map, nx, ny))
+                    continue;
+                if (!Walkable(map[nx][ny]) && !(nx == target.first && ny == target.second))
+                    continue;
+                if (vis[nx][ny])
+                    continue;
+                vis[nx][ny] = 1;
+                pre[nx][ny] = {x, y};
+                q.push({nx, ny});
             }
         }
-        if (!found) return {};
+        if (!found)
+            return {};
         std::vector<Cell> path;
-        for (Cell cur = target; cur != start; cur = pre[cur.first][cur.second]) path.push_back(cur);
+        for (Cell cur = target; cur != start; cur = pre[cur.first][cur.second])
+            path.push_back(cur);
         path.push_back(start);
         std::reverse(path.begin(), path.end());
         return path;
@@ -162,46 +235,63 @@ namespace
 
     // ========== Finders ==========
     template<class TAPI>
-    [[nodiscard]] std::optional<Cell> FindTeamFactoryCell(TAPI& api, int64_t teamID) {
+    [[nodiscard]] std::optional<Cell> FindTeamFactoryCell(TAPI& api, int64_t teamID)
+    {
         const auto map = api.GetFullMap();
-        if (map.empty() || map.front().empty()) return std::nullopt;
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
         for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
             for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
-                if (auto f = api.GetFactoryState(x, y); f.has_value() && f->teamID == teamID) return Cell{x, y};
+                if (auto f = api.GetFactoryState(x, y); f.has_value() && f->teamID == teamID)
+                    return Cell{x, y};
         return std::nullopt;
     }
 
-    [[nodiscard]] std::optional<PathTarget> FindNearestResource(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindNearestResource(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
-        if (map.empty() || map.front().empty()) return std::nullopt;
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
 
         // 收集队友正在采集的资源位置，避免多人抢同一资源
         std::vector<Cell> teammateTargets;
-        for (const auto& ch : api.GetCharacters()) {
+        for (const auto& ch : api.GetCharacters())
+        {
             if (ch && ch->playerID != self.playerID &&
-                ch->characterActiveState == THUAI9::CharacterState::Harvesting) {
+                ch->characterActiveState == THUAI9::CharacterState::Harvesting)
+            {
                 teammateTargets.push_back({GridToCell(ch->x), GridToCell(ch->y)});
             }
         }
-        auto isTeammateHarvesting = [&](int32_t rx, int32_t ry) {
+        auto isTeammateHarvesting = [&](int32_t rx, int32_t ry)
+        {
             for (const auto& t : teammateTargets)
-                if (std::abs(t.first - rx) <= 1 && std::abs(t.second - ry) <= 1) return true;
+                if (std::abs(t.first - rx) <= 1 && std::abs(t.second - ry) <= 1)
+                    return true;
             return false;
         };
 
         std::optional<PathTarget> best;
-        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x) {
-            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y) {
-                if (map[x][y] != THUAI9::PlaceType::Resource) continue;
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::Resource)
+                    continue;
                 auto res = api.GetResourceState(x, y);
-                if (!res.has_value() || res->state == THUAI9::ResourceState::Harvested) continue;
-                if (isTeammateHarvesting(x, y)) continue;  // 队友已在采集
-                for (const auto& [dx, dy] : kDirs) {
+                if (!res.has_value() || res->state == THUAI9::ResourceState::Harvested)
+                    continue;
+                if (isTeammateHarvesting(x, y))
+                    continue;  // 队友已在采集
+                for (const auto& [dx, dy] : kDirs)
+                {
                     int32_t nx = x + dx, ny = y + dy;
-                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                        continue;
                     auto path = Bfs(map, start, {nx, ny});
-                    if (path.empty()) continue;
+                    if (path.empty())
+                        continue;
                     if (!best.has_value() || path.size() < best->path.size())
                         best = PathTarget{{x, y}, {nx, ny}, std::move(path)};
                 }
@@ -210,36 +300,49 @@ namespace
         return best;
     }
 
-    [[nodiscard]] std::optional<PathTarget> FindHomePath(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindHomePath(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
         auto fac = FindTeamFactoryCell(api, self.teamID);
-        if (!fac.has_value()) return std::nullopt;
+        if (!fac.has_value())
+            return std::nullopt;
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
         std::optional<PathTarget> best;
-        for (const auto& [dx, dy] : kDirs) {
+        for (const auto& [dx, dy] : kDirs)
+        {
             int32_t nx = fac->first + dx, ny = fac->second + dy;
-            if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+            if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                continue;
             auto path = Bfs(map, start, {nx, ny});
-            if (path.empty()) continue;
+            if (path.empty())
+                continue;
             if (!best.has_value() || path.size() < best->path.size())
                 best = PathTarget{{fac->first, fac->second}, {nx, ny}, std::move(path)};
         }
         return best;
     }
 
-    [[nodiscard]] std::optional<PathTarget> FindNearestMarket(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindNearestMarket(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
-        if (map.empty() || map.front().empty()) return std::nullopt;
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
         std::optional<PathTarget> best;
-        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x) {
-            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y) {
-                if (map[x][y] != THUAI9::PlaceType::Market) continue;
-                for (const auto& [dx, dy] : kDirs) {
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::Market)
+                    continue;
+                for (const auto& [dx, dy] : kDirs)
+                {
                     int32_t nx = x + dx, ny = y + dy;
-                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                        continue;
                     auto path = Bfs(map, start, {nx, ny});
-                    if (path.empty()) continue;
+                    if (path.empty())
+                        continue;
                     if (!best.has_value() || path.size() < best->path.size())
                         best = PathTarget{{x, y}, {nx, ny}, std::move(path)};
                 }
@@ -248,38 +351,52 @@ namespace
         return best;
     }
 
-    [[nodiscard]] std::optional<PathTarget> FindNearestUnoccupiedCenter(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindNearestUnoccupiedCenter(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
-        if (map.empty() || map.front().empty()) return std::nullopt;
+        if (map.empty() || map.front().empty())
+            return std::nullopt;
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
 
         // 收集队友正在占领的中心位置，避免多人抢同一个中心
         std::vector<Cell> teammateTargets;
-        for (const auto& ch : api.GetCharacters()) {
+        for (const auto& ch : api.GetCharacters())
+        {
             if (ch && ch->playerID != self.playerID &&
-                ch->characterActiveState == THUAI9::CharacterState::Ocuppying) {
+                ch->characterActiveState == THUAI9::CharacterState::Ocuppying)
+            {
                 teammateTargets.push_back({GridToCell(ch->x), GridToCell(ch->y)});
             }
         }
 
-        auto isTeammateTargeting = [&](int32_t cx, int32_t cy) {
+        auto isTeammateTargeting = [&](int32_t cx, int32_t cy)
+        {
             for (const auto& t : teammateTargets)
-                if (std::abs(t.first - cx) <= 1 && std::abs(t.second - cy) <= 1) return true;
+                if (std::abs(t.first - cx) <= 1 && std::abs(t.second - cy) <= 1)
+                    return true;
             return false;
         };
 
         std::optional<PathTarget> best;
-        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x) {
-            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y) {
-                if (map[x][y] != THUAI9::PlaceType::ComputeCenter) continue;
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::ComputeCenter)
+                    continue;
                 auto center = api.GetComputeCenterState(x, y);
-                if (!center.has_value() || center->ownerTeamID == self.teamID) continue;
-                if (isTeammateTargeting(x, y)) continue;  // 队友已经在占领
-                for (const auto& [dx, dy] : kDirs) {
+                if (!center.has_value() || center->ownerTeamID == self.teamID)
+                    continue;
+                if (isTeammateTargeting(x, y))
+                    continue;  // 队友已经在占领
+                for (const auto& [dx, dy] : kDirs)
+                {
                     int32_t nx = x + dx, ny = y + dy;
-                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                        continue;
                     auto path = Bfs(map, start, {nx, ny});
-                    if (path.empty()) continue;
+                    if (path.empty())
+                        continue;
                     if (!best.has_value() || path.size() < best->path.size())
                         best = PathTarget{{x, y}, {nx, ny}, std::move(path)};
                 }
@@ -288,16 +405,20 @@ namespace
         return best;
     }
 
-    [[nodiscard]] std::optional<PathTarget> FindNearestEnemy(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindNearestEnemy(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
         auto enemies = api.GetEnemyCharacters();
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
         std::optional<PathTarget> best;
-        for (const auto& e : enemies) {
-            if (!e || e->characterActiveState == THUAI9::CharacterState::Deceased) continue;
+        for (const auto& e : enemies)
+        {
+            if (!e || e->characterActiveState == THUAI9::CharacterState::Deceased)
+                continue;
             Cell ec{GridToCell(e->x), GridToCell(e->y)};
             auto path = Bfs(map, start, ec);
-            if (path.empty()) continue;
+            if (path.empty())
+                continue;
             if (!best.has_value() || path.size() < best->path.size())
                 best = PathTarget{ec, ec, std::move(path)};
         }
@@ -305,114 +426,183 @@ namespace
     }
 
     // ========== Path Following ==========
-    [[nodiscard]] bool MoveAlongPath(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (s.target.path.empty() || s.pathIndex >= s.target.path.size()) return true;
+    [[nodiscard]] bool MoveAlongPath(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.target.path.empty() || s.pathIndex >= s.target.path.size())
+            return true;
         if (self.characterActiveState == THUAI9::CharacterState::Moving ||
             self.characterActiveState == THUAI9::CharacterState::KnockedBack ||
             self.characterActiveState == THUAI9::CharacterState::Trading ||
             self.characterActiveState == THUAI9::CharacterState::Attacking ||
             self.characterActiveState == THUAI9::CharacterState::Harvesting ||
-            self.characterActiveState == THUAI9::CharacterState::Ocuppying) return false;
+            self.characterActiveState == THUAI9::CharacterState::Ocuppying)
+            return false;
 
-        if (!NearCellCenter(self)) {
+        if (!NearCellCenter(self))
+        {
             bool atCenter = MoveToCellCenter(api, self);
-            if (!atCenter) s.lastActionFrame = api.GetFrameCount();
+            if (!atCenter)
+                s.lastActionFrame = api.GetFrameCount();
             return atCenter;
         }
 
         const Cell cur{GridToCell(self.x), GridToCell(self.y)};
-        while (s.pathIndex < s.target.path.size() && s.target.path[s.pathIndex] == cur) ++s.pathIndex;
-        if (s.pathIndex >= s.target.path.size()) return true;
+        while (s.pathIndex < s.target.path.size() && s.target.path[s.pathIndex] == cur)
+            ++s.pathIndex;
+        if (s.pathIndex >= s.target.path.size())
+            return true;
 
         auto [dx, dy] = Cell{s.target.path[s.pathIndex].first - cur.first, s.target.path[s.pathIndex].second - cur.second};
-        if (std::abs(dx) + std::abs(dy) != 1) { s.phase = Phase::SeekResource; s.target = {}; return false; }
+        if (std::abs(dx) + std::abs(dy) != 1)
+        {
+            s.phase = Phase::SeekResource;
+            s.target = {};
+            return false;
+        }
 
         size_t runLen = 1;
-        while (s.pathIndex + runLen < s.target.path.size()) {
+        while (s.pathIndex + runLen < s.target.path.size())
+        {
             auto [nx, ny] = s.target.path[s.pathIndex + runLen];
             auto [px, py] = s.target.path[s.pathIndex + runLen - 1];
-            if (nx - px != dx || ny - py != dy) break;
+            if (nx - px != dx || ny - py != dy)
+                break;
             ++runLen;
         }
         int64_t ms = static_cast<int64_t>(runLen) * kMoveTimeMs;
-        if (dx == 1) (void)api.MoveDown(ms).get();
-        else if (dx == -1) (void)api.MoveUp(ms).get();
-        else if (dy == 1) (void)api.MoveRight(ms).get();
-        else (void)api.MoveLeft(ms).get();
+        if (dx == 1)
+            (void)api.MoveDown(ms).get();
+        else if (dx == -1)
+            (void)api.MoveUp(ms).get();
+        else if (dy == 1)
+            (void)api.MoveRight(ms).get();
+        else
+            (void)api.MoveLeft(ms).get();
         s.pathIndex += runLen;
         s.lastActionFrame = api.GetFrameCount();
         return false;
     }
 
     // ========== Stuck Detection ==========
-    void CheckStuck(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
+    void CheckStuck(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
         // 长时间动作或在攻击目标旁边时不检测卡住
         if (self.characterActiveState == THUAI9::CharacterState::Ocuppying ||
-            self.characterActiveState == THUAI9::CharacterState::Harvesting) {
-            s.stuckFrames = 0; s.lastX = self.x; s.lastY = self.y;
+            self.characterActiveState == THUAI9::CharacterState::Harvesting)
+        {
+            s.stuckFrames = 0;
+            s.lastX = self.x;
+            s.lastY = self.y;
             return;
         }
         // 攻击模式下在目标旁边（ToEnemy 且处于交互范围）→ 不检测
-        if (s.role == CharRole::Attacker && s.phase == Phase::ToEnemy) {
+        if (s.role == CharRole::Attacker && s.phase == Phase::ToEnemy)
+        {
             const Cell sc{GridToCell(self.x), GridToCell(self.y)};
-            if (InInteractRange(sc, s.target.object)) {
-                s.stuckFrames = 0; s.lastX = self.x; s.lastY = self.y;
+            if (InInteractRange(sc, s.target.object))
+            {
+                s.stuckFrames = 0;
+                s.lastX = self.x;
+                s.lastY = self.y;
                 return;
             }
         }
 
-        if (api.GetFrameCount() % 6 == 0) {
+        if (api.GetFrameCount() % 6 == 0)
+        {
             s.posHistoryX[s.posHistoryIdx] = self.x;
             s.posHistoryY[s.posHistoryIdx] = self.y;
             s.posHistoryIdx = (s.posHistoryIdx + 1) % CharState::kOscillationHistory;
         }
-        if (s.lastX == self.x && s.lastY == self.y) s.stuckFrames++;
-        else { s.stuckFrames = 0; s.lastX = self.x; s.lastY = self.y; }
+        if (s.lastX == self.x && s.lastY == self.y)
+            s.stuckFrames++;
+        else
+        {
+            s.stuckFrames = 0;
+            s.lastX = self.x;
+            s.lastY = self.y;
+        }
 
         bool reset = false;
-        if (s.stuckFrames > 50) { api.Print("STUCK motionless frames=" + std::to_string(s.stuckFrames)); reset = true; }
-        else if (s.stuckFrames > 20 && s.stuckFrames % 10 == 0) {
+        if (s.stuckFrames > 50)
+        {
+            api.Print("STUCK motionless frames=" + std::to_string(s.stuckFrames));
+            reset = true;
+        }
+        else if (s.stuckFrames > 20 && s.stuckFrames % 10 == 0)
+        {
             api.Print("stuck? frames=" + std::to_string(s.stuckFrames) + " pos=(" + std::to_string(self.x) + "," + std::to_string(self.y) + ")");
         }
-        if (!reset) {
+        if (!reset)
+        {
             int32_t uniq = 0;
-            for (int32_t i = 0; i < CharState::kOscillationHistory; i++) {
-                if (s.posHistoryX[i] == 0 && s.posHistoryY[i] == 0) continue;
+            for (int32_t i = 0; i < CharState::kOscillationHistory; i++)
+            {
+                if (s.posHistoryX[i] == 0 && s.posHistoryY[i] == 0)
+                    continue;
                 bool isNew = true;
                 for (int32_t j = 0; j < i; j++)
-                    if (s.posHistoryX[j] == s.posHistoryX[i] && s.posHistoryY[j] == s.posHistoryY[i]) { isNew = false; break; }
-                if (isNew) uniq++;
+                    if (s.posHistoryX[j] == s.posHistoryX[i] && s.posHistoryY[j] == s.posHistoryY[i])
+                    {
+                        isNew = false;
+                        break;
+                    }
+                if (isNew)
+                    uniq++;
             }
             bool allFilled = true;
             for (int32_t i = 0; i < CharState::kOscillationHistory; i++)
-                if (s.posHistoryX[i] == 0 && s.posHistoryY[i] == 0) { allFilled = false; break; }
-            if (uniq >= 2 && uniq <= 5 && allFilled) { api.Print("STUCK oscillating"); reset = true; }
+                if (s.posHistoryX[i] == 0 && s.posHistoryY[i] == 0)
+                {
+                    allFilled = false;
+                    break;
+                }
+            if (uniq >= 2 && uniq <= 5 && allFilled)
+            {
+                api.Print("STUCK oscillating");
+                reset = true;
+            }
         }
-        if (reset) {
+        if (reset)
+        {
             (void)api.EndAllAction().get();
-            s.phase = Phase::SeekResource; s.target = {}; s.pathIndex = 1; s.stuckFrames = 0;
-            for (int32_t i = 0; i < CharState::kOscillationHistory; i++) s.posHistoryX[i] = s.posHistoryY[i] = 0;
+            s.phase = Phase::SeekResource;
+            s.target = {};
+            s.pathIndex = 1;
+            s.stuckFrames = 0;
+            for (int32_t i = 0; i < CharState::kOscillationHistory; i++)
+                s.posHistoryX[i] = s.posHistoryY[i] = 0;
             s.posHistoryIdx = 0;
             s.lastFactoryEmptyFrame = -1000;
             s.taskRetries = 0;
             // 先随机逃逸一步脱离碰撞，再设目标让下帧 FindSomethingToDo 接管
             api.Print("STUCK: escape first");
             int32_t r = rand() % 4;
-            if (r == 0) (void)api.MoveDown(300).get();
-            else if (r == 1) (void)api.MoveUp(300).get();
-            else if (r == 2) (void)api.MoveRight(300).get();
-            else (void)api.MoveLeft(300).get();
+            if (r == 0)
+                (void)api.MoveDown(300).get();
+            else if (r == 1)
+                (void)api.MoveUp(300).get();
+            else if (r == 2)
+                (void)api.MoveRight(300).get();
+            else
+                (void)api.MoveLeft(300).get();
             s.lastActionFrame = api.GetFrameCount();
             // 根据角色设定逃逸后的目标：
             // 攻击者 → 重新索敌；非攻击者 → 回工厂或在原地让 FindSomethingToDo 接管
-            if (s.role == CharRole::Attacker) {
+            if (s.role == CharRole::Attacker)
+            {
                 s.phase = Phase::SeekEnemy;
-            } else {
+            }
+            else
+            {
                 auto self = api.GetSelfInfo();
-                if (self) {
+                if (self)
+                {
                     auto home = FindHomePath(api, *self);
-                    if (home.has_value()) {
-                        s.target = std::move(*home); s.pathIndex = 1;
+                    if (home.has_value())
+                    {
+                        s.target = std::move(*home);
+                        s.pathIndex = 1;
                         s.phase = Phase::ToFactory;
                     }
                 }
@@ -421,39 +611,63 @@ namespace
     }
 
     // ========== Map Diagnostics ==========
-    void DumpMapInfo(ICharacterAPI& api) {
+    void DumpMapInfo(ICharacterAPI& api)
+    {
         static bool done = false;
-        if (done) return; done = true;
+        if (done)
+            return;
+        done = true;
         const auto map = api.GetFullMap();
-        if (map.empty()) { api.Print("MAP empty!"); return; }
+        if (map.empty())
+        {
+            api.Print("MAP empty!");
+            return;
+        }
         int32_t rows = static_cast<int32_t>(map.size()), cols = static_cast<int32_t>(map.front().size());
         int32_t nr = 0, nh = 0, nc = 0, nm = 0;
         for (int32_t x = 0; x < rows; ++x)
             for (int32_t y = 0; y < cols; ++y)
-                switch (map[x][y]) {
-                case THUAI9::PlaceType::Resource: nr++; if (auto r = api.GetResourceState(x, y); r.has_value() && r->state == THUAI9::ResourceState::Harvested) nh++; break;
-                case THUAI9::PlaceType::ComputeCenter: nc++; break;
-                case THUAI9::PlaceType::Market: nm++; break;
-                default: break;
+                switch (map[x][y])
+                {
+                    case THUAI9::PlaceType::Resource:
+                        nr++;
+                        if (auto r = api.GetResourceState(x, y); r.has_value() && r->state == THUAI9::ResourceState::Harvested)
+                            nh++;
+                        break;
+                    case THUAI9::PlaceType::ComputeCenter:
+                        nc++;
+                        break;
+                    case THUAI9::PlaceType::Market:
+                        nm++;
+                        break;
+                    default:
+                        break;
                 }
         api.Print("MAP " + std::to_string(rows) + "x" + std::to_string(cols) + " R=" + std::to_string(nr) + "(harv=" + std::to_string(nh) + ") C=" + std::to_string(nc) + " M=" + std::to_string(nm));
     }
 
     // ========== Patrol ==========
-    void MoveToRandomCell(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (self.characterActiveState == THUAI9::CharacterState::Moving) return;
+    void MoveToRandomCell(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (self.characterActiveState == THUAI9::CharacterState::Moving)
+            return;
         const auto map = api.GetFullMap();
-        if (map.empty()) return;
+        if (map.empty())
+            return;
         const Cell cur{GridToCell(self.x), GridToCell(self.y)};
 
         // 优先走向敌方工厂的大致方向（不需要完整 BFS 路径）
         Cell targetDir{0, 0};
         bool hasDir = false;
-        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x) {
-            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y) {
-                if (map[x][y] == THUAI9::PlaceType::Factory) {
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] == THUAI9::PlaceType::Factory)
+                {
                     auto f = api.GetFactoryState(x, y);
-                    if (f.has_value() && f->teamID != self.teamID && f->hp > 0) {
+                    if (f.has_value() && f->teamID != self.teamID && f->hp > 0)
+                    {
                         targetDir.first += (x - cur.first);
                         targetDir.second += (y - cur.second);
                         hasDir = true;
@@ -463,17 +677,23 @@ namespace
         }
         // 也考虑己方工厂方向（回到安全区）
         auto homeFac = FindTeamFactoryCell(api, self.teamID);
-        if (homeFac.has_value()) {
+        if (homeFac.has_value())
+        {
             targetDir.first += (homeFac->first - cur.first) / 2;  // 权重减半
             targetDir.second += (homeFac->second - cur.second) / 2;
             hasDir = true;
         }
 
         // 如果没找到方向，随机选一个
-        if (!hasDir) {
-            for (const auto& [dx, dy] : kDirs) {
-                if (InBounds(map, cur.first + dx, cur.second + dy) && Walkable(map[cur.first + dx][cur.second + dy])) {
-                    targetDir.first = dx; targetDir.second = dy; break;
+        if (!hasDir)
+        {
+            for (const auto& [dx, dy] : kDirs)
+            {
+                if (InBounds(map, cur.first + dx, cur.second + dy) && Walkable(map[cur.first + dx][cur.second + dy]))
+                {
+                    targetDir.first = dx;
+                    targetDir.second = dy;
+                    break;
                 }
             }
         }
@@ -481,84 +701,139 @@ namespace
         // 选最接近目标方向的 walkable 邻格
         Cell best = cur;
         int32_t bestScore = -9999;
-        for (const auto& [dx, dy] : kDirs) {
+        for (const auto& [dx, dy] : kDirs)
+        {
             int32_t nx = cur.first + dx, ny = cur.second + dy;
-            if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+            if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                continue;
             int32_t score = targetDir.first * dx + targetDir.second * dy + (rand() % 3);
-            if (score > bestScore) { bestScore = score; best = {nx, ny}; }
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = {nx, ny};
+            }
         }
 
-        if (best != cur) {
+        if (best != cur)
+        {
             int64_t ms = 200;
-            if (best.first > cur.first) (void)api.MoveDown(ms).get();
-            else if (best.first < cur.first) (void)api.MoveUp(ms).get();
-            else if (best.second > cur.second) (void)api.MoveRight(ms).get();
-            else (void)api.MoveLeft(ms).get();
+            if (best.first > cur.first)
+                (void)api.MoveDown(ms).get();
+            else if (best.first < cur.first)
+                (void)api.MoveUp(ms).get();
+            else if (best.second > cur.second)
+                (void)api.MoveRight(ms).get();
+            else
+                (void)api.MoveLeft(ms).get();
             s.lastActionFrame = api.GetFrameCount();
         }
     }
 
-    void NoActionHeartbeat(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
+    void NoActionHeartbeat(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
         int32_t frame = api.GetFrameCount();
         int32_t idleFrames = frame - s.lastActionFrame;
-        if (idleFrames > 40) {
-            api.Print("HEARTBEAT idle=" + std::to_string(idleFrames) +
-                      " state=" + std::to_string(static_cast<int>(self.characterActiveState)) +
-                      " pos=(" + std::to_string(self.x) + "," + std::to_string(self.y) + ")");
+        if (idleFrames > 40)
+        {
+            api.Print("HEARTBEAT idle=" + std::to_string(idleFrames) + " state=" + std::to_string(static_cast<int>(self.characterActiveState)) + " pos=(" + std::to_string(self.x) + "," + std::to_string(self.y) + ")");
             MoveToRandomCell(api, self, s);
             s.lastActionFrame = frame;
         }
     }
 
     // ========== Universal Task Selector ==========
-    bool TrySellAtMarket(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (s.phase != Phase::ToMarket) return false;
+    bool TrySellAtMarket(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.phase != Phase::ToMarket)
+            return false;
         const Cell sc{GridToCell(self.x), GridToCell(self.y)};
-        if (InInteractRange(sc, s.target.object)) {
+        if (InInteractRange(sc, s.target.object))
+        {
             bool anySold = false;
             for (const auto& [gt, count] : self.goodsLoad)
-                if (count > 0 && api.Sell(gt, count).get()) anySold = true;
+                if (count > 0 && api.Sell(gt, count).get())
+                    anySold = true;
             s.taskRetries = 0;
-            s.phase = Phase::SeekResource; s.target = {}; return true;
+            s.phase = Phase::SeekResource;
+            s.target = {};
+            return true;
         }
-        if (!MoveAlongPath(api, self, s)) return true;
+        if (!MoveAlongPath(api, self, s))
+            return true;
         auto m = FindNearestMarket(api, self);
-        if (m.has_value()) { s.target = std::move(*m); s.pathIndex = 1; return true; }
-        s.phase = Phase::SeekResource; s.target = {}; return false;
+        if (m.has_value())
+        {
+            s.target = std::move(*m);
+            s.pathIndex = 1;
+            return true;
+        }
+        s.phase = Phase::SeekResource;
+        s.target = {};
+        return false;
     }
 
-    bool TryTradeFromFactory(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
+    bool TryTradeFromFactory(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
         auto fac = FindTeamFactoryCell(api, self.teamID);
-        if (!fac.has_value()) return false;
+        if (!fac.has_value())
+            return false;
         const Cell sc{GridToCell(self.x), GridToCell(self.y)};
         auto factory = api.GetFactoryState(fac->first, fac->second);
-        if (!factory.has_value()) return false;
+        if (!factory.has_value())
+            return false;
 
         bool atFactory = InInteractRange(sc, *fac);
 
         // 在工厂旁 → 装货或确认无货
-        if (atFactory) {
+        if (atFactory)
+        {
             // 身上有货 → 去市场
-            if (self.currentLoad > 0) {
+            if (self.currentLoad > 0)
+            {
                 auto m = FindNearestMarket(api, self);
-                if (m.has_value()) { s.target = std::move(*m); s.pathIndex = 1; s.phase = Phase::ToMarket; return true; }
+                if (m.has_value())
+                {
+                    s.target = std::move(*m);
+                    s.pathIndex = 1;
+                    s.phase = Phase::ToMarket;
+                    return true;
+                }
             }
             // 尝试装货
             THUAI9::GoodsType best = THUAI9::GoodsType::NullGoodsType;
             int32_t bestVal = 0, bestCnt = 0;
             for (const auto& [gt, cnt] : factory->productInventory)
-                if (cnt > 0) { int32_t v = GetGoodsValue(gt); if (v > bestVal) { bestVal = v; best = gt; bestCnt = cnt; } }
-            if (best != THUAI9::GoodsType::NullGoodsType) {
+                if (cnt > 0)
+                {
+                    int32_t v = GetGoodsValue(gt);
+                    if (v > bestVal)
+                    {
+                        bestVal = v;
+                        best = gt;
+                        bestCnt = cnt;
+                    }
+                }
+            if (best != THUAI9::GoodsType::NullGoodsType)
+            {
                 int32_t amt = std::min(bestCnt, self.carryCapacity - self.currentLoad);
-                if (amt > 0) {
-                    if (api.Load(best, amt).get()) {
+                if (amt > 0)
+                {
+                    if (api.Load(best, amt).get())
+                    {
                         s.taskRetries = 0;
                         auto m = FindNearestMarket(api, self);
-                        if (m.has_value()) { s.target = std::move(*m); s.pathIndex = 1; s.phase = Phase::ToMarket; return true; }
+                        if (m.has_value())
+                        {
+                            s.target = std::move(*m);
+                            s.pathIndex = 1;
+                            s.phase = Phase::ToMarket;
+                            return true;
+                        }
                     }
                     // Load 失败，重试
                     s.taskRetries++;
-                    if (s.taskRetries < 10) return true;
+                    if (s.taskRetries < 10)
+                        return true;
                 }
             }
             s.taskRetries = 0;
@@ -572,70 +847,98 @@ namespace
 
         // 去工厂
         auto home = FindHomePath(api, self);
-        if (home.has_value()) { s.target = std::move(*home); s.pathIndex = 1; s.phase = Phase::ToFactory; return true; }
+        if (home.has_value())
+        {
+            s.target = std::move(*home);
+            s.pathIndex = 1;
+            s.phase = Phase::ToFactory;
+            return true;
+        }
         return false;
     }
 
-    bool TryOccupyCenter(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (s.phase == Phase::ToCenter) {
+    bool TryOccupyCenter(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.phase == Phase::ToCenter)
+        {
             // 如果正在占领中（服务器端），等待完成
             if (self.characterActiveState == THUAI9::CharacterState::Ocuppying)
                 return true;
 
             const Cell sc{GridToCell(self.x), GridToCell(self.y)};
             auto c = api.GetComputeCenterState(s.target.object.first, s.target.object.second);
-            if (!c.has_value() || c->ownerTeamID == self.teamID) {
+            if (!c.has_value() || c->ownerTeamID == self.teamID)
+            {
                 // 中心已经是我方的或消失了，换目标
-                s.phase = Phase::SeekResource; s.target = {};
+                s.phase = Phase::SeekResource;
+                s.target = {};
                 return false;
             }
 
-            if (!MoveAlongPath(api, self, s)) return true;
+            if (!MoveAlongPath(api, self, s))
+                return true;
 
-            if (InInteractRange(sc, s.target.object)) {
+            if (InInteractRange(sc, s.target.object))
+            {
                 api.Print("occupy: starting at " + CellText(s.target.object));
-                if (api.Occupy().get()) {
+                if (api.Occupy().get())
+                {
                     s.lastActionFrame = api.GetFrameCount();
                     s.taskRetries = 0;
                     return true;
                 }
                 // 占领失败，重试
                 s.taskRetries++;
-                if (s.taskRetries < 10) {
+                if (s.taskRetries < 10)
+                {
                     api.Print("occupy: failed, retry " + std::to_string(s.taskRetries));
                     return true;
                 }
                 s.taskRetries = 0;
-                s.phase = Phase::SeekResource; s.target = {};
+                s.phase = Phase::SeekResource;
+                s.target = {};
                 return false;
             }
         }
         auto t = FindNearestUnoccupiedCenter(api, self);
-        if (!t.has_value()) return false;
-        s.target = std::move(*t); s.pathIndex = 1; s.phase = Phase::ToCenter;
+        if (!t.has_value())
+            return false;
+        s.target = std::move(*t);
+        s.pathIndex = 1;
+        s.phase = Phase::ToCenter;
         return true;
     }
 
-    bool TryHarvestResource(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (s.phase == Phase::ToResource) {
+    bool TryHarvestResource(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.phase == Phase::ToResource)
+        {
             // 正在采集（服务器端异步执行），等待完成
-            if (self.characterActiveState == THUAI9::CharacterState::Harvesting) {
+            if (self.characterActiveState == THUAI9::CharacterState::Harvesting)
+            {
                 s.harvestRetries = 0;
                 return true;
             }
 
             const Cell sc{GridToCell(self.x), GridToCell(self.y)};
             auto r = api.GetResourceState(s.target.object.first, s.target.object.second);
-            if (!r.has_value() || r->state == THUAI9::ResourceState::Harvested) {
-                s.phase = Phase::SeekResource; s.target = {}; s.harvestRetries = 0; return false;
+            if (!r.has_value() || r->state == THUAI9::ResourceState::Harvested)
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                s.harvestRetries = 0;
+                return false;
             }
 
             // 还没到资源旁边 → 继续走
-            if (!InInteractRange(sc, s.target.object)) {
+            if (!InInteractRange(sc, s.target.object))
+            {
                 s.harvestRetries = 0;
-                if (!MoveAlongPath(api, self, s)) return true;
+                if (!MoveAlongPath(api, self, s))
+                    return true;
                 // 路径走完了但被推开了 → 微调
-                if (!NearCellCenter(self)) {
+                if (!NearCellCenter(self))
+                {
                     MoveToCellCenter(api, self);
                     s.lastActionFrame = api.GetFrameCount();
                 }
@@ -643,7 +946,8 @@ namespace
             }
 
             // 到了资源旁边 → 先确保站在格子中心（离资源尽可能近）
-            if (!NearCellCenter(self) && s.harvestRetries == 0) {
+            if (!NearCellCenter(self) && s.harvestRetries == 0)
+            {
                 api.Print("harvest: centering before harvest");
                 MoveToCellCenter(api, self);
                 s.lastActionFrame = api.GetFrameCount();
@@ -653,7 +957,8 @@ namespace
 
             // 尝试采集
             api.Print("harvest: attempt " + std::to_string(s.harvestRetries + 1) + " at " + CellText(s.target.object));
-            if (api.Harvest().get()) {
+            if (api.Harvest().get())
+            {
                 s.lastActionFrame = api.GetFrameCount();
                 s.harvestRetries = 0;
                 return true;
@@ -661,89 +966,169 @@ namespace
 
             // 采集失败 → 重试（最多 10 次，外层 shouldGiveUp 控制总超时）
             s.harvestRetries++;
-            if (s.harvestRetries < 10) {
+            if (s.harvestRetries < 10)
+            {
                 api.Print("harvest: failed, retry " + std::to_string(s.harvestRetries));
                 // 尝试往资源方向移动一小步
                 int32_t dx = s.target.object.first - sc.first;
                 int32_t dy = s.target.object.second - sc.second;
-                if (dx > 0) (void)api.MoveDown(50).get();
-                else if (dx < 0) (void)api.MoveUp(50).get();
-                else if (dy > 0) (void)api.MoveRight(50).get();
-                else if (dy < 0) (void)api.MoveLeft(50).get();
+                if (dx > 0)
+                    (void)api.MoveDown(50).get();
+                else if (dx < 0)
+                    (void)api.MoveUp(50).get();
+                else if (dy > 0)
+                    (void)api.MoveRight(50).get();
+                else if (dy < 0)
+                    (void)api.MoveLeft(50).get();
                 s.lastActionFrame = api.GetFrameCount();
                 return true;
             }
 
             // 重试 3 次都失败，放弃这个资源
             api.Print("harvest: giving up after " + std::to_string(s.harvestRetries) + " retries");
-            s.phase = Phase::SeekResource; s.target = {}; s.harvestRetries = 0; return false;
+            s.phase = Phase::SeekResource;
+            s.target = {};
+            s.harvestRetries = 0;
+            return false;
         }
-        if (s.phase == Phase::ToFactory) {
+        if (s.phase == Phase::ToFactory)
+        {
             const Cell sc{GridToCell(self.x), GridToCell(self.y)};
             auto fac = FindTeamFactoryCell(api, self.teamID);
-            if (fac.has_value() && InInteractRange(sc, *fac)) { s.phase = Phase::SeekResource; s.target = {}; return true; }
-            if (!MoveAlongPath(api, self, s)) return true;
+            if (fac.has_value() && InInteractRange(sc, *fac))
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+                return true;
+            }
+            if (!MoveAlongPath(api, self, s))
+                return true;
             auto h = FindHomePath(api, self);
-            if (h.has_value()) { s.target = std::move(*h); s.pathIndex = 1; } else { s.phase = Phase::SeekResource; s.target = {}; }
+            if (h.has_value())
+            {
+                s.target = std::move(*h);
+                s.pathIndex = 1;
+            }
+            else
+            {
+                s.phase = Phase::SeekResource;
+                s.target = {};
+            }
             return true;
         }
         auto t = FindNearestResource(api, self);
-        if (!t.has_value()) return false;
-        s.target = std::move(*t); s.pathIndex = 1; s.phase = Phase::ToResource;
+        if (!t.has_value())
+            return false;
+        s.target = std::move(*t);
+        s.pathIndex = 1;
+        s.phase = Phase::ToResource;
         return true;
     }
 
-    void FindSomethingToDo(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
+    void FindSomethingToDo(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
         int32_t frame = api.GetFrameCount();
 
         // 如果正在执行某个任务 → 继续
-        if (s.phase == Phase::ToMarket) { TrySellAtMarket(api, self, s); return; }
-        if (s.phase == Phase::ToCenter) { TryOccupyCenter(api, self, s); return; }
-        if (s.phase == Phase::ToResource || s.phase == Phase::ToFactory) { TryHarvestResource(api, self, s); return; }
+        if (s.phase == Phase::ToMarket)
+        {
+            TrySellAtMarket(api, self, s);
+            return;
+        }
+        if (s.phase == Phase::ToCenter)
+        {
+            TryOccupyCenter(api, self, s);
+            return;
+        }
+        if (s.phase == Phase::ToResource || s.phase == Phase::ToFactory)
+        {
+            TryHarvestResource(api, self, s);
+            return;
+        }
 
         // 身上有货 → 去卖
-        if (self.currentLoad > 0) {
+        if (self.currentLoad > 0)
+        {
             auto m = FindNearestMarket(api, self);
-            if (m.has_value()) { s.target = std::move(*m); s.pathIndex = 1; s.phase = Phase::ToMarket; s.lastActionFrame = frame; return; }
+            if (m.has_value())
+            {
+                s.target = std::move(*m);
+                s.pathIndex = 1;
+                s.phase = Phase::ToMarket;
+                s.lastActionFrame = frame;
+                return;
+            }
         }
 
         // 工厂有货 → 去取货
-        if (TryTradeFromFactory(api, self, s)) { s.lastActionFrame = frame; return; }
+        if (TryTradeFromFactory(api, self, s))
+        {
+            s.lastActionFrame = frame;
+            return;
+        }
 
         // 按角色偏好
         bool found = false;
-        if (s.role == CharRole::Occupy) {
+        if (s.role == CharRole::Occupy)
+        {
             found = TryOccupyCenter(api, self, s) || TryHarvestResource(api, self, s);
-        } else {
+        }
+        else
+        {
             found = TryHarvestResource(api, self, s) || TryOccupyCenter(api, self, s);
         }
-        if (found) { s.lastActionFrame = frame; return; }
+        if (found)
+        {
+            s.lastActionFrame = frame;
+            return;
+        }
 
         // 无事可做 → 清冷却重新尝试所有任务，实在不行才巡逻
         s.lastFactoryEmptyFrame = -1000;  // 强制重新检查工厂
-        if (TryTradeFromFactory(api, self, s)) { s.lastActionFrame = frame; return; }
-        if (TryHarvestResource(api, self, s)) { s.lastActionFrame = frame; return; }
-        if (TryOccupyCenter(api, self, s)) { s.lastActionFrame = frame; return; }
+        if (TryTradeFromFactory(api, self, s))
+        {
+            s.lastActionFrame = frame;
+            return;
+        }
+        if (TryHarvestResource(api, self, s))
+        {
+            s.lastActionFrame = frame;
+            return;
+        }
+        if (TryOccupyCenter(api, self, s))
+        {
+            s.lastActionFrame = frame;
+            return;
+        }
         MoveToRandomCell(api, self, s);
     }
 
     // ========== Attacker ==========
-    [[nodiscard]] std::optional<PathTarget> FindEnemyFactory(ICharacterAPI& api, const THUAI9::Character& self) {
+    [[nodiscard]] std::optional<PathTarget> FindEnemyFactory(ICharacterAPI& api, const THUAI9::Character& self)
+    {
         const auto map = api.GetFullMap();
-        if (map.empty()) return std::nullopt;
+        if (map.empty())
+            return std::nullopt;
         const Cell start{GridToCell(self.x), GridToCell(self.y)};
         std::optional<PathTarget> best;
 
-        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x) {
-            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y) {
-                if (map[x][y] != THUAI9::PlaceType::Factory) continue;
+        for (int32_t x = 0; x < static_cast<int32_t>(map.size()); ++x)
+        {
+            for (int32_t y = 0; y < static_cast<int32_t>(map.front().size()); ++y)
+            {
+                if (map[x][y] != THUAI9::PlaceType::Factory)
+                    continue;
                 auto f = api.GetFactoryState(x, y);
-                if (!f.has_value() || f->teamID == self.teamID || f->hp <= 0) continue;
-                for (const auto& [dx, dy] : kDirs) {
+                if (!f.has_value() || f->teamID == self.teamID || f->hp <= 0)
+                    continue;
+                for (const auto& [dx, dy] : kDirs)
+                {
                     int32_t nx = x + dx, ny = y + dy;
-                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny])) continue;
+                    if (!InBounds(map, nx, ny) || !Walkable(map[nx][ny]))
+                        continue;
                     auto path = Bfs(map, start, {nx, ny});
-                    if (path.empty()) continue;
+                    if (path.empty())
+                        continue;
                     if (!best.has_value() || path.size() < best->path.size())
                         best = PathTarget{{x, y}, {nx, ny}, std::move(path)};
                 }
@@ -752,21 +1137,29 @@ namespace
         return best;
     }
 
-    void AttackerCharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (s.phase == Phase::SeekEnemy) {
+    void AttackerCharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (s.phase == Phase::SeekEnemy)
+        {
             // 优先攻击敌方工厂（固定目标，容易找到）
             auto fac = FindEnemyFactory(api, self);
-            if (fac.has_value()) {
-                s.target = std::move(*fac); s.pathIndex = 1;
-                s.phase = Phase::ToEnemy; s.lastActionFrame = api.GetFrameCount();
+            if (fac.has_value())
+            {
+                s.target = std::move(*fac);
+                s.pathIndex = 1;
+                s.phase = Phase::ToEnemy;
+                s.lastActionFrame = api.GetFrameCount();
                 api.Print("attacker: enemy factory at " + CellText(s.target.object));
                 return;
             }
             // 没有工厂就找敌方角色
             auto enemy = FindNearestEnemy(api, self);
-            if (enemy.has_value()) {
-                s.target = std::move(*enemy); s.pathIndex = 1;
-                s.phase = Phase::ToEnemy; s.lastActionFrame = api.GetFrameCount();
+            if (enemy.has_value())
+            {
+                s.target = std::move(*enemy);
+                s.pathIndex = 1;
+                s.phase = Phase::ToEnemy;
+                s.lastActionFrame = api.GetFrameCount();
                 api.Print("attacker: enemy char at " + CellText(s.target.object));
                 return;
             }
@@ -776,17 +1169,21 @@ namespace
             s.lastActionFrame = api.GetFrameCount();
             return;
         }
-        if (s.phase == Phase::ToEnemy) {
+        if (s.phase == Phase::ToEnemy)
+        {
             // 如果在攻击中（服务器端），等待完成
             if (self.characterActiveState == THUAI9::CharacterState::Attacking)
                 return;
 
             // 还没到目标 → 继续走
             const Cell sc{GridToCell(self.x), GridToCell(self.y)};
-            if (!InInteractRange(sc, s.target.object)) {
-                if (!MoveAlongPath(api, self, s)) return;
+            if (!InInteractRange(sc, s.target.object))
+            {
+                if (!MoveAlongPath(api, self, s))
+                    return;
                 // 走到了但不在范围 → 被推开，微调
-                if (!NearCellCenter(self)) {
+                if (!NearCellCenter(self))
+                {
                     MoveToCellCenter(api, self);
                     s.lastActionFrame = api.GetFrameCount();
                 }
@@ -796,28 +1193,38 @@ namespace
             // 到目标旁边了 → 检查目标是否还存在
             bool targetAlive = false;
             auto enemy = api.GetEnemyCharacters();
-            for (const auto& e : enemy) {
-                if (e && e->characterActiveState != THUAI9::CharacterState::Deceased) {
+            for (const auto& e : enemy)
+            {
+                if (e && e->characterActiveState != THUAI9::CharacterState::Deceased)
+                {
                     Cell ec{GridToCell(e->x), GridToCell(e->y)};
-                    if (InInteractRange(sc, ec)) { targetAlive = true; break; }
+                    if (InInteractRange(sc, ec))
+                    {
+                        targetAlive = true;
+                        break;
+                    }
                 }
             }
-            if (!targetAlive) {
+            if (!targetAlive)
+            {
                 // 角色目标没了，检查是否是工厂目标
                 auto f = api.GetFactoryState(s.target.object.first, s.target.object.second);
                 if (f.has_value() && f->teamID != self.teamID && f->hp > 0)
                     targetAlive = true;
             }
 
-            if (!targetAlive) {
+            if (!targetAlive)
+            {
                 // 目标已死/消失，换目标
                 api.Print("attacker: target dead, seeking next");
-                s.phase = Phase::SeekEnemy; s.target = {};
+                s.phase = Phase::SeekEnemy;
+                s.target = {};
                 return;
             }
 
             // 攻击！
-            if (api.Common_Attack(0).get()) {
+            if (api.Common_Attack(0).get())
+            {
                 s.taskRetries = 0;
                 s.lastActionFrame = api.GetFrameCount();
                 // 攻击成功，原地等待冷却（~1 秒 = 20 帧），不要疯狂重试
@@ -830,40 +1237,56 @@ namespace
     }
 
     // ========== Role Assignment ==========
-    [[nodiscard]] bool CanOccupy(THUAI9::CharacterType ct) {
+    [[nodiscard]] bool CanOccupy(THUAI9::CharacterType ct)
+    {
         return ct == THUAI9::CharacterType::Drone || ct == THUAI9::CharacterType::Robot;
     }
 
-    [[nodiscard]] CharRole GetRole(int32_t playerID, THUAI9::CharacterType charType, int32_t counter) {
-        if (playerID == 1) return CharRole::Harvester;
+    [[nodiscard]] CharRole GetRole(int32_t playerID, THUAI9::CharacterType charType, int32_t counter)
+    {
+        if (playerID == 1)
+            return CharRole::Harvester;
         bool canOcc = CanOccupy(charType);
         if (!canOcc)
             return ((playerID - 2 + counter) % 2 == 0) ? CharRole::Harvester : CharRole::Trader;
-        switch ((playerID - 2 + counter) % 3) {
-        case 0: return CharRole::Harvester;
-        case 1: return CharRole::Trader;
-        default: return CharRole::Occupy;
+        switch ((playerID - 2 + counter) % 3)
+        {
+            case 0:
+                return CharRole::Harvester;
+            case 1:
+                return CharRole::Trader;
+            default:
+                return CharRole::Occupy;
         }
     }
 
     // ========== Character AI Entry ==========
-    void CharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s) {
-        if (self.characterActiveState == THUAI9::CharacterState::Deceased) return;
-        if (!s.roleAssigned) { s.role = GetRole(static_cast<int32_t>(self.playerID), self.characterType, 0); s.roleAssigned = true; }
+    void CharAI(ICharacterAPI& api, const THUAI9::Character& self, CharState& s)
+    {
+        if (self.characterActiveState == THUAI9::CharacterState::Deceased)
+            return;
+        if (!s.roleAssigned)
+        {
+            s.role = GetRole(static_cast<int32_t>(self.playerID), self.characterType, 0);
+            s.roleAssigned = true;
+        }
         DumpMapInfo(api);
         CheckStuck(api, self, s);
 
         // 2 分钟后全员切换进攻模式（每个角色进程独立判断）
         int32_t gameTimeMs = api.GetFrameCount() * 50;
-        if (gameTimeMs > kAttackPhaseTimeMs && s.role != CharRole::Attacker) {
+        if (gameTimeMs > kAttackPhaseTimeMs && s.role != CharRole::Attacker)
+        {
             api.Print("=== SWITCH TO ATTACK ===");
             (void)api.EndAllAction().get();
             s.role = CharRole::Attacker;
             s.phase = Phase::SeekEnemy;
-            s.target = {}; s.pathIndex = 1;
+            s.target = {};
+            s.pathIndex = 1;
         }
 
-        if (s.role == CharRole::Attacker) {
+        if (s.role == CharRole::Attacker)
+        {
             AttackerCharAI(api, self, s);
             // 攻击模式下绝不退回到经济任务，找不到目标就继续侦查
             return;
@@ -873,111 +1296,161 @@ namespace
     }
 
     // ========== Team AI ==========
-    [[nodiscard]] int32_t GetGoodsCost(THUAI9::GoodsType gt) {
-        switch (gt) {
-        case THUAI9::GoodsType::Semiconductor: return 10;
-        case THUAI9::GoodsType::Medicine:      return 5;
-        case THUAI9::GoodsType::Toys:          return 1;
-        case THUAI9::GoodsType::Clothes:       return 8;
-        case THUAI9::GoodsType::Food:          return 3;
-        default:                                return 999;
+    [[nodiscard]] int32_t GetGoodsCost(THUAI9::GoodsType gt)
+    {
+        switch (gt)
+        {
+            case THUAI9::GoodsType::Semiconductor:
+                return 10;
+            case THUAI9::GoodsType::Medicine:
+                return 5;
+            case THUAI9::GoodsType::Toys:
+                return 1;
+            case THUAI9::GoodsType::Clothes:
+                return 8;
+            case THUAI9::GoodsType::Food:
+                return 3;
+            default:
+                return 999;
         }
     }
 
-    [[nodiscard]] int32_t CountAliveCharacters(ITeamAPI& api) {
+    [[nodiscard]] int32_t CountAliveCharacters(ITeamAPI& api)
+    {
         int32_t n = 0;
         for (const auto& c : api.GetCharacters())
-            if (c && c->characterActiveState != THUAI9::CharacterState::Deceased) ++n;
+            if (c && c->characterActiveState != THUAI9::CharacterState::Deceased)
+                ++n;
         return n;
     }
 
-    [[nodiscard]] THUAI9::CharacterType GetNextBuildType(int32_t n) {
+    [[nodiscard]] THUAI9::CharacterType GetNextBuildType(int32_t n)
+    {
         // 只造 Drone 和 Robot（都能占领中心）
         return (n % 2 == 0) ? THUAI9::CharacterType::Drone : THUAI9::CharacterType::Robot;
     }
 
-    void TryBuildCharacter(ITeamAPI& api, const THUAI9::Team& team, TeamState& s) {
+    void TryBuildCharacter(ITeamAPI& api, const THUAI9::Team& team, TeamState& s)
+    {
         int32_t frame = api.GetFrameCount();
-        if (frame - s.lastBuildFrame < kBuildCooldown || frame - s.lastBuildFailFrame < 30) return;
-        if (CountAliveCharacters(api) >= kMaxCharacters || team.computePower < kBuildCost + 10) return;
+        if (frame - s.lastBuildFrame < kBuildCooldown || frame - s.lastBuildFailFrame < 30)
+            return;
+        if (CountAliveCharacters(api) >= kMaxCharacters || team.computePower < kBuildCost + 10)
+            return;
         auto fac = FindTeamFactoryCell(api, team.teamID);
         if (fac.has_value())
-            if (auto f = api.GetFactoryState(fac->first, fac->second); f.has_value() && !f->canRecruit) return;
+            if (auto f = api.GetFactoryState(fac->first, fac->second); f.has_value() && !f->canRecruit)
+                return;
         THUAI9::CharacterType type = GetNextBuildType(CountAliveCharacters(api));
         int32_t pid = s.nextPlayerID;
-        if (api.BuildCharacter(type, pid).get()) {
+        if (api.BuildCharacter(type, pid).get())
+        {
             g_charStates[pid].role = GetRole(pid, type, s.roleAssignCounter);
             g_charStates[pid].roleAssigned = true;
-            s.roleAssignCounter++; s.nextPlayerID++; s.lastBuildFrame = frame;
+            s.roleAssignCounter++;
+            s.nextPlayerID++;
+            s.lastBuildFrame = frame;
             api.Print("build OK pid=" + std::to_string(pid));
-        } else s.lastBuildFailFrame = frame;
+        }
+        else
+            s.lastBuildFailFrame = frame;
     }
 
-    void TryProduce(ITeamAPI& api, const THUAI9::Team& team, TeamState& s) {
+    void TryProduce(ITeamAPI& api, const THUAI9::Team& team, TeamState& s)
+    {
         int32_t frame = api.GetFrameCount();
-        if (frame - s.lastProduceFrame < kProduceCooldown || frame - s.lastProduceFailFrame < kProduceCooldown) return;
+        if (frame - s.lastProduceFrame < kProduceCooldown || frame - s.lastProduceFailFrame < kProduceCooldown)
+            return;
         auto fac = FindTeamFactoryCell(api, team.teamID);
-        if (!fac.has_value()) return;
+        if (!fac.has_value())
+            return;
         auto factory = api.GetFactoryState(fac->first, fac->second);
-        if (!factory.has_value() || !factory->canProduce) return;
+        if (!factory.has_value() || !factory->canProduce)
+            return;
         using GT = THUAI9::GoodsType;
-        static const GT prio[] = { GT::Semiconductor, GT::Medicine, GT::Toys, GT::Clothes, GT::Food };
-        for (auto g : prio) {
-            if (factory->source >= GetGoodsCost(g)) {
-                if (api.ProduceGoods(g, 1).get()) { s.lastProduceFrame = frame; return; }
+        static const GT prio[] = {GT::Semiconductor, GT::Medicine, GT::Toys, GT::Clothes, GT::Food};
+        for (auto g : prio)
+        {
+            if (factory->source >= GetGoodsCost(g))
+            {
+                if (api.ProduceGoods(g, 1).get())
+                {
+                    s.lastProduceFrame = frame;
+                    return;
+                }
                 // 失败则继续尝试下一个 goods 类型（可能源被其他生产消耗了，便宜的可能还够）
             }
         }
         s.lastProduceFailFrame = frame;
     }
 
-    void TryUpgradeTech(ITeamAPI& api, TeamState& s) {
+    void TryUpgradeTech(ITeamAPI& api, TeamState& s)
+    {
         int32_t frame = api.GetFrameCount();
-        if (frame - s.lastTechFrame < 60) return;
+        if (frame - s.lastTechFrame < 60)
+            return;
         static const THUAI9::TechType prio[] = {
-            THUAI9::TechType::IncreaseEfficiency, THUAI9::TechType::IncreaseMoveSpeed,
-            THUAI9::TechType::IncreaseCarryCapacity, THUAI9::TechType::IncreaseProduction,
+            THUAI9::TechType::IncreaseEfficiency,
+            THUAI9::TechType::IncreaseMoveSpeed,
+            THUAI9::TechType::IncreaseCarryCapacity,
+            THUAI9::TechType::IncreaseProduction,
             THUAI9::TechType::IncreasePrice,
         };
         for (auto t : prio)
-            if (api.UplevelTech(t).get()) { api.Print("tech OK"); s.lastTechFrame = frame; break; }
+            if (api.UplevelTech(t).get())
+            {
+                api.Print("tech OK");
+                s.lastTechFrame = frame;
+                break;
+            }
         s.lastTechFrame = frame;
     }
 
-    void TeamAI(ITeamAPI& api, const THUAI9::Team& team, TeamState& s) {
+    void TeamAI(ITeamAPI& api, const THUAI9::Team& team, TeamState& s)
+    {
         int32_t gameTimeMs = api.GetFrameCount() * 50;
         if (api.GetFrameCount() % 50 == 0)
-            api.Print("team F=" + std::to_string(api.GetFrameCount()) + " mat=" + std::to_string(team.material) +
-                      " comp=" + std::to_string(team.computePower) + " chars=" + std::to_string(CountAliveCharacters(api)));
+            api.Print("team F=" + std::to_string(api.GetFrameCount()) + " mat=" + std::to_string(team.material) + " comp=" + std::to_string(team.computePower) + " chars=" + std::to_string(CountAliveCharacters(api)));
 
-        if (!s.builderBuilt) {
+        if (!s.builderBuilt)
+        {
             int32_t frame = api.GetFrameCount();
-            if (frame - s.lastBuildFailFrame >= 30) {
-                if (api.BuildCharacter(THUAI9::CharacterType::Robot, kBuilderPlayerId).get()) {
-                    s.builderBuilt = true; s.lastBuildFrame = frame;
+            if (frame - s.lastBuildFailFrame >= 30)
+            {
+                if (api.BuildCharacter(THUAI9::CharacterType::Robot, kBuilderPlayerId).get())
+                {
+                    s.builderBuilt = true;
+                    s.lastBuildFrame = frame;
                     g_charStates[kBuilderPlayerId].role = CharRole::Harvester;
                     g_charStates[kBuilderPlayerId].roleAssigned = true;
                     api.Print("initial build OK");
-                } else s.lastBuildFailFrame = frame;
+                }
+                else
+                    s.lastBuildFailFrame = frame;
             }
             return;
         }
         TryProduce(api, team, s);
         TryBuildCharacter(api, team, s);
-        if (team.computePower > kTechThreshold) TryUpgradeTech(api, s);
+        if (team.computePower > kTechThreshold)
+            TryUpgradeTech(api, s);
 
         // 进攻切换由各角色 CharAI 独立判断（进程间不共享全局变量）
     }
 }  // namespace
 
-void AI::play(ICharacterAPI& api) {
+void AI::play(ICharacterAPI& api)
+{
     auto self = api.GetSelfInfo();
-    if (!self) return;
+    if (!self)
+        return;
     CharAI(api, *self, g_charStates[self->playerID]);
 }
 
-void AI::play(ITeamAPI& api) {
+void AI::play(ITeamAPI& api)
+{
     auto team = api.GetSelfInfo();
-    if (!team) return;
+    if (!team)
+        return;
     TeamAI(api, *team, g_teamStates[team->teamID]);
 }
