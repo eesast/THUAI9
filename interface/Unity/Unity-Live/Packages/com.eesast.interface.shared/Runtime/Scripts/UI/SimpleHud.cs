@@ -445,8 +445,9 @@ namespace THUAI9.Unity.UI.Shared
             string memberStatus)
         {
             string accent = ColorUtility.ToHtmlStringRGB(GetTeamAccentColor(teamIndex - 1));
+            string teamLabel = CoreParam.GetTeamDisplayLabel(teamIndex);
             return
-                $"<size=15><b><color=#{accent}>队伍 {teamIndex}</color>{WideGap(1)}得分：{score}</b></size>\n" +
+                $"<size=15><b><color=#{accent}>{teamLabel}</color>{WideGap(1)}得分：{score}</b></size>\n" +
                 $"原料：{material}{WideGap(1)}算力：{computePower}\n" +
                 $"工厂血量：{factoryHp}\n" +
                 $"科技等级：{techSummary}\n" +

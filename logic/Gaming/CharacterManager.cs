@@ -346,6 +346,34 @@ namespace Gaming
                     LogicLogging.logger.LogWarning($"Attempted to recover non-positive HP for Character (Team {character.TeamID.Get()}, Player {character.PlayerID.Get()}). No HP recovered.");
                     return false;
                 }
+
+                long currentHp = character.HP.GetValue();
+                long maxHp = character.HP.GetMaxV();
+                long deficit = maxHp - currentHp;
+                if (deficit <= 0)
+                    return false;
+                if (recover > deficit)
+                    recover = deficit;
+
+                long cost = recover * GameData.RecoverCostComputingPowerPerHp;
+                var factory = game.GetTeamFactory(character.TeamID.Get());
+                if (factory == null)
+                {
+                    LogicLogging.logger.LogWarning($"Recover failed: Factory for team {character.TeamID.Get()} not found.");
+                    return false;
+                }
+
+                long cur;
+                do
+                {
+                    cur = factory.ComputingPower.Get();
+                    if (cur < cost)
+                    {
+                        LogicLogging.logger.LogWarning($"Recover failed: insufficient computing power for team {character.TeamID.Get()}. current={cur}, need={cost}");
+                        return false;
+                    }
+                } while (factory.ComputingPower.CompareExROri(cur - cost, cur) != cur);
+
                 character.HP.AddPositiveV(recover);
                 return true;
             }
