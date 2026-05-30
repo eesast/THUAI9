@@ -529,7 +529,7 @@ namespace Gaming
         }
 
         /// <summary>
-        /// 回复某队的工厂血量。
+        /// 回复某队的工厂血量，消耗本队算力。
         /// </summary>
         public bool Recover(long teamId, long recover)
         {
@@ -547,6 +547,27 @@ namespace Gaming
                 LogicLogging.logger.LogWarning($"Recover failed: Factory for team {teamId} not found.");
                 return false;
             }
+
+            long currentHp = fac.HP.GetValue();
+            long maxHp = fac.HP.GetMaxV();
+            long deficit = maxHp - currentHp;
+            if (deficit <= 0)
+                return false;
+            if (recover > deficit)
+                recover = deficit;
+
+            long cost = recover * GameData.RecoverCostComputingPowerPerHp;
+            long cur;
+            do
+            {
+                cur = fac.ComputingPower.Get();
+                if (cur < cost)
+                {
+                    LogicLogging.logger.LogWarning($"Recover factory failed: insufficient computing power for team {teamId}. current={cur}, need={cost}");
+                    return false;
+                }
+            } while (fac.ComputingPower.CompareExROri(cur - cost, cur) != cur);
+
             fac.HP.AddPositiveV(recover);
             return true;
         }

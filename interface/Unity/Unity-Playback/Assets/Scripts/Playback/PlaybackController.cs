@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Google.Protobuf;
 using Protobuf;
 using THUAI9.Unity.Core;
@@ -13,6 +15,7 @@ namespace THUAI9.Unity.Playback
     public class PlaybackController : MonoBehaviour
     {
         private const string DefaultPlaybackRelativePath = "";
+        private const int MaxPlaybackTeamSlots = 4;
         public const int MaxRemotePlaybackBytes = 64 * 1024 * 1024;
         public const int MaxWebGLBase64Bytes = 16 * 1024 * 1024;
 
@@ -35,6 +38,9 @@ namespace THUAI9.Unity.Playback
         private MessageReader messageReader;
         private Coroutine loadCoroutine;
         private Coroutine playCoroutine;
+        private Coroutine teamNamesCoroutine;
+        private RoomTeamInfo[] pendingRoomTeams;
+        private int pendingRoomTeamsRevision;
         private bool playbackLoaded;
         private string playbackSourceDisplayName;
         private string statusText = "状态：未加载回放文件";
@@ -145,6 +151,7 @@ namespace THUAI9.Unity.Playback
             }
 
             int revision = PreparePlaybackLoad(trimmedUrl, displayName ?? GetPlaybackDisplayName(trimmedUrl), "状态：正在从浏览器加载回放文件");
+            StartLoadingRoomTeamNames(trimmedUrl, revision);
             loadCoroutine = StartCoroutine(LoadPlaybackUrlCoroutine(trimmedUrl, revision));
         }
 
@@ -187,6 +194,552 @@ namespace THUAI9.Unity.Playback
             }
         }
 
+        private void StartLoadingRoomTeamNames(string playbackUrl, int revision)
+        {
+            if (!TryBuildRoomTeamsGraphqlRequest(playbackUrl, out string graphqlUrl, out string roomId))
+            {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                if (!TryBuildRoomTeamsGraphqlRequest(Application.absoluteURL, out graphqlUrl, out roomId))
+                {
+                    return;
+                }
+#else
+                return;
+#endif
+            }
+
+            teamNamesCoroutine = StartCoroutine(LoadRoomTeamNamesCoroutine(graphqlUrl, roomId, revision));
+        }
+
+        private IEnumerator LoadRoomTeamNamesCoroutine(string graphqlUrl, string roomId, int revision)
+        {
+            string requestBody = BuildRoomTeamsGraphqlRequest(roomId);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(requestBody);
+            using (var request = new UnityWebRequest(graphqlUrl, UnityWebRequest.kHttpVerbPOST))
+            {
+                request.timeout = 10;
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+                request.SetRequestHeader("Accept", "application/json");
+
+                yield return request.SendWebRequest();
+                if (!IsCurrentLoad(revision)) yield break;
+
+                teamNamesCoroutine = null;
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogWarning($"Failed to load playback team names: {request.error}");
+                    yield break;
+                }
+
+                ApplyRoomTeamNames(request.downloadHandler?.text, revision);
+            }
+        }
+
+        private void ApplyRoomTeamNames(string json, int revision)
+        {
+            if (!IsCurrentLoad(revision) || string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            RoomTeamsGraphqlResponse response;
+            try
+            {
+                response = JsonUtility.FromJson<RoomTeamsGraphqlResponse>(json);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to parse playback team names: {ex.Message}");
+                return;
+            }
+
+            if (response?.errors != null && response.errors.Length > 0)
+            {
+                Debug.LogWarning($"Playback team name query failed: {response.errors[0]?.message}");
+                return;
+            }
+
+            RoomTeamInfo[] teams = response?.data?.contest_room_by_pk?.contest_room_teams;
+            if (teams == null || teams.Length == 0)
+            {
+                return;
+            }
+
+            pendingRoomTeams = teams;
+            pendingRoomTeamsRevision = revision;
+            TryApplyPendingRoomTeamNames(revision);
+        }
+
+        private static string BuildRoomTeamsGraphqlRequest(string roomId)
+        {
+            var request = new RoomTeamsGraphqlRequest
+            {
+                query = "query PlaybackRoomTeams($room_id: uuid!) { contest_room_by_pk(room_id: $room_id) { contest_room_teams { team_label score player_roles contest_team { team_name } } } }",
+                variables = new RoomTeamsGraphqlVariables
+                {
+                    room_id = roomId
+                }
+            };
+            return JsonUtility.ToJson(request);
+        }
+
+        private static bool TryBuildRoomTeamsGraphqlRequest(string playbackUrl, out string graphqlUrl, out string roomId)
+        {
+            graphqlUrl = null;
+            roomId = null;
+
+            if (!Uri.TryCreate(playbackUrl, UriKind.Absolute, out Uri uri))
+            {
+                return false;
+            }
+
+            string[] segments = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (TryExtractRoomIdFromPlaybackPath(segments, out string pathRoomId))
+            {
+                graphqlUrl = BuildGraphqlUrl(uri);
+                roomId = pathRoomId;
+                return !string.IsNullOrEmpty(graphqlUrl);
+            }
+
+            if (TryGetQueryValue(uri, "room", out string queryRoomId)
+                && Guid.TryParse(queryRoomId, out _))
+            {
+                graphqlUrl = BuildGraphqlUrl(uri);
+                roomId = queryRoomId;
+                return !string.IsNullOrEmpty(graphqlUrl);
+            }
+
+            return false;
+        }
+
+        private static bool TryExtractRoomIdFromPlaybackPath(string[] segments, out string roomId)
+        {
+            roomId = null;
+            int playbackIndex = Array.FindIndex(segments, segment => string.Equals(segment, "playback", StringComparison.OrdinalIgnoreCase));
+            if (playbackIndex <= 0 || playbackIndex >= segments.Length - 1)
+            {
+                return false;
+            }
+
+            string playbackKind = segments[playbackIndex - 1];
+            if (!string.Equals(playbackKind, "arena", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(playbackKind, "competition", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            string candidateRoomId = Uri.UnescapeDataString(segments[playbackIndex + 1]);
+            if (!Guid.TryParse(candidateRoomId, out _))
+            {
+                return false;
+            }
+
+            roomId = candidateRoomId;
+            return true;
+        }
+
+        private static string BuildGraphqlUrl(Uri uri)
+        {
+            if (uri == null || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            {
+                return null;
+            }
+
+            if (string.Equals(uri.Host, "eesast.com", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(uri.Host, "www.eesast.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return uri.Scheme + "://api.eesast.com/v1/graphql";
+            }
+
+            return uri.GetLeftPart(UriPartial.Authority).TrimEnd('/') + "/v1/graphql";
+        }
+
+        private static bool TryGetQueryValue(Uri uri, string key, out string value)
+        {
+            value = null;
+            string query = uri?.Query;
+            if (string.IsNullOrEmpty(query))
+            {
+                return false;
+            }
+
+            string[] parts = query.TrimStart('?').Split('&');
+            foreach (string part in parts)
+            {
+                if (string.IsNullOrEmpty(part))
+                {
+                    continue;
+                }
+
+                string[] kv = part.Split(new[] { '=' }, 2);
+                string currentKey = Uri.UnescapeDataString(kv[0].Replace('+', ' '));
+                if (!string.Equals(currentKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                value = kv.Length > 1 ? Uri.UnescapeDataString(kv[1].Replace('+', ' ')) : string.Empty;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string BuildTeamDisplayName(RoomTeamInfo team)
+        {
+            string label = team?.team_label?.Trim();
+            string name = team?.contest_team?.team_name?.Trim();
+
+            bool hasName = !string.IsNullOrWhiteSpace(name);
+            bool hasUsefulLabel = !string.IsNullOrWhiteSpace(label)
+                && !string.Equals(label, "Team", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(label, "Default", StringComparison.OrdinalIgnoreCase);
+
+            if (hasUsefulLabel && hasName)
+            {
+                return $"{label}：{name}";
+            }
+
+            if (hasName)
+            {
+                return name;
+            }
+
+            return hasUsefulLabel ? label : string.Empty;
+        }
+
+        private void TryApplyPendingRoomTeamNames(int revision)
+        {
+            if (!IsCurrentLoad(revision)
+                || pendingRoomTeams == null
+                || pendingRoomTeamsRevision != revision
+                || messageReader == null
+                || messageReader.GetMessageCount() <= 0)
+            {
+                return;
+            }
+
+            Dictionary<long, string> mappedNames = BuildRoomTeamNameMap(pendingRoomTeams);
+            if (mappedNames.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var kvp in mappedNames)
+            {
+                CoreParam.SetTeamDisplayName(kvp.Key, kvp.Value);
+            }
+        }
+
+        private Dictionary<long, string> BuildRoomTeamNameMap(RoomTeamInfo[] teams)
+        {
+            if (TryBuildExplicitLabelTeamMap(teams, out Dictionary<long, string> explicitLabelMap))
+            {
+                return explicitLabelMap;
+            }
+
+            if (TryBuildScoreBasedTeamMap(teams, out Dictionary<long, string> scoreMap))
+            {
+                return scoreMap;
+            }
+
+            if (TryBuildRoleBasedTeamMap(teams, out Dictionary<long, string> roleMap))
+            {
+                return roleMap;
+            }
+
+            // The current website query uses contest_room_teams in this same relation order,
+            // and the .thuaipb format does not store website team UUIDs. Use it only after
+            // label / score / role based mapping cannot prove a better match.
+            Debug.LogWarning("Playback team names fell back to website room-team order; no slot field is present in the current room schema.");
+            return BuildWebsiteOrderTeamMap(teams);
+        }
+
+        private static bool TryBuildExplicitLabelTeamMap(RoomTeamInfo[] teams, out Dictionary<long, string> map)
+        {
+            map = new Dictionary<long, string>();
+            var usedOrdinals = new HashSet<int>();
+            for (int i = 0; i < teams.Length; i++)
+            {
+                if (!TryParseTeamOrdinal(teams[i]?.team_label, out int ordinal)
+                    || ordinal <= 0
+                    || ordinal > MaxPlaybackTeamSlots
+                    || !usedOrdinals.Add(ordinal))
+                {
+                    map.Clear();
+                    return false;
+                }
+
+                map[ordinal] = BuildTeamDisplayName(teams[i]);
+            }
+
+            return map.Count > 0;
+        }
+
+        private bool TryBuildScoreBasedTeamMap(RoomTeamInfo[] teams, out Dictionary<long, string> map)
+        {
+            map = new Dictionary<long, string>();
+            MessageToClient finalFrame = FindLastFrameWithAllMessage(teams.Length);
+            if (finalFrame?.AllMessage == null || finalFrame.AllMessage.Teams.Count < teams.Length)
+            {
+                return false;
+            }
+
+            var scoreToTeamIndex = new Dictionary<int, int>();
+            var duplicateScores = new HashSet<int>();
+            for (int i = 0; i < teams.Length; i++)
+            {
+                int score = finalFrame.AllMessage.Teams[i].Score;
+                if (scoreToTeamIndex.ContainsKey(score))
+                {
+                    duplicateScores.Add(score);
+                }
+                else
+                {
+                    scoreToTeamIndex[score] = i + 1;
+                }
+            }
+
+            for (int i = 0; i < teams.Length; i++)
+            {
+                int score = teams[i]?.score ?? 0;
+                if (duplicateScores.Contains(score) || !scoreToTeamIndex.TryGetValue(score, out int teamIndex) || map.ContainsKey(teamIndex))
+                {
+                    map.Clear();
+                    return false;
+                }
+
+                map[teamIndex] = BuildTeamDisplayName(teams[i]);
+            }
+
+            return map.Count == teams.Length;
+        }
+
+        private bool TryBuildRoleBasedTeamMap(RoomTeamInfo[] teams, out Dictionary<long, string> map)
+        {
+            map = new Dictionary<long, string>();
+            Dictionary<int, string> playbackSignatures = BuildPlaybackRoleSignatures();
+            if (playbackSignatures.Count == 0)
+            {
+                return false;
+            }
+
+            var signatureToTeamIndex = new Dictionary<string, int>();
+            var duplicateSignatures = new HashSet<string>();
+            foreach (var kvp in playbackSignatures)
+            {
+                if (string.IsNullOrEmpty(kvp.Value))
+                {
+                    continue;
+                }
+
+                if (signatureToTeamIndex.ContainsKey(kvp.Value))
+                {
+                    duplicateSignatures.Add(kvp.Value);
+                }
+                else
+                {
+                    signatureToTeamIndex[kvp.Value] = kvp.Key;
+                }
+            }
+
+            for (int i = 0; i < teams.Length; i++)
+            {
+                string signature = BuildRoleSignatureFromWebsiteRoles(teams[i]?.player_roles);
+                if (string.IsNullOrEmpty(signature)
+                    || duplicateSignatures.Contains(signature)
+                    || !signatureToTeamIndex.TryGetValue(signature, out int teamIndex)
+                    || map.ContainsKey(teamIndex))
+                {
+                    map.Clear();
+                    return false;
+                }
+
+                map[teamIndex] = BuildTeamDisplayName(teams[i]);
+            }
+
+            return map.Count == teams.Length;
+        }
+
+        private static Dictionary<long, string> BuildWebsiteOrderTeamMap(RoomTeamInfo[] teams)
+        {
+            var map = new Dictionary<long, string>();
+            int count = Math.Min(teams.Length, MaxPlaybackTeamSlots);
+            for (int i = 0; i < count; i++)
+            {
+                map[i + 1] = BuildTeamDisplayName(teams[i]);
+            }
+
+            return map;
+        }
+
+        private MessageToClient FindLastFrameWithAllMessage(int expectedTeamCount)
+        {
+            if (messageReader == null)
+            {
+                return null;
+            }
+
+            for (int i = messageReader.GetMessageCount() - 1; i >= 0; i--)
+            {
+                MessageToClient frame = messageReader.ReadMessageAt(i);
+                if (frame?.AllMessage != null && frame.AllMessage.Teams.Count >= expectedTeamCount)
+                {
+                    return frame;
+                }
+            }
+
+            return null;
+        }
+
+        private Dictionary<int, string> BuildPlaybackRoleSignatures()
+        {
+            var teamRoleCounts = new Dictionary<int, Dictionary<string, int>>();
+            var seenCharacters = new HashSet<string>();
+            if (messageReader == null)
+            {
+                return new Dictionary<int, string>();
+            }
+
+            for (int i = 0; i < messageReader.GetMessageCount(); i++)
+            {
+                MessageToClient frame = messageReader.ReadMessageAt(i);
+                if (frame == null)
+                {
+                    continue;
+                }
+
+                foreach (MessageOfObj obj in frame.ObjMessage)
+                {
+                    if (obj.MessageOfObjCase != MessageOfObj.MessageOfObjOneofCase.CharacterMessage)
+                    {
+                        continue;
+                    }
+
+                    MessageOfCharacter character = obj.CharacterMessage;
+                    int teamId = (int)character.TeamId;
+                    if (teamId <= 0)
+                    {
+                        continue;
+                    }
+
+                    string characterKey = teamId + ":" + character.PlayerId + ":" + character.CharacterType;
+                    if (!seenCharacters.Add(characterKey))
+                    {
+                        continue;
+                    }
+
+                    if (!teamRoleCounts.TryGetValue(teamId, out Dictionary<string, int> counts))
+                    {
+                        counts = new Dictionary<string, int>();
+                        teamRoleCounts[teamId] = counts;
+                    }
+
+                    string role = character.CharacterType.ToString().ToUpperInvariant();
+                    counts[role] = counts.TryGetValue(role, out int count) ? count + 1 : 1;
+                }
+            }
+
+            var signatures = new Dictionary<int, string>();
+            foreach (var kvp in teamRoleCounts)
+            {
+                signatures[kvp.Key] = BuildRoleSignature(kvp.Value);
+            }
+
+            return signatures;
+        }
+
+        private static string BuildRoleSignatureFromWebsiteRoles(string playerRoles)
+        {
+            if (string.IsNullOrWhiteSpace(playerRoles))
+            {
+                return string.Empty;
+            }
+
+            var counts = new Dictionary<string, int>();
+            CountRoleToken(playerRoles, "AUTONOMOUS_CAR", counts);
+            CountRoleToken(playerRoles, "DRONE", counts);
+            CountRoleToken(playerRoles, "ROBOT", counts);
+            return BuildRoleSignature(counts);
+        }
+
+        private static void CountRoleToken(string source, string role, Dictionary<string, int> counts)
+        {
+            int count = 0;
+            int index = 0;
+            while ((index = source.IndexOf(role, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+            {
+                count++;
+                index += role.Length;
+            }
+
+            if (count > 0)
+            {
+                counts[role] = count;
+            }
+        }
+
+        private static string BuildRoleSignature(Dictionary<string, int> counts)
+        {
+            if (counts == null || counts.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            string[] roles = { "AUTONOMOUS_CAR", "DRONE", "ROBOT" };
+            var builder = new StringBuilder();
+            foreach (string role in roles)
+            {
+                if (counts.TryGetValue(role, out int count) && count > 0)
+                {
+                    if (builder.Length > 0)
+                    {
+                        builder.Append(';');
+                    }
+
+                    builder.Append(role).Append(':').Append(count);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private static bool TryParseTeamOrdinal(string label, out int ordinal)
+        {
+            ordinal = 0;
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return false;
+            }
+
+            int start = -1;
+            for (int i = 0; i < label.Length; i++)
+            {
+                if (!char.IsDigit(label[i]))
+                {
+                    continue;
+                }
+
+                start = i;
+                break;
+            }
+
+            if (start < 0)
+            {
+                return false;
+            }
+
+            int end = start;
+            while (end < label.Length && char.IsDigit(label[end]))
+            {
+                end++;
+            }
+
+            return int.TryParse(label.Substring(start, end - start), out ordinal);
+        }
+
         private int PreparePlaybackLoad(string source, string displayName, string loadingStatus)
         {
             int revision = NextLoadRevision();
@@ -201,9 +754,18 @@ namespace THUAI9.Unity.Playback
                 loadCoroutine = null;
             }
 
+            if (teamNamesCoroutine != null)
+            {
+                StopCoroutine(teamNamesCoroutine);
+                teamNamesCoroutine = null;
+            }
+
             messageReader?.Dispose();
             messageReader = new MessageReader();
             GC.Collect();
+            CoreParam.ClearTeamDisplayNames();
+            pendingRoomTeams = null;
+            pendingRoomTeamsRevision = 0;
             playbackFilePath = source;
             playbackSourceDisplayName = string.IsNullOrWhiteSpace(displayName) ? GetPlaybackDisplayName(source) : displayName;
             playbackLoaded = false;
@@ -267,6 +829,7 @@ namespace THUAI9.Unity.Playback
                 firstFrameGameTimeMs = GetFrameGameTimeMs(messageReader.ReadMessageAt(0));
                 currentPlaybackTimeMs = 0;
                 playbackMap = FindPlaybackMap();
+                TryApplyPendingRoomTeamNames(revision);
                 statusText = BuildPlaybackLoadedStatus();
                 ClearWebGLDevelopmentConsole();
                 if (autoPlayOnLoad)
@@ -879,12 +1442,71 @@ namespace THUAI9.Unity.Playback
             }
         }
 
+        [Serializable]
+        private sealed class RoomTeamsGraphqlRequest
+        {
+            public string query;
+            public RoomTeamsGraphqlVariables variables;
+        }
+
+        [Serializable]
+        private sealed class RoomTeamsGraphqlVariables
+        {
+            public string room_id;
+        }
+
+        [Serializable]
+        private sealed class RoomTeamsGraphqlResponse
+        {
+            public RoomTeamsGraphqlData data;
+            public RoomTeamsGraphqlError[] errors;
+        }
+
+        [Serializable]
+        private sealed class RoomTeamsGraphqlData
+        {
+            public RoomInfo contest_room_by_pk;
+        }
+
+        [Serializable]
+        private sealed class RoomInfo
+        {
+            public RoomTeamInfo[] contest_room_teams;
+        }
+
+        [Serializable]
+        private sealed class RoomTeamInfo
+        {
+            public string team_label;
+            public int score;
+            public string player_roles;
+            public ContestTeamInfo contest_team;
+        }
+
+        [Serializable]
+        private sealed class ContestTeamInfo
+        {
+            public string team_name;
+        }
+
+        [Serializable]
+        private sealed class RoomTeamsGraphqlError
+        {
+            public string message;
+        }
+
         private void OnDestroy()
         {
             if (loadCoroutine != null)
             {
                 StopCoroutine(loadCoroutine);
                 loadCoroutine = null;
+            }
+
+            if (teamNamesCoroutine != null)
+            {
+                StopCoroutine(teamNamesCoroutine);
+                teamNamesCoroutine = null;
             }
 
             StopInternal(false);

@@ -75,6 +75,8 @@ namespace THUAI9.Unity.Core
             OfficialMatchDurationMilliseconds + GameTimeGuardSlackMilliseconds;
         private const int MaximumSingleLiveTimeJumpMilliseconds = MaximumDisplayGameMilliseconds;
         private static bool hasStableLiveGameTime;
+        private const int MaxTeamDisplayNameLength = 18;
+        private static readonly Dictionary<long, string> teamDisplayNames = new Dictionary<long, string>();
 
         public static Dictionary<long, MessageOfCharacter> characters = new Dictionary<long, MessageOfCharacter>();
         public static Dictionary<long, MessageOfTeam> teams = new Dictionary<long, MessageOfTeam>();
@@ -179,6 +181,61 @@ namespace THUAI9.Unity.Core
         public static int ClampDisplayGameMilliseconds(int totalMilliseconds)
         {
             return Math.Max(0, Math.Min(totalMilliseconds, MaximumDisplayGameMilliseconds));
+        }
+
+        public static void ClearTeamDisplayNames()
+        {
+            teamDisplayNames.Clear();
+        }
+
+        public static void SetTeamDisplayName(long teamId, string displayName)
+        {
+            if (teamId <= 0)
+            {
+                return;
+            }
+
+            string normalized = NormalizeTeamDisplayName(displayName);
+            if (string.IsNullOrEmpty(normalized))
+            {
+                teamDisplayNames.Remove(teamId);
+                return;
+            }
+
+            teamDisplayNames[teamId] = normalized;
+        }
+
+        public static string GetTeamDisplayLabel(long teamId)
+        {
+            string fallback = $"队伍 {teamId}";
+            return teamDisplayNames.TryGetValue(teamId, out string displayName) && !string.IsNullOrWhiteSpace(displayName)
+                ? $"{fallback}：{displayName}"
+                : fallback;
+        }
+
+        private static string NormalizeTeamDisplayName(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return string.Empty;
+            }
+
+            string normalized = displayName
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Replace('\t', ' ')
+                .Replace('<', '＜')
+                .Replace('>', '＞')
+                .Trim();
+
+            while (normalized.IndexOf("  ", StringComparison.Ordinal) >= 0)
+            {
+                normalized = normalized.Replace("  ", " ");
+            }
+
+            return normalized.Length > MaxTeamDisplayNameLength
+                ? normalized.Substring(0, MaxTeamDisplayNameLength) + "…"
+                : normalized;
         }
 
         private static void DestroyAll<TKey>(Dictionary<TKey, GameObject> objects)
