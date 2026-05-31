@@ -423,17 +423,9 @@ namespace Server
             }
             else if (options.Mode == 1)
             {
-                /*
-                int[] s = new int[2];
-                if (scores[1] > scores[0])
-                    s = [0, 2];
-                else if (scores[1] == scores[0])
-                    s = [1, 1];
-                else
-                    s = [2, 0];
-                */ // 得分计算方式待定
+                bool gameCrashed = false;
+                SendGameResult(rawMatchScores, gameCrashed);
                 endGameSem.Release();
-                //SendGameResult(s);
             }
             else
             {
