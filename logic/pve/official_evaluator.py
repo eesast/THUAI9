@@ -28,9 +28,9 @@ Output:
 from __future__ import annotations
 
 import argparse
+import ast
 import importlib
 import json
-import math
 import os
 import sys
 from pathlib import Path
@@ -44,13 +44,134 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from GameLogic import GameConfig, GameEnvironment
-from RLInterfaces import BaseAgent
+from RLInterfaces import BaseAgent, RestrictedGameEnvironment
 
 
-def _smooth_score(score: float, scale: float = 1000.0) -> float:
-    """Bounded score smoothing using tanh followed by sigmoid."""
-    z = math.tanh(score / scale)
-    return 1.0 / (1.0 + math.exp(-z))
+_ALLOWED_ENV_ATTRS = frozenset({"reset", "step", "action_masks"})
+_ALLOWED_RL_IMPORTS = {
+    "RLInterfaces",
+    "RLInterfaces.base_agent",
+}
+
+
+class SubmissionRuleError(RuntimeError):
+    """Raised when an agent source file uses evaluator-forbidden interfaces."""
+
+
+class _AgentRuleVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.errors: List[str] = []
+        self._env_aliases = [{"env"}]
+
+    @property
+    def env_aliases(self) -> set:
+        return self._env_aliases[-1]
+
+    def _is_env_expr(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Name):
+            return node.id in self.env_aliases
+        return (
+            isinstance(node, ast.Attribute)
+            and node.attr == "env"
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+        )
+
+    def _error(self, node: ast.AST, message: str) -> None:
+        self.errors.append(f"line {getattr(node, 'lineno', '?')}: {message}")
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        module = node.module or ""
+        if module.startswith("GameLogic"):
+            self._error(node, "imports from GameLogic are not allowed in submissions")
+        if module.startswith("RLInterfaces") and module not in _ALLOWED_RL_IMPORTS:
+            self._error(
+                node,
+                "only BaseAgent may be imported from RLInterfaces by submissions",
+            )
+        if module in _ALLOWED_RL_IMPORTS:
+            for alias in node.names:
+                if alias.name != "BaseAgent":
+                    self._error(
+                        node,
+                        "only BaseAgent may be imported from RLInterfaces by submissions",
+                    )
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            if alias.name == "GameLogic" or alias.name.startswith("GameLogic."):
+                self._error(node, "imports from GameLogic are not allowed in submissions")
+            if alias.name == "RLInterfaces" or (
+                alias.name.startswith("RLInterfaces.") and alias.name not in _ALLOWED_RL_IMPORTS
+            ):
+                self._error(
+                    node,
+                    "use 'from RLInterfaces import BaseAgent' instead of importing RLInterfaces modules",
+                )
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._env_aliases.append(set(self.env_aliases))
+        self.generic_visit(node)
+        self._env_aliases.pop()
+
+    visit_AsyncFunctionDef = visit_FunctionDef
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        if self._is_env_expr(node.value):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    self.env_aliases.add(target.id)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if node.value is not None and self._is_env_expr(node.value):
+            if isinstance(node.target, ast.Name):
+                self.env_aliases.add(node.target.id)
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        if self._is_env_expr(node.value) and node.attr not in _ALLOWED_ENV_ATTRS:
+            self._error(
+                node,
+                f"env.{node.attr} is not allowed; use only reset(), step(), action_masks(), obs, and info",
+            )
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "getattr"
+            and len(node.args) >= 2
+            and self._is_env_expr(node.args[0])
+        ):
+            attr_arg = node.args[1]
+            if not (
+                isinstance(attr_arg, ast.Constant)
+                and isinstance(attr_arg.value, str)
+                and attr_arg.value in _ALLOWED_ENV_ATTRS
+            ):
+                self._error(
+                    node,
+                    "dynamic getattr on env is not allowed except for reset/step/action_masks",
+                )
+        self.generic_visit(node)
+
+
+def validate_agent_source(agent_file: Path) -> None:
+    tree = ast.parse(agent_file.read_text(encoding="utf-8-sig"), filename=str(agent_file))
+    visitor = _AgentRuleVisitor()
+    visitor.visit(tree)
+    if visitor.errors:
+        detail = "\n  ".join(visitor.errors)
+        raise SubmissionRuleError(
+            "Submission uses forbidden PvE interfaces. "
+            "Agents may only interact with the environment through "
+            "reset(), step(), action_masks(), and the returned obs/info.\n  "
+            f"{detail}"
+        )
+
 
 def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironment) -> BaseAgent:
     """
@@ -70,6 +191,7 @@ def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironm
             f"{agent_file} not found. "
             "Your submission must contain agent.py with class Agent(BaseAgent)."
         )
+    validate_agent_source(agent_file)
 
     if str(sub) not in sys.path:
         sys.path.insert(0, str(sub))
@@ -95,17 +217,17 @@ def load_agent(submission_dir: str, model_path: Optional[str], env: GameEnvironm
                 "Agent class must implement load(cls, path, env) classmethod "
                 "when a model file is provided."
             )
-        return load_fn(model_path, env)
+        return load_fn(model_path, RestrictedGameEnvironment(env))
 
     # No model file → rule-based bot or agent that doesn't need weight loading
     # Try classmethod load with None first, then fall back to constructor
     load_fn = getattr(AgentClass, "load", None)
     if load_fn is not None:
         try:
-            return load_fn(None, env)
+            return load_fn(None, RestrictedGameEnvironment(env))
         except (TypeError, ValueError, NotImplementedError, FileNotFoundError):
             pass
-    return AgentClass(env)
+    return AgentClass(RestrictedGameEnvironment(env))
 
 
 def evaluate(
@@ -129,8 +251,7 @@ def evaluate(
             action = agent.get_action(obs)
             obs, _reward, terminated, truncated, info = env.step(action)
             ep_len += 1
-            raw_score = info.get("score", 0.0)
-            ep_score = _smooth_score(raw_score)
+            ep_score = info.get("score", 0.0)
             done = terminated or truncated
 
         scores.append(ep_score)
