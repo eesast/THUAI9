@@ -10,7 +10,7 @@ import pytest
 
 from GameLogic import GameConfig, GameEnvironment
 from GameLogic.action_space import Action, N_ACTIONS
-from RLInterfaces import BaseAgent, PPOAgent, TrainingLoop, TrainingMetrics
+from RLInterfaces import BaseAgent, PPOAgent, RestrictedGameEnvironment, TrainingLoop, TrainingMetrics
 
 
 # ── Minimal concrete agent for testing BaseAgent protocol ─────────────────────
@@ -68,8 +68,17 @@ def test_random_agent_episode_rewards_recorded(easy_env):
 
 
 def test_agent_cannot_access_env_internals(easy_env):
-    """Verify BaseAgent wraps env cleanly - test is structural/doctest."""
-    agent = RandomAgent(easy_env)
+    """Contest-facing env facade should expose only documented methods."""
+    safe_env = RestrictedGameEnvironment(easy_env)
+    agent = RandomAgent(safe_env)
+    for name in ("unit", "board", "markets", "factory", "money", "time", "_rng"):
+        with pytest.raises(AttributeError):
+            getattr(agent.env, name)
+
+    assert callable(agent.env.reset)
+    assert callable(agent.env.step)
+    assert callable(agent.env.action_masks)
+
     # Agent step should mirror env step
     obs = agent.reset()
     _, reward_via_agent, _, _, _ = agent.step(Action.WAIT)

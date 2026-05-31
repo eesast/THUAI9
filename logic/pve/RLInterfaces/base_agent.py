@@ -13,6 +13,46 @@ import numpy as np
 from GameLogic import GameEnvironment
 
 
+class RestrictedGameEnvironment:
+    """
+    Contest-facing environment facade.
+
+    The official evaluator gives agents this object instead of the real
+    GameEnvironment so submissions can only use the documented interaction
+    methods.
+    """
+
+    __slots__ = ("__env",)
+
+    _ALLOWED = frozenset({"reset", "step", "action_masks"})
+
+    def __init__(self, env: GameEnvironment):
+        object.__setattr__(self, "_RestrictedGameEnvironment__env", env)
+
+    def reset(self, *args, **kwargs):
+        env = object.__getattribute__(self, "_RestrictedGameEnvironment__env")
+        return env.reset(*args, **kwargs)
+
+    def step(self, *args, **kwargs):
+        env = object.__getattribute__(self, "_RestrictedGameEnvironment__env")
+        return env.step(*args, **kwargs)
+
+    def action_masks(self) -> np.ndarray:
+        env = object.__getattribute__(self, "_RestrictedGameEnvironment__env")
+        return env.action_masks()
+
+    def __getattribute__(self, name: str):
+        if name.startswith("_") or name not in RestrictedGameEnvironment._ALLOWED:
+            raise AttributeError(
+                f"GameEnvironment attribute '{name}' is not available to agents; "
+                "use only reset(), step(), and action_masks()."
+            )
+        return object.__getattribute__(self, name)
+
+    def __setattr__(self, name: str, value) -> None:
+        raise AttributeError("Contest agents cannot mutate the environment facade.")
+
+
 class BaseAgent(ABC):
     """
     Standard agent interface.
