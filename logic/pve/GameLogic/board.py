@@ -194,11 +194,15 @@ class Board:
         return abs(x1 - x2) + abs(y1 - y2)
 
     def nearest_market(self, x: int, y: int) -> Optional[Tuple[int, int]]:
-        """Return (mx, my) of market with Manhattan distance ≤ 1, or None."""
+        """Return nearest market within Manhattan distance ≤ 1, or None."""
+        best = None
+        best_dist = 9999
         for mx, my in self.market_positions:
-            if self.manhattan(x, y, mx, my) <= 1:
-                return (mx, my)
-        return None
+            d = self.manhattan(x, y, mx, my)
+            if d <= 1 and d < best_dist:
+                best = (mx, my)
+                best_dist = d
+        return best
 
     def nearest_resource(self, x: int, y: int) -> Optional[ResourcePoint]:
         """Return nearest non-depleted resource within harvest range (≤ 2)."""
