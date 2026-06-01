@@ -155,7 +155,7 @@ namespace Gaming
             // 在基准位置附近按环形搜索一个非碰撞点
             private bool TryFindNearbyFreePosition(Character ch, XY center, out XY result)
             {
-                // 工厂外至少两个格子的缓冲区，确保角色不会卡在工厂边缘
+                // 最小安全距离：工厂半径 + 角色半径 + 半个格子缓冲，防止贴脸卡墙
                 int startDist = GameData.FactoryRadius + GameData.NumOfPosGridPerCell * 2;
                 int maxDist = GameData.NumOfPosGridPerCell * 5; // 最多搜索 5 个格子的半径
                 int distStep = Math.Max(1, GameData.NumOfPosGridPerCell / 8);
@@ -178,12 +178,12 @@ namespace Gaming
                     }
                 }
 
-                // 最后兜底：尝试工厂四方向逐格搜索
-                int[] dirX = [1, -1, 0, 0];
-                int[] dirY = [0, 0, 1, -1];
-                for (int cell = 1; cell <= 5; cell++)
+                // 最后兜底：八方向逐格尝试
+                int[] dirX = [1, -1, 0, 0, 1, 1, -1, -1];
+                int[] dirY = [0, 0, 1, -1, 1, -1, 1, -1];
+                for (int cell = 1; cell <= 6; cell++)
                 {
-                    for (int k = 0; k < 4; k++)
+                    for (int k = 0; k < 8; k++)
                     {
                         int cx = GameData.PosGridToCellX(center);
                         int cy = GameData.PosGridToCellY(center);
@@ -355,7 +355,7 @@ namespace Gaming
                 if (recover > deficit)
                     recover = deficit;
 
-                long cost = recover * GameData.RecoverCostComputingPowerPerHp;
+                long cost = (recover + GameData.RecoverHpPerComputingPower - 1) / GameData.RecoverHpPerComputingPower;
                 var factory = game.GetTeamFactory(character.TeamID.Get());
                 if (factory == null)
                 {
