@@ -556,7 +556,7 @@ namespace Gaming
             if (recover > deficit)
                 recover = deficit;
 
-            long cost = recover * GameData.RecoverCostComputingPowerPerHp;
+            long cost = (recover + GameData.RecoverHpPerComputingPower - 1) / GameData.RecoverHpPerComputingPower;
             long cur;
             do
             {
