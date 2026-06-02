@@ -56,7 +56,7 @@ namespace Preparation.Utility
         public const int FactoryInitialSource = 0; // initial source stored in factory
         public const int FactoryInitialScore = 0; // initial score award or baseline
 
-        public const int DroneHP = 100;
+        public const int DroneHP = 80;
         public const int DroneCost = 50;
         public const int DroneATKsize = 1500;
         public const int DroneATKpower = 40;
@@ -69,8 +69,8 @@ namespace Preparation.Utility
         public const int AutonomouCarHP = 100;
         public const int AutonomouCarCost = 50;
         public const int AutonomouCarATKsize = 1500;
-        public const int AutonomouCarATKpower = 18;
-        public const int AutonomouCarLoad = 5;
+        public const int AutonomouCarATKpower = 20;
+        public const int AutonomouCarLoad = 20;
         public const int AutonomouCarRobust = 8;
         public const int AutonomouCarViewRange = NumOfPosGridPerCell * 5;
         public const int AutonomouCarEfficiency = 2;
@@ -79,8 +79,8 @@ namespace Preparation.Utility
         public const int RobotHP = 150;
         public const int RobotCost = 50;
         public const int RobotATKsize = 1500;
-        public const int RobotATKpower = 30;
-        public const int RobotLoad = 5;
+        public const int RobotATKpower = 35;
+        public const int RobotLoad = 10;
         public const int RobotRobust = 15;
         public const int RobotViewRange = NumOfPosGridPerCell * 5;
         public const int RobotEfficiency = 1;
@@ -155,7 +155,7 @@ namespace Preparation.Utility
         public static string API_key = "Mzg2MDU0MmEtNjcxZS00NjVkLTkxY2QtYTI3NzdjY2NhODU4";
         public static string API_url = "https://api.eesast.com/llm/chat";
         public static string ModelName = "deepseek-v4-pro";
-        public const int RecoverCostComputingPowerPerHp = 1;
+        public const int RecoverHpPerComputingPower = 2;
         public const int AskAICostComputingPower = 10;
         public const int AskAIPromptMaxLength = 512;
         public const int AskAITimeoutMs = 60_000;
