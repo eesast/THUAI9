@@ -105,7 +105,15 @@ if [ "$TERMINAL" = "SERVER" ]; then
         kill -9 $server_pid 2>/dev/null || true
 
         if [ -n "${FINISH_URL:-}" ] && [ -n "${TOKEN:-}" ]; then
-            finish_payload='{"status":"Crashed","scores":[0,0]}'
+            zero_scores="["
+            for ((i = 0; i < TEAM_COUNT; i++)); do
+                if [ "$i" -gt 0 ]; then
+                    zero_scores+=","
+                fi
+                zero_scores+="0"
+            done
+            zero_scores+="]"
+            finish_payload="{\"status\":\"Crashed\",\"scores\":$zero_scores}"
             curl "$FINISH_URL" -X POST \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $TOKEN" \
