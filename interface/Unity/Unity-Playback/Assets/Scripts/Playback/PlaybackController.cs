@@ -18,6 +18,9 @@ namespace THUAI9.Unity.Playback
         private const int MaxPlaybackTeamSlots = 4;
         public const int MaxRemotePlaybackBytes = 64 * 1024 * 1024;
         public const int MaxWebGLBase64Bytes = 16 * 1024 * 1024;
+        private const int MaxPlaybackFrameSkip = 8;
+        private const int MaxPlaybackQueuedFrames = 12;
+        private const int PlaybackGarbageCollectFrameInterval = 240;
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")]
@@ -48,6 +51,7 @@ namespace THUAI9.Unity.Playback
         private int firstFrameGameTimeMs = -1;
         private int currentPlaybackTimeMs;
         private int loadRevision;
+        private int lastPlaybackGarbageCollectFrameIndex = -1;
         private MessageOfMap playbackMap;
 
         public bool PlaybackLoaded => playbackLoaded;
@@ -80,6 +84,17 @@ namespace THUAI9.Unity.Playback
             {
                 ApplyDefaultPlaybackSettings();
             }
+        }
+
+        private void OnEnable()
+        {
+            FrameSourceHub.RenderErrorReported -= HandleRenderError;
+            FrameSourceHub.RenderErrorReported += HandleRenderError;
+        }
+
+        private void OnDisable()
+        {
+            FrameSourceHub.RenderErrorReported -= HandleRenderError;
         }
 
         private void Start()
@@ -773,6 +788,7 @@ namespace THUAI9.Unity.Playback
             firstFrameGameTimeMs = -1;
             currentPlaybackTimeMs = 0;
             playbackMap = null;
+            lastPlaybackGarbageCollectFrameIndex = -1;
             CoreParam.playbackCurrentFrameIndex = -1;
             CoreParam.playbackElapsedMilliseconds = 0;
             statusText = loadingStatus;
@@ -814,6 +830,7 @@ namespace THUAI9.Unity.Playback
 
                 messageReader ??= new MessageReader();
                 messageReader.LoadData(data);
+                GC.Collect();
                 if (!IsCurrentLoad(revision)) return;
 
                 playbackLoaded = messageReader != null && messageReader.GetMessageCount() > 0;
@@ -830,6 +847,11 @@ namespace THUAI9.Unity.Playback
                 currentPlaybackTimeMs = 0;
                 playbackMap = FindPlaybackMap();
                 TryApplyPendingRoomTeamNames(revision);
+                if (messageReader.IsIncompleteTail)
+                {
+                    Debug.LogWarning(messageReader.LoadWarning ?? "Playback file has an incomplete tail.");
+                }
+
                 statusText = BuildPlaybackLoadedStatus();
                 ClearWebGLDevelopmentConsole();
                 if (autoPlayOnLoad)
@@ -874,11 +896,12 @@ namespace THUAI9.Unity.Playback
             firstFrameGameTimeMs = -1;
             currentPlaybackTimeMs = 0;
             playbackMap = null;
+            lastPlaybackGarbageCollectFrameIndex = -1;
             CoreParam.playbackCurrentFrameIndex = -1;
             CoreParam.playbackElapsedMilliseconds = 0;
             messageReader?.Dispose();
             messageReader = new MessageReader();
-            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+            FrameSourceHub.Reset(FrameSourceHub.SourceKind.None, "未选择", statusText);
             if (ex != null)
             {
                 Debug.LogWarning($"Playback load failed ({ex.GetType().Name}).");
@@ -936,6 +959,17 @@ namespace THUAI9.Unity.Playback
         private string BuildPlaybackLoadedStatus()
         {
             string baseStatus = $"状态：已加载 {messageReader.GetMessageCount()} 帧（{messageReader.TeamCount}队/{messageReader.PlayerCount}玩家）";
+            string lastReadableTime = FormatElapsedTime(GetLastReadableFrameElapsedMilliseconds());
+            if (messageReader.IsIncompleteTail)
+            {
+                return $"{baseStatus}，可播至 {lastReadableTime}；文件尾部未写完";
+            }
+
+            if (!HasGameEndFrame())
+            {
+                return $"{baseStatus}，可播至 {lastReadableTime}；缺少结束帧";
+            }
+
             if (messageReader.IsLegacyVersion)
             {
                 baseStatus += "，旧版回放建议用当前逻辑重新生成";
@@ -947,6 +981,36 @@ namespace THUAI9.Unity.Playback
         private static string BuildSafeExceptionMessage(Exception ex)
         {
             return string.IsNullOrWhiteSpace(ex.Message) ? "未知读写错误" : ex.Message;
+        }
+
+        private int GetLastReadableFrameElapsedMilliseconds()
+        {
+            if (messageReader == null || messageReader.GetMessageCount() <= 0)
+            {
+                return currentPlaybackTimeMs;
+            }
+
+            int lastFrameIndex = messageReader.GetMessageCount() - 1;
+            return GetElapsedPlaybackMilliseconds(messageReader.ReadMessageAt(lastFrameIndex), lastFrameIndex);
+        }
+
+        private bool HasGameEndFrame()
+        {
+            if (messageReader == null || messageReader.GetMessageCount() <= 0)
+            {
+                return false;
+            }
+
+            MessageToClient lastFrame = messageReader.ReadMessageAt(messageReader.GetMessageCount() - 1);
+            return lastFrame?.GameState == GameState.GameEnd;
+        }
+
+        private static string FormatElapsedTime(int totalMilliseconds)
+        {
+            totalMilliseconds = CoreParam.ClampDisplayGameMilliseconds(totalMilliseconds);
+            int minutes = totalMilliseconds / 60000;
+            int seconds = totalMilliseconds / 1000 % 60;
+            return $"{minutes:D2}:{seconds:D2}";
         }
 
         private static void ClearWebGLDevelopmentConsole()
@@ -1206,13 +1270,29 @@ namespace THUAI9.Unity.Playback
                     continue;
                 }
 
+                int nextFrameIndex = SelectNextFrameIndexForPlayback(framePrepared, previousGameTimeMs);
+                if (nextFrameIndex < 0)
+                {
+                    isPlaying = false;
+                    isPaused = false;
+                    playCoroutine = null;
+                    statusText = BuildPlaybackEndStatus();
+                    FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
+                    yield break;
+                }
+
+                if (nextFrameIndex != messageReader.GetCurrentIndex() + 1)
+                {
+                    messageReader.Seek(nextFrameIndex);
+                }
+
                 var message = messageReader.ReadNextMessage();
                 if (message == null)
                 {
                     isPlaying = false;
                     isPaused = false;
                     playCoroutine = null;
-                    statusText = "状态：播放结束";
+                    statusText = BuildPlaybackEndStatus();
                     FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
                     yield break;
                 }
@@ -1243,13 +1323,97 @@ namespace THUAI9.Unity.Playback
 
                 currentFrameIndex = messageReader.GetCurrentIndex();
                 ApplyPlaybackClock(message, currentFrameIndex);
+                FrameSourceHub.TrimQueueTo(MaxPlaybackQueuedFrames);
                 FrameSourceHub.EnqueueFrame(message, currentFrameIndex, currentPlaybackTimeMs, "状态：播放中");
                 framePrepared = true;
+                CollectPlaybackGarbageIfNeeded();
 
                 previousGameTimeMs = currentGameTimeMs;
             }
 
             playCoroutine = null;
+        }
+
+        private int SelectNextFrameIndexForPlayback(bool framePrepared, int previousGameTimeMs)
+        {
+            if (messageReader == null || TotalFrameCount <= 0)
+            {
+                return -1;
+            }
+
+            int currentReaderIndex = messageReader.GetCurrentIndex();
+            int nextFrameIndex = currentReaderIndex + 1;
+            if (nextFrameIndex >= TotalFrameCount)
+            {
+                return -1;
+            }
+
+            if (!framePrepared || playSpeed <= 1.01f || previousGameTimeMs < 0)
+            {
+                return nextFrameIndex;
+            }
+
+            int frameStep = Mathf.Clamp(Mathf.FloorToInt(playSpeed), 1, MaxPlaybackFrameSkip);
+            return Mathf.Min(TotalFrameCount - 1, currentReaderIndex + frameStep);
+        }
+
+        private void CollectPlaybackGarbageIfNeeded()
+        {
+            if (currentFrameIndex < 0)
+            {
+                return;
+            }
+
+            if (lastPlaybackGarbageCollectFrameIndex < 0)
+            {
+                lastPlaybackGarbageCollectFrameIndex = currentFrameIndex;
+                return;
+            }
+
+            if (currentFrameIndex - lastPlaybackGarbageCollectFrameIndex < PlaybackGarbageCollectFrameInterval)
+            {
+                return;
+            }
+
+            lastPlaybackGarbageCollectFrameIndex = currentFrameIndex;
+            GC.Collect();
+        }
+
+        private string BuildPlaybackEndStatus()
+        {
+            string endTime = FormatElapsedTime(currentPlaybackTimeMs);
+            if (messageReader != null && messageReader.IsIncompleteTail)
+            {
+                return $"状态：已播放到最后可读取帧（{endTime}），文件尾部未写完";
+            }
+
+            if (!HasGameEndFrame())
+            {
+                return $"状态：已播放到最后一帧（{endTime}），回放缺少结束帧";
+            }
+
+            return "状态：播放结束";
+        }
+
+        private void HandleRenderError(string errorMessage)
+        {
+            if (!playbackLoaded || FrameSourceHub.ActiveKind != FrameSourceHub.SourceKind.Playback)
+            {
+                return;
+            }
+
+            if (playCoroutine != null)
+            {
+                StopCoroutine(playCoroutine);
+                playCoroutine = null;
+            }
+
+            isPlaying = false;
+            isPaused = true;
+            string safeMessage = string.IsNullOrWhiteSpace(errorMessage) ? "未知渲染错误" : errorMessage;
+            int displayFrame = currentFrameIndex >= 0 ? currentFrameIndex + 1 : 1;
+            statusText = $"状态：第 {displayFrame} 帧渲染失败，已暂停：{safeMessage}";
+            FrameSourceHub.SetStatus(FrameSourceHub.SourceKind.Playback, BuildPlaybackSourceName(), statusText);
         }
 
         private IEnumerator WaitWhileRespectingPause(float seconds)
