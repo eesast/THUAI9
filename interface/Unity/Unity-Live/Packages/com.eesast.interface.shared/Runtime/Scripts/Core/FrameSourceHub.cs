@@ -24,6 +24,7 @@ namespace THUAI9.Unity.Core
 
         public static event Action<MessageToClient> ImmediateFrameSubmitted;
         public static event Action PumpRequested;
+        public static event Action<string> RenderErrorReported;
 
         public static SourceKind ActiveKind { get; private set; } = SourceKind.None;
         public static string ActiveName { get; private set; } = "未选择";
@@ -34,6 +35,7 @@ namespace THUAI9.Unity.Core
         public static int DroppedFrameCount { get; private set; }
         public static int LastSubmittedFrameIndex { get; private set; } = -1;
         public static int LastSubmittedElapsedMilliseconds { get; private set; }
+        public static string LastRenderError { get; private set; } = string.Empty;
         private static SynchronizationContext mainThreadContext;
         private static int mainThreadId;
         private static int pumpScheduled;
@@ -67,6 +69,7 @@ namespace THUAI9.Unity.Core
             DroppedFrameCount = 0;
             LastSubmittedFrameIndex = -1;
             LastSubmittedElapsedMilliseconds = 0;
+            LastRenderError = string.Empty;
         }
 
         public static void SetStatus(SourceKind kind, string sourceName, string status)
@@ -205,6 +208,15 @@ namespace THUAI9.Unity.Core
             }
 
             RenderedFrameCount++;
+        }
+
+        public static void ReportRenderError(Exception ex)
+        {
+            string message = ex == null || string.IsNullOrWhiteSpace(ex.Message)
+                ? "未知渲染错误"
+                : ex.Message;
+            LastRenderError = message;
+            RenderErrorReported?.Invoke(message);
         }
 
         public static void ApplyPlaybackClock(int frameIndex, int elapsedMilliseconds)

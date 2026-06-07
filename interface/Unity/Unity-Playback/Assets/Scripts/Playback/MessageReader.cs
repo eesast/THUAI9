@@ -31,7 +31,8 @@ namespace THUAI9.Unity.Playback
     /// </summary>
     public class MessageReader
     {
-        private readonly List<MessageToClient> messages = new List<MessageToClient>();
+        private readonly List<FrameSlice> frameSlices = new List<FrameSlice>();
+        private byte[] frameData;
         private int currentMsgIndex = -1;
         private bool disposed;
 
@@ -80,10 +81,7 @@ namespace THUAI9.Unity.Playback
             }
 
             const int headerSize = 12;
-            byte[] compressedData = new byte[data.Length - headerSize];
-            Array.Copy(data, headerSize, compressedData, 0, compressedData.Length);
-
-            byte[] decompressedData = DecompressWithLimit(compressedData, out bool gzipEndedEarly);
+            byte[] decompressedData = DecompressWithLimit(data, headerSize, data.Length - headerSize, out bool gzipEndedEarly);
             DecompressedByteCount = decompressedData.Length;
 
             if (!TryLoadIndexedMessages(decompressedData))
@@ -116,28 +114,28 @@ namespace THUAI9.Unity.Playback
 
         public MessageToClient ReadNextMessage()
         {
-            if (disposed || currentMsgIndex >= messages.Count - 1)
+            if (disposed || currentMsgIndex >= frameSlices.Count - 1)
             {
                 return null;
             }
 
             currentMsgIndex++;
-            return messages[currentMsgIndex];
+            return ParseFrameAt(currentMsgIndex);
         }
 
         public MessageToClient ReadMessageAt(int index)
         {
-            if (disposed || index < 0 || index >= messages.Count)
+            if (disposed || index < 0 || index >= frameSlices.Count)
             {
                 return null;
             }
 
-            return messages[index];
+            return ParseFrameAt(index);
         }
 
         public int GetMessageCount()
         {
-            return messages.Count;
+            return frameSlices.Count;
         }
 
         public int GetCurrentIndex()
@@ -147,7 +145,7 @@ namespace THUAI9.Unity.Playback
 
         public void Seek(int index)
         {
-            if (index >= 0 && index < messages.Count)
+            if (index >= 0 && index < frameSlices.Count)
             {
                 currentMsgIndex = index - 1;
             }
@@ -155,7 +153,7 @@ namespace THUAI9.Unity.Playback
 
         public bool IsAtEnd()
         {
-            return currentMsgIndex >= messages.Count - 1;
+            return currentMsgIndex >= frameSlices.Count - 1;
         }
 
         public void Dispose()
@@ -165,13 +163,15 @@ namespace THUAI9.Unity.Playback
                 return;
             }
 
-            messages.Clear();
+            frameSlices.Clear();
+            frameData = null;
             disposed = true;
         }
 
         private void ResetLoadedData()
         {
-            messages.Clear();
+            frameSlices.Clear();
+            frameData = null;
             currentMsgIndex = -1;
             TeamCount = 0;
             PlayerCount = 0;
@@ -217,7 +217,7 @@ namespace THUAI9.Unity.Playback
                         previousOffset = offsets[i];
                     }
 
-                    var parsedMessages = new List<MessageToClient>(messageCount);
+                    var parsedSlices = new List<FrameSlice>(messageCount);
                     for (int i = 0; i < messageCount; i++)
                     {
                         indexedStream.Position = offsets[i];
@@ -227,42 +227,40 @@ namespace THUAI9.Unity.Playback
                             return false;
                         }
 
-                        byte[] messageData = indexedReader.ReadBytes(messageLength);
-                        if (messageData.Length != messageLength)
-                        {
-                            return false;
-                        }
-
-                        parsedMessages.Add(MessageToClient.Parser.ParseFrom(messageData));
+                        int payloadOffset = checked((int)indexedStream.Position);
+                        parsedSlices.Add(new FrameSlice(payloadOffset, messageLength));
                     }
 
-                    messages.Clear();
-                    messages.AddRange(parsedMessages);
+                    frameSlices.Clear();
+                    frameSlices.AddRange(parsedSlices);
+                    frameData = decompressedData;
+                    ValidateLoadedBoundaryFrames();
                     return true;
                 }
             }
             catch
             {
-                messages.Clear();
+                frameSlices.Clear();
+                frameData = null;
                 return false;
             }
         }
 
         private void LoadOfficialStreamMessages(byte[] decompressedData, bool gzipEndedEarly)
         {
-            var parsedMessages = new List<MessageToClient>();
+            var parsedSlices = new List<FrameSlice>();
             int offset = 0;
 
             while (offset < decompressedData.Length)
             {
-                if (parsedMessages.Count >= PlayBackConstant.MAX_MESSAGE_COUNT)
+                if (parsedSlices.Count >= PlayBackConstant.MAX_MESSAGE_COUNT)
                 {
                     throw new FormatException($"Playback message count exceeds {PlayBackConstant.MAX_MESSAGE_COUNT}.");
                 }
 
                 if (!TryReadRawVarint32(decompressedData, ref offset, out int messageLength))
                 {
-                    AcceptOrRejectIncompleteTail(parsedMessages, "回放文件末尾不完整：最后一帧长度字段未写完。");
+                    AcceptOrRejectIncompleteTail(parsedSlices, decompressedData, "回放文件末尾不完整：最后一帧长度字段未写完。");
                     return;
                 }
 
@@ -274,25 +272,20 @@ namespace THUAI9.Unity.Playback
                 if (offset + messageLength > decompressedData.Length)
                 {
                     int missingBytes = offset + messageLength - decompressedData.Length;
-                    AcceptOrRejectIncompleteTail(parsedMessages, $"回放文件末尾不完整：最后一帧缺少 {missingBytes} 字节。");
+                    AcceptOrRejectIncompleteTail(parsedSlices, decompressedData, $"回放文件末尾不完整：最后一帧缺少 {missingBytes} 字节。");
                     return;
                 }
 
-                try
-                {
-                    parsedMessages.Add(MessageToClient.Parser.ParseFrom(decompressedData, offset, messageLength));
-                }
-                catch (InvalidProtocolBufferException ex)
-                {
-                    throw new FormatException("回放帧数据损坏，无法解析。", ex);
-                }
+                parsedSlices.Add(new FrameSlice(offset, messageLength));
 
                 offset += messageLength;
             }
 
-            messages.Clear();
-            messages.AddRange(parsedMessages);
-            if (gzipEndedEarly && parsedMessages.Count > 0)
+            frameSlices.Clear();
+            frameSlices.AddRange(parsedSlices);
+            frameData = decompressedData;
+            ValidateLoadedBoundaryFrames();
+            if (gzipEndedEarly && parsedSlices.Count > 0)
             {
                 IsIncompleteTail = true;
                 LoadWarning = "回放文件末尾缺少 GZip 结束标记，已加载可读取帧。";
@@ -323,23 +316,57 @@ namespace THUAI9.Unity.Playback
             throw new FormatException("回放帧长度字段异常。");
         }
 
-        private void AcceptOrRejectIncompleteTail(List<MessageToClient> parsedMessages, string warning)
+        private void AcceptOrRejectIncompleteTail(List<FrameSlice> parsedSlices, byte[] decompressedData, string warning)
         {
-            if (parsedMessages.Count == 0)
+            if (parsedSlices.Count == 0)
             {
-                throw new PlaybackFileIncompleteException(warning, parsedMessages.Count);
+                throw new PlaybackFileIncompleteException(warning, parsedSlices.Count);
             }
 
-            messages.Clear();
-            messages.AddRange(parsedMessages);
+            frameSlices.Clear();
+            frameSlices.AddRange(parsedSlices);
+            frameData = decompressedData;
+            ValidateLoadedBoundaryFrames();
             IsIncompleteTail = true;
             LoadWarning = warning;
         }
 
-        private static byte[] DecompressWithLimit(byte[] compressedData, out bool endedEarly)
+        private MessageToClient ParseFrameAt(int index)
+        {
+            if (frameData == null || index < 0 || index >= frameSlices.Count)
+            {
+                return null;
+            }
+
+            FrameSlice slice = frameSlices[index];
+            return MessageToClient.Parser.ParseFrom(frameData, slice.Offset, slice.Length);
+        }
+
+        private void ValidateLoadedBoundaryFrames()
+        {
+            try
+            {
+                if (frameSlices.Count <= 0)
+                {
+                    return;
+                }
+
+                _ = ParseFrameAt(0);
+                if (frameSlices.Count > 1)
+                {
+                    _ = ParseFrameAt(frameSlices.Count - 1);
+                }
+            }
+            catch (InvalidProtocolBufferException ex)
+            {
+                throw new FormatException("回放帧数据损坏，无法解析。", ex);
+            }
+        }
+
+        private static byte[] DecompressWithLimit(byte[] data, int offset, int count, out bool endedEarly)
         {
             endedEarly = false;
-            using (var compressedStream = new MemoryStream(compressedData))
+            using (var compressedStream = new MemoryStream(data, offset, count, false))
             using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
             using (var decompressedStream = new MemoryStream())
             {
@@ -374,6 +401,18 @@ namespace THUAI9.Unity.Playback
 
                 return decompressedStream.ToArray();
             }
+        }
+
+        private readonly struct FrameSlice
+        {
+            public FrameSlice(int offset, int length)
+            {
+                Offset = offset;
+                Length = length;
+            }
+
+            public int Offset { get; }
+            public int Length { get; }
         }
     }
 }

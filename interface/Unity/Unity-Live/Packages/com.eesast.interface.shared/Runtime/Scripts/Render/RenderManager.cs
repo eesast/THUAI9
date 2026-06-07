@@ -56,6 +56,7 @@ namespace THUAI9.Unity.Render
         private readonly Dictionary<long, int> _previousCharacterLoads = new();
         private readonly Dictionary<long, long> _previousCharacterAttackCooldowns = new();
         private readonly Dictionary<long, string> _lastRuntimeUnitDirections = new();
+        private static readonly Dictionary<string, Sprite> RuntimeSpriteCache = new(StringComparer.Ordinal);
 
         public bool IsFrameLoopRunning => _updateCoroutine != null;
         public int FrameLoopTickCount => _frameLoopTickCount;
@@ -172,6 +173,7 @@ namespace THUAI9.Unity.Render
                 {
                     _lastRenderError = ex.Message;
                     Debug.LogException(ex, this);
+                    FrameSourceHub.ReportRenderError(ex);
                     break;
                 }
             }
@@ -1237,7 +1239,7 @@ namespace THUAI9.Unity.Render
 
         private static Sprite GetCompactUnitSprite(MessageOfCharacter msg)
         {
-            return Resources.Load<Sprite>($"Runtime/Units/{GetCompactUnitSpriteKey(msg)}");
+            return LoadRuntimeSprite($"Runtime/Units/{GetCompactUnitSpriteKey(msg)}");
         }
 
         private static Sprite GetRuntimeUnitSprite(MessageOfCharacter msg, RuntimeUnitAction action, long guid, string directionOverride = null)
@@ -1253,15 +1255,32 @@ namespace THUAI9.Unity.Render
             string actionName = action.ToString().ToLowerInvariant();
             int frame = GetRuntimeUnitFrameIndex(action, guid);
             string animatedKey = $"unit_{unit}_team_{team}_{actionName}_{direction}_{frame:00}";
-            Sprite animated = Resources.Load<Sprite>($"Runtime/UnitAnimations/{animatedKey}");
+            Sprite animated = LoadRuntimeSprite($"Runtime/UnitAnimations/{animatedKey}");
             if (animated != null)
             {
                 return animated;
             }
 
             string idleKey = $"unit_{unit}_team_{team}_idle_{direction}_00";
-            Sprite idle = Resources.Load<Sprite>($"Runtime/UnitAnimations/{idleKey}");
+            Sprite idle = LoadRuntimeSprite($"Runtime/UnitAnimations/{idleKey}");
             return idle != null ? idle : GetCompactUnitSprite(msg);
+        }
+
+        private static Sprite LoadRuntimeSprite(string resourcePath)
+        {
+            if (string.IsNullOrEmpty(resourcePath))
+            {
+                return null;
+            }
+
+            if (RuntimeSpriteCache.TryGetValue(resourcePath, out Sprite cached))
+            {
+                return cached;
+            }
+
+            Sprite loaded = Resources.Load<Sprite>(resourcePath);
+            RuntimeSpriteCache[resourcePath] = loaded;
+            return loaded;
         }
 
         private static string GetCompactUnitSpriteKey(MessageOfCharacter msg)
