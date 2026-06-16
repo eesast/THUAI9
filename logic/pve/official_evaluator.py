@@ -52,6 +52,10 @@ _ALLOWED_RL_IMPORTS = {
     "RLInterfaces",
     "RLInterfaces.base_agent",
 }
+_ALLOWED_GAMELOGIC_IMPORTS = {
+    "Action",
+    "N_ACTIONS",
+}
 
 
 class SubmissionRuleError(RuntimeError):
@@ -82,8 +86,15 @@ class _AgentRuleVisitor(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         module = node.module or ""
-        if module.startswith("GameLogic"):
-            self._error(node, "imports from GameLogic are not allowed in submissions")
+        if module == "GameLogic":
+            for alias in node.names:
+                if alias.name not in _ALLOWED_GAMELOGIC_IMPORTS:
+                    self._error(
+                        node,
+                        "only Action and N_ACTIONS may be imported from GameLogic by submissions",
+                    )
+        elif module.startswith("GameLogic"):
+            self._error(node, "imports from GameLogic internal modules are not allowed in submissions")
         if module.startswith("RLInterfaces") and module not in _ALLOWED_RL_IMPORTS:
             self._error(
                 node,
@@ -101,7 +112,10 @@ class _AgentRuleVisitor(ast.NodeVisitor):
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if alias.name == "GameLogic" or alias.name.startswith("GameLogic."):
-                self._error(node, "imports from GameLogic are not allowed in submissions")
+                self._error(
+                    node,
+                    "use 'from GameLogic import Action, N_ACTIONS' instead of importing GameLogic modules",
+                )
             if alias.name == "RLInterfaces" or (
                 alias.name.startswith("RLInterfaces.") and alias.name not in _ALLOWED_RL_IMPORTS
             ):

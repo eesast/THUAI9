@@ -21,11 +21,13 @@ def test_agent_source_allows_documented_env_methods(tmp_path):
     agent_file = _write_agent(
         tmp_path,
         """
+from GameLogic import Action, N_ACTIONS
 from RLInterfaces import BaseAgent
 
 class Agent(BaseAgent):
     def get_action(self, obs):
         mask = self.env.action_masks()
+        assert N_ACTIONS > int(Action.WAIT)
         return int(mask.argmax())
 
     def train(self, total_timesteps, **kwargs):
