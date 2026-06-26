@@ -55,12 +55,12 @@ jobs:
         cd D:\a
         tar -czf THUAI9.tar.gz -C mirror .
     - name: package tar.gz
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: THUAI9.tar.gz
         path: D:\a\THUAI9.tar.gz
     - name: package installer
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: installer
         path: D:\a\publish\
