@@ -9,7 +9,7 @@ jobs:
     if: true
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
@@ -22,7 +22,7 @@ jobs:
     if: true
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
@@ -35,7 +35,7 @@ jobs:
     if: true
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
