@@ -8,7 +8,7 @@ jobs:
   dotnet-build-logic:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
@@ -20,7 +20,7 @@ jobs:
   dotnet-build-install:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
@@ -42,7 +42,7 @@ jobs:
   dotnet-build-playback:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
