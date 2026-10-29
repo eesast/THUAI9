@@ -33,7 +33,7 @@ jobs:
         run: dotnet publish "./installer/installer/installer.csproj" -p:PublishProfile=Windows -o "${{ runner.temp }}/installer"
 
       - name: Upload Windows Downloader
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: THUAI9-downloader-win-x64
           path: ${{ runner.temp }}/installer/CosDownloader.exe
