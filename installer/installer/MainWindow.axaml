@@ -1,0 +1,387 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:CosDownloader"
+        x:Class="CosDownloader.MainWindow"
+        Icon="/Assets/thuai9-downloader-icon.ico"
+        Title="THUAI9下载器"
+        Width="1040"
+        Height="700"
+        MinWidth="920"
+        MinHeight="620"
+        Background="#F4F1E8"
+        FontFamily="Microsoft YaHei UI, Segoe UI">
+
+    <Window.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="CornerRadius" Value="22"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Background" Value="#FFFDF8"/>
+            <Setter Property="BorderBrush" Value="#DDD4C3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#1C2528"/>
+        </Style>
+
+        <Style Selector="TextBlock.body-muted">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="#667074"/>
+        </Style>
+
+        <Style Selector="Button.primary">
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="#24343A"/>
+            <Setter Property="Foreground" Value="#F9F8F4"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.primary:disabled">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="#CDCAC3"/>
+            <Setter Property="Foreground" Value="#777771"/>
+            <Setter Property="BorderBrush" Value="#CDCAC3"/>
+        </Style>
+
+        <Style Selector="Button.secondary">
+            <Setter Property="Height" Value="46"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="#F7F4EE"/>
+            <Setter Property="Foreground" Value="#24343A"/>
+            <Setter Property="BorderBrush" Value="#D8D0C3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.secondary:disabled">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="#DEDBD5"/>
+            <Setter Property="Foreground" Value="#777771"/>
+            <Setter Property="BorderBrush" Value="#DEDBD5"/>
+        </Style>
+
+        <Style Selector="Button.header-action">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="#F7F4EE"/>
+            <Setter Property="Foreground" Value="#24343A"/>
+            <Setter Property="BorderBrush" Value="#D8D0C3"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.header-action:disabled">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Background" Value="#DEDBD5"/>
+            <Setter Property="Foreground" Value="#777771"/>
+            <Setter Property="BorderBrush" Value="#DEDBD5"/>
+        </Style>
+
+        <Style Selector="Border.badge">
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Background" Value="#E7E2D3"/>
+        </Style>
+
+        <Style Selector="TextBlock.badge-text">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#615540"/>
+        </Style>
+
+        <Style Selector="TreeView#FileTreeView">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <Style Selector="TreeViewItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*" Margin="20" RowSpacing="16">
+        <Border Classes="card" Grid.Row="0">
+            <Grid ColumnDefinitions="*,360" ColumnSpacing="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="THUAI9下载器"
+                               FontSize="28"
+                               FontWeight="Bold"
+                               Foreground="#1C2528"/>
+                    <TextBlock Classes="body-muted"
+                               Text="欢迎大家报名【THUAI9】云厂竞逐赛！"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Spacing="10">
+                    <Border Classes="badge" HorizontalAlignment="Right">
+                        <TextBlock Name="StatusTitleText"
+                                   Classes="badge-text"
+                                   Text="准备就绪"/>
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="10"
+                                HorizontalAlignment="Right">
+                        <TextBlock Text="下载目录"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Foreground="#7A7E75"/>
+                        <Button Name="BtnChooseFolder"
+                                Classes="header-action"
+                                Content="选择下载位置"/>
+                    </StackPanel>
+
+                    <TextBlock Name="DownloadPathText"
+                               Text="桌面\\CosDownloads"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               MaxWidth="320"
+                               HorizontalAlignment="Right"
+                               Foreground="#2D3639"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="395,*" ColumnSpacing="16">
+            <StackPanel Grid.Column="0" Spacing="16">
+                <Border Classes="card">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="section-title" Text="操作（先刷新后下载）"/>
+
+                        <Button Name="BtnGetList"
+                                Classes="secondary"
+                                Content="刷新文件列表"/>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Name="BtnDownloadAll"
+                                    Classes="primary"
+                                    Content="下载全部文件"/>
+                            <Button Name="BtnPauseDownload"
+                                    Grid.Column="1"
+                                    Classes="secondary"
+                                    Content="⏸ 暂停"
+                                    IsEnabled="False"/>
+                        </Grid>
+
+                        <Grid Name="DownloadProgressPanel"
+                              Height="48"
+                              MaxWidth="300"
+                              HorizontalAlignment="Left"
+                              RowDefinitions="Auto,Auto"
+                              RowSpacing="6"
+                              Opacity="0.72">
+                            <ProgressBar Name="DownloadProgressBar"
+                                         Height="10"
+                                         Minimum="0"
+                                         Maximum="100"
+                                         Value="0"/>
+                            <Grid Grid.Row="1" ColumnDefinitions="96,Auto,86,*" ColumnSpacing="6">
+                                <TextBlock Name="DownloadProgressText"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Text="等待开始下载"
+                                           TextAlignment="Right"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="#2D3639"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="/"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="#2D3639"/>
+                                <TextBlock Name="DownloadTotalText"
+                                           Grid.Column="2"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Text="计算中"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="#2D3639"/>
+                                <TextBlock Name="DownloadSpeedText"
+                                           Grid.Column="3"
+                                           MinWidth="64"
+                                           FontSize="12"
+                                           Text="0 B/s"
+                                           HorizontalAlignment="Right"
+                                           TextAlignment="Right"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Foreground="#667074"/>
+                            </Grid>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Name="BtnProtectSelection"
+                                    Grid.Column="0"
+                                    Classes="secondary"
+                                    Content="保护选中项"/>
+                            <Button Name="BtnUnprotectSelection"
+                                    Grid.Column="1"
+                                    Classes="secondary"
+                                    Content="取消保护"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="section-title" Text="概览"/>
+
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="24,42,24,24" RowSpacing="8">
+                            <TextBlock Text="当前状态 "
+                                       Margin="0,0,10,0"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7A7E75"/>
+                            <TextBlock Grid.Column="1"
+                                       Name="SummaryText"
+                                       Text="还没有获取到任何文件。"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="NoWrap"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#1F282C"/>
+
+                            <TextBlock Grid.Row="1"
+                                       Text="统计 "
+                                       Margin="0,0,10,0"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7A7E75"/>
+                            <TextBlock Grid.Row="1"
+                                       Grid.Column="1"
+                                       Name="StatsText"
+                                       Text="文件 0 个 | 目录 0 个 | 总大小 0 B"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       MaxLines="2"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#2D3639"/>
+
+                            <TextBlock Grid.Row="2"
+                                       Text="保护项 "
+                                       Margin="0,0,10,0"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7A7E75"/>
+                            <TextBlock Grid.Row="2"
+                                       Grid.Column="1"
+                                       Name="ProtectedItemsText"
+                                       Text="0 个文件/目录"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="NoWrap"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#2D3639"/>
+
+                            <TextBlock Grid.Row="3"
+                                       Text="状态详情 "
+                                       Margin="0,0,10,0"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Foreground="#7A7E75"/>
+                            <TextBlock Grid.Row="3"
+                                       Grid.Column="1"
+                                       Name="StatusDetailText"
+                                       Text="先刷新云端文件列表，再开始下载。"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="NoWrap"
+                                       MaxLines="1"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="#2D3639"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Border Classes="card" Grid.Column="1" Padding="0">
+                <Grid RowDefinitions="Auto,Auto,*">
+                    <Grid Margin="18,16,18,8" ColumnDefinitions="*" ColumnSpacing="16">
+                        <TextBlock Classes="section-title" Text="文件总览"/>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Margin="18,0,56,8" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="类型"
+                                   FontSize="12"
+                                   Foreground="#7A7E75"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="名称"
+                                   FontSize="12"
+                                   Foreground="#7A7E75"/>
+                        <TextBlock Grid.Column="2"
+                                   Text="大小 / 更新时间"
+                                   FontSize="12"
+                                   Foreground="#7A7E75"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"/>
+                    </Grid>
+
+                    <TreeView Name="FileTreeView" Grid.Row="2" Margin="12,0,24,12">
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate x:DataType="local:ExplorerNode" ItemsSource="{Binding Children}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="2,2">
+                                    <Border Width="52"
+                                            Height="24"
+                                            CornerRadius="10"
+                                            Background="#ECE5D8"
+                                            VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding BadgeText}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Foreground="#4A4A42"/>
+                                    </Border>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding DisplayName}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontSize="14"
+                                               Foreground="#1C2528"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding MetaText}"
+                                               Margin="0,0,24,0"
+                                               VerticalAlignment="Center"
+                                               HorizontalAlignment="Right"
+                                               TextAlignment="Right"
+                                               FontSize="12"
+                                               Foreground="#72797B"/>
+                                </Grid>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

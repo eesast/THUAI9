@@ -31,11 +31,6 @@ jobs:
           dotnet restore "./logic/logic.sln"
           dotnet format "./logic/logic.sln" --severity error --no-restore --verify-no-changes
 
-      - name: Check Installer
-        run: |
-          dotnet restore "./installer/installer.sln"
-          dotnet format "./installer/installer.sln" --severity error --no-restore --verify-no-changes
-
       - name: Check Playback
         run: |
           dotnet restore "./playback/playback.sln"
@@ -47,3 +42,17 @@ jobs:
           dotnet format whitespace "./interface/Unity/Unity-Playback/Assets/Scripts/" --folder --verify-no-changes
           dotnet format whitespace "./interface/Unity/Unity-Trial/Assets/Scripts/" --folder --verify-no-changes
           dotnet format whitespace "./interface/Unity/Unity-Live/Packages/com.eesast.interface.shared/Runtime/Scripts/" --folder --verify-no-changes
+
+  dotnet-format-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check Installer
+        run: |
+          dotnet restore "./installer/installer.sln"
+          dotnet format "./installer/installer.sln" --severity error --no-restore --verify-no-changes

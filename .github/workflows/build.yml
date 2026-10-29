@@ -6,7 +6,6 @@ on:
     branches: [dev, main, master]
 jobs:
   dotnet-build-logic:
-    if: true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,20 +18,28 @@ jobs:
         run: dotnet build "./logic/logic.sln" -c Release
 
   dotnet-build-install:
-    if: true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Build Installer
         run: dotnet build "./installer/installer.sln" -c Release
 
+      - name: Publish Windows Downloader
+        run: dotnet publish "./installer/installer/installer.csproj" -p:PublishProfile=Windows -o "${{ runner.temp }}/installer"
+
+      - name: Upload Windows Downloader
+        uses: actions/upload-artifact@v4
+        with:
+          name: THUAI9-downloader-win-x64
+          path: ${{ runner.temp }}/installer/CosDownloader.exe
+          if-no-files-found: error
+
   dotnet-build-playback:
-    if: true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
