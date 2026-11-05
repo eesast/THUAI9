@@ -27,7 +27,7 @@ jobs:
         run: docker pull "${{ secrets.DOCKER_USERNAME }}/thuai9_base:base"
 
       - name: Build and push server image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: dependency/Dockerfile/Dockerfile_run_server
@@ -37,7 +37,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=run-server
 
       - name: Build and push Python client image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: dependency/Dockerfile/Dockerfile_run_client
@@ -49,7 +49,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=run-client
 
       - name: Build and push C++ client image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: dependency/Dockerfile/Dockerfile_cpp
